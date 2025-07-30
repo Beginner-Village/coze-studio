@@ -20,8 +20,10 @@ import (
 	"context"
 
 	einoCompose "github.com/cloudwego/eino/compose"
+	"github.com/cloudwego/eino/schema"
 
 	"github.com/coze-dev/coze-studio/backend/domain/workflow"
+
 	workflowEntity "github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
 )
@@ -37,10 +39,13 @@ type Workflow interface {
 	GetWorkflowIDsByAppID(ctx context.Context, appID int64) ([]int64, error)
 	SyncExecuteWorkflow(ctx context.Context, config vo.ExecuteConfig, input map[string]any) (*workflowEntity.WorkflowExecution, vo.TerminatePlan, error)
 	WithExecuteConfig(cfg vo.ExecuteConfig) einoCompose.Option
+	StreamExecute(ctx context.Context, config vo.ExecuteConfig, input map[string]any) (*schema.StreamReader[*workflowEntity.Message], error)
+	InitApplicationDefaultConversationTemplate(ctx context.Context, spaceID int64, appID int64, userID int64) error
 }
 
 type ExecuteConfig = vo.ExecuteConfig
 type ExecuteMode = vo.ExecuteMode
+type WorkflowMessage = workflowEntity.Message
 
 const (
 	ExecuteModeDebug     ExecuteMode = "debug"

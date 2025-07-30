@@ -53,6 +53,20 @@ type AsTool interface {
 		allInterruptEvents map[string]*entity.ToolInterruptEvent) compose.Option
 }
 
+type ConversationService interface {
+	CreateDraftConversationTemplate(ctx context.Context, template *vo.CreateConversationTemplateMeta) (int64, error)
+	UpdateDraftConversationTemplateName(ctx context.Context, appID int64, userID int64, templateID int64, name string) error
+	DeleteDraftConversationTemplate(ctx context.Context, templateID int64, wfID2ConversationName map[int64]string) (int64, error)
+
+	CheckWorkflowsToReplace(ctx context.Context, appID int64, templateID int64) ([]*entity.Workflow, error)
+	DeleteDynamicConversation(ctx context.Context, env vo.Env, templateID int64) (int64, error)
+	ListConversationTemplate(ctx context.Context, env vo.Env, policy *vo.ListConversationTemplatePolicy) ([]*entity.ConversationTemplate, error)
+	MGetStaticConversation(ctx context.Context, env vo.Env, userID, connectorID int64, templateIDs []int64) ([]*entity.StaticConversation, error)
+	ListDynamicConversation(ctx context.Context, env vo.Env, policy *vo.ListConversationPolicy) ([]*entity.DynamicConversation, error)
+	ReleaseConversationTemplate(ctx context.Context, appID int64, version string) error
+	InitApplicationDefaultConversationTemplate(ctx context.Context, spaceID int64, appID int64, userID int64) error
+}
+
 type InterruptEventStore interface {
 	SaveInterruptEvents(ctx context.Context, wfExeID int64, events []*entity.InterruptEvent) error
 	GetFirstInterruptEvent(ctx context.Context, wfExeID int64) (*entity.InterruptEvent, bool, error)
@@ -89,4 +103,23 @@ type ToolFromWorkflow interface {
 	tool.BaseTool
 	TerminatePlan() vo.TerminatePlan
 	GetWorkflow() *entity.Workflow
+}
+
+type ConversationIDGenerator func(ctx context.Context, appID int64, userID, connectorID int64) (int64, error)
+
+type ConversationRepository interface {
+	CreateDraftConversationTemplate(ctx context.Context, template *vo.CreateConversationTemplateMeta) (int64, error)
+	UpdateDraftConversationTemplateName(ctx context.Context, templateID int64, name string) error
+	DeleteDraftConversationTemplate(ctx context.Context, templateID int64) (int64, error)
+	GetConversationTemplate(ctx context.Context, env vo.Env, policy vo.GetConversationTemplatePolicy) (*entity.ConversationTemplate, bool, error)
+	DeleteDynamicConversation(ctx context.Context, env vo.Env, id int64) (int64, error)
+	ListConversationTemplate(ctx context.Context, env vo.Env, policy *vo.ListConversationTemplatePolicy) ([]*entity.ConversationTemplate, error)
+	MGetStaticConversation(ctx context.Context, env vo.Env, userID, connectorID int64, templateIDs []int64) ([]*entity.StaticConversation, error)
+	GetOrCreateStaticConversation(ctx context.Context, env vo.Env, idGen ConversationIDGenerator, meta *vo.CreateStaticConversation) (int64, bool, error)
+	GetOrCreateDynamicConversation(ctx context.Context, env vo.Env, idGen ConversationIDGenerator, meta *vo.CreateDynamicConversation) (int64, bool, error)
+	GetDynamicConversationByName(ctx context.Context, env vo.Env, appID, connectorID, userID int64, name string) (*entity.DynamicConversation, bool, error)
+	GetStaticConversationByTemplateID(ctx context.Context, env vo.Env, userID, connectorID, templateID int64) (*entity.StaticConversation, bool, error)
+	ListDynamicConversation(ctx context.Context, env vo.Env, policy *vo.ListConversationPolicy) ([]*entity.DynamicConversation, error)
+	BatchCreateOnlineConversationTemplate(ctx context.Context, templates []*entity.ConversationTemplate, version string) error
+	UpdateDynamicConversationNameByID(ctx context.Context, env vo.Env, templateID int64, name string) error
 }

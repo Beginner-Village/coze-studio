@@ -29,6 +29,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossdatabase"
 	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossknowledge"
 	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossplugin"
+	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossworkflow"
 	"github.com/coze-dev/coze-studio/backend/domain/app/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/app/repository"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
@@ -65,6 +66,11 @@ func (a *appServiceImpl) CreateDraftAPP(ctx context.Context, req *CreateDraftAPP
 	appID, err = a.APPRepo.CreateDraftAPP(ctx, app)
 	if err != nil {
 		return 0, errorx.Wrapf(err, "CreateDraftAPP failed, spaceID=%d", req.SpaceID)
+	}
+
+	err = crossworkflow.DefaultSVC().InitApplicationDefaultConversationTemplate(ctx, req.SpaceID, appID, req.OwnerID)
+	if err != nil {
+		return 0, err
 	}
 
 	return appID, nil

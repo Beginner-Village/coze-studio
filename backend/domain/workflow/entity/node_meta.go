@@ -144,8 +144,11 @@ const (
 	NodeTypeCodeRunner                 NodeType = "CodeRunner"
 	NodeTypePlugin                     NodeType = "Plugin"
 	NodeTypeCreateConversation         NodeType = "CreateConversation"
+	NodeTypeConversationList           NodeType = "ConversationList"
 	NodeTypeMessageList                NodeType = "MessageList"
-	NodeTypeClearMessage               NodeType = "ClearMessage"
+	NodeTypeCreateMessage              NodeType = "CreateMessage"
+	NodeTypeEditMessage                NodeType = "EditMessage"
+	NodeTypeDeleteMessage              NodeType = "DeleteMessage"
 	NodeTypeLambda                     NodeType = "Lambda"
 	NodeTypeLLM                        NodeType = "LLM"
 	NodeTypeSelector                   NodeType = "Selector"
@@ -153,6 +156,10 @@ const (
 	NodeTypeSubWorkflow                NodeType = "SubWorkflow"
 	NodeTypeJsonSerialization          NodeType = "JsonSerialization"
 	NodeTypeJsonDeserialization        NodeType = "JsonDeserialization"
+	NodeTypeConversationUpdate         NodeType = "ConversationUpdate"
+	NodeTypeConversationDelete         NodeType = "ConversationDelete"
+	NodeTypeClearConversationHistory   NodeType = "ClearConversationHistory"
+	NodeTypeConversationHistory        NodeType = "ConversationHistory"
 	NodeTypeComment                    NodeType = "Comment"
 )
 

@@ -80,4 +80,5 @@ type MetaQuery struct {
 	LibOnly         bool
 	NeedTotalNumber bool
 	DescByUpdate    bool
+	Mode            *workflow.WorkflowMode
 }

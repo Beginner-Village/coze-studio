@@ -21,11 +21,11 @@ import (
 
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/compose"
-
 	"github.com/coze-dev/coze-studio/backend/api/model/ocean/cloud/workflow"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
+	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
 )
 
 //go:generate mockgen -destination ../../internal/mock/domain/workflow/interface.go --package mockWorkflow -source interface.go
@@ -45,6 +45,13 @@ type Service interface {
 
 	GetWorkflowReference(ctx context.Context, id int64) (map[int64]*vo.Meta, error)
 
+	CreateChatFlowRole(ctx context.Context, role *vo.ChatFlowRoleCreate) (int64, error)
+	UpdateChatFlowRole(ctx context.Context, workflowID int64, role *vo.ChatFlowRoleUpdate) error
+	GetChatFlowRole(ctx context.Context, workflowID int64, version string) (*entity.ChatFlowRole, error)
+	DeleteChatFlowRole(ctx context.Context, id int64, workflowID int64) error
+	PublishChatFlowRole(ctx context.Context, policy *vo.PublishRolePolicy) error
+	CopyChatFlowRole(ctx context.Context, policy *vo.CopyRolePolicy) error
+
 	Executable
 	AsTool
 
@@ -53,12 +60,18 @@ type Service interface {
 	DuplicateWorkflowsByAppID(ctx context.Context, sourceAPPID, targetAppID int64, related vo.ExternalResourceRelated) error
 	GetWorkflowDependenceResource(ctx context.Context, workflowID int64) (*vo.DependenceResource, error)
 	SyncRelatedWorkflowResources(ctx context.Context, appID int64, relatedWorkflows map[int64]entity.IDVersionPair, related vo.ExternalResourceRelated) error
+
+	ConversationService
 }
 
 type Repository interface {
 	CreateMeta(ctx context.Context, meta *vo.Meta) (int64, error)
 	CreateVersion(ctx context.Context, id int64, info *vo.VersionInfo, newRefs map[entity.WorkflowReferenceKey]struct{}) (err error)
 	CreateOrUpdateDraft(ctx context.Context, id int64, draft *vo.DraftInfo) error
+	CreateChatFlowRoleConfig(ctx context.Context, chatFlowRole *entity.ChatFlowRole) (int64, error)
+	UpdateChatFlowRoleConfig(ctx context.Context, workflowID int64, chatFlowRole *vo.ChatFlowRoleUpdate) error
+	GetChatFlowRoleConfig(ctx context.Context, workflowID int64, version string) (*entity.ChatFlowRole, error, bool)
+	DeleteChatFlowRoleConfig(ctx context.Context, id int64, workflowID int64) error
 	Delete(ctx context.Context, id int64) error
 	MDelete(ctx context.Context, ids []int64) error
 	GetMeta(ctx context.Context, id int64) (*vo.Meta, error)
@@ -95,10 +108,13 @@ type Repository interface {
 
 	IsApplicationConnectorWorkflowVersion(ctx context.Context, connectorID, workflowID int64, version string) (b bool, err error)
 
+	GetObjectUrl(ctx context.Context, objectKey string, opts ...storage.GetOptFn) (string, error)
+
 	compose.CheckPointStore
 	idgen.IDGenerator
 
 	GetKnowledgeRecallChatModel() model.BaseChatModel
+	ConversationRepository
 }
 
 var repositorySingleton Repository

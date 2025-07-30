@@ -20,6 +20,7 @@ import (
 	workflow0 "github.com/coze-dev/coze-studio/backend/domain/workflow"
 	entity "github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
 	vo "github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
+	storage "github.com/coze-dev/coze-studio/backend/infra/contract/storage"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -104,6 +105,35 @@ func (mr *MockServiceMockRecorder) Cancel(ctx, wfExeID, wfID, spaceID any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Cancel", reflect.TypeOf((*MockService)(nil).Cancel), ctx, wfExeID, wfID, spaceID)
 }
 
+// CheckWorkflowsToReplace mocks base method.
+func (m *MockService) CheckWorkflowsToReplace(ctx context.Context, appID, templateID int64) ([]*entity.Workflow, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckWorkflowsToReplace", ctx, appID, templateID)
+	ret0, _ := ret[0].([]*entity.Workflow)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckWorkflowsToReplace indicates an expected call of CheckWorkflowsToReplace.
+func (mr *MockServiceMockRecorder) CheckWorkflowsToReplace(ctx, appID, templateID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckWorkflowsToReplace", reflect.TypeOf((*MockService)(nil).CheckWorkflowsToReplace), ctx, appID, templateID)
+}
+
+// CopyChatFlowRole mocks base method.
+func (m *MockService) CopyChatFlowRole(ctx context.Context, policy *vo.CopyRolePolicy) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CopyChatFlowRole", ctx, policy)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CopyChatFlowRole indicates an expected call of CopyChatFlowRole.
+func (mr *MockServiceMockRecorder) CopyChatFlowRole(ctx, policy any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyChatFlowRole", reflect.TypeOf((*MockService)(nil).CopyChatFlowRole), ctx, policy)
+}
+
 // CopyWorkflow mocks base method.
 func (m *MockService) CopyWorkflow(ctx context.Context, workflowID int64, policy vo.CopyWorkflowPolicy) (*entity.Workflow, error) {
 	m.ctrl.T.Helper()
@@ -150,6 +180,36 @@ func (mr *MockServiceMockRecorder) Create(ctx, meta any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockService)(nil).Create), ctx, meta)
 }
 
+// CreateChatFlowRole mocks base method.
+func (m *MockService) CreateChatFlowRole(ctx context.Context, role *vo.ChatFlowRoleCreate) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateChatFlowRole", ctx, role)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateChatFlowRole indicates an expected call of CreateChatFlowRole.
+func (mr *MockServiceMockRecorder) CreateChatFlowRole(ctx, role any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateChatFlowRole", reflect.TypeOf((*MockService)(nil).CreateChatFlowRole), ctx, role)
+}
+
+// CreateDraftConversationTemplate mocks base method.
+func (m *MockService) CreateDraftConversationTemplate(ctx context.Context, template *vo.CreateConversationTemplateMeta) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDraftConversationTemplate", ctx, template)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateDraftConversationTemplate indicates an expected call of CreateDraftConversationTemplate.
+func (mr *MockServiceMockRecorder) CreateDraftConversationTemplate(ctx, template any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDraftConversationTemplate", reflect.TypeOf((*MockService)(nil).CreateDraftConversationTemplate), ctx, template)
+}
+
 // Delete mocks base method.
 func (m *MockService) Delete(ctx context.Context, policy *vo.DeletePolicy) error {
 	m.ctrl.T.Helper()
@@ -162,6 +222,50 @@ func (m *MockService) Delete(ctx context.Context, policy *vo.DeletePolicy) error
 func (mr *MockServiceMockRecorder) Delete(ctx, policy any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockService)(nil).Delete), ctx, policy)
+}
+
+// DeleteChatFlowRole mocks base method.
+func (m *MockService) DeleteChatFlowRole(ctx context.Context, id, workflowID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteChatFlowRole", ctx, id, workflowID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteChatFlowRole indicates an expected call of DeleteChatFlowRole.
+func (mr *MockServiceMockRecorder) DeleteChatFlowRole(ctx, id, workflowID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteChatFlowRole", reflect.TypeOf((*MockService)(nil).DeleteChatFlowRole), ctx, id, workflowID)
+}
+
+// DeleteDraftConversationTemplate mocks base method.
+func (m *MockService) DeleteDraftConversationTemplate(ctx context.Context, templateID int64, wfID2ConversationName map[int64]string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteDraftConversationTemplate", ctx, templateID, wfID2ConversationName)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteDraftConversationTemplate indicates an expected call of DeleteDraftConversationTemplate.
+func (mr *MockServiceMockRecorder) DeleteDraftConversationTemplate(ctx, templateID, wfID2ConversationName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDraftConversationTemplate", reflect.TypeOf((*MockService)(nil).DeleteDraftConversationTemplate), ctx, templateID, wfID2ConversationName)
+}
+
+// DeleteDynamicConversation mocks base method.
+func (m *MockService) DeleteDynamicConversation(ctx context.Context, env vo.Env, templateID int64) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteDynamicConversation", ctx, env, templateID)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteDynamicConversation indicates an expected call of DeleteDynamicConversation.
+func (mr *MockServiceMockRecorder) DeleteDynamicConversation(ctx, env, templateID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDynamicConversation", reflect.TypeOf((*MockService)(nil).DeleteDynamicConversation), ctx, env, templateID)
 }
 
 // DuplicateWorkflowsByAppID mocks base method.
@@ -191,6 +295,21 @@ func (m *MockService) Get(ctx context.Context, policy *vo.GetPolicy) (*entity.Wo
 func (mr *MockServiceMockRecorder) Get(ctx, policy any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockService)(nil).Get), ctx, policy)
+}
+
+// GetChatFlowRole mocks base method.
+func (m *MockService) GetChatFlowRole(ctx context.Context, workflowID int64, version string) (*entity.ChatFlowRole, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetChatFlowRole", ctx, workflowID, version)
+	ret0, _ := ret[0].(*entity.ChatFlowRole)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetChatFlowRole indicates an expected call of GetChatFlowRole.
+func (mr *MockServiceMockRecorder) GetChatFlowRole(ctx, workflowID, version any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChatFlowRole", reflect.TypeOf((*MockService)(nil).GetChatFlowRole), ctx, workflowID, version)
 }
 
 // GetExecution mocks base method.
@@ -287,6 +406,50 @@ func (mr *MockServiceMockRecorder) GetWorkflowReference(ctx, id any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorkflowReference", reflect.TypeOf((*MockService)(nil).GetWorkflowReference), ctx, id)
 }
 
+// InitApplicationDefaultConversationTemplate mocks base method.
+func (m *MockService) InitApplicationDefaultConversationTemplate(ctx context.Context, spaceID, appID, userID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InitApplicationDefaultConversationTemplate", ctx, spaceID, appID, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InitApplicationDefaultConversationTemplate indicates an expected call of InitApplicationDefaultConversationTemplate.
+func (mr *MockServiceMockRecorder) InitApplicationDefaultConversationTemplate(ctx, spaceID, appID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitApplicationDefaultConversationTemplate", reflect.TypeOf((*MockService)(nil).InitApplicationDefaultConversationTemplate), ctx, spaceID, appID, userID)
+}
+
+// ListConversationTemplate mocks base method.
+func (m *MockService) ListConversationTemplate(ctx context.Context, env vo.Env, policy *vo.ListConversationTemplatePolicy) ([]*entity.ConversationTemplate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListConversationTemplate", ctx, env, policy)
+	ret0, _ := ret[0].([]*entity.ConversationTemplate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListConversationTemplate indicates an expected call of ListConversationTemplate.
+func (mr *MockServiceMockRecorder) ListConversationTemplate(ctx, env, policy any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListConversationTemplate", reflect.TypeOf((*MockService)(nil).ListConversationTemplate), ctx, env, policy)
+}
+
+// ListDynamicConversation mocks base method.
+func (m *MockService) ListDynamicConversation(ctx context.Context, env vo.Env, policy *vo.ListConversationPolicy) ([]*entity.DynamicConversation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListDynamicConversation", ctx, env, policy)
+	ret0, _ := ret[0].([]*entity.DynamicConversation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListDynamicConversation indicates an expected call of ListDynamicConversation.
+func (mr *MockServiceMockRecorder) ListDynamicConversation(ctx, env, policy any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicConversation", reflect.TypeOf((*MockService)(nil).ListDynamicConversation), ctx, env, policy)
+}
+
 // ListNodeMeta mocks base method.
 func (m *MockService) ListNodeMeta(ctx context.Context, nodeTypes map[entity.NodeType]bool) (map[string][]*entity.NodeTypeMeta, []entity.Category, error) {
 	m.ctrl.T.Helper()
@@ -319,6 +482,21 @@ func (mr *MockServiceMockRecorder) MGet(ctx, policy any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MGet", reflect.TypeOf((*MockService)(nil).MGet), ctx, policy)
 }
 
+// MGetStaticConversation mocks base method.
+func (m *MockService) MGetStaticConversation(ctx context.Context, env vo.Env, userID, connectorID int64, templateIDs []int64) ([]*entity.StaticConversation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MGetStaticConversation", ctx, env, userID, connectorID, templateIDs)
+	ret0, _ := ret[0].([]*entity.StaticConversation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MGetStaticConversation indicates an expected call of MGetStaticConversation.
+func (mr *MockServiceMockRecorder) MGetStaticConversation(ctx, env, userID, connectorID, templateIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MGetStaticConversation", reflect.TypeOf((*MockService)(nil).MGetStaticConversation), ctx, env, userID, connectorID, templateIDs)
+}
+
 // Publish mocks base method.
 func (m *MockService) Publish(ctx context.Context, policy *vo.PublishPolicy) error {
 	m.ctrl.T.Helper()
@@ -331,6 +509,20 @@ func (m *MockService) Publish(ctx context.Context, policy *vo.PublishPolicy) err
 func (mr *MockServiceMockRecorder) Publish(ctx, policy any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Publish", reflect.TypeOf((*MockService)(nil).Publish), ctx, policy)
+}
+
+// PublishChatFlowRole mocks base method.
+func (m *MockService) PublishChatFlowRole(ctx context.Context, policy *vo.PublishRolePolicy) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PublishChatFlowRole", ctx, policy)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PublishChatFlowRole indicates an expected call of PublishChatFlowRole.
+func (mr *MockServiceMockRecorder) PublishChatFlowRole(ctx, policy any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishChatFlowRole", reflect.TypeOf((*MockService)(nil).PublishChatFlowRole), ctx, policy)
 }
 
 // QueryNodeProperties mocks base method.
@@ -361,6 +553,20 @@ func (m *MockService) ReleaseApplicationWorkflows(ctx context.Context, appID int
 func (mr *MockServiceMockRecorder) ReleaseApplicationWorkflows(ctx, appID, config any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReleaseApplicationWorkflows", reflect.TypeOf((*MockService)(nil).ReleaseApplicationWorkflows), ctx, appID, config)
+}
+
+// ReleaseConversationTemplate mocks base method.
+func (m *MockService) ReleaseConversationTemplate(ctx context.Context, appID int64, version string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReleaseConversationTemplate", ctx, appID, version)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReleaseConversationTemplate indicates an expected call of ReleaseConversationTemplate.
+func (mr *MockServiceMockRecorder) ReleaseConversationTemplate(ctx, appID, version any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReleaseConversationTemplate", reflect.TypeOf((*MockService)(nil).ReleaseConversationTemplate), ctx, appID, version)
 }
 
 // Save mocks base method.
@@ -435,6 +641,34 @@ func (m *MockService) SyncRelatedWorkflowResources(ctx context.Context, appID in
 func (mr *MockServiceMockRecorder) SyncRelatedWorkflowResources(ctx, appID, relatedWorkflows, related any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncRelatedWorkflowResources", reflect.TypeOf((*MockService)(nil).SyncRelatedWorkflowResources), ctx, appID, relatedWorkflows, related)
+}
+
+// UpdateChatFlowRole mocks base method.
+func (m *MockService) UpdateChatFlowRole(ctx context.Context, workflowID int64, role *vo.ChatFlowRoleUpdate) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateChatFlowRole", ctx, workflowID, role)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateChatFlowRole indicates an expected call of UpdateChatFlowRole.
+func (mr *MockServiceMockRecorder) UpdateChatFlowRole(ctx, workflowID, role any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateChatFlowRole", reflect.TypeOf((*MockService)(nil).UpdateChatFlowRole), ctx, workflowID, role)
+}
+
+// UpdateDraftConversationTemplateName mocks base method.
+func (m *MockService) UpdateDraftConversationTemplateName(ctx context.Context, appID, userID, templateID int64, name string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDraftConversationTemplateName", ctx, appID, userID, templateID, name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateDraftConversationTemplateName indicates an expected call of UpdateDraftConversationTemplateName.
+func (mr *MockServiceMockRecorder) UpdateDraftConversationTemplateName(ctx, appID, userID, templateID, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDraftConversationTemplateName", reflect.TypeOf((*MockService)(nil).UpdateDraftConversationTemplateName), ctx, appID, userID, templateID, name)
 }
 
 // UpdateMeta mocks base method.
@@ -561,6 +795,20 @@ func (mr *MockRepositoryMockRecorder) BatchCreateConnectorWorkflowVersion(ctx, a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchCreateConnectorWorkflowVersion", reflect.TypeOf((*MockRepository)(nil).BatchCreateConnectorWorkflowVersion), ctx, appID, connectorID, workflowIDs, version)
 }
 
+// BatchCreateOnlineConversationTemplate mocks base method.
+func (m *MockRepository) BatchCreateOnlineConversationTemplate(ctx context.Context, templates []*entity.ConversationTemplate, version string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BatchCreateOnlineConversationTemplate", ctx, templates, version)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// BatchCreateOnlineConversationTemplate indicates an expected call of BatchCreateOnlineConversationTemplate.
+func (mr *MockRepositoryMockRecorder) BatchCreateOnlineConversationTemplate(ctx, templates, version any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchCreateOnlineConversationTemplate", reflect.TypeOf((*MockRepository)(nil).BatchCreateOnlineConversationTemplate), ctx, templates, version)
+}
+
 // CancelAllRunningNodes mocks base method.
 func (m *MockRepository) CancelAllRunningNodes(ctx context.Context, wfExeID int64) error {
 	m.ctrl.T.Helper()
@@ -588,6 +836,36 @@ func (m *MockRepository) CopyWorkflow(ctx context.Context, workflowID int64, pol
 func (mr *MockRepositoryMockRecorder) CopyWorkflow(ctx, workflowID, policy any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyWorkflow", reflect.TypeOf((*MockRepository)(nil).CopyWorkflow), ctx, workflowID, policy)
+}
+
+// CreateChatFlowRoleConfig mocks base method.
+func (m *MockRepository) CreateChatFlowRoleConfig(ctx context.Context, chatFlowRole *entity.ChatFlowRole) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateChatFlowRoleConfig", ctx, chatFlowRole)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateChatFlowRoleConfig indicates an expected call of CreateChatFlowRoleConfig.
+func (mr *MockRepositoryMockRecorder) CreateChatFlowRoleConfig(ctx, chatFlowRole any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateChatFlowRoleConfig", reflect.TypeOf((*MockRepository)(nil).CreateChatFlowRoleConfig), ctx, chatFlowRole)
+}
+
+// CreateDraftConversationTemplate mocks base method.
+func (m *MockRepository) CreateDraftConversationTemplate(ctx context.Context, template *vo.CreateConversationTemplateMeta) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDraftConversationTemplate", ctx, template)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateDraftConversationTemplate indicates an expected call of CreateDraftConversationTemplate.
+func (mr *MockRepositoryMockRecorder) CreateDraftConversationTemplate(ctx, template any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDraftConversationTemplate", reflect.TypeOf((*MockRepository)(nil).CreateDraftConversationTemplate), ctx, template)
 }
 
 // CreateMeta mocks base method.
@@ -689,6 +967,50 @@ func (mr *MockRepositoryMockRecorder) Delete(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRepository)(nil).Delete), ctx, id)
 }
 
+// DeleteChatFlowRoleConfig mocks base method.
+func (m *MockRepository) DeleteChatFlowRoleConfig(ctx context.Context, id, workflowID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteChatFlowRoleConfig", ctx, id, workflowID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteChatFlowRoleConfig indicates an expected call of DeleteChatFlowRoleConfig.
+func (mr *MockRepositoryMockRecorder) DeleteChatFlowRoleConfig(ctx, id, workflowID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteChatFlowRoleConfig", reflect.TypeOf((*MockRepository)(nil).DeleteChatFlowRoleConfig), ctx, id, workflowID)
+}
+
+// DeleteDraftConversationTemplate mocks base method.
+func (m *MockRepository) DeleteDraftConversationTemplate(ctx context.Context, templateID int64) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteDraftConversationTemplate", ctx, templateID)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteDraftConversationTemplate indicates an expected call of DeleteDraftConversationTemplate.
+func (mr *MockRepositoryMockRecorder) DeleteDraftConversationTemplate(ctx, templateID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDraftConversationTemplate", reflect.TypeOf((*MockRepository)(nil).DeleteDraftConversationTemplate), ctx, templateID)
+}
+
+// DeleteDynamicConversation mocks base method.
+func (m *MockRepository) DeleteDynamicConversation(ctx context.Context, env vo.Env, id int64) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteDynamicConversation", ctx, env, id)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteDynamicConversation indicates an expected call of DeleteDynamicConversation.
+func (mr *MockRepositoryMockRecorder) DeleteDynamicConversation(ctx, env, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDynamicConversation", reflect.TypeOf((*MockRepository)(nil).DeleteDynamicConversation), ctx, env, id)
+}
+
 // DraftV2 mocks base method.
 func (m *MockRepository) DraftV2(ctx context.Context, id int64, commitID string) (*vo.DraftInfo, error) {
 	m.ctrl.T.Helper()
@@ -750,6 +1072,38 @@ func (mr *MockRepositoryMockRecorder) Get(ctx, checkPointID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRepository)(nil).Get), ctx, checkPointID)
 }
 
+// GetChatFlowRoleConfig mocks base method.
+func (m *MockRepository) GetChatFlowRoleConfig(ctx context.Context, workflowID int64, version string) (*entity.ChatFlowRole, error, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetChatFlowRoleConfig", ctx, workflowID, version)
+	ret0, _ := ret[0].(*entity.ChatFlowRole)
+	ret1, _ := ret[1].(error)
+	ret2, _ := ret[2].(bool)
+	return ret0, ret1, ret2
+}
+
+// GetChatFlowRoleConfig indicates an expected call of GetChatFlowRoleConfig.
+func (mr *MockRepositoryMockRecorder) GetChatFlowRoleConfig(ctx, workflowID, version any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChatFlowRoleConfig", reflect.TypeOf((*MockRepository)(nil).GetChatFlowRoleConfig), ctx, workflowID, version)
+}
+
+// GetConversationTemplate mocks base method.
+func (m *MockRepository) GetConversationTemplate(ctx context.Context, env vo.Env, policy vo.GetConversationTemplatePolicy) (*entity.ConversationTemplate, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConversationTemplate", ctx, env, policy)
+	ret0, _ := ret[0].(*entity.ConversationTemplate)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetConversationTemplate indicates an expected call of GetConversationTemplate.
+func (mr *MockRepositoryMockRecorder) GetConversationTemplate(ctx, env, policy any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConversationTemplate", reflect.TypeOf((*MockRepository)(nil).GetConversationTemplate), ctx, env, policy)
+}
+
 // GetDraftWorkflowsByAppID mocks base method.
 func (m *MockRepository) GetDraftWorkflowsByAppID(ctx context.Context, AppID int64) (map[int64]*vo.DraftInfo, map[int64]string, error) {
 	m.ctrl.T.Helper()
@@ -764,6 +1118,22 @@ func (m *MockRepository) GetDraftWorkflowsByAppID(ctx context.Context, AppID int
 func (mr *MockRepositoryMockRecorder) GetDraftWorkflowsByAppID(ctx, AppID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDraftWorkflowsByAppID", reflect.TypeOf((*MockRepository)(nil).GetDraftWorkflowsByAppID), ctx, AppID)
+}
+
+// GetDynamicConversationByName mocks base method.
+func (m *MockRepository) GetDynamicConversationByName(ctx context.Context, env vo.Env, appID, connectorID, userID int64, name string) (*entity.DynamicConversation, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDynamicConversationByName", ctx, env, appID, connectorID, userID, name)
+	ret0, _ := ret[0].(*entity.DynamicConversation)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetDynamicConversationByName indicates an expected call of GetDynamicConversationByName.
+func (mr *MockRepositoryMockRecorder) GetDynamicConversationByName(ctx, env, appID, connectorID, userID, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicConversationByName", reflect.TypeOf((*MockRepository)(nil).GetDynamicConversationByName), ctx, env, appID, connectorID, userID, name)
 }
 
 // GetEntity mocks base method.
@@ -902,6 +1272,74 @@ func (mr *MockRepositoryMockRecorder) GetNodeExecutionsByWfExeID(ctx, wfExeID an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodeExecutionsByWfExeID", reflect.TypeOf((*MockRepository)(nil).GetNodeExecutionsByWfExeID), ctx, wfExeID)
 }
 
+// GetObjectUrl mocks base method.
+func (m *MockRepository) GetObjectUrl(ctx context.Context, objectKey string, opts ...storage.GetOptFn) (string, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, objectKey}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetObjectUrl", varargs...)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetObjectUrl indicates an expected call of GetObjectUrl.
+func (mr *MockRepositoryMockRecorder) GetObjectUrl(ctx, objectKey any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, objectKey}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectUrl", reflect.TypeOf((*MockRepository)(nil).GetObjectUrl), varargs...)
+}
+
+// GetOrCreateDynamicConversation mocks base method.
+func (m *MockRepository) GetOrCreateDynamicConversation(ctx context.Context, env vo.Env, idGen workflow0.ConversationIDGenerator, meta *vo.CreateDynamicConversation) (int64, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrCreateDynamicConversation", ctx, env, idGen, meta)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetOrCreateDynamicConversation indicates an expected call of GetOrCreateDynamicConversation.
+func (mr *MockRepositoryMockRecorder) GetOrCreateDynamicConversation(ctx, env, idGen, meta any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrCreateDynamicConversation", reflect.TypeOf((*MockRepository)(nil).GetOrCreateDynamicConversation), ctx, env, idGen, meta)
+}
+
+// GetOrCreateStaticConversation mocks base method.
+func (m *MockRepository) GetOrCreateStaticConversation(ctx context.Context, env vo.Env, idGen workflow0.ConversationIDGenerator, meta *vo.CreateStaticConversation) (int64, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrCreateStaticConversation", ctx, env, idGen, meta)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetOrCreateStaticConversation indicates an expected call of GetOrCreateStaticConversation.
+func (mr *MockRepositoryMockRecorder) GetOrCreateStaticConversation(ctx, env, idGen, meta any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrCreateStaticConversation", reflect.TypeOf((*MockRepository)(nil).GetOrCreateStaticConversation), ctx, env, idGen, meta)
+}
+
+// GetStaticConversationByTemplateID mocks base method.
+func (m *MockRepository) GetStaticConversationByTemplateID(ctx context.Context, env vo.Env, userID, connectorID, templateID int64) (*entity.StaticConversation, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStaticConversationByTemplateID", ctx, env, userID, connectorID, templateID)
+	ret0, _ := ret[0].(*entity.StaticConversation)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetStaticConversationByTemplateID indicates an expected call of GetStaticConversationByTemplateID.
+func (mr *MockRepositoryMockRecorder) GetStaticConversationByTemplateID(ctx, env, userID, connectorID, templateID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStaticConversationByTemplateID", reflect.TypeOf((*MockRepository)(nil).GetStaticConversationByTemplateID), ctx, env, userID, connectorID, templateID)
+}
+
 // GetTestRunLatestExeID mocks base method.
 func (m *MockRepository) GetTestRunLatestExeID(ctx context.Context, wfID, uID int64) (int64, error) {
 	m.ctrl.T.Helper()
@@ -976,6 +1414,36 @@ func (m *MockRepository) IsApplicationConnectorWorkflowVersion(ctx context.Conte
 func (mr *MockRepositoryMockRecorder) IsApplicationConnectorWorkflowVersion(ctx, connectorID, workflowID, version any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsApplicationConnectorWorkflowVersion", reflect.TypeOf((*MockRepository)(nil).IsApplicationConnectorWorkflowVersion), ctx, connectorID, workflowID, version)
+}
+
+// ListConversationTemplate mocks base method.
+func (m *MockRepository) ListConversationTemplate(ctx context.Context, env vo.Env, policy *vo.ListConversationTemplatePolicy) ([]*entity.ConversationTemplate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListConversationTemplate", ctx, env, policy)
+	ret0, _ := ret[0].([]*entity.ConversationTemplate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListConversationTemplate indicates an expected call of ListConversationTemplate.
+func (mr *MockRepositoryMockRecorder) ListConversationTemplate(ctx, env, policy any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListConversationTemplate", reflect.TypeOf((*MockRepository)(nil).ListConversationTemplate), ctx, env, policy)
+}
+
+// ListDynamicConversation mocks base method.
+func (m *MockRepository) ListDynamicConversation(ctx context.Context, env vo.Env, policy *vo.ListConversationPolicy) ([]*entity.DynamicConversation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListDynamicConversation", ctx, env, policy)
+	ret0, _ := ret[0].([]*entity.DynamicConversation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListDynamicConversation indicates an expected call of ListDynamicConversation.
+func (mr *MockRepositoryMockRecorder) ListDynamicConversation(ctx, env, policy any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDynamicConversation", reflect.TypeOf((*MockRepository)(nil).ListDynamicConversation), ctx, env, policy)
 }
 
 // ListInterruptEvents mocks base method.
@@ -1068,6 +1536,21 @@ func (m *MockRepository) MGetReferences(ctx context.Context, policy *vo.MGetRefe
 func (mr *MockRepositoryMockRecorder) MGetReferences(ctx, policy any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MGetReferences", reflect.TypeOf((*MockRepository)(nil).MGetReferences), ctx, policy)
+}
+
+// MGetStaticConversation mocks base method.
+func (m *MockRepository) MGetStaticConversation(ctx context.Context, env vo.Env, userID, connectorID int64, templateIDs []int64) ([]*entity.StaticConversation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MGetStaticConversation", ctx, env, userID, connectorID, templateIDs)
+	ret0, _ := ret[0].([]*entity.StaticConversation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MGetStaticConversation indicates an expected call of MGetStaticConversation.
+func (mr *MockRepositoryMockRecorder) MGetStaticConversation(ctx, env, userID, connectorID, templateIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MGetStaticConversation", reflect.TypeOf((*MockRepository)(nil).MGetStaticConversation), ctx, env, userID, connectorID, templateIDs)
 }
 
 // PopFirstInterruptEvent mocks base method.
@@ -1170,6 +1653,48 @@ func (m *MockRepository) TryLockWorkflowExecution(ctx context.Context, wfExeID, 
 func (mr *MockRepositoryMockRecorder) TryLockWorkflowExecution(ctx, wfExeID, resumingEventID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryLockWorkflowExecution", reflect.TypeOf((*MockRepository)(nil).TryLockWorkflowExecution), ctx, wfExeID, resumingEventID)
+}
+
+// UpdateChatFlowRoleConfig mocks base method.
+func (m *MockRepository) UpdateChatFlowRoleConfig(ctx context.Context, workflowID int64, chatFlowRole *vo.ChatFlowRoleUpdate) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateChatFlowRoleConfig", ctx, workflowID, chatFlowRole)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateChatFlowRoleConfig indicates an expected call of UpdateChatFlowRoleConfig.
+func (mr *MockRepositoryMockRecorder) UpdateChatFlowRoleConfig(ctx, workflowID, chatFlowRole any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateChatFlowRoleConfig", reflect.TypeOf((*MockRepository)(nil).UpdateChatFlowRoleConfig), ctx, workflowID, chatFlowRole)
+}
+
+// UpdateDraftConversationTemplateName mocks base method.
+func (m *MockRepository) UpdateDraftConversationTemplateName(ctx context.Context, templateID int64, name string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDraftConversationTemplateName", ctx, templateID, name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateDraftConversationTemplateName indicates an expected call of UpdateDraftConversationTemplateName.
+func (mr *MockRepositoryMockRecorder) UpdateDraftConversationTemplateName(ctx, templateID, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDraftConversationTemplateName", reflect.TypeOf((*MockRepository)(nil).UpdateDraftConversationTemplateName), ctx, templateID, name)
+}
+
+// UpdateDynamicConversationNameByID mocks base method.
+func (m *MockRepository) UpdateDynamicConversationNameByID(ctx context.Context, env vo.Env, templateID int64, name string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDynamicConversationNameByID", ctx, env, templateID, name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateDynamicConversationNameByID indicates an expected call of UpdateDynamicConversationNameByID.
+func (mr *MockRepositoryMockRecorder) UpdateDynamicConversationNameByID(ctx, env, templateID, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDynamicConversationNameByID", reflect.TypeOf((*MockRepository)(nil).UpdateDynamicConversationNameByID), ctx, env, templateID, name)
 }
 
 // UpdateFirstInterruptEvent mocks base method.

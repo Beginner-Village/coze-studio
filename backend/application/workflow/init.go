@@ -25,6 +25,7 @@ import (
 	"github.com/cloudwego/eino/callbacks"
 	"github.com/coze-dev/coze-studio/backend/application/internal"
 
+	wfconversation "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/conversation"
 	wfdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/database"
 	wfknowledge "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/knowledge"
 	wfmodel "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/model"
@@ -38,6 +39,7 @@ import (
 	search "github.com/coze-dev/coze-studio/backend/domain/search/service"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow"
 	crosscode "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/code"
+	crossconversation "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
 	crossdatabase "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/database"
 	crossknowledge "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/knowledge"
 	crossmodel "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/model"
@@ -96,6 +98,7 @@ func InitService(ctx context.Context, components *ServiceComponents) (*Applicati
 	crosscode.SetCodeRunner(components.CodeRunner)
 	crosssearch.SetNotifier(wfsearch.NewNotify(components.DomainNotifier))
 	callbacks.AppendGlobalHandlers(workflowservice.GetTokenCallbackHandler())
+	crossconversation.SetConversationManager(wfconversation.NewConversationRepository())
 
 	SVC.DomainSVC = workflowDomainSVC
 	SVC.ImageX = components.ImageX

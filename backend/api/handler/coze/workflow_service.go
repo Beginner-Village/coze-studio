@@ -555,7 +555,11 @@ func CreateProjectConversationDef(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(workflow.CreateProjectConversationDefResponse)
+	resp, err := appworkflow.SVC.CreateApplicationConversationDef(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -570,8 +574,11 @@ func UpdateProjectConversationDef(ctx context.Context, c *app.RequestContext) {
 		invalidParamRequestResponse(c, err.Error())
 		return
 	}
-
-	resp := new(workflow.UpdateProjectConversationDefResponse)
+	resp, err := appworkflow.SVC.UpdateApplicationConversationDef(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -587,7 +594,11 @@ func DeleteProjectConversationDef(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(workflow.DeleteProjectConversationDefResponse)
+	resp, err := appworkflow.SVC.DeleteApplicationConversationDef(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -603,7 +614,11 @@ func ListProjectConversationDef(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(workflow.ListProjectConversationResponse)
+	resp, err := appworkflow.SVC.ListApplicationConversationDef(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -723,7 +738,11 @@ func GetChatFlowRole(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(workflow.GetChatFlowRoleResponse)
+	resp, err := appworkflow.SVC.GetChatFlowRole(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -738,8 +757,11 @@ func CreateChatFlowRole(ctx context.Context, c *app.RequestContext) {
 		invalidParamRequestResponse(c, err.Error())
 		return
 	}
-
-	resp := new(workflow.CreateChatFlowRoleResponse)
+	resp, err := appworkflow.SVC.CreateChatFlowRole(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }
@@ -755,7 +777,11 @@ func DeleteChatFlowRole(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp := new(workflow.DeleteChatFlowRoleResponse)
+	resp, err := appworkflow.SVC.DeleteChatFlowRole(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
 
 	c.JSON(consts.StatusOK, resp)
 }

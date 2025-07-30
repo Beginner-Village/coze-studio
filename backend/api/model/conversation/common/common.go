@@ -26,6 +26,8 @@ const (
 	Scene_GenerateAgentInfo Scene = 8
 	//openapi
 	Scene_SceneOpenApi Scene = 9
+	// 工作流
+	Scene_SceneWorkflow Scene = 50
 )
 
 func (p Scene) String() string {

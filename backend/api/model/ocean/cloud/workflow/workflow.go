@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/coze-dev/coze-studio/backend/api/model/base"
 )
@@ -473,7 +474,10 @@ const (
 	NodeType_Input               NodeType = 30
 	NodeType_Batch               NodeType = 28
 	NodeType_Continue            NodeType = 29
+	NodeType_MessageList         NodeType = 37
 	NodeType_AssignVariable      NodeType = 40
+	NodeType_ConversationList    NodeType = 53
+	NodeType_CreateMessage       NodeType = 55
 	NodeType_JsonSerialization   NodeType = 58
 	NodeType_JsonDeserialization NodeType = 59
 	NodeType_DatasetDelete       NodeType = 60
@@ -533,8 +537,14 @@ func (p NodeType) String() string {
 		return "Batch"
 	case NodeType_Continue:
 		return "Continue"
+	case NodeType_MessageList:
+		return "MessageList"
 	case NodeType_AssignVariable:
 		return "AssignVariable"
+	case NodeType_ConversationList:
+		return "ConversationList"
+	case NodeType_CreateMessage:
+		return "CreateMessage"
 	case NodeType_JsonSerialization:
 		return "JsonSerialization"
 	case NodeType_JsonDeserialization:
@@ -599,8 +609,14 @@ func NodeTypeFromString(s string) (NodeType, error) {
 		return NodeType_Batch, nil
 	case "Continue":
 		return NodeType_Continue, nil
+	case "MessageList":
+		return NodeType_MessageList, nil
 	case "AssignVariable":
 		return NodeType_AssignVariable, nil
+	case "ConversationList":
+		return NodeType_ConversationList, nil
+	case "CreateMessage":
+		return NodeType_CreateMessage, nil
 	case "JsonSerialization":
 		return NodeType_JsonSerialization, nil
 	case "JsonDeserialization":
@@ -657,11 +673,14 @@ const (
 	NodeTemplateType_Input               NodeTemplateType = 30
 	NodeTemplateType_Batch               NodeTemplateType = 28
 	NodeTemplateType_Continue            NodeTemplateType = 29
+	NodeTemplateType_MessageList         NodeTemplateType = 37
 	NodeTemplateType_AssignVariable      NodeTemplateType = 40
 	NodeTemplateType_DatabaseInsert      NodeTemplateType = 41
 	NodeTemplateType_DatabaseUpdate      NodeTemplateType = 42
 	NodeTemplateType_DatabasesELECT      NodeTemplateType = 43
 	NodeTemplateType_DatabaseDelete      NodeTemplateType = 44
+	NodeTemplateType_ConversationList    NodeTemplateType = 53
+	NodeTemplateType_CreateMessage       NodeTemplateType = 55
 	NodeTemplateType_JsonSerialization   NodeTemplateType = 58
 	NodeTemplateType_JsonDeserialization NodeTemplateType = 59
 	NodeTemplateType_DatasetDelete       NodeTemplateType = 60
@@ -723,6 +742,8 @@ func (p NodeTemplateType) String() string {
 		return "Batch"
 	case NodeTemplateType_Continue:
 		return "Continue"
+	case NodeTemplateType_MessageList:
+		return "MessageList"
 	case NodeTemplateType_AssignVariable:
 		return "AssignVariable"
 	case NodeTemplateType_DatabaseInsert:
@@ -733,6 +754,10 @@ func (p NodeTemplateType) String() string {
 		return "DatabasesELECT"
 	case NodeTemplateType_DatabaseDelete:
 		return "DatabaseDelete"
+	case NodeTemplateType_ConversationList:
+		return "ConversationList"
+	case NodeTemplateType_CreateMessage:
+		return "CreateMessage"
 	case NodeTemplateType_JsonSerialization:
 		return "JsonSerialization"
 	case NodeTemplateType_JsonDeserialization:
@@ -799,6 +824,8 @@ func NodeTemplateTypeFromString(s string) (NodeTemplateType, error) {
 		return NodeTemplateType_Batch, nil
 	case "Continue":
 		return NodeTemplateType_Continue, nil
+	case "MessageList":
+		return NodeTemplateType_MessageList, nil
 	case "AssignVariable":
 		return NodeTemplateType_AssignVariable, nil
 	case "DatabaseInsert":
@@ -809,6 +836,10 @@ func NodeTemplateTypeFromString(s string) (NodeTemplateType, error) {
 		return NodeTemplateType_DatabasesELECT, nil
 	case "DatabaseDelete":
 		return NodeTemplateType_DatabaseDelete, nil
+	case "ConversationList":
+		return NodeTemplateType_ConversationList, nil
+	case "CreateMessage":
+		return NodeTemplateType_CreateMessage, nil
 	case "JsonSerialization":
 		return NodeTemplateType_JsonSerialization, nil
 	case "JsonDeserialization":
@@ -64103,7 +64134,7 @@ func (p *ChatFlowRole) String() string {
 }
 
 type CreateChatFlowRoleRequest struct {
-	ChatFlowRole *ChatFlowRole `thrift:"ChatFlowRole,1" json:"chat_flow_role" form:"ChatFlowRole" query:"ChatFlowRole"`
+	ChatFlowRole *ChatFlowRole `thrift:"ChatFlowRole,1" json:"chat_flow_role" query:"chat_flow_role" `
 	Base         *base.Base    `thrift:"Base,255,optional" form:"Base" json:"Base,omitempty" query:"Base"`
 }
 
@@ -64301,8 +64332,10 @@ func (p *CreateChatFlowRoleRequest) String() string {
 }
 
 type CreateChatFlowRoleResponse struct {
-	// ID in the database
-	ID       string         `thrift:"ID,1" form:"ID" json:"ID" query:"ID"`
+	// 数据库中ID
+	ID       string         `thrift:"ID,1" json:"id" query:"id" `
+	Code     int64          `thrift:"code,253,required" form:"code,required" json:"code,required" query:"code,required"`
+	Msg      string         `thrift:"msg,254,required" form:"msg,required" json:"msg,required" query:"msg,required"`
 	BaseResp *base.BaseResp `thrift:"BaseResp,255,required" form:"BaseResp,required" json:"BaseResp,required" query:"BaseResp,required"`
 }
 
@@ -64317,6 +64350,14 @@ func (p *CreateChatFlowRoleResponse) GetID() (v string) {
 	return p.ID
 }
 
+func (p *CreateChatFlowRoleResponse) GetCode() (v int64) {
+	return p.Code
+}
+
+func (p *CreateChatFlowRoleResponse) GetMsg() (v string) {
+	return p.Msg
+}
+
 var CreateChatFlowRoleResponse_BaseResp_DEFAULT *base.BaseResp
 
 func (p *CreateChatFlowRoleResponse) GetBaseResp() (v *base.BaseResp) {
@@ -64328,6 +64369,8 @@ func (p *CreateChatFlowRoleResponse) GetBaseResp() (v *base.BaseResp) {
 
 var fieldIDToName_CreateChatFlowRoleResponse = map[int16]string{
 	1:   "ID",
+	253: "code",
+	254: "msg",
 	255: "BaseResp",
 }
 
@@ -64338,6 +64381,8 @@ func (p *CreateChatFlowRoleResponse) IsSetBaseResp() bool {
 func (p *CreateChatFlowRoleResponse) Read(iprot thrift.TProtocol) (err error) {
 	var fieldTypeId thrift.TType
 	var fieldId int16
+	var issetCode bool = false
+	var issetMsg bool = false
 	var issetBaseResp bool = false
 
 	if _, err = iprot.ReadStructBegin(); err != nil {
@@ -64362,6 +64407,24 @@ func (p *CreateChatFlowRoleResponse) Read(iprot thrift.TProtocol) (err error) {
 			} else if err = iprot.Skip(fieldTypeId); err != nil {
 				goto SkipFieldError
 			}
+		case 253:
+			if fieldTypeId == thrift.I64 {
+				if err = p.ReadField253(iprot); err != nil {
+					goto ReadFieldError
+				}
+				issetCode = true
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		case 254:
+			if fieldTypeId == thrift.STRING {
+				if err = p.ReadField254(iprot); err != nil {
+					goto ReadFieldError
+				}
+				issetMsg = true
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
 		case 255:
 			if fieldTypeId == thrift.STRUCT {
 				if err = p.ReadField255(iprot); err != nil {
@@ -64382,6 +64445,16 @@ func (p *CreateChatFlowRoleResponse) Read(iprot thrift.TProtocol) (err error) {
 	}
 	if err = iprot.ReadStructEnd(); err != nil {
 		goto ReadStructEndError
+	}
+
+	if !issetCode {
+		fieldId = 253
+		goto RequiredFieldNotSetError
+	}
+
+	if !issetMsg {
+		fieldId = 254
+		goto RequiredFieldNotSetError
 	}
 
 	if !issetBaseResp {
@@ -64417,6 +64490,28 @@ func (p *CreateChatFlowRoleResponse) ReadField1(iprot thrift.TProtocol) error {
 	p.ID = _field
 	return nil
 }
+func (p *CreateChatFlowRoleResponse) ReadField253(iprot thrift.TProtocol) error {
+
+	var _field int64
+	if v, err := iprot.ReadI64(); err != nil {
+		return err
+	} else {
+		_field = v
+	}
+	p.Code = _field
+	return nil
+}
+func (p *CreateChatFlowRoleResponse) ReadField254(iprot thrift.TProtocol) error {
+
+	var _field string
+	if v, err := iprot.ReadString(); err != nil {
+		return err
+	} else {
+		_field = v
+	}
+	p.Msg = _field
+	return nil
+}
 func (p *CreateChatFlowRoleResponse) ReadField255(iprot thrift.TProtocol) error {
 	_field := base.NewBaseResp()
 	if err := _field.Read(iprot); err != nil {
@@ -64434,6 +64529,14 @@ func (p *CreateChatFlowRoleResponse) Write(oprot thrift.TProtocol) (err error) {
 	if p != nil {
 		if err = p.writeField1(oprot); err != nil {
 			fieldId = 1
+			goto WriteFieldError
+		}
+		if err = p.writeField253(oprot); err != nil {
+			fieldId = 253
+			goto WriteFieldError
+		}
+		if err = p.writeField254(oprot); err != nil {
+			fieldId = 254
 			goto WriteFieldError
 		}
 		if err = p.writeField255(oprot); err != nil {
@@ -64473,6 +64576,38 @@ WriteFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
 WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
+}
+func (p *CreateChatFlowRoleResponse) writeField253(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("code", thrift.I64, 253); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := oprot.WriteI64(p.Code); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 253 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 253 end error: ", p), err)
+}
+func (p *CreateChatFlowRoleResponse) writeField254(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("msg", thrift.STRING, 254); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := oprot.WriteString(p.Msg); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 254 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 254 end error: ", p), err)
 }
 func (p *CreateChatFlowRoleResponse) writeField255(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("BaseResp", thrift.STRUCT, 255); err != nil {
@@ -64936,12 +65071,12 @@ func (p *DeleteChatFlowRoleResponse) String() string {
 }
 
 type GetChatFlowRoleRequest struct {
-	WorkflowID  string `thrift:"WorkflowID,1" form:"WorkflowID" json:"WorkflowID" query:"WorkflowID"`
-	ConnectorID string `thrift:"ConnectorID,2" form:"ConnectorID" json:"ConnectorID" query:"ConnectorID"`
-	IsDebug     bool   `thrift:"IsDebug,3" form:"IsDebug" json:"IsDebug" query:"IsDebug"`
+	WorkflowID  string `thrift:"WorkflowID,1" json:"workflow_id" query:"workflow_id" `
+	ConnectorID string `thrift:"ConnectorID,2" json:"connector_id" query:"connector_id" `
+	IsDebug     bool   `thrift:"IsDebug,3" json:"is_debug" query:"is_debug" `
 	//    4: optional string AppID (api.query = "app_id")
 	Ext  map[string]string `thrift:"Ext,5,optional" json:"Ext,omitempty" query:"ext"`
-	Base *base.Base        `thrift:"Base,255,optional" form:"Base" json:"Base,omitempty" query:"Base"`
+	Base *base.Base        `thrift:"Base,255,optional" json:"base" query:"base" `
 }
 
 func NewGetChatFlowRoleRequest() *GetChatFlowRoleRequest {
@@ -65304,8 +65439,10 @@ func (p *GetChatFlowRoleRequest) String() string {
 }
 
 type GetChatFlowRoleResponse struct {
-	Role     *ChatFlowRole  `thrift:"Role,1,optional" form:"Role" json:"Role,omitempty" query:"Role"`
-	BaseResp *base.BaseResp `thrift:"BaseResp,255,required" form:"BaseResp,required" json:"BaseResp,required" query:"BaseResp,required"`
+	Code     int64          `thrift:"code,1,required" form:"code,required" json:"code,required" query:"code,required"`
+	Msg      string         `thrift:"msg,2,required" form:"msg,required" json:"msg,required" query:"msg,required"`
+	Role     *ChatFlowRole  `thrift:"Role,3,optional" json:"role" query:"role" `
+	BaseResp *base.BaseResp `thrift:"BaseResp,255,required" json:"base_resp" query:"base_resp,required" `
 }
 
 func NewGetChatFlowRoleResponse() *GetChatFlowRoleResponse {
@@ -65313,6 +65450,14 @@ func NewGetChatFlowRoleResponse() *GetChatFlowRoleResponse {
 }
 
 func (p *GetChatFlowRoleResponse) InitDefault() {
+}
+
+func (p *GetChatFlowRoleResponse) GetCode() (v int64) {
+	return p.Code
+}
+
+func (p *GetChatFlowRoleResponse) GetMsg() (v string) {
+	return p.Msg
 }
 
 var GetChatFlowRoleResponse_Role_DEFAULT *ChatFlowRole
@@ -65334,7 +65479,9 @@ func (p *GetChatFlowRoleResponse) GetBaseResp() (v *base.BaseResp) {
 }
 
 var fieldIDToName_GetChatFlowRoleResponse = map[int16]string{
-	1:   "Role",
+	1:   "code",
+	2:   "msg",
+	3:   "Role",
 	255: "BaseResp",
 }
 
@@ -65349,6 +65496,8 @@ func (p *GetChatFlowRoleResponse) IsSetBaseResp() bool {
 func (p *GetChatFlowRoleResponse) Read(iprot thrift.TProtocol) (err error) {
 	var fieldTypeId thrift.TType
 	var fieldId int16
+	var issetCode bool = false
+	var issetMsg bool = false
 	var issetBaseResp bool = false
 
 	if _, err = iprot.ReadStructBegin(); err != nil {
@@ -65366,8 +65515,26 @@ func (p *GetChatFlowRoleResponse) Read(iprot thrift.TProtocol) (err error) {
 
 		switch fieldId {
 		case 1:
-			if fieldTypeId == thrift.STRUCT {
+			if fieldTypeId == thrift.I64 {
 				if err = p.ReadField1(iprot); err != nil {
+					goto ReadFieldError
+				}
+				issetCode = true
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		case 2:
+			if fieldTypeId == thrift.STRING {
+				if err = p.ReadField2(iprot); err != nil {
+					goto ReadFieldError
+				}
+				issetMsg = true
+			} else if err = iprot.Skip(fieldTypeId); err != nil {
+				goto SkipFieldError
+			}
+		case 3:
+			if fieldTypeId == thrift.STRUCT {
+				if err = p.ReadField3(iprot); err != nil {
 					goto ReadFieldError
 				}
 			} else if err = iprot.Skip(fieldTypeId); err != nil {
@@ -65395,6 +65562,16 @@ func (p *GetChatFlowRoleResponse) Read(iprot thrift.TProtocol) (err error) {
 		goto ReadStructEndError
 	}
 
+	if !issetCode {
+		fieldId = 1
+		goto RequiredFieldNotSetError
+	}
+
+	if !issetMsg {
+		fieldId = 2
+		goto RequiredFieldNotSetError
+	}
+
 	if !issetBaseResp {
 		fieldId = 255
 		goto RequiredFieldNotSetError
@@ -65418,6 +65595,28 @@ RequiredFieldNotSetError:
 }
 
 func (p *GetChatFlowRoleResponse) ReadField1(iprot thrift.TProtocol) error {
+
+	var _field int64
+	if v, err := iprot.ReadI64(); err != nil {
+		return err
+	} else {
+		_field = v
+	}
+	p.Code = _field
+	return nil
+}
+func (p *GetChatFlowRoleResponse) ReadField2(iprot thrift.TProtocol) error {
+
+	var _field string
+	if v, err := iprot.ReadString(); err != nil {
+		return err
+	} else {
+		_field = v
+	}
+	p.Msg = _field
+	return nil
+}
+func (p *GetChatFlowRoleResponse) ReadField3(iprot thrift.TProtocol) error {
 	_field := NewChatFlowRole()
 	if err := _field.Read(iprot); err != nil {
 		return err
@@ -65444,6 +65643,14 @@ func (p *GetChatFlowRoleResponse) Write(oprot thrift.TProtocol) (err error) {
 			fieldId = 1
 			goto WriteFieldError
 		}
+		if err = p.writeField2(oprot); err != nil {
+			fieldId = 2
+			goto WriteFieldError
+		}
+		if err = p.writeField3(oprot); err != nil {
+			fieldId = 3
+			goto WriteFieldError
+		}
 		if err = p.writeField255(oprot); err != nil {
 			fieldId = 255
 			goto WriteFieldError
@@ -65467,8 +65674,40 @@ WriteStructEndError:
 }
 
 func (p *GetChatFlowRoleResponse) writeField1(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("code", thrift.I64, 1); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := oprot.WriteI64(p.Code); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
+}
+func (p *GetChatFlowRoleResponse) writeField2(oprot thrift.TProtocol) (err error) {
+	if err = oprot.WriteFieldBegin("msg", thrift.STRING, 2); err != nil {
+		goto WriteFieldBeginError
+	}
+	if err := oprot.WriteString(p.Msg); err != nil {
+		return err
+	}
+	if err = oprot.WriteFieldEnd(); err != nil {
+		goto WriteFieldEndError
+	}
+	return nil
+WriteFieldBeginError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 2 begin error: ", p), err)
+WriteFieldEndError:
+	return thrift.PrependError(fmt.Sprintf("%T write field 2 end error: ", p), err)
+}
+func (p *GetChatFlowRoleResponse) writeField3(oprot thrift.TProtocol) (err error) {
 	if p.IsSetRole() {
-		if err = oprot.WriteFieldBegin("Role", thrift.STRUCT, 1); err != nil {
+		if err = oprot.WriteFieldBegin("Role", thrift.STRUCT, 3); err != nil {
 			goto WriteFieldBeginError
 		}
 		if err := p.Role.Write(oprot); err != nil {
@@ -65480,9 +65719,9 @@ func (p *GetChatFlowRoleResponse) writeField1(oprot thrift.TProtocol) (err error
 	}
 	return nil
 WriteFieldBeginError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 begin error: ", p), err)
+	return thrift.PrependError(fmt.Sprintf("%T write field 3 begin error: ", p), err)
 WriteFieldEndError:
-	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
+	return thrift.PrependError(fmt.Sprintf("%T write field 3 end error: ", p), err)
 }
 func (p *GetChatFlowRoleResponse) writeField255(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("BaseResp", thrift.STRUCT, 255); err != nil {
