@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/coze-dev/coze-studio/backend/domain/workflow"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
@@ -175,7 +174,7 @@ func (m *MessageList) List(ctx context.Context, input map[string]any) (map[strin
 
 	var messageList []any
 	for _, msg := range ml.Messages {
-		content, err := convertMessageToString(ctx, msg)
+		content, err := ConvertMessageToString(ctx, msg)
 		if err != nil {
 			return nil, err
 		}
@@ -204,32 +203,5 @@ func (m *MessageList) List(ctx context.Context, input map[string]any) (map[strin
 		"lastId":      lastId,
 		"hasMore":     ml.HasMore,
 	}, nil
-
-}
-
-func convertMessageToString(ctx context.Context, msg *conversation.Message) (string, error) {
-	if msg.MultiContent != nil {
-		sb := strings.Builder{}
-		for idx, m := range msg.MultiContent {
-			if m.Uri != nil {
-				url, err := workflow.GetRepository().GetObjectUrl(ctx, ptr.From(m.Uri))
-				if err != nil {
-					return "", err
-				}
-				sb.WriteString(url)
-
-			} else if m.Text != nil {
-				sb.WriteString(ptr.From(m.Text))
-			}
-			if idx < len(msg.MultiContent)-1 {
-				sb.WriteString(",")
-			}
-		}
-		return sb.String(), nil
-	} else if msg.Text != nil {
-		return ptr.From(msg.Text), nil
-	} else {
-		return "", vo.WrapError(errno.ErrInvalidParameter, errors.New("message is invalid"))
-	}
 
 }

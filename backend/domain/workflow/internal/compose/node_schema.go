@@ -138,7 +138,11 @@ func (s *NodeSchema) New(ctx context.Context, inner compose.Runnable[map[string]
 			return nil, err
 		}
 
-		return invokableStreamableNodeWO(s, l.Chat, l.ChatStream, withCallbackOutputConverter(l.ToCallbackOutput)), nil
+		initFn := func(ctx context.Context) (context.Context, error) {
+			return ctxcache.Init(ctx), nil
+		}
+
+		return invokableStreamableNodeWO(s, l.Chat, l.ChatStream, withCallbackInputConverter(l.ToCallbackInput), withCallbackOutputConverter(l.ToCallbackOutput), withInit(initFn)), nil
 	case entity.NodeTypeSelector:
 		conf := s.ToSelectorConfig()
 
@@ -389,7 +393,10 @@ func (s *NodeSchema) New(ctx context.Context, inner compose.Runnable[map[string]
 		if err != nil {
 			return nil, err
 		}
-		return invokableNode(s, r.Retrieve), nil
+		initFn := func(ctx context.Context) (context.Context, error) {
+			return ctxcache.Init(ctx), nil
+		}
+		return invokableNode(s, r.Retrieve, withCallbackInputConverter(r.ToCallbackInput), withInit(initFn)), nil
 	case entity.NodeTypeKnowledgeDeleter:
 		conf, err := s.ToKnowledgeDeleterConfig()
 		if err != nil {
@@ -527,8 +534,10 @@ func (s *NodeSchema) New(ctx context.Context, inner compose.Runnable[map[string]
 		if err != nil {
 			return nil, err
 		}
-
-		return invokableNode(s, r.Invoke), nil
+		initFn := func(ctx context.Context) (context.Context, error) {
+			return ctxcache.Init(ctx), nil
+		}
+		return invokableNode(s, r.Invoke, withCallbackInputConverter(r.ToCallbackInput), withInit(initFn)), nil
 	case entity.NodeTypeSubWorkflow:
 		conf, err := s.ToSubWorkflowConfig(ctx, sc.requireCheckPoint)
 		if err != nil {
@@ -603,6 +612,9 @@ func (s *NodeSchema) IsEnableChatHistory() bool {
 	case entity.NodeTypeIntentDetector:
 		llmParam := mustGetKey[*model.LLMParams]("LLMParams", s.Configs)
 		return llmParam.EnableChatHistory
+	case entity.NodeTypeKnowledgeRetriever:
+		chatHistorySetting := getKeyOrZero[*vo.ChatHistorySetting]("ChatHistorySetting", s.Configs)
+		return chatHistorySetting != nil && chatHistorySetting.EnableChatHistory
 	default:
 		return false
 	}

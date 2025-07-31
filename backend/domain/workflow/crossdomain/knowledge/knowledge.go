@@ -19,6 +19,7 @@ package knowledge
 import (
 	"context"
 
+	"github.com/cloudwego/eino/schema"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/document/parser"
 )
 
@@ -87,6 +88,7 @@ type RetrieveRequest struct {
 	Query             string
 	KnowledgeIDs      []int64
 	RetrievalStrategy *RetrievalStrategy
+	ChatHistory       []*schema.Message
 }
 
 type Slice struct {

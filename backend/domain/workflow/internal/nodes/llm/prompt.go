@@ -23,12 +23,16 @@ import (
 	"github.com/cloudwego/eino/components/prompt"
 	"github.com/cloudwego/eino/schema"
 
+	oceanworkflow "github.com/coze-dev/coze-studio/backend/api/model/ocean/cloud/workflow"
+	"github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/execute"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes"
+	nodesconversation "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/conversation"
 	schema2 "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
 	"github.com/coze-dev/coze-studio/backend/pkg/ctxcache"
+	"github.com/coze-dev/coze-studio/backend/pkg/logs"
 	"github.com/coze-dev/coze-studio/backend/pkg/sonic"
 )
 
@@ -36,6 +40,11 @@ type prompts struct {
 	sp  *promptTpl
 	up  *promptTpl
 	mwi ModelWithInfo
+}
+
+type promptsWithChatHistory struct {
+	prompts *prompts
+	cfg     *vo.ChatHistorySetting
 }
 
 type promptTpl struct {
@@ -104,6 +113,13 @@ func newPrompts(sp, up *promptTpl, model ModelWithInfo) *prompts {
 		sp:  sp,
 		up:  up,
 		mwi: model,
+	}
+}
+
+func newPromptsWithChatHistory(prompts *prompts, cfg *vo.ChatHistorySetting) *promptsWithChatHistory {
+	return &promptsWithChatHistory{
+		prompts: prompts,
+		cfg:     cfg,
 	}
 }
 
@@ -287,4 +303,60 @@ func (p *prompts) Format(ctx context.Context, vs map[string]any, _ ...prompt.Opt
 	}
 
 	return []*schema.Message{systemMsg, userMsg}, nil
+}
+
+func (p *promptsWithChatHistory) Format(ctx context.Context, vs map[string]any, _ ...prompt.Option) (
+	[]*schema.Message, error) {
+	baseMessages, err := p.prompts.Format(ctx, vs)
+	if err != nil {
+		return nil, err
+	}
+	if p.cfg == nil || !p.cfg.EnableChatHistory {
+		return baseMessages, nil
+	}
+
+	exeCtx := execute.GetExeCtx(ctx)
+	if exeCtx == nil {
+		logs.CtxWarnf(ctx, "execute context is nil, skipping chat history")
+		return baseMessages, nil
+	}
+
+	if exeCtx.ExeCfg.WorkflowMode != oceanworkflow.WorkflowMode_ChatFlow {
+		return baseMessages, nil
+	}
+
+	historyFromCtx, ok := ctxcache.Get[[]*conversation.Message](ctx, chatHistoryKey)
+	var messages []*conversation.Message
+	if ok {
+		messages = historyFromCtx
+	}
+
+	if len(messages) == 0 {
+		logs.CtxWarnf(ctx, "conversation history is empty")
+		return baseMessages, nil
+	}
+
+	historyMessages := make([]*schema.Message, 0, len(messages))
+	for _, msg := range messages {
+		schemaMsg, err := nodesconversation.ConvertMessageToSchema(ctx, msg)
+		if err != nil {
+			logs.CtxWarnf(ctx, "failed to convert history message, skipping: %v", err)
+			continue
+		}
+		historyMessages = append(historyMessages, schemaMsg)
+	}
+
+	if len(historyMessages) == 0 {
+		return baseMessages, nil
+	}
+
+	finalMessages := make([]*schema.Message, 0, len(baseMessages)+len(historyMessages))
+	if len(baseMessages) > 0 && baseMessages[0].Role == schema.System {
+		finalMessages = append(finalMessages, baseMessages[0])
+		baseMessages = baseMessages[1:]
+	}
+	finalMessages = append(finalMessages, historyMessages...)
+	finalMessages = append(finalMessages, baseMessages...)
+
+	return finalMessages, nil
 }

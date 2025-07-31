@@ -108,7 +108,8 @@ type Data struct {
 type Inputs struct {
 	// InputParameters are the fields defined by user for this particular node.
 	InputParameters []*Param `json:"inputParameters"`
-
+	// ChatHistorySetting configures the chat history setting for this node in chatflow mode.
+	ChatHistorySetting *ChatHistorySetting `json:"chatHistorySetting,omitempty"`
 	// SettingOnError configures common error handling strategy for nodes.
 	// NOTE: enable in frontend node's form first.
 	SettingOnError *SettingOnError `json:"settingOnError,omitempty"`
@@ -432,9 +433,8 @@ type DatabaseInfo struct {
 }
 
 type IntentDetector struct {
-	ChatHistorySetting *ChatHistorySetting `json:"chatHistorySetting,omitempty"`
-	Intents            []*Intent           `json:"intents,omitempty"`
-	Mode               string              `json:"mode,omitempty"`
+	Intents []*Intent `json:"intents,omitempty"`
+	Mode    string    `json:"mode,omitempty"`
 }
 type ChatHistorySetting struct {
 	EnableChatHistory bool  `json:"enableChatHistory,omitempty"`

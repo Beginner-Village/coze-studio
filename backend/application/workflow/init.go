@@ -19,10 +19,10 @@ package workflow
 import (
 	"context"
 
+	"github.com/cloudwego/eino/callbacks"
 	"github.com/cloudwego/eino/compose"
 	"gorm.io/gorm"
 
-	"github.com/cloudwego/eino/callbacks"
 	"github.com/coze-dev/coze-studio/backend/application/internal"
 
 	wfconversation "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/conversation"

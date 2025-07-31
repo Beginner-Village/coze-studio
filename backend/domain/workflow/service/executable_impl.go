@@ -61,6 +61,8 @@ func (i *impl) SyncExecute(ctx context.Context, config vo.ExecuteConfig, input m
 		return nil, "", err
 	}
 
+	config.WorkflowMode = wfEntity.Mode
+
 	isApplicationWorkflow := wfEntity.AppID != nil
 	if isApplicationWorkflow && config.Mode == vo.ExecuteModeRelease {
 		err = i.checkApplicationWorkflowReleaseVersion(ctx, *wfEntity.AppID, config.ConnectorID, config.ID, config.Version)
@@ -206,6 +208,8 @@ func (i *impl) AsyncExecute(ctx context.Context, config vo.ExecuteConfig, input 
 		return 0, err
 	}
 
+	config.WorkflowMode = wfEntity.Mode
+
 	isApplicationWorkflow := wfEntity.AppID != nil
 	if isApplicationWorkflow && config.Mode == vo.ExecuteModeRelease {
 		err = i.checkApplicationWorkflowReleaseVersion(ctx, *wfEntity.AppID, config.ConnectorID, config.ID, config.Version)
@@ -290,6 +294,8 @@ func (i *impl) AsyncExecuteNode(ctx context.Context, nodeID string, config vo.Ex
 	if err != nil {
 		return 0, err
 	}
+
+	config.WorkflowMode = wfEntity.Mode
 
 	isApplicationWorkflow := wfEntity.AppID != nil
 	if isApplicationWorkflow && config.Mode == vo.ExecuteModeRelease {

@@ -127,6 +127,7 @@ func (k *Knowledge) Retrieve(ctx context.Context, r *crossknowledge.RetrieveRequ
 		Query:        r.Query,
 		KnowledgeIDs: r.KnowledgeIDs,
 		Strategy:     rs,
+		ChatHistory:  r.ChatHistory,
 	}
 
 	response, err := k.client.Retrieve(ctx, req)

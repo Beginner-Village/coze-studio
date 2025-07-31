@@ -124,6 +124,10 @@ func (ch *ConversationHistory) HistoryMessages(ctx context.Context, input map[st
 		Rounds:         rounds,
 	})
 
+	if err != nil {
+		return nil, vo.WrapError(errno.ErrConversationNodesNotAvailable, err)
+	}
+
 	var messageList []any
 	if len(runIDs) == 0 {
 		return map[string]any{
@@ -140,10 +144,6 @@ func (ch *ConversationHistory) HistoryMessages(ctx context.Context, input map[st
 		runIDs = runIDs[1:] // chatflow needs to filter out this session
 	}
 
-	if err != nil {
-		return nil, vo.WrapError(errno.ErrConversationNodesNotAvailable, err)
-	}
-
 	response, err := ch.cfg.Manager.GetMessagesByRunIDs(ctx, &conversation.GetMessagesByRunIDsRequest{
 		ConversationID: conversationID,
 		RunIDs:         runIDs,
@@ -153,7 +153,7 @@ func (ch *ConversationHistory) HistoryMessages(ctx context.Context, input map[st
 	}
 
 	for _, msg := range response.Messages {
-		content, err := convertMessageToString(ctx, msg)
+		content, err := ConvertMessageToString(ctx, msg)
 		if err != nil {
 			return nil, vo.WrapError(errno.ErrConversationNodesNotAvailable, err)
 		}

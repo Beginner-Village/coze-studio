@@ -33,16 +33,19 @@ import (
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/canvas/convert"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes"
+	nodesconversation "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/conversation"
 	schema2 "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ternary"
+	"github.com/coze-dev/coze-studio/backend/pkg/logs"
 	"github.com/coze-dev/coze-studio/backend/pkg/sonic"
 )
 
 type Config struct {
-	Intents      []string
-	SystemPrompt string
-	IsFastMode   bool
-	LLMParams    *model.LLMParams
+	Intents            []string
+	SystemPrompt       string
+	IsFastMode         bool
+	LLMParams          *model.LLMParams
+	ChatHistorySetting *vo.ChatHistorySetting
 }
 
 func (c *Config) Adapt(_ context.Context, n *vo.Node, _ ...nodes.AdaptOption) (*schema2.NodeSchema, error) {
@@ -140,10 +143,11 @@ func (c *Config) Build(ctx context.Context, _ *schema2.NodeSchema, _ ...schema2.
 		&schema.Message{Content: sptTemplate, Role: schema.System},
 		&schema.Message{Content: "{{query}}", Role: schema.User})
 
-	r, err := chain.AppendChatTemplate(prompts).AppendChatModel(m).Compile(ctx)
+	r, err := chain.AppendChatTemplate(newHistoryChatTemplate(prompts, c.ChatHistorySetting)).AppendChatModel(m).Compile(ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	return &IntentDetector{
 		isFastMode:   c.IsFastMode,
 		systemPrompt: c.SystemPrompt,
@@ -180,6 +184,10 @@ func (c *Config) ExpectPorts(ctx context.Context, n *vo.Node) []string {
 	}
 	return expects
 }
+
+type contextKey string
+
+const chatHistoryKey contextKey = "chatHistory"
 
 const SystemIntentPrompt = `
 # Role
@@ -239,9 +247,10 @@ Note:
 const classificationID = "classificationId"
 
 type IntentDetector struct {
-	isFastMode   bool
-	systemPrompt string
-	runner       compose.Runnable[map[string]any, *schema.Message]
+	isFastMode         bool
+	systemPrompt       string
+	runner             compose.Runnable[map[string]any, *schema.Message]
+	ChatHistorySetting *vo.ChatHistorySetting
 }
 
 func (id *IntentDetector) parseToNodeOut(content string) (map[string]any, error) {
@@ -318,4 +327,25 @@ func toIntentString(its []string) (string, error) {
 	}
 
 	return sonic.MarshalString(vs)
+}
+
+func (id *IntentDetector) ToCallbackInput(ctx context.Context, in map[string]any) (map[string]any, error) {
+	if id.ChatHistorySetting == nil || !id.ChatHistorySetting.EnableChatHistory {
+		return in, nil
+	}
+
+	historyMessages, err := nodesconversation.GetConversationHistoryFromCtx(ctx, id.ChatHistorySetting.ChatHistoryRound)
+	if err != nil {
+		logs.CtxErrorf(ctx, "failed to get conversation history: %v", err)
+		return in, nil
+	}
+	if historyMessages == nil {
+		return in, nil
+	}
+
+	ret := map[string]any{
+		"chatHistory": historyMessages,
+		"query":       in["query"],
+	}
+	return ret, nil
 }

@@ -97,6 +97,13 @@ func (s *NodeSchema) ToLLMConfig(ctx context.Context) (*llm.Config, error) {
 		modelWithInfo        llm.ModelWithInfo
 	)
 
+	if llmParams.EnableChatHistory {
+		llmConf.ChatHistorySetting = &vo.ChatHistorySetting{
+			EnableChatHistory: llmParams.EnableChatHistory,
+			ChatHistoryRound:  llmParams.ChatHistoryRound,
+		}
+	}
+
 	chatModel, info, err = model.GetManager().GetModel(ctx, llmParams)
 	if err != nil {
 		return nil, err
@@ -557,9 +564,10 @@ func (s *NodeSchema) ToKnowledgeIndexerConfig() (*knowledge.IndexerConfig, error
 
 func (s *NodeSchema) ToKnowledgeRetrieveConfig() (*knowledge.RetrieveConfig, error) {
 	return &knowledge.RetrieveConfig{
-		KnowledgeIDs:      mustGetKey[[]int64]("KnowledgeIDs", s.Configs),
-		RetrievalStrategy: mustGetKey[*crossknowledge.RetrievalStrategy]("RetrievalStrategy", s.Configs),
-		Retriever:         crossknowledge.GetKnowledgeOperator(),
+		KnowledgeIDs:       mustGetKey[[]int64]("KnowledgeIDs", s.Configs),
+		RetrievalStrategy:  mustGetKey[*crossknowledge.RetrievalStrategy]("RetrievalStrategy", s.Configs),
+		Retriever:          crossknowledge.GetKnowledgeOperator(),
+		ChatHistorySetting: getKeyOrZero[*vo.ChatHistorySetting]("ChatHistorySetting", s.Configs),
 	}, nil
 }
 
@@ -632,9 +640,10 @@ func (s *NodeSchema) ToConversationHistoryConfig() (*conversation.ConversationHi
 
 func (s *NodeSchema) ToIntentDetectorConfig(ctx context.Context) (*intentdetector.Config, error) {
 	cfg := &intentdetector.Config{
-		Intents:      mustGetKey[[]string]("Intents", s.Configs),
-		SystemPrompt: getKeyOrZero[string]("SystemPrompt", s.Configs),
-		IsFastMode:   getKeyOrZero[bool]("IsFastMode", s.Configs),
+		Intents:            mustGetKey[[]string]("Intents", s.Configs),
+		SystemPrompt:       getKeyOrZero[string]("SystemPrompt", s.Configs),
+		IsFastMode:         getKeyOrZero[bool]("IsFastMode", s.Configs),
+		ChatHistorySetting: getKeyOrZero[*vo.ChatHistorySetting]("ChatHistorySetting", s.Configs),
 	}
 
 	llmParams := mustGetKey[*model.LLMParams]("LLMParams", s.Configs)
