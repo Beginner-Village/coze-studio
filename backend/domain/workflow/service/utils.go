@@ -23,10 +23,13 @@ import (
 	"strings"
 
 	cloudworkflow "github.com/coze-dev/coze-studio/backend/api/model/ocean/cloud/workflow"
+	"github.com/coze-dev/coze-studio/backend/domain/workflow"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/variable"
+	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/canvas/adaptor"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/canvas/validate"
+	"github.com/coze-dev/coze-studio/backend/pkg/lang/ternary"
 	"github.com/coze-dev/coze-studio/backend/pkg/sonic"
 	"github.com/coze-dev/coze-studio/backend/types/errno"
 )
@@ -196,4 +199,68 @@ func isIncremental(prev version, next version) bool {
 	}
 
 	return next.Patch > prev.Patch
+}
+
+func GetAllNodesRecursively(ctx context.Context, wfEntity *entity.Workflow, repo workflow.Repository) ([]*vo.Node, error) {
+	visited := make(map[string]struct{})
+	allNodes := make([]*vo.Node, 0)
+	err := getAllNodesRecursiveHelper(ctx, wfEntity, repo, visited, &allNodes)
+	return allNodes, err
+}
+
+func getAllNodesRecursiveHelper(ctx context.Context, wfEntity *entity.Workflow, repo workflow.Repository, visited map[string]struct{}, allNodes *[]*vo.Node) error {
+	visitedKey := fmt.Sprintf("%d:%s", wfEntity.ID, wfEntity.GetVersion())
+	if _, ok := visited[visitedKey]; ok {
+		return nil
+	}
+	visited[visitedKey] = struct{}{}
+
+	var canvas vo.Canvas
+	if err := sonic.UnmarshalString(wfEntity.Canvas, &canvas); err != nil {
+		return fmt.Errorf("failed to unmarshal canvas for workflow %d: %w", wfEntity.ID, err)
+	}
+
+	return collectNodes(ctx, canvas.Nodes, repo, visited, allNodes)
+}
+
+func collectNodes(ctx context.Context, nodes []*vo.Node, repo workflow.Repository, visited map[string]struct{}, allNodes *[]*vo.Node) error {
+	for _, node := range nodes {
+		if node == nil {
+			continue
+		}
+		*allNodes = append(*allNodes, node)
+
+		if node.Type == vo.BlockTypeBotSubWorkflow && node.Data != nil && node.Data.Inputs != nil {
+			workflowIDStr := node.Data.Inputs.WorkflowID
+			if workflowIDStr == "" {
+				continue
+			}
+
+			workflowID, err := strconv.ParseInt(workflowIDStr, 10, 64)
+			if err != nil {
+				return fmt.Errorf("invalid workflow ID in sub-workflow node %s: %w", node.ID, err)
+			}
+
+			subWfEntity, err := repo.GetEntity(ctx, &vo.GetPolicy{
+				ID:      workflowID,
+				QType:   ternary.IFElse(len(node.Data.Inputs.WorkflowVersion) == 0, vo.FromDraft, vo.FromSpecificVersion),
+				Version: node.Data.Inputs.WorkflowVersion,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to get sub-workflow entity %d: %w", workflowID, err)
+			}
+
+			if err := getAllNodesRecursiveHelper(ctx, subWfEntity, repo, visited, allNodes); err != nil {
+				return err
+			}
+		}
+
+		if len(node.Blocks) > 0 {
+			if err := collectNodes(ctx, node.Blocks, repo, visited, allNodes); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

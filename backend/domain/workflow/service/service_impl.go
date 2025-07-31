@@ -1674,6 +1674,55 @@ func (i *impl) GetWorkflowDependenceResource(ctx context.Context, workflowID int
 
 }
 
+// checkBotAgentNodes checks for rules related to BotAgent.
+// It returns an error with the reason if the check fails.
+func (i *impl) checkBotAgentNodes(nodes []*vo.Node) error {
+	for _, node := range nodes {
+		if node.Type == vo.BlockTypeCreateConversation || node.Type == vo.BlockTypeConversationDelete || node.Type == vo.BlockTypeConversationUpdate || node.Type == vo.BlockTypeConversationList {
+			return errors.New("不支持在对话流内添加会话相关节点")
+		}
+	}
+	return nil
+}
+
+func (i *impl) WorkflowSchemaCheck(ctx context.Context, wf *entity.Workflow, checks []cloudworkflow.CheckType) ([]*cloudworkflow.CheckResult, error) {
+	if len(checks) == 0 {
+		return nil, nil
+	}
+
+	nodeList, err := GetAllNodesRecursively(ctx, wf, i.repo)
+	if err != nil {
+		return nil, err
+	}
+
+	checkResults := make([]*cloudworkflow.CheckResult, 0, len(checks))
+	for _, checkType := range checks {
+		var checkErr error
+		switch checkType {
+		case cloudworkflow.CheckType_BotAgent:
+			checkErr = i.checkBotAgentNodes(nodeList)
+		// TODO: Add other cases here for new check types
+		default:
+			continue
+		}
+
+		if checkErr != nil {
+			checkResults = append(checkResults, &cloudworkflow.CheckResult{
+				IsPass: false,
+				Reason: checkErr.Error(),
+				Type:   checkType,
+			})
+		} else {
+			checkResults = append(checkResults, &cloudworkflow.CheckResult{
+				IsPass: true,
+				Type:   checkType,
+				Reason: "",
+			})
+		}
+	}
+	return checkResults, nil
+}
+
 func (i *impl) MGet(ctx context.Context, policy *vo.MGetPolicy) ([]*entity.Workflow, int64, error) {
 	if policy.MetaOnly {
 		metas, total, err := i.repo.MGetMetas(ctx, &policy.MetaQuery)

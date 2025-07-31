@@ -2107,6 +2107,11 @@ func (w *ApplicationService) ListWorkflow(ctx context.Context, req *workflow.Get
 			},
 		}
 
+		ww.CheckResult, err = GetWorkflowDomainSVC().WorkflowSchemaCheck(ctx, w, req.Checker)
+		if err != nil {
+			return nil, err
+		}
+
 		if qType == vo.FromDraft {
 			ww.UpdateTime = w.DraftMeta.Timestamp.Unix()
 		} else if qType == vo.FromLatestVersion || qType == vo.FromSpecificVersion {
