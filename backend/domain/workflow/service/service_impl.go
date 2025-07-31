@@ -624,6 +624,10 @@ func (i *impl) GetChatFlowRole(ctx context.Context, workflowID int64, version st
 	return role, nil
 }
 
+func (i *impl) GetWorkflowVersionsByConnector(ctx context.Context, connectorID, workflowID int64, limit int) ([]string, error) {
+	return i.repo.GetVersionListByConnectorAndWorkflowID(ctx, connectorID, workflowID, limit)
+}
+
 func (i *impl) DeleteChatFlowRole(ctx context.Context, id int64, workflowID int64) error {
 	return i.repo.DeleteChatFlowRoleConfig(ctx, id, workflowID)
 }
@@ -1001,6 +1005,19 @@ func (i *impl) ReleaseApplicationWorkflows(ctx context.Context, appID int64, con
 	err = i.ReleaseConversationTemplate(ctx, appID, config.Version)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, wf := range wfs {
+		if wf.Mode == cloudworkflow.WorkflowMode_ChatFlow {
+			err = i.PublishChatFlowRole(ctx, &vo.PublishRolePolicy{
+				WorkflowID: wf.ID,
+				CreatorID:  wf.CreatorID,
+				Version:    config.Version,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	for _, connectorID := range config.ConnectorIDs {

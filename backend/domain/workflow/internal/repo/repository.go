@@ -621,6 +621,7 @@ func (r *RepositoryImpl) CreateChatFlowRoleConfig(ctx context.Context, chatFlowR
 		SuggestReplyInfo:    chatFlowRole.SuggestReplyInfo,
 		UserInputConfig:     chatFlowRole.UserInputConfig,
 		CreatorID:           chatFlowRole.CreatorID,
+		Version:             chatFlowRole.Version,
 	}
 
 	if err := r.query.ChatFlowRoleConfig.WithContext(ctx).Create(chatFlowRoleConfig); err != nil {
@@ -744,6 +745,30 @@ func (r *RepositoryImpl) GetVersion(ctx context.Context, id int64, version strin
 		},
 		CommitID: wfVersion.CommitID,
 	}, nil
+}
+
+func (r *RepositoryImpl) GetVersionListByConnectorAndWorkflowID(ctx context.Context, connectorID, workflowID int64, limit int) (_ []string, err error) {
+	defer func() {
+		if err != nil {
+			err = vo.WrapIfNeeded(errno.ErrDatabaseError, err)
+		}
+	}()
+
+	connectorWorkflowVersion := r.query.ConnectorWorkflowVersion
+	vl, err := connectorWorkflowVersion.WithContext(ctx).
+		Where(connectorWorkflowVersion.ConnectorID.Eq(connectorID),
+			connectorWorkflowVersion.WorkflowID.Eq(workflowID)).
+		Order(connectorWorkflowVersion.CreatedAt.Desc()).
+		Limit(limit).
+		Find()
+	if err != nil {
+		return nil, vo.WrapError(errno.ErrDatabaseError, err)
+	}
+	var versionList []string
+	for _, v := range vl {
+		versionList = append(versionList, v.Version)
+	}
+	return versionList, nil
 }
 
 func (r *RepositoryImpl) IsApplicationConnectorWorkflowVersion(ctx context.Context, connectorID, workflowID int64, version string) (b bool, err error) {
@@ -1632,6 +1657,7 @@ func (r *RepositoryImpl) CopyWorkflow(ctx context.Context, workflowID int64, pol
 			IconURI:   wfMeta.IconURI,
 			Desc:      wfMeta.Description,
 			AppID:     ternary.IFElse(wfMeta.AppID == 0, (*int64)(nil), ptr.Of(wfMeta.AppID)),
+			Mode:      vo.WorkflowMode(wfMeta.Mode),
 		},
 		CanvasInfo: &vo.CanvasInfo{
 			Canvas:          wfDraft.Canvas,

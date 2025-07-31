@@ -51,6 +51,7 @@ type Service interface {
 	DeleteChatFlowRole(ctx context.Context, id int64, workflowID int64) error
 	PublishChatFlowRole(ctx context.Context, policy *vo.PublishRolePolicy) error
 	CopyChatFlowRole(ctx context.Context, policy *vo.CopyRolePolicy) error
+	GetWorkflowVersionsByConnector(ctx context.Context, connectorID, workflowID int64, limit int) ([]string, error)
 
 	Executable
 	AsTool
@@ -77,6 +78,7 @@ type Repository interface {
 	GetMeta(ctx context.Context, id int64) (*vo.Meta, error)
 	UpdateMeta(ctx context.Context, id int64, metaUpdate *vo.MetaUpdate) error
 	GetVersion(ctx context.Context, id int64, version string) (*vo.VersionInfo, error)
+	GetVersionListByConnectorAndWorkflowID(ctx context.Context, connectorID, workflowID int64, limit int) ([]string, error)
 
 	GetEntity(ctx context.Context, policy *vo.GetPolicy) (*entity.Workflow, error)
 

@@ -3907,7 +3907,13 @@ func (w *ApplicationService) GetChatFlowRole(ctx context.Context, req *workflow.
 
 	var version string
 	if wf.Meta.AppID != nil {
-		version = "" // TODO : search version from DB using AppID
+		vl, err := GetWorkflowDomainSVC().GetWorkflowVersionsByConnector(ctx, mustParseInt64(req.GetConnectorID()), wf.ID, 1)
+		if err != nil {
+			return nil, err
+		}
+		if len(vl) > 0 {
+			version = vl[0]
+		}
 	}
 
 	role, err := GetWorkflowDomainSVC().GetChatFlowRole(ctx, mustParseInt64(req.WorkflowID), version)
