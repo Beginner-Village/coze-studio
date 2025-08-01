@@ -24,7 +24,6 @@ import (
 
 	shortcutCmd "github.com/coze-dev/coze-studio/backend/domain/shortcutcmd/service"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
 
 	"github.com/bytedance/sonic"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -503,7 +502,8 @@ func (s *SingleAgentApplicationService) GetAgentDraftDisplayInfo(ctx context.Con
 		return nil, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("msg", "session required"))
 	}
 
-	_, err := s.ValidateAgentDraftAccess(ctx, req.BotID)
+	// 使用读取权限验证，成员也可以查看
+	_, _, err := s.validateAgentPermission(ctx, req.BotID, "read")
 	if err != nil {
 		return nil, err
 	}
@@ -521,32 +521,9 @@ func (s *SingleAgentApplicationService) GetAgentDraftDisplayInfo(ctx context.Con
 }
 
 func (s *SingleAgentApplicationService) ValidateAgentDraftAccess(ctx context.Context, agentID int64) (*entity.SingleAgent, error) {
-	uid := ctxutil.GetUIDFromCtx(ctx)
-	if uid == nil {
-		uid = ptr.Of(int64(888))
-		// return nil, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("msg", "session uid not found"))
-	}
-
-	do, err := s.DomainSVC.GetSingleAgentDraft(ctx, agentID)
-	if err != nil {
-		return nil, err
-	}
-
-	if do == nil {
-		return nil, errorx.New(errno.ErrAgentPermissionCode, errorx.KVf("msg", "No agent draft(%d) found for the given agent ID", agentID))
-	}
-
-	if do.SpaceID == consts.TemplateSpaceID { // duplicate template, not need check uid permission
-		return do, nil
-	}
-
-	if do.CreatorID != *uid {
-		logs.CtxErrorf(ctx, "user(%d) is not the creator(%d) of the agent draft", *uid, do.CreatorID)
-
-		return do, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("detail", "you are not the agent owner"))
-	}
-
-	return do, nil
+	// 使用新的权限验证系统，默认需要编辑权限
+	agent, _, err := s.validateAgentPermission(ctx, agentID, "edit")
+	return agent, err
 }
 
 func (s *SingleAgentApplicationService) ListAgentPublishHistory(ctx context.Context, req *developer_api.ListDraftBotHistoryRequest) (*developer_api.ListDraftBotHistoryResponse, error) {
