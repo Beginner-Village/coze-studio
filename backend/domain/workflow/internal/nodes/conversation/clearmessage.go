@@ -20,11 +20,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
+	crossconv "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
 )
 
 type ClearMessageConfig struct {
-	Manager conversation.ConversationManager
+	Manager crossconv.ConversationManager
 }
 
 type MessageClear struct {
@@ -52,7 +52,7 @@ func (c *MessageClear) Clear(ctx context.Context, input map[string]any) (map[str
 
 	// For now, use ClearConversationHistory as the implementation
 	// since there's no specific ClearMessage method available
-	err := c.cfg.Manager.ClearConversationHistory(ctx, &conversation.ClearConversationHistoryReq{
+	err := c.cfg.Manager.ClearConversationHistory(ctx, &crossconv.ClearConversationHistoryReq{
 		ConversationID: 0, // This would need proper conversation ID resolution
 	})
 	if err != nil {
