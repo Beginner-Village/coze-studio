@@ -1120,6 +1120,11 @@ func toIntentDetectorSchema(n *vo.Node, _ ...OptionFn) (*compose.NodeSchema, err
 		ns.SetConfigKV("IsFastMode", true)
 	}
 
+	// 处理历史记录配置
+	if n.Data.Inputs.ChatHistorySetting != nil {
+		ns.SetConfigKV("chatHistorySetting", n.Data.Inputs.ChatHistorySetting)
+	}
+
 	if err = SetInputsForNodeSchema(n, ns); err != nil {
 		return nil, err
 	}

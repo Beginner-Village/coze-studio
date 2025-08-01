@@ -33,4 +33,5 @@ type Space struct {
 	CreatorID   int64
 	CreatedAt   int64
 	UpdatedAt   int64
+	RoleType    int32  // 用户在该空间中的角色: 1-owner 2-admin 3-member
 }

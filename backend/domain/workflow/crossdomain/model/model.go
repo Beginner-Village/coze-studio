@@ -35,6 +35,7 @@ type LLMParams struct {
 	TopP              *float64       `json:"topP"`
 	TopK              *int           `json:"topK"`
 	EnableChatHistory bool           `json:"enableChatHistory"`
+	ChatHistoryRound  int64          `json:"chatHistoryRound"`
 	SystemPrompt      string         `json:"systemPrompt"`
 	ResponseFormat    ResponseFormat `json:"responseFormat"`
 }

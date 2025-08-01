@@ -447,6 +447,13 @@ func (u *userImpl) GetUserSpaceList(ctx context.Context, userID int64) (spaces [
 	if err != nil {
 		return nil, err
 	}
+	
+	// 创建spaceID到roleType的映射
+	spaceRoleMap := make(map[int64]int32, len(userSpaces))
+	for _, us := range userSpaces {
+		spaceRoleMap[us.SpaceID] = us.RoleType
+	}
+	
 	uris := slices.ToMap(spaceModels, func(sm *model.Space) (string, bool) {
 		return sm.IconURI, false
 	})
@@ -460,11 +467,11 @@ func (u *userImpl) GetUserSpaceList(ctx context.Context, userID int64) (spaces [
 		urls[uri] = url
 	}
 	return slices.Transform(spaceModels, func(sm *model.Space) *userEntity.Space {
-		return spacePo2Do(sm, urls[sm.IconURI])
+		return spacePo2Do(sm, urls[sm.IconURI], spaceRoleMap[sm.ID])
 	}), nil
 }
 
-func spacePo2Do(space *model.Space, iconUrl string) *userEntity.Space {
+func spacePo2Do(space *model.Space, iconUrl string, roleType int32) *userEntity.Space {
 	return &userEntity.Space{
 		ID:          space.ID,
 		Name:        space.Name,
@@ -475,6 +482,7 @@ func spacePo2Do(space *model.Space, iconUrl string) *userEntity.Space {
 		CreatorID:   space.CreatorID,
 		CreatedAt:   space.CreatedAt,
 		UpdatedAt:   space.UpdatedAt,
+		RoleType:    roleType,
 	}
 }
 
@@ -660,4 +668,55 @@ func userPo2Do(model *model.User, iconURL string) *userEntity.User {
 		CreatedAt:    model.CreatedAt,
 		UpdatedAt:    model.UpdatedAt,
 	}
+}
+
+func (u *userImpl) CreateUserSpace(ctx context.Context, req *CreateUserSpaceRequest) (*userEntity.Space, error) {
+	// 生成新的空间ID
+	sid, err := u.IDGen.GenID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("generate space id failed: %w", err)
+	}
+
+	// 设置默认图标URI
+	iconURI := req.IconURI
+	if iconURI == "" {
+		iconURI = "default_icon/team_default_icon.png"
+	}
+
+	// 创建空间 (SpaceType和SpaceMode暂时不保存到数据库，但已接收)
+	spaceModel := &model.Space{
+		ID:          sid,
+		Name:        req.Name,
+		Description: req.Description,
+		IconURI:     iconURI,
+		OwnerID:     req.UserID,
+		CreatorID:   req.UserID,
+	}
+
+	err = u.SpaceRepo.CreateSpace(ctx, spaceModel)
+	if err != nil {
+		return nil, fmt.Errorf("create space failed: %w", err)
+	}
+
+	// 将创建者添加为空间所有者
+	err = u.SpaceRepo.AddSpaceUser(ctx, &model.SpaceUser{
+		SpaceID:  sid,
+		UserID:   req.UserID,
+		RoleType: 1, // 1 = owner
+	})
+	if err != nil {
+		return nil, fmt.Errorf("add space user failed: %w", err)
+	}
+
+	// 转换为entity
+	iconURL := ""
+	if spaceModel.IconURI != "" {
+		iconURL, err = u.IconOSS.GetObjectUrl(ctx, spaceModel.IconURI)
+		if err != nil {
+			// 如果获取URL失败，仍然继续但不设置iconURL
+			iconURL = ""
+		}
+	}
+
+	return spacePo2Do(spaceModel, iconURL, 1), nil  // 创建者是owner，role_type=1
 }

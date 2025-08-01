@@ -49,6 +49,15 @@ type ValidateProfileUpdateResponse struct {
 	Msg  string
 }
 
+type CreateUserSpaceRequest struct {
+	UserID      int64
+	Name        string
+	Description string
+	IconURI     string
+	SpaceType   int32
+	SpaceMode   int32
+}
+
 type CreateUserRequest struct {
 	Email       string
 	Password    string
@@ -77,4 +86,5 @@ type User interface {
 	MGetUserProfiles(ctx context.Context, userIDs []int64) (users []*entity.User, err error)
 	ValidateSession(ctx context.Context, sessionKey string) (session *entity.Session, exist bool, err error)
 	GetUserSpaceList(ctx context.Context, userID int64) (spaces []*entity.Space, err error)
+	CreateUserSpace(ctx context.Context, req *CreateUserSpaceRequest) (space *entity.Space, err error)
 }

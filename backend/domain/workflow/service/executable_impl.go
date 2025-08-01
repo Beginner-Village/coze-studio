@@ -434,6 +434,12 @@ func (i *impl) StreamExecute(ctx context.Context, config vo.ExecuteConfig, input
 		return nil, err
 	}
 
+	// Extract conversation history from context and enhance cancelCtx
+	if conversationHistoryData, ok := ctx.Value("conversationHistory").(map[string]interface{}); ok {
+		// Store the conversation history in the cancelCtx so it can be accessed during execution
+		cancelCtx = context.WithValue(cancelCtx, "conversationHistoryForExecution", conversationHistoryData)
+	}
+
 	_ = executeID
 
 	wf.AsyncRun(cancelCtx, input, opts...)

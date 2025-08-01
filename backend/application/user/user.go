@@ -229,11 +229,12 @@ func (u *UserApplicationService) GetSpaceListV2(ctx context.Context, req *playgr
 
 	botSpaces := langSlices.Transform(spaces, func(space *entity.Space) *playground.BotSpaceV2 {
 		return &playground.BotSpaceV2{
-			ID:          space.ID,
-			Name:        space.Name,
-			Description: space.Description,
-			SpaceType:   playground.SpaceType(space.SpaceType),
-			IconURL:     space.IconURL,
+			ID:            space.ID,
+			Name:          space.Name,
+			Description:   space.Description,
+			SpaceType:     playground.SpaceType(space.SpaceType),
+			IconURL:       space.IconURL,
+			SpaceRoleType: playground.SpaceRoleType(space.RoleType),
 		}
 	})
 
@@ -246,6 +247,38 @@ func (u *UserApplicationService) GetSpaceListV2(ctx context.Context, req *playgr
 			Total:                 ptr.Of(int32(len(botSpaces))),
 			HasMore:               ptr.Of(false),
 		},
+		Code: 0,
+	}, nil
+}
+
+func (u *UserApplicationService) CreateSpace(ctx context.Context, req *playground.CreateSpaceRequest) (
+	resp *playground.CreateSpaceResponse, err error,
+) {
+	uid := ctxutil.MustGetUIDFromCtx(ctx)
+
+	// 创建空间
+	space, err := u.DomainSVC.CreateUserSpace(ctx, &user.CreateUserSpaceRequest{
+		UserID:      uid,
+		Name:        req.GetName(),
+		Description: req.GetDescription(),
+		IconURI:     req.GetIconURI(),
+		SpaceType:   req.GetSpaceType(),
+		SpaceMode:   req.GetSpaceMode(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 转换为API响应格式
+	botSpace := &playground.BotSpaceV2{
+		ID:          space.ID,
+		Name:        space.Name,
+		Description: space.Description,
+		IconURL:     space.IconURL,
+	}
+
+	return &playground.CreateSpaceResponse{
+		Data: botSpace,
 		Code: 0,
 	}, nil
 }

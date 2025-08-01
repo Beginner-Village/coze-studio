@@ -43,6 +43,10 @@ func (c *impl) GetByRunIDs(ctx context.Context, conversationID int64, runIDs []i
 	return c.DomainSVC.GetByRunIDs(ctx, conversationID, runIDs)
 }
 
+func (c *impl) GetLatestRunIDs(ctx context.Context, conversationID int64, rounds int) ([]int64, error) {
+	return c.DomainSVC.GetLatestRunIDs(ctx, conversationID, rounds)
+}
+
 func (c *impl) Create(ctx context.Context, msg *model.Message) (*model.Message, error) {
 	return c.DomainSVC.Create(ctx, msg)
 }

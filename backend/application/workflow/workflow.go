@@ -1548,6 +1548,9 @@ func (w *ApplicationService) OpenAPIRun(ctx context.Context, req *workflow.OpenA
 	}()
 
 	apiKeyInfo := ctxutil.GetApiAuthFromCtx(ctx)
+	if apiKeyInfo == nil {
+		return nil, vo.WrapError(errno.ErrInvalidParameter, errors.New("missing API authentication information"))
+	}
 	userID := apiKeyInfo.UserID
 
 	parameters := make(map[string]any)
@@ -4022,4 +4025,22 @@ func (w *ApplicationService) convertChatFlowRole(ctx context.Context, role *enti
 	}
 
 	return res, nil
+}
+
+// DependencyTree returns the dependency tree for a workflow
+func (w *ApplicationService) DependencyTree(ctx context.Context, req *workflow.DependencyTreeRequest) (*workflow.DependencyTreeResponse, error) {
+	// For now, return a basic response structure to resolve the 404
+	// This can be expanded later with actual dependency analysis logic
+	response := &workflow.DependencyTreeResponse{
+		Code: 0,
+		Msg:  "success",
+		Data: &workflow.DependencyTree{
+			RootId:   ptr.Of("root"),
+			Version:  ptr.Of("1.0"),
+			NodeList: []*workflow.DependencyTreeNode{},
+			EdgeList: []*workflow.DependencyTreeEdge{},
+		},
+	}
+	
+	return response, nil
 }

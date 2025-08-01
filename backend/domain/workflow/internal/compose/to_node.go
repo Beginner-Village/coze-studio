@@ -44,6 +44,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/batch"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/code"
+	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/common"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/conversation"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/database"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/emitter"
@@ -119,6 +120,17 @@ func (s *NodeSchema) ToLLMConfig(ctx context.Context) (*llm.Config, error) {
 		modelWithInfo = llm.NewModelWithFallback(chatModel, fallbackM, info, fallbackI)
 	}
 	llmConf.ChatModel = modelWithInfo
+
+	// Handle chat history configuration
+	if llmParams.EnableChatHistory && llmParams.ChatHistoryRound > 0 {
+		// Store the chat history configuration in the LLM config
+		// This will be used by the LLM node to determine how many rounds of history to include
+		llmConf.HistoryConfig = &llm.ConversationHistoryConfig{
+			EnableHistory:      true,
+			HistoryRounds:      int(llmParams.ChatHistoryRound),
+			IncludeCurrentTurn: false,
+		}
+	}
 
 	fcParams := getKeyOrZero[*vo.FCParam]("FCParam", s.Configs)
 	if fcParams != nil {
@@ -643,6 +655,18 @@ func (s *NodeSchema) ToIntentDetectorConfig(ctx context.Context) (*intentdetecto
 		return nil, err
 	}
 	cfg.ChatModel = m
+
+	// 处理历史记录配置
+	chatHistorySetting := getKeyOrZero[*vo.ChatHistorySetting]("chatHistorySetting", s.Configs)
+	if chatHistorySetting != nil {
+		if chatHistorySetting.EnableChatHistory && chatHistorySetting.ChatHistoryRound > 0 {
+			cfg.HistoryConfig = &common.HistoryConfig{
+				EnableHistory:      true,
+				HistoryRounds:      int(chatHistorySetting.ChatHistoryRound),
+				IncludeCurrentTurn: false,
+			}
+		}
+	}
 
 	return cfg, nil
 }

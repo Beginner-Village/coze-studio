@@ -131,6 +131,35 @@ func (dao *MessageDAO) GetByRunIDs(ctx context.Context, runIDs []int64, orderBy 
 	return dao.batchMessagePO2DO(poList), nil
 }
 
+func (dao *MessageDAO) GetLatestRunIDs(ctx context.Context, conversationID int64, rounds int) ([]int64, error) {
+	m := dao.query.Message
+	
+	// Query distinct run_ids for the conversation, ordered by run_id desc, limited to rounds
+	var results []struct {
+		RunID int64 `gorm:"column:run_id"`
+	}
+	
+	err := m.WithContext(ctx).Debug().
+		Select(m.RunID).
+		Distinct().
+		Where(m.ConversationID.Eq(conversationID)).
+		Where(m.Status.Eq(1)). // Only get active messages
+		Order(m.RunID.Desc()).
+		Limit(rounds).
+		Scan(&results)
+	
+	if err != nil {
+		return nil, err
+	}
+	
+	runIDs := make([]int64, len(results))
+	for i, result := range results {
+		runIDs[i] = result.RunID
+	}
+	
+	return runIDs, nil
+}
+
 func (dao *MessageDAO) Edit(ctx context.Context, msgID int64, msg *message.Message) (int64, error) {
 	m := dao.query.Message
 	columns := dao.buildEditColumns(msg)

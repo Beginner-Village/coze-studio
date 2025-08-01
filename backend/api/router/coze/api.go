@@ -258,6 +258,10 @@ func Register(r *server.Hertz) {
 				_pat.GET("/list_personal_access_tokens", append(_listpersonalaccesstokensMw(), coze.ListPersonalAccessTokens)...)
 				_pat.POST("/update_personal_access_token_and_permission", append(_updatepersonalaccesstokenandpermissionMw(), coze.UpdatePersonalAccessTokenAndPermission)...)
 			}
+			{
+				_coze_web_app := _permission_api.Group("/coze_web_app", _cozewebappMw()...)
+				_coze_web_app.POST("/impersonate_coze_user", append(_impersonatecozeusrMw(), coze.ImpersonateCozeUser)...)
+			}
 		}
 		{
 			_playground := _api.Group("/playground", _playgroundMw()...)
@@ -291,6 +295,7 @@ func Register(r *server.Hertz) {
 			{
 				_space := _playground_api.Group("/space", _spaceMw()...)
 				_space.POST("/list", append(_getspacelistv2Mw(), coze.GetSpaceListV2)...)
+				_space.POST("/save", append(_savespaceMw(), coze.SaveSpace)...)
 			}
 		}
 		{

@@ -37,6 +37,7 @@ type MessageRepo interface {
 	List(ctx context.Context, conversationID int64, limit int, cursor int64,
 		direction entity.ScrollPageDirection, messageType *message.MessageType) ([]*entity.Message, bool, error)
 	GetByRunIDs(ctx context.Context, runIDs []int64, orderBy string) ([]*entity.Message, error)
+	GetLatestRunIDs(ctx context.Context, conversationID int64, rounds int) ([]int64, error)
 	Edit(ctx context.Context, msgID int64, message *message.Message) (int64, error)
 	GetByID(ctx context.Context, msgID int64) (*entity.Message, error)
 	Delete(ctx context.Context, msgIDs []int64, runIDs []int64) error

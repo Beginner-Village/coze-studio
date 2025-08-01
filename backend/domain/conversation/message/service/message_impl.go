@@ -86,6 +86,10 @@ func (m *messageImpl) GetByRunIDs(ctx context.Context, conversationID int64, run
 	return m.MessageRepo.GetByRunIDs(ctx, runIDs, "ASC")
 }
 
+func (m *messageImpl) GetLatestRunIDs(ctx context.Context, conversationID int64, rounds int) ([]int64, error) {
+	return m.MessageRepo.GetLatestRunIDs(ctx, conversationID, rounds)
+}
+
 func (m *messageImpl) Edit(ctx context.Context, req *entity.Message) (*entity.Message, error) {
 	_, err := m.MessageRepo.Edit(ctx, req.ID, req)
 	if err != nil {

@@ -25,6 +25,7 @@ import (
 
 type Message interface {
 	GetByRunIDs(ctx context.Context, conversationID int64, runIDs []int64) ([]*message.Message, error)
+	GetLatestRunIDs(ctx context.Context, conversationID int64, rounds int) ([]int64, error)
 	PreCreate(ctx context.Context, msg *message.Message) (*message.Message, error)
 	Create(ctx context.Context, msg *message.Message) (*message.Message, error)
 	List(ctx context.Context, meta *entity.ListMeta) (*entity.ListResult, error)

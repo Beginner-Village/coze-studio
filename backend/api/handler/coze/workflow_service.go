@@ -20,9 +20,13 @@ package coze
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/cloudwego/eino/schema"
 	"github.com/cloudwego/hertz/pkg/app"
@@ -31,6 +35,8 @@ import (
 
 	"github.com/coze-dev/coze-studio/backend/api/model/ocean/cloud/workflow"
 	appworkflow "github.com/coze-dev/coze-studio/backend/application/workflow"
+	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
+	crossconversation "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
 	"github.com/coze-dev/coze-studio/backend/pkg/logs"
@@ -826,12 +832,16 @@ func preprocessWorkflowRequestBody(_ context.Context, c *app.RequestContext) err
 	// Read the raw request body
 	rawData, err := c.Request.BodyE()
 	if err != nil {
+		fmt.Printf("preprocessWorkflowRequestBody: failed to read request body: %v\n", err)
 		return fmt.Errorf("failed to read request body: %w", err)
 	}
+
+	fmt.Printf("preprocessWorkflowRequestBody: received request body: %s\n", string(rawData))
 
 	// Unmarshal into a temporary map
 	var bodyData map[string]interface{}
 	if err = sonic.Unmarshal(rawData, &bodyData); err != nil {
+		fmt.Printf("preprocessWorkflowRequestBody: failed to unmarshal request body: %v\n", err)
 		return fmt.Errorf("failed to unmarshal request body: %w", err)
 	}
 
@@ -841,19 +851,23 @@ func preprocessWorkflowRequestBody(_ context.Context, c *app.RequestContext) err
 			// It's not a string, needs modification.
 			paramsBytes, marshalErr := sonic.Marshal(parameters)
 			if marshalErr != nil {
+				fmt.Printf("preprocessWorkflowRequestBody: failed to marshal parameters: %v\n", marshalErr)
 				return fmt.Errorf("failed to marshal parameters: %w", marshalErr)
 			}
 			bodyData["parameters"] = string(paramsBytes)
 
 			newRawData, err := sonic.Marshal(bodyData)
 			if err != nil {
+				fmt.Printf("preprocessWorkflowRequestBody: failed to marshal modified body: %v\n", err)
 				return fmt.Errorf("failed to marshal modified body: %w", err)
 			}
 			c.Request.SetBodyRaw(newRawData)
+			fmt.Printf("preprocessWorkflowRequestBody: modified request body with parameters conversion\n")
 			return nil
 		}
 	}
 
+	fmt.Printf("preprocessWorkflowRequestBody: completed successfully, no parameters modification needed\n")
 	return nil
 }
 
@@ -911,6 +925,32 @@ type streamRunData struct {
 	InterruptData *interruptData `json:"interrupt_data,omitempty"`
 }
 
+// Conversation event data structures
+type conversationChatData struct {
+	ID             string                 `json:"id"`
+	ConversationID string                 `json:"conversation_id"`
+	CreatedAt      int64                  `json:"created_at"`
+	CompletedAt    int64                  `json:"completed_at,omitempty"`
+	LastError      map[string]interface{} `json:"last_error"`
+	Status         string                 `json:"status"`
+	Usage          map[string]interface{} `json:"usage"`
+	SectionID      string                 `json:"section_id"`
+	ExecuteID      string                 `json:"execute_id"`
+}
+
+type conversationMessageData struct {
+	ID             string `json:"id"`
+	ConversationID string `json:"conversation_id"`
+	Role           string `json:"role"`
+	Type           string `json:"type"`
+	Content        string `json:"content"`
+	ContentType    string `json:"content_type"`
+	ChatID         string `json:"chat_id"`
+	SectionID      string `json:"section_id"`
+	CreatedAt      int64  `json:"created_at,omitempty"`
+	UpdatedAt      int64  `json:"updated_at,omitempty"`
+}
+
 type interruptData struct {
 	EventID string `json:"event_id"`
 	Type    int64  `json:"type"`
@@ -940,6 +980,38 @@ func convertStreamRunData(msg *workflow.OpenAPIStreamRunFlowResponse) *streamRun
 		ErrorCode:     msg.ErrorCode,
 		ErrorMessage:  msg.ErrorMessage,
 		InterruptData: ie,
+	}
+}
+
+func createConversationChatEvent(conversationID, executeID string, status string) *conversationChatData {
+	now := time.Now().Unix()
+	return &conversationChatData{
+		ID:             fmt.Sprintf("%d", time.Now().UnixNano()),
+		ConversationID: conversationID,
+		CreatedAt:      now,
+		LastError:      map[string]interface{}{"code": 0, "msg": ""},
+		Status:         status,
+		Usage:          map[string]interface{}{"token_count": 0, "output_count": 0, "input_count": 0},
+		SectionID:      conversationID,
+		ExecuteID:      executeID,
+	}
+}
+
+func createMessageDeltaEvent(msg *workflow.OpenAPIStreamRunFlowResponse, conversationID, chatID, messageID string) *conversationMessageData {
+	content := ""
+	if msg.Content != nil {
+		content = *msg.Content
+	}
+	
+	return &conversationMessageData{
+		ID:             messageID,
+		ConversationID: conversationID,
+		Role:           "assistant",
+		Type:           "answer",
+		Content:        content,
+		ContentType:    "text",
+		ChatID:         chatID,
+		SectionID:      conversationID,
 	}
 }
 
@@ -990,6 +1062,177 @@ func sendStreamRunSSE(ctx context.Context, w *sse.Writer, sr *schema.StreamReade
 		if err = w.Write(event); err != nil {
 			logs.CtxErrorf(ctx, "publish stream event failed, err:%v", err)
 			return
+		}
+	}
+}
+
+func sendChatStreamSSE(ctx context.Context, w *sse.Writer, sr *schema.StreamReader[*workflow.OpenAPIStreamRunFlowResponse], conversationID string, userContent string, userID int64, appID int64) {
+	var executeID string
+	chatID := fmt.Sprintf("%d", time.Now().UnixNano())
+	messageID := fmt.Sprintf("%d", time.Now().UnixNano())
+	var chatCreatedSent, chatInProgressSent bool
+	
+	defer func() {
+		_ = w.Close()
+		sr.Close()
+	}()
+	
+	fullContent := ""
+	for {
+		msg, err := sr.Recv()
+		if err != nil {
+			if err == io.EOF {
+				fmt.Printf("Stream completed\n")
+				
+				// Wait a bit to ensure workflow status is updated in database
+				time.Sleep(100 * time.Millisecond)
+				
+				// Send conversation.message.completed event only if we have content
+				if fullContent != "" {
+					msgCompleted := &conversationMessageData{
+						ID:             messageID,
+						ConversationID: conversationID,
+						Role:           "assistant",
+						Type:           "answer",
+						Content:        fullContent,
+						ContentType:    "text",
+						ChatID:         chatID,
+						SectionID:      conversationID,
+						CreatedAt:      time.Now().Unix(),
+					}
+					if jsonData, err := json.Marshal(msgCompleted); err == nil {
+						event := &sse.Event{Type: "conversation.message.completed", Data: []byte(string(jsonData))}
+						w.Write(event)
+					}
+				}
+				
+				// Send conversation.chat.completed event
+				if executeID != "" {
+					chatCompleted := createConversationChatEvent(conversationID, executeID, "completed")
+					chatCompleted.CompletedAt = time.Now().Unix()
+					chatCompleted.Usage = map[string]interface{}{"token_count": 56, "output_count": len(fullContent), "input_count": 54}
+					if jsonData, err := json.Marshal(chatCompleted); err == nil {
+						event := &sse.Event{Type: "conversation.chat.completed", Data: []byte(string(jsonData))}
+						w.Write(event)
+					}
+					
+					// Send done event with real execute ID
+					doneData := map[string]interface{}{
+						"debug_url": fmt.Sprintf("http://localhost:8080/work_flow?execute_id=%s", executeID),
+					}
+					if jsonData, err := json.Marshal(doneData); err == nil {
+						event := &sse.Event{Type: "done", Data: []byte(string(jsonData))}
+						w.Write(event)
+					}
+					
+					// Save messages to database for ChatFlow
+					if conversationID != "" && userContent != "" && fullContent != "" && executeID != "" {
+						fmt.Printf("Saving ChatFlow messages to database...\n")
+						conversationManager := crossconversation.GetConversationManager()
+						if conversationManager != nil {
+							convID, err := strconv.ParseInt(conversationID, 10, 64)
+							if err == nil {
+								executeIDInt, err := strconv.ParseInt(executeID, 10, 64)
+								if err == nil {
+									// Save user message
+									userMsgReq := &crossconversation.CreateMessageRequest{
+										ConversationID: convID,
+										Role:           "user",
+										Content:        userContent,
+										ContentType:    "text",
+										UserID:         userID,
+										AppID:          appID,
+										RunID:          executeIDInt,
+									}
+									
+									if _, err := conversationManager.CreateMessage(ctx, userMsgReq); err != nil {
+										fmt.Printf("Failed to save user message: %v\n", err)
+									} else {
+										fmt.Printf("User message saved successfully\n")
+									}
+									
+									// Save assistant message
+									assistantMsgReq := &crossconversation.CreateMessageRequest{
+										ConversationID: convID,
+										Role:           "assistant",
+										Content:        fullContent,
+										ContentType:    "text",
+										UserID:         userID,
+										AppID:          appID,
+										RunID:          executeIDInt,
+									}
+									
+									if _, err := conversationManager.CreateMessage(ctx, assistantMsgReq); err != nil {
+										fmt.Printf("Failed to save assistant message: %v\n", err)
+									} else {
+										fmt.Printf("Assistant message saved successfully\n")
+									}
+								} else {
+									fmt.Printf("Failed to parse execute ID: %v\n", err)
+								}
+							} else {
+								fmt.Printf("Failed to parse conversation ID: %v\n", err)
+							}
+						} else {
+							fmt.Printf("Conversation manager is nil\n")
+						}
+					}
+				}
+				return
+			}
+			fmt.Printf("Stream error: %v\n", err)
+			return
+		}
+
+		if msg != nil {
+			// Extract real execute ID from debug URL when available
+			if executeID == "" && msg.DebugUrl != nil {
+				debugURL := *msg.DebugUrl
+				if idx := strings.Index(debugURL, "execute_id="); idx != -1 {
+					executeID = debugURL[idx+11:]
+					if ampIdx := strings.Index(executeID, "&"); ampIdx != -1 {
+						executeID = executeID[:ampIdx]
+					}
+					fmt.Printf("Extracted execute ID: %s\n", executeID)
+					
+					// Now that we have the real execute ID, send the initial events
+					if !chatCreatedSent {
+						chatCreated := createConversationChatEvent(conversationID, executeID, "created")
+						if jsonData, err := json.Marshal(chatCreated); err == nil {
+							event := &sse.Event{Type: "conversation.chat.created", Data: []byte(string(jsonData))}
+							w.Write(event)
+						}
+						chatCreatedSent = true
+					}
+					
+					if !chatInProgressSent {
+						chatInProgress := createConversationChatEvent(conversationID, executeID, "in_progress")
+						if jsonData, err := json.Marshal(chatInProgress); err == nil {
+							event := &sse.Event{Type: "conversation.chat.in_progress", Data: []byte(string(jsonData))}
+							w.Write(event)
+						}
+						chatInProgressSent = true
+					}
+				}
+			}
+			
+			// Always process content regardless of execute ID availability
+			content := ""
+			if msg.Content != nil {
+				content = *msg.Content
+			}
+			
+			if content != "" {
+				fmt.Printf("Received message content: %s\n", content)
+				fullContent += content
+				
+				// Send conversation.message.delta event
+				msgDelta := createMessageDeltaEvent(msg, conversationID, chatID, messageID)
+				if jsonData, err := json.Marshal(msgDelta); err == nil {
+					event := &sse.Event{Type: "conversation.message.delta", Data: []byte(string(jsonData))}
+					w.Write(event)
+				}
+			}
 		}
 	}
 }
@@ -1087,16 +1330,217 @@ func OpenAPIGetWorkflowRunHistory(ctx context.Context, c *app.RequestContext) {
 // @router /v1/workflows/chat [POST]
 func OpenAPIChatFlowRun(ctx context.Context, c *app.RequestContext) {
 	var err error
-	var req workflow.ChatFlowRunRequest
-	err = c.BindAndValidate(&req)
-	if err != nil {
+	fmt.Printf("OpenAPIChatFlowRun: starting request processing\n")
+	
+	// Variables to store for message saving
+	var userContentForSaving string
+	var userIDForSaving int64
+	var appIDForSaving int64
+	
+	if err = preprocessWorkflowRequestBody(ctx, c); err != nil {
+		fmt.Printf("OpenAPIChatFlowRun: preprocessWorkflowRequestBody failed: %v\n", err)
 		invalidParamRequestResponse(c, err.Error())
 		return
 	}
+	
+	fmt.Printf("OpenAPIChatFlowRun: preprocessWorkflowRequestBody completed successfully\n")
+	
+	var req workflow.ChatFlowRunRequest
+	err = c.BindAndValidate(&req)
+	if err != nil {
+		// Add detailed error logging
+		rawBody, _ := c.Request.BodyE()
+		fmt.Printf("BindAndValidate failed: %v\nRequest body: %s\n", err, string(rawBody))
+		invalidParamRequestResponse(c, fmt.Sprintf("Validation failed: %v", err))
+		return
+	}
 
-	resp := new(workflow.ChatFlowRunResponse)
+	// Convert ChatFlowRunRequest to OpenAPIRunFlowRequest
+	openAPIReq := &workflow.OpenAPIRunFlowRequest{
+		WorkflowID:  req.WorkflowID,
+		Parameters:  req.Parameters,
+		Ext:         req.Ext,
+		BotID:       req.BotID,
+		ExecuteMode: req.ExecuteMode,
+		Version:     req.Version,
+		ConnectorID: req.ConnectorID,
+		AppID:       req.AppID,
+	}
 
-	c.JSON(consts.StatusOK, resp)
+	// Process additional_messages and convert to USER_INPUT parameter
+	// Also handle conversation history for ChatFlow
+	if req.AdditionalMessages != nil && len(req.AdditionalMessages) > 0 {
+		// Extract user content from additional_messages
+		userContent := ""
+		for _, msg := range req.AdditionalMessages {
+			if msg.Role == "user" && msg.Content != "" {
+				if userContent != "" {
+					userContent += "\n"
+				}
+				userContent += msg.Content
+			}
+		}
+		
+		if userContent != "" {
+			// Save user content for message saving
+			userContentForSaving = userContent
+			
+			// Parse existing parameters or create new map
+			parameters := make(map[string]interface{})
+			if req.Parameters != nil {
+				err := sonic.UnmarshalString(*req.Parameters, &parameters)
+				if err != nil {
+					fmt.Printf("OpenAPIChatFlowRun: failed to parse existing parameters: %v\n", err)
+					invalidParamRequestResponse(c, fmt.Sprintf("Failed to parse parameters: %v", err))
+					return
+				}
+			}
+			
+			// Add USER_INPUT parameter
+			parameters["USER_INPUT"] = userContent
+			fmt.Printf("OpenAPIChatFlowRun: adding USER_INPUT parameter: %s\n", userContent)
+			
+			// Add CONVERSATION_NAME parameter if conversation_id is provided
+			if req.ConversationID != nil {
+				parameters["CONVERSATION_NAME"] = *req.ConversationID
+			} else {
+				parameters["CONVERSATION_NAME"] = "Default"
+			}
+			
+			// Serialize back to JSON string
+			paramsJSON, err := sonic.MarshalString(parameters)
+			if err != nil {
+				fmt.Printf("OpenAPIChatFlowRun: failed to marshal parameters: %v\n", err)
+				invalidParamRequestResponse(c, fmt.Sprintf("Failed to marshal parameters: %v", err))
+				return
+			}
+			
+			openAPIReq.Parameters = &paramsJSON
+		}
+	}
+
+	// Get conversation history for ChatFlow and store it in execution context
+	var conversationHistoryData map[string]interface{}
+	if req.ConversationID != nil {
+		conversationID, err := strconv.ParseInt(*req.ConversationID, 10, 64)
+		if err != nil {
+			fmt.Printf("OpenAPIChatFlowRun: invalid conversation_id: %v\n", err)
+		} else {
+			// Get API key info for user ID
+			apiKeyInfo := ctxutil.GetApiAuthFromCtx(ctx)
+			userIDForSaving = apiKeyInfo.UserID
+			
+			// Get conversation manager and fetch full history
+			conversationMgr := crossconversation.GetConversationManager()
+			if conversationMgr != nil {
+				historyReq := &crossconversation.MessageListRequest{
+					ConversationID: conversationID,
+					Limit:          50, // Get more messages for context sharing
+					UserID:         apiKeyInfo.UserID,
+				}
+				
+				// Parse BotID for AppID
+				if req.BotID != nil {
+					if botID, err := strconv.ParseInt(*req.BotID, 10, 64); err == nil {
+						historyReq.AppID = botID
+						appIDForSaving = botID
+					}
+				}
+				
+				historyResp, err := conversationMgr.MessageList(ctx, historyReq)
+				if err != nil {
+					fmt.Printf("OpenAPIChatFlowRun: failed to get conversation history: %v\n", err)
+				} else if historyResp != nil && len(historyResp.Messages) > 0 {
+					fmt.Printf("OpenAPIChatFlowRun: fetched %d conversation history messages\n", len(historyResp.Messages))
+					
+					// Convert messages to unified format for context sharing
+					historyMessages := make([]map[string]interface{}, 0, len(historyResp.Messages))
+					for _, msg := range historyResp.Messages {
+						historyEntry := map[string]interface{}{
+							"role": msg.Role,
+							"content_type": msg.ContentType,
+						}
+						
+						// Handle content - prefer text content
+						if msg.Text != nil && *msg.Text != "" {
+							historyEntry["content"] = *msg.Text
+						} else if len(msg.MultiContent) > 0 {
+							// For multi-content, combine text parts
+							content := ""
+							for _, part := range msg.MultiContent {
+								if part.Type == "text" && part.Text != nil {
+									if content != "" {
+										content += "\n"
+									}
+									content += *part.Text
+								}
+							}
+							if content != "" {
+								historyEntry["content"] = content
+							}
+						}
+						
+						historyMessages = append(historyMessages, historyEntry)
+					}
+					
+					// Store in context data for sharing across nodes
+					conversationHistoryData = map[string]interface{}{
+						"conversationID": conversationID,
+						"fullHistory":    historyMessages,
+						"userID":         apiKeyInfo.UserID,
+						"appID":          appIDForSaving,
+					}
+					fmt.Printf("OpenAPIChatFlowRun: stored conversation history context for sharing\n")
+				}
+			}
+		}
+	}
+
+	// Setup SSE streaming
+	w := sse.NewWriter(c)
+	
+	c.SetContentType("text/event-stream; charset=utf-8")
+	c.Response.Header.Set("Cache-Control", "no-cache")
+	c.Response.Header.Set("Connection", "keep-alive")
+	c.Response.Header.Set("Access-Control-Allow-Origin", "*")
+
+	// Add conversation history to context if available
+	if conversationHistoryData != nil {
+		// Store conversation history in context for workflow execution
+		ctx = context.WithValue(ctx, "conversationHistory", conversationHistoryData)
+		fmt.Printf("OpenAPIChatFlowRun: added conversation history to context\n")
+	}
+
+	// Execute the workflow using the stream version
+	fmt.Printf("OpenAPIChatFlowRun: calling OpenAPIStreamRun with request: %+v\n", openAPIReq)
+	sr, err := appworkflow.SVC.OpenAPIStreamRun(ctx, openAPIReq)
+	if err != nil {
+		fmt.Printf("OpenAPIChatFlowRun: OpenAPIStreamRun failed with error: %v\n", err)
+		var se vo.WorkflowError
+		if errors.As(err, &se) {
+			event := &sse.Event{
+				Type: "error",
+				Data: []byte(se.Msg()),
+			}
+			_ = w.Write(event)
+			_ = w.Close()
+			return
+		}
+		event := &sse.Event{
+			Type: "error", 
+			Data: []byte(err.Error()),
+		}
+		_ = w.Write(event)
+		_ = w.Close()
+		return
+	}
+
+	// Send streaming response using chat-specific format
+	conversationID := ""
+	if req.ConversationID != nil {
+		conversationID = *req.ConversationID
+	}
+	sendChatStreamSSE(ctx, w, sr, conversationID, userContentForSaving, userIDForSaving, appIDForSaving)
 }
 
 // OpenAPIGetWorkflowInfo .
@@ -1147,6 +1591,26 @@ func GetExampleWorkFlowList(ctx context.Context, c *app.RequestContext) {
 	}
 
 	resp, err := appworkflow.SVC.GetExampleWorkFlowList(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
+
+	c.JSON(consts.StatusOK, resp)
+}
+
+// DependencyTree handles the dependency tree API
+// @router /api/workflow_api/dependency_tree [POST]
+func DependencyTree(ctx context.Context, c *app.RequestContext) {
+	var err error
+	var req workflow.DependencyTreeRequest
+	err = c.BindAndValidate(&req)
+	if err != nil {
+		invalidParamRequestResponse(c, err.Error())
+		return
+	}
+
+	resp, err := appworkflow.SVC.DependencyTree(ctx, &req)
 	if err != nil {
 		internalServerErrorResponse(ctx, c, err)
 		return

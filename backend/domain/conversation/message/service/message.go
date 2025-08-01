@@ -27,6 +27,7 @@ type Message interface {
 	PreCreate(ctx context.Context, req *entity.Message) (*entity.Message, error)
 	Create(ctx context.Context, req *entity.Message) (*entity.Message, error)
 	GetByRunIDs(ctx context.Context, conversationID int64, runIDs []int64) ([]*entity.Message, error)
+	GetLatestRunIDs(ctx context.Context, conversationID int64, rounds int) ([]int64, error)
 	GetByID(ctx context.Context, id int64) (*entity.Message, error)
 	Edit(ctx context.Context, req *entity.Message) (*entity.Message, error)
 	Delete(ctx context.Context, req *entity.DeleteMeta) error

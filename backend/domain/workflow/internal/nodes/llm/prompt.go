@@ -281,9 +281,26 @@ func (p *prompts) Format(ctx context.Context, vs map[string]any, _ ...prompt.Opt
 		userMsg = schema.UserMessage("")
 	}
 
-	if systemMsg == nil {
-		return []*schema.Message{userMsg}, nil
+	// Check if there are history messages to include
+	var messages []*schema.Message
+	if historyMessages, ok := vs["history_messages"].([]*schema.Message); ok && len(historyMessages) > 0 {
+		// Build the complete message array: [system_message] + history_messages + [current_user_message]
+		if systemMsg != nil {
+			messages = append(messages, systemMsg)
+		}
+		
+		// Add historical conversation messages
+		messages = append(messages, historyMessages...)
+		
+		// Add current user message
+		messages = append(messages, userMsg)
+	} else {
+		// Standard case without history
+		if systemMsg == nil {
+			return []*schema.Message{userMsg}, nil
+		}
+		messages = []*schema.Message{systemMsg, userMsg}
 	}
 
-	return []*schema.Message{systemMsg, userMsg}, nil
+	return messages, nil
 }

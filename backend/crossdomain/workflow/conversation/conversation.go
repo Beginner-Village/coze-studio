@@ -146,7 +146,12 @@ func (c *ConversationRepository) EditMessage(ctx context.Context, req *conversat
 }
 
 func (c *ConversationRepository) GetLatestRunIDs(ctx context.Context, req *conversation.GetLatestRunIDsRequest) ([]int64, error) {
-	return []int64{0}, nil
+	// Get the latest distinct run IDs for the conversation
+	runIDs, err := crossmessage.DefaultSVC().GetLatestRunIDs(ctx, req.ConversationID, int(req.Rounds))
+	if err != nil {
+		return nil, err
+	}
+	return runIDs, nil
 }
 
 func (c *ConversationRepository) GetMessagesByRunIDs(ctx context.Context, req *conversation.GetMessagesByRunIDsRequest) (*conversation.GetMessagesByRunIDsResponse, error) {

@@ -11274,6 +11274,158 @@ func (p *GetSpaceListV2Response) String() string {
 
 }
 
+type CreateSpaceRequest struct {
+	// 空间名称
+	Name string `thrift:"name,1,required" form:"name,required" json:"name,required" query:"name,required"`
+	// 空间描述
+	Description *string `thrift:"description,2,optional" form:"description" json:"description,omitempty" query:"description"`
+	// 图标URI
+	IconURI *string `thrift:"icon_uri,3,optional" form:"icon_uri" json:"icon_uri,omitempty" query:"icon_uri"`
+	// 空间类型
+	SpaceType *int32 `thrift:"space_type,4,optional" form:"space_type" json:"space_type,omitempty" query:"space_type"`
+	// 空间模式
+	SpaceMode *int32  `thrift:"space_mode,5,optional" form:"space_mode" json:"space_mode,omitempty" query:"space_mode"`
+	Base      *base.Base `thrift:"Base,255,optional" form:"-" json:"-" query:"-"`
+}
+
+func NewCreateSpaceRequest() *CreateSpaceRequest {
+	return &CreateSpaceRequest{}
+}
+
+func (p *CreateSpaceRequest) InitDefault() {
+}
+
+func (p *CreateSpaceRequest) GetName() (v string) {
+	return p.Name
+}
+
+var CreateSpaceRequest_Description_DEFAULT string
+
+func (p *CreateSpaceRequest) GetDescription() (v string) {
+	if !p.IsSetDescription() {
+		return CreateSpaceRequest_Description_DEFAULT
+	}
+	return *p.Description
+}
+
+var CreateSpaceRequest_IconURI_DEFAULT string
+
+func (p *CreateSpaceRequest) GetIconURI() (v string) {
+	if !p.IsSetIconURI() {
+		return CreateSpaceRequest_IconURI_DEFAULT
+	}
+	return *p.IconURI
+}
+
+var CreateSpaceRequest_SpaceType_DEFAULT int32
+
+func (p *CreateSpaceRequest) GetSpaceType() (v int32) {
+	if !p.IsSetSpaceType() {
+		return CreateSpaceRequest_SpaceType_DEFAULT
+	}
+	return *p.SpaceType
+}
+
+var CreateSpaceRequest_SpaceMode_DEFAULT int32
+
+func (p *CreateSpaceRequest) GetSpaceMode() (v int32) {
+	if !p.IsSetSpaceMode() {
+		return CreateSpaceRequest_SpaceMode_DEFAULT
+	}
+	return *p.SpaceMode
+}
+
+var CreateSpaceRequest_Base_DEFAULT *base.Base
+
+func (p *CreateSpaceRequest) GetBase() (v *base.Base) {
+	if !p.IsSetBase() {
+		return CreateSpaceRequest_Base_DEFAULT
+	}
+	return p.Base
+}
+
+func (p *CreateSpaceRequest) IsSetDescription() bool {
+	return p.Description != nil
+}
+
+func (p *CreateSpaceRequest) IsSetIconURI() bool {
+	return p.IconURI != nil
+}
+
+func (p *CreateSpaceRequest) IsSetSpaceType() bool {
+	return p.SpaceType != nil
+}
+
+func (p *CreateSpaceRequest) IsSetSpaceMode() bool {
+	return p.SpaceMode != nil
+}
+
+func (p *CreateSpaceRequest) IsSetBase() bool {
+	return p.Base != nil
+}
+
+func (p *CreateSpaceRequest) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CreateSpaceRequest(%+v)", *p)
+}
+
+type CreateSpaceResponse struct {
+	Data     *BotSpaceV2    `thrift:"data,1" form:"data" json:"data" query:"data"`
+	Code     int64          `thrift:"code,253,required" form:"code,required" json:"code,required" query:"code,required"`
+	Msg      string         `thrift:"msg,254,required" form:"msg,required" json:"msg,required" query:"msg,required"`
+	BaseResp *base.BaseResp `thrift:"BaseResp,255,required" form:"BaseResp,required" json:"BaseResp,required" query:"BaseResp,required"`
+}
+
+func NewCreateSpaceResponse() *CreateSpaceResponse {
+	return &CreateSpaceResponse{}
+}
+
+func (p *CreateSpaceResponse) InitDefault() {
+}
+
+var CreateSpaceResponse_Data_DEFAULT *BotSpaceV2
+
+func (p *CreateSpaceResponse) GetData() (v *BotSpaceV2) {
+	if !p.IsSetData() {
+		return CreateSpaceResponse_Data_DEFAULT
+	}
+	return p.Data
+}
+
+func (p *CreateSpaceResponse) GetCode() (v int64) {
+	return p.Code
+}
+
+func (p *CreateSpaceResponse) GetMsg() (v string) {
+	return p.Msg
+}
+
+var CreateSpaceResponse_BaseResp_DEFAULT *base.BaseResp
+
+func (p *CreateSpaceResponse) GetBaseResp() (v *base.BaseResp) {
+	if !p.IsSetBaseResp() {
+		return CreateSpaceResponse_BaseResp_DEFAULT
+	}
+	return p.BaseResp
+}
+
+func (p *CreateSpaceResponse) IsSetData() bool {
+	return p.Data != nil
+}
+
+func (p *CreateSpaceResponse) IsSetBaseResp() bool {
+	return p.BaseResp != nil
+}
+
+func (p *CreateSpaceResponse) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	return fmt.Sprintf("CreateSpaceResponse(%+v)", *p)
+}
+
 type GetImagexShortUrlResponse struct {
 	Data     *GetImagexShortUrlData `thrift:"data,1" form:"data" json:"data" query:"data"`
 	Code     int64                  `thrift:"code,253,required" form:"code,required" json:"code,required" query:"code,required"`

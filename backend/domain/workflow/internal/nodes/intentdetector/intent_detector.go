@@ -30,14 +30,17 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes"
+	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/common"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ternary"
+	"github.com/coze-dev/coze-studio/backend/pkg/logs"
 )
 
 type Config struct {
-	Intents      []string
-	SystemPrompt string
-	IsFastMode   bool
-	ChatModel    model.BaseChatModel
+	Intents       []string
+	SystemPrompt  string
+	IsFastMode    bool
+	ChatModel     model.BaseChatModel
+	HistoryConfig *common.HistoryConfig // 添加历史记录配置
 }
 
 const SystemIntentPrompt = `
@@ -174,6 +177,27 @@ func (id *IntentDetector) Invoke(ctx context.Context, input map[string]any) (map
 	queryStr, ok := query.(string)
 	if !ok {
 		queryStr = cast.ToString(query)
+	}
+
+	// 处理历史记录
+	var historyText string
+	if id.config.HistoryConfig != nil && id.config.HistoryConfig.EnableHistory {
+		historyHelper := common.NewConversationHistory(id.config.HistoryConfig)
+		history, err := historyHelper.GetHistoryText(ctx)
+		if err != nil {
+			// 历史记录获取失败不影响主流程，只记录日志
+			logs.CtxWarnf(ctx, "Intent Detection: Failed to get conversation history: %v", err)
+		} else if history != "" {
+			historyText = "\n\n最近的对话历史:\n" + history + "\n当前用户输入: " + queryStr
+			queryStr = historyText // 将历史记录和当前输入组合
+			logs.CtxInfof(ctx, "Intent Detection: Added conversation history, final query: %s", queryStr)
+		} else {
+			logs.CtxInfof(ctx, "Intent Detection: No conversation history available")
+		}
+	} else {
+		logs.CtxInfof(ctx, "Intent Detection: History config disabled (config=%v, enable=%v)", 
+			id.config.HistoryConfig != nil, 
+			id.config.HistoryConfig != nil && id.config.HistoryConfig.EnableHistory)
 	}
 
 	vars := make(map[string]any)

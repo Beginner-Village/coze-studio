@@ -52,6 +52,8 @@ type RootCtx struct {
 	RootExecuteID     int64
 	ResumeEvent       *entity.InterruptEvent
 	ExeCfg            vo.ExecuteConfig
+	// ChatFlow conversation history cache for efficient access
+	ConversationHistory map[string]interface{} // Store full conversation history
 }
 
 type SubWorkflowCtx struct {
@@ -213,6 +215,11 @@ func PrepareRootExeCtx(ctx context.Context, h *WorkflowHandler) (context.Context
 
 		TokenCollector: newTokenCollector(fmt.Sprintf("wf_%d", h.rootWorkflowBasic.ID), parentTokenCollector),
 		StartTime:      time.Now().UnixMilli(),
+	}
+
+	// Extract conversation history from context if available
+	if conversationHistoryData, ok := ctx.Value("conversationHistoryForExecution").(map[string]interface{}); ok {
+		rootExeCtx.RootCtx.ConversationHistory = conversationHistoryData
 	}
 
 	if h.requireCheckpoint {

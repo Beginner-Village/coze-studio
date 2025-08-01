@@ -824,6 +824,11 @@ func _getspacelistv2Mw() []app.HandlerFunc {
 	return nil
 }
 
+func _savespaceMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
 func _userMw() []app.HandlerFunc {
 	// your code...
 	return nil
@@ -1502,6 +1507,16 @@ func _commonMw() []app.HandlerFunc {
 }
 
 func _upload1Mw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
+func _cozewebappMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
+func _impersonatecozeusrMw() []app.HandlerFunc {
 	// your code...
 	return nil
 }

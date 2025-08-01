@@ -42,6 +42,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/execute"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes"
+	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/common"
 	"github.com/coze-dev/coze-studio/backend/pkg/ctxcache"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
 	"github.com/coze-dev/coze-studio/backend/pkg/logs"
@@ -168,6 +169,14 @@ type Config struct {
 	ToolsReturnDirectly   map[string]bool
 	KnowledgeRecallConfig *KnowledgeRecallConfig
 	FullSources           map[string]*nodes.SourceInfo
+	// Conversation history configuration
+	HistoryConfig         *ConversationHistoryConfig
+}
+
+type ConversationHistoryConfig struct {
+	EnableHistory      bool  // Whether to enable conversation history
+	HistoryRounds      int   // Number of historical conversation rounds to include
+	IncludeCurrentTurn bool  // Whether to include current turn in history
 }
 
 type LLM struct {
@@ -183,6 +192,25 @@ const (
 	rawOutputKey = "llm_raw_output_%s"
 	warningKey   = "llm_warning_%s"
 )
+
+func getHistoryMessages(ctx context.Context, cfg *ConversationHistoryConfig) ([]*schema.Message, error) {
+	if cfg == nil || !cfg.EnableHistory || cfg.HistoryRounds <= 0 {
+		logs.CtxInfof(ctx, "LLM History: disabled or no rounds configured (enable=%v, rounds=%d)", 
+			cfg != nil && cfg.EnableHistory, 
+			func() int { if cfg == nil { return 0 } else { return cfg.HistoryRounds } }())
+		return nil, nil
+	}
+
+	// 使用通用的历史记录处理器
+	historyConfig := &common.HistoryConfig{
+		EnableHistory:      cfg.EnableHistory,
+		HistoryRounds:      cfg.HistoryRounds,
+		IncludeCurrentTurn: cfg.IncludeCurrentTurn,
+	}
+	
+	historyHelper := common.NewConversationHistory(historyConfig)
+	return historyHelper.GetHistoryMessages(ctx)
+}
 
 func jsonParse(ctx context.Context, data string, schema_ map[string]*vo.TypeInfo) (map[string]any, error) {
 	data = nodes.ExtractJSONString(data)
@@ -285,6 +313,9 @@ func New(ctx context.Context, cfg *Config) (*LLM, error) {
 	}
 
 	userPrompt := cfg.UserPrompt
+	
+	// Don't modify the user prompt for history - we'll pass history messages directly to the model
+	
 	switch format {
 	case FormatJSON:
 		jsonSchema, err := vo.TypeInfoToJSONSchema(cfg.OutputFields, nil)
@@ -324,10 +355,48 @@ func New(ctx context.Context, cfg *Config) (*LLM, error) {
 		_ = g.AddEdge(knowledgeLambdaKey, templateNodeKey)
 
 	} else {
-		sp := newPromptTpl(schema.System, cfg.SystemPrompt, cfg.InputFields, nil)
-		up := newPromptTpl(schema.User, userPrompt, cfg.InputFields, nil)
+		inputs := maps.Clone(cfg.InputFields)
+		sp := newPromptTpl(schema.System, cfg.SystemPrompt, inputs, nil)
+		up := newPromptTpl(schema.User, userPrompt, inputs, nil)
+		
+		// Create template with or without history support
 		template := newPrompts(sp, up, cfg.ChatModel)
-		_ = g.AddChatTemplateNode(templateNodeKey, template)
+		
+		if cfg.HistoryConfig != nil && cfg.HistoryConfig.EnableHistory {
+			_ = g.AddChatTemplateNode(templateNodeKey, template,
+				compose.WithStatePreHandler(func(ctx context.Context, in map[string]any, state llmState) (map[string]any, error) {
+					logs.CtxInfof(ctx, "LLM StateHandler: starting with history config enabled (rounds=%d)", cfg.HistoryConfig.HistoryRounds)
+					
+					// Get conversation history messages and add them to input
+					historyMessages, err := getHistoryMessages(ctx, cfg.HistoryConfig)
+					if err != nil {
+						logs.CtxErrorf(ctx, "failed to get chat history: %v", err)
+						// Continue without history on error
+					} else if len(historyMessages) > 0 {
+						logs.CtxInfof(ctx, "LLM StateHandler: adding %d history messages to input", len(historyMessages))
+						// Add history messages to input so template can access them
+						in["history_messages"] = historyMessages
+					} else {
+						logs.CtxInfof(ctx, "LLM StateHandler: no history messages to add")
+					}
+					
+					// Copy all input data to state (standard pattern)
+					for k, v := range in {
+						state[k] = v
+					}
+					logs.CtxInfof(ctx, "LLM StateHandler: completed, input keys: %v", func() []string {
+						keys := make([]string, 0, len(in))
+						for k := range in {
+							keys = append(keys, k)
+						}
+						return keys
+					}())
+					return in, nil
+				}))
+		} else {
+			logs.CtxInfof(ctx, "LLM Template: history config disabled or not configured")
+			_ = g.AddChatTemplateNode(templateNodeKey, template)
+		}
 
 		_ = g.AddEdge(compose.START, templateNodeKey)
 	}

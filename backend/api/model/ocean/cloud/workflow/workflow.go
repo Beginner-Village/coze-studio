@@ -76097,13 +76097,13 @@ func (p *GetWorkflowRunHistoryResponse) String() string {
 }
 
 type EnterMessage struct {
-	Role string `thrift:"Role,1,required" json:"role" form:"Role,required" query:"Role,required"`
+	Role string `thrift:"Role,1,required" json:"role" form:"role,required" query:"role,required"`
 	// 内容
-	Content  string            `thrift:"Content,2" json:"content" form:"Content" query:"Content"`
-	MetaData map[string]string `thrift:"MetaData,3" json:"meta_data" form:"MetaData" query:"MetaData"`
+	Content  string            `thrift:"Content,2" json:"content" form:"content" query:"content"`
+	MetaData map[string]string `thrift:"MetaData,3" json:"meta_data" form:"meta_data" query:"meta_data"`
 	//text/card/object_string
-	ContentType string `thrift:"ContentType,4" json:"content_type" form:"ContentType" query:"ContentType"`
-	Type        string `thrift:"Type,5" json:"type" form:"Type" query:"Type"`
+	ContentType string `thrift:"ContentType,4" json:"content_type" form:"content_type" query:"content_type"`
+	Type        string `thrift:"Type,5" json:"type" form:"type" query:"type"`
 }
 
 func NewEnterMessage() *EnterMessage {
@@ -76455,26 +76455,26 @@ func (p *EnterMessage) String() string {
 }
 
 type ChatFlowRunRequest struct {
-	WorkflowID string            `thrift:"WorkflowID,1" json:"workflow_id" form:"WorkflowID" query:"WorkflowID"`
-	Parameters *string           `thrift:"Parameters,2,optional" json:"parameters" form:"Parameters" query:"Parameters"`
-	Ext        map[string]string `thrift:"Ext,3" json:"ext" form:"Ext" query:"Ext"`
-	BotID      *string           `thrift:"BotID,4,optional" json:"bot_id" form:"BotID" query:"BotID"`
+	WorkflowID string            `thrift:"WorkflowID,1" json:"workflow_id" form:"workflow_id" query:"workflow_id"`
+	Parameters *string           `thrift:"Parameters,2,optional" json:"parameters" form:"parameters" query:"parameters"`
+	Ext        map[string]string `thrift:"Ext,3" json:"ext" form:"ext" query:"ext"`
+	BotID      *string           `thrift:"BotID,4,optional" json:"bot_id" form:"bot_id" query:"bot_id"`
 	// 默认为正式运行，试运行需要传入"DEBUG"
-	ExecuteMode *string `thrift:"ExecuteMode,6,optional" json:"execute_mode" form:"ExecuteMode" query:"ExecuteMode"`
+	ExecuteMode *string `thrift:"ExecuteMode,6,optional" json:"execute_mode" form:"execute_mode" query:"execute_mode"`
 	// 版本号，可能是workflow版本或者project版本
-	Version *string `thrift:"Version,7,optional" json:"version" form:"Version" query:"Version"`
+	Version *string `thrift:"Version,7,optional" json:"version" form:"version" query:"version"`
 	// 渠道ID，比如ui builder、template、商店等
-	ConnectorID *string `thrift:"ConnectorID,8,optional" json:"connector_id" form:"ConnectorID" query:"ConnectorID"`
-	AppID       *string `thrift:"AppID,9,optional" json:"app_id" form:"AppID" query:"AppID"`
+	ConnectorID *string `thrift:"ConnectorID,8,optional" json:"connector_id" form:"connector_id" query:"connector_id"`
+	AppID       *string `thrift:"AppID,9,optional" json:"app_id" form:"app_id" query:"app_id"`
 	// 会话ID
-	ConversationID *string `thrift:"ConversationID,10,optional" json:"conversation_id" form:"ConversationID" query:"ConversationID"`
+	ConversationID *string `thrift:"ConversationID,10,optional" json:"conversation_id" form:"conversation_id" query:"conversation_id"`
 	// 用户希望先写入的消息
 	AdditionalMessages []*EnterMessage `thrift:"AdditionalMessages,11,optional" json:"additional_messages" form:"additional_messages" `
 	// 项目ID，为了兼容ui builder
-	ProjectID *string `thrift:"ProjectID,12,optional" json:"project_id" form:"ProjectID" query:"ProjectID"`
+	ProjectID *string `thrift:"ProjectID,12,optional" json:"project_id" form:"project_id" query:"project_id"`
 	// 建议回复信息
 	SuggestReplyInfo *SuggestReplyInfo `thrift:"SuggestReplyInfo,13,optional" json:"suggest_reply_info" form:"suggest_reply_info" `
-	Base             *base.Base        `thrift:"Base,255,optional" form:"Base" json:"Base,omitempty" query:"Base"`
+	Base             *base.Base        `thrift:"Base,255,optional" form:"base" json:"Base,omitempty" query:"base"`
 }
 
 func NewChatFlowRunRequest() *ChatFlowRunRequest {
