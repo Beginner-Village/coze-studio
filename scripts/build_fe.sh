@@ -12,7 +12,7 @@ pushd "${FRONTEND_DIR}"
 
 echo "正在构建前端..."
 
-BUILD_BRANCH=opencoze-local rush rebuild -o @coze-studio/app --verbose
+IS_OPEN_SOURCE=false BUILD_BRANCH=opencoze-local rush rebuild -o @coze-studio/app --verbose
 
 popd
 
