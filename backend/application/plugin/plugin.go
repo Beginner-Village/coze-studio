@@ -365,7 +365,8 @@ func (p *PluginApplicationService) RegisterPlugin(ctx context.Context, req *plug
 }
 
 func (p *PluginApplicationService) GetPluginAPIs(ctx context.Context, req *pluginAPI.GetPluginAPIsRequest) (resp *pluginAPI.GetPluginAPIsResponse, err error) {
-	pl, err := p.validateDraftPluginAccess(ctx, req.PluginID)
+	// GetPluginAPIs只需要读取权限
+	pl, err := p.validateDraftPluginReadAccess(ctx, req.PluginID)
 	if err != nil {
 		return nil, errorx.Wrapf(err, "validateGetPluginAPIsRequest failed")
 	}
@@ -499,7 +500,8 @@ func (p *PluginApplicationService) getToolOnlineStatus(ctx context.Context, tool
 }
 
 func (p *PluginApplicationService) GetPluginInfo(ctx context.Context, req *pluginAPI.GetPluginInfoRequest) (resp *pluginAPI.GetPluginInfoResponse, err error) {
-	draftPlugin, err := p.validateDraftPluginAccess(ctx, req.PluginID)
+	// GetPluginInfo只需要读取权限
+	draftPlugin, err := p.validateDraftPluginReadAccess(ctx, req.PluginID)
 	if err != nil {
 		return nil, errorx.Wrapf(err, "validateGetPluginInfoRequest failed")
 	}
@@ -727,14 +729,41 @@ func (p *PluginApplicationService) GetUpdatedAPIs(ctx context.Context, req *plug
 }
 
 func (p *PluginApplicationService) GetUserAuthority(ctx context.Context, req *pluginAPI.GetUserAuthorityRequest) (resp *pluginAPI.GetUserAuthorityResponse, err error) {
+	uid := ctxutil.GetUIDFromCtx(ctx)
+	if uid == nil {
+		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "session is required"))
+	}
+
+	// 获取插件信息
+	plugin, err := p.DomainSVC.GetDraftPlugin(ctx, req.PluginID)
+	if err != nil {
+		return nil, errorx.Wrapf(err, "GetDraftPlugin failed, pluginID=%d", req.PluginID)
+	}
+
+	var permission *PluginPermission
+
+	// 1. 检查是否为插件原始创建者（向后兼容）
+	if plugin.DeveloperID == *uid {
+		permission = GetPluginPermissionByRole(SpaceRoleOwner)
+	} else {
+		// 2. 检查用户在空间中的角色
+		role, err := p.checkSpacePermission(ctx, *uid, plugin.SpaceID)
+		if err != nil {
+			// 用户不在空间中，返回无权限
+			permission = GetPluginPermissionByRole(0)
+		} else {
+			permission = GetPluginPermissionByRole(role)
+		}
+	}
+
 	resp = &pluginAPI.GetUserAuthorityResponse{
 		Data: &common.GetUserAuthorityData{
-			CanEdit:          true,
-			CanRead:          true,
-			CanDelete:        true,
-			CanDebug:         true,
-			CanPublish:       true,
-			CanReadChangelog: true,
+			CanEdit:          permission.CanEdit,
+			CanRead:          permission.CanRead,
+			CanDelete:        permission.CanDelete,
+			CanDebug:         permission.CanDebug,
+			CanPublish:       permission.CanPublish,
+			CanReadChangelog: permission.CanReadChangelog,
 		},
 	}
 
@@ -1680,21 +1709,15 @@ func (p *PluginApplicationService) MoveAPPPluginToLibrary(ctx context.Context, p
 }
 
 func (p *PluginApplicationService) validateDraftPluginAccess(ctx context.Context, pluginID int64) (plugin *entity.PluginInfo, err error) {
-	uid := ctxutil.GetUIDFromCtx(ctx)
-	if uid == nil {
-		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "session is required"))
-	}
+	// 使用新的权限验证系统，默认需要编辑权限
+	plugin, _, err = p.validatePluginPermission(ctx, pluginID, "edit")
+	return plugin, err
+}
 
-	plugin, err = p.DomainSVC.GetDraftPlugin(ctx, pluginID)
-	if err != nil {
-		return nil, errorx.Wrapf(err, "GetDraftPlugin failed, pluginID=%d", pluginID)
-	}
-
-	if plugin.DeveloperID != *uid {
-		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "you are not the plugin owner"))
-	}
-
-	return plugin, nil
+// validateDraftPluginReadAccess 验证读取权限（用于查看类接口）
+func (p *PluginApplicationService) validateDraftPluginReadAccess(ctx context.Context, pluginID int64) (plugin *entity.PluginInfo, err error) {
+	plugin, _, err = p.validatePluginPermission(ctx, pluginID, "read")
+	return plugin, err
 }
 
 func (p *PluginApplicationService) OauthAuthorizationCode(ctx context.Context, req *botOpenAPI.OauthAuthorizationCodeReq) (resp *botOpenAPI.OauthAuthorizationCodeResp, err error) {
