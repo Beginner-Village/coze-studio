@@ -531,9 +531,12 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 
 		if sw != nil && event.Type == NodeEnd {
 			var content string
+			var isLast bool = false // Default to false, only Exit node should set to true
 			switch event.NodeType {
 			case entity.NodeTypeOutputEmitter:
 				content = event.Answer
+				// OutputEmitter is an intermediate output node, not the last one
+				isLast = false
 			case entity.NodeTypeExit:
 				if event.Context.SubWorkflowCtx != nil {
 					// if the exit node belongs to a sub workflow, do not send data message
@@ -545,6 +548,7 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 				} else {
 					content = event.Answer
 				}
+				isLast = true // Only Exit node marks the last message
 			default:
 				return noTerminate, nil
 			}
@@ -558,7 +562,7 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 					NodeID:    string(event.NodeKey),
 					NodeType:  event.NodeType,
 					NodeTitle: event.NodeName,
-					Last:      true,
+					Last:      isLast,
 					Usage: ternary.IFElse(event.Token == nil, nil, &entity.TokenUsage{
 						InputTokens:  event.GetInputTokens(),
 						OutputTokens: event.GetOutputTokens(),
@@ -597,6 +601,9 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 		} else if event.NodeType == entity.NodeTypeVariableAggregator {
 			return noTerminate, nil
 		}
+		
+		// OutputEmitter should send streaming output to user interface
+		// Don't return here, let it send the message
 
 		sw.Send(&entity.Message{
 			DataMessage: &entity.DataMessage{

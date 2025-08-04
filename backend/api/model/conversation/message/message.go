@@ -201,6 +201,8 @@ type ExtraInfo struct {
 	//agent app使用引用格式
 	ReferFormat string `thrift:"refer_format,21" form:"refer_format" json:"refer_format" query:"refer_format"`
 	CallID      string `thrift:"call_id,22" form:"call_id" json:"call_id" query:"call_id"`
+	// Marker to indicate this is an OutputEmitter message
+	OutputEmitter string `thrift:"output_emitter,23" form:"output_emitter" json:"output_emitter" query:"output_emitter"`
 }
 
 func NewExtraInfo() *ExtraInfo {

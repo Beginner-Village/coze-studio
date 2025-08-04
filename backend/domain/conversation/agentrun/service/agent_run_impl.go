@@ -206,6 +206,8 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 		return message.MessageTypeFlowUp, nil
 	case singleagent.EventTypeOfInterrupt:
 		return message.MessageTypeInterrupt, nil
+	case singleagent.EventTypeOfOutputEmitter:
+		return message.MessageTypeAnswer, nil // OutputEmitter should be treated as answer type
 	}
 	return eType, errorx.New(errno.ErrReplyUnknowEventType)
 }
@@ -378,7 +380,81 @@ func (c *runImpl) handlerHistory(ctx context.Context, rtDependence *runtimeDepen
 		return nil, err
 	}
 
+	// Special handling for multiple assistant messages from OutputEmitter
+	// When there are multiple assistant messages with the same reply_id in a single turn,
+	// we need to merge them or only keep the last one for the LLM context
+	history = c.mergeOutputEmitterMessages(ctx, history)
+
 	return history, nil
+}
+
+func (c *runImpl) mergeOutputEmitterMessages(ctx context.Context, history []*msgEntity.Message) []*msgEntity.Message {
+	if len(history) == 0 {
+		return history
+	}
+
+	// Group messages by RunID
+	runMessages := make(map[int64][]*msgEntity.Message)
+	var runOrder []int64
+	
+	for _, msg := range history {
+		if _, exists := runMessages[msg.RunID]; !exists {
+			runOrder = append(runOrder, msg.RunID)
+		}
+		runMessages[msg.RunID] = append(runMessages[msg.RunID], msg)
+	}
+	
+	// Process each run's messages
+	var result []*msgEntity.Message
+	for _, runID := range runOrder {
+		msgs := runMessages[runID]
+		
+		// Find all assistant messages in this run
+		var assistantMsgs []*msgEntity.Message
+		var otherMsgs []*msgEntity.Message
+		
+		for _, msg := range msgs {
+			if msg.Role == schema.Assistant && msg.MessageType == message.MessageTypeAnswer {
+				assistantMsgs = append(assistantMsgs, msg)
+			} else {
+				otherMsgs = append(otherMsgs, msg)
+			}
+		}
+		
+		// If there are multiple assistant messages (OutputEmitter + final answer),
+		// we need to handle them specially - keep them both for proper context
+		if len(assistantMsgs) > 1 {
+			logs.CtxInfof(ctx, "Found %d assistant messages in run %d, keeping them in proper order", len(assistantMsgs), runID)
+			
+			// Separate OutputEmitter messages from final LLM answers
+			var outputEmitterMsgs []*msgEntity.Message
+			var otherAssistantMsgs []*msgEntity.Message
+			
+			for _, msg := range assistantMsgs {
+				if msg.Ext != nil && msg.Ext["output_emitter"] == "true" {
+					// This is an OutputEmitter message, keep it as independent context
+					outputEmitterMsgs = append(outputEmitterMsgs, msg)
+				} else {
+					// This is a regular LLM answer
+					otherAssistantMsgs = append(otherAssistantMsgs, msg)
+				}
+			}
+			
+			// Add messages in chronological order: other messages first, then OutputEmitter, then final answers
+			result = append(result, otherMsgs...)
+			
+			// Add OutputEmitter messages (these provide important tool output context)
+			result = append(result, outputEmitterMsgs...)
+			
+			// Add other assistant messages (final LLM responses)
+			result = append(result, otherAssistantMsgs...)
+		} else {
+			// Normal case: 0 or 1 assistant message
+			result = append(result, msgs...)
+		}
+	}
+	
+	return result
 }
 
 func (c *runImpl) getRunID(rr []*model.RunRecord) []int64 {
@@ -458,6 +534,7 @@ func (c *runImpl) pull(_ context.Context, mainChan chan *entity.AgentRespEvent, 
 			Knowledge:    rm.Knowledge,
 			Suggest:      rm.Suggest,
 			Interrupt:    rm.Interrupt,
+			OutputEmitter: rm.OutputEmitter,
 		}
 
 		mainChan <- respChunk
@@ -509,67 +586,76 @@ func (c *runImpl) push(ctx context.Context, mainChan chan *entity.AgentRespEvent
 				return
 			}
 		case message.MessageTypeAnswer:
-			fullContent := bytes.NewBuffer([]byte{})
-			var usage *msgEntity.UsageExt
-			var isToolCalls = false
+			// Handle regular ChatModelAnswer events
+			if chunk.ModelAnswer != nil {
+				fullContent := bytes.NewBuffer([]byte{})
+				var usage *msgEntity.UsageExt
+				var isToolCalls = false
 
-			for {
-				streamMsg, receErr := chunk.ModelAnswer.Recv()
+				for {
+					streamMsg, receErr := chunk.ModelAnswer.Recv()
 
-				if receErr != nil {
-					if errors.Is(receErr, io.EOF) {
+					if receErr != nil {
+						if errors.Is(receErr, io.EOF) {
 
-						if isToolCalls {
+							if isToolCalls {
+								break
+							}
+
+							finalAnswer := c.buildSendMsg(ctx, preFinalAnswerMsg, false, rtDependence)
+
+							finalAnswer.Content = fullContent.String()
+							finalAnswer.ReasoningContent = ptr.Of(reasoningContent.String())
+							hfErr := c.handlerFinalAnswer(ctx, finalAnswer, sw, usage, rtDependence, preFinalAnswerMsg)
+							if hfErr != nil {
+								err = hfErr
+								return
+							}
+							finishErr := c.handlerFinalAnswerFinish(ctx, sw, rtDependence)
+							if finishErr != nil {
+								err = finishErr
+								return
+							}
 							break
 						}
-
-						finalAnswer := c.buildSendMsg(ctx, preFinalAnswerMsg, false, rtDependence)
-
-						finalAnswer.Content = fullContent.String()
-						finalAnswer.ReasoningContent = ptr.Of(reasoningContent.String())
-						hfErr := c.handlerFinalAnswer(ctx, finalAnswer, sw, usage, rtDependence, preFinalAnswerMsg)
-						if hfErr != nil {
-							err = hfErr
-							return
-						}
-						finishErr := c.handlerFinalAnswerFinish(ctx, sw, rtDependence)
-						if finishErr != nil {
-							err = finishErr
-							return
-						}
-						break
-					}
-					err = receErr
-					return
-				}
-
-				if streamMsg != nil && len(streamMsg.ToolCalls) > 0 {
-					isToolCalls = true
-				}
-
-				if streamMsg != nil && streamMsg.ResponseMeta != nil {
-					usage = c.handlerUsage(streamMsg.ResponseMeta)
-				}
-
-				if streamMsg != nil && len(streamMsg.ReasoningContent) == 0 && len(streamMsg.Content) == 0 {
-					continue
-				}
-				if createPreMsg && (len(streamMsg.ReasoningContent) > 0 || len(streamMsg.Content) > 0) {
-					preFinalAnswerMsg, err = c.PreCreateFinalAnswer(ctx, rtDependence)
-					if err != nil {
+						err = receErr
 						return
 					}
-					createPreMsg = false
+
+					if streamMsg != nil && len(streamMsg.ToolCalls) > 0 {
+						isToolCalls = true
+					}
+
+					if streamMsg != nil && streamMsg.ResponseMeta != nil {
+						usage = c.handlerUsage(streamMsg.ResponseMeta)
+					}
+
+					if streamMsg != nil && len(streamMsg.ReasoningContent) == 0 && len(streamMsg.Content) == 0 {
+						continue
+					}
+					if createPreMsg && (len(streamMsg.ReasoningContent) > 0 || len(streamMsg.Content) > 0) {
+						preFinalAnswerMsg, err = c.PreCreateFinalAnswer(ctx, rtDependence)
+						if err != nil {
+							return
+						}
+						createPreMsg = false
+					}
+
+					sendMsg := c.buildSendMsg(ctx, preFinalAnswerMsg, false, rtDependence)
+					reasoningContent.WriteString(streamMsg.ReasoningContent)
+					sendMsg.ReasoningContent = ptr.Of(streamMsg.ReasoningContent)
+
+					fullContent.WriteString(streamMsg.Content)
+					sendMsg.Content = streamMsg.Content
+
+					c.runEvent.SendMsgEvent(entity.RunEventMessageDelta, sendMsg, sw)
 				}
-
-				sendMsg := c.buildSendMsg(ctx, preFinalAnswerMsg, false, rtDependence)
-				reasoningContent.WriteString(streamMsg.ReasoningContent)
-				sendMsg.ReasoningContent = ptr.Of(streamMsg.ReasoningContent)
-
-				fullContent.WriteString(streamMsg.Content)
-				sendMsg.Content = streamMsg.Content
-
-				c.runEvent.SendMsgEvent(entity.RunEventMessageDelta, sendMsg, sw)
+			} else if chunk.OutputEmitter != nil {
+				// Handle OutputEmitter events as answer type with independent message ID
+				err = c.handlerOutputEmitter(ctx, chunk.OutputEmitter, sw, rtDependence)
+				if err != nil {
+					return
+				}
 			}
 
 		case message.MessageTypeFlowUp:
@@ -873,6 +959,63 @@ func (c *runImpl) handlerSuggest(ctx context.Context, chunk *entity.AgentRespEve
 
 	c.runEvent.SendMsgEvent(entity.RunEventMessageCompleted, sendMsg, sw)
 
+	return nil
+}
+
+func (c *runImpl) handlerOutputEmitter(ctx context.Context, outputMsg *schema.Message, sw *schema.StreamWriter[*entity.AgentRunResponse], rtDependence *runtimeDependence) error {
+	logs.CtxInfof(ctx, "handlerOutputEmitter called with content: %s", outputMsg.Content)
+	
+	// Create a new message for OutputEmitter with its own ID
+	outputEmitterMsg, err := c.PreCreateFinalAnswer(ctx, rtDependence)
+	if err != nil {
+		return err
+	}
+	
+	// Set the content BEFORE building the send message
+	outputEmitterMsg.Content = outputMsg.Content
+	
+	// Add a marker to identify this as an OutputEmitter message BEFORE building send message
+	if outputEmitterMsg.Ext == nil {
+		outputEmitterMsg.Ext = make(map[string]string)
+	}
+	outputEmitterMsg.Ext["output_emitter"] = "true"
+	
+	// Debug logging
+	logs.CtxInfof(ctx, "[DEBUG] handlerOutputEmitter: Set output_emitter=true in Ext map for message ID %d", outputEmitterMsg.ID)
+	logs.CtxInfof(ctx, "[DEBUG] handlerOutputEmitter: Full Ext map before buildSendMsg: %v", outputEmitterMsg.Ext)
+	logs.CtxInfof(ctx, "OutputEmitter message after setting content - ID: %d, Content: %s", outputEmitterMsg.ID, outputEmitterMsg.Content)
+	
+	// Send the OutputEmitter content as answer type message (directly as completed, no delta needed)
+	sendMsg := c.buildSendMsg(ctx, outputEmitterMsg, true, rtDependence)
+	
+	// Debug: Check if Ext is preserved in sendMsg
+	logs.CtxInfof(ctx, "[DEBUG] handlerOutputEmitter: sendMsg.Ext after buildSendMsg: %v", sendMsg.Ext)
+	logs.CtxInfof(ctx, "SendMsg built - ID: %d, Content: %s", sendMsg.ID, sendMsg.Content)
+	logs.CtxInfof(ctx, "Sending OutputEmitter message with ID: %d, content: %s", outputEmitterMsg.ID, sendMsg.Content)
+	
+	// OutputEmitter sends complete message directly (no need for delta + completed)
+	c.runEvent.SendMsgEvent(entity.RunEventMessageCompleted, sendMsg, sw)
+	
+	msgMeta := &message.Message{
+		ID:             outputEmitterMsg.ID,
+		ConversationID: outputEmitterMsg.ConversationID,
+		RunID:          outputEmitterMsg.RunID,
+		AgentID:        outputEmitterMsg.AgentID,
+		SectionID:      outputEmitterMsg.SectionID,
+		UserID:         outputEmitterMsg.UserID,
+		Role:           schema.Assistant,
+		MessageType:    message.MessageTypeAnswer,
+		ContentType:    message.ContentTypeText,
+		Content:        outputMsg.Content,
+		Ext:            outputEmitterMsg.Ext,
+	}
+	
+	_, err = crossmessage.DefaultSVC().Create(ctx, msgMeta)
+	if err != nil {
+		logs.CtxErrorf(ctx, "Failed to save OutputEmitter message: %v", err)
+		// Don't return error as message was already sent to client
+	}
+	
 	return nil
 }
 

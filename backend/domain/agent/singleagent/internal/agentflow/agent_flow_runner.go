@@ -19,6 +19,8 @@ package agentflow
 import (
 	"context"
 	"errors"
+	// "fmt"
+	"io"
 	"slices"
 
 	"github.com/google/uuid"
@@ -30,6 +32,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/singleagent"
 	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossworkflow"
 	"github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/entity"
+	wfentity "github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
 	"github.com/coze-dev/coze-studio/backend/pkg/logs"
@@ -109,6 +112,44 @@ func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (
 			}
 			wfConfig := crossworkflow.DefaultSVC().WithExecuteConfig(cfReq)
 			composeOpts = append(composeOpts, wfConfig)
+			
+			// Set up workflow message pipe to capture intermediate output from OutputEmitter nodes
+			wfMsgOpt, wfMsgReader := crossworkflow.DefaultSVC().WithMessagePipe()
+			composeOpts = append(composeOpts, wfMsgOpt)
+			
+			// Forward workflow intermediate messages to agent stream
+			go func() {
+				defer wfMsgReader.Close()
+				for {
+					wfMsg, err := wfMsgReader.Recv()
+					if err != nil {
+						if err == io.EOF {
+							break
+						}
+						logs.CtxErrorf(ctx, "Error reading workflow message: %v", err)
+						break
+					}
+					if wfMsg.DataMessage != nil && wfMsg.DataMessage.NodeType == wfentity.NodeTypeOutputEmitter {
+						// Only process if there's actual content (ignore empty end messages)
+						if wfMsg.DataMessage.Content != "" {
+							// Create a new event type specifically for OutputEmitter
+							// This avoids interfering with the normal ChatModelAnswer flow
+							logs.CtxInfof(ctx, "OutputEmitter message - NodeID: %s, NodeTitle: %s, Content: %s", 
+								wfMsg.DataMessage.NodeID, wfMsg.DataMessage.NodeTitle, wfMsg.DataMessage.Content)
+							
+							// Create a custom event that will be handled separately
+							outputEmitterEvent := &entity.AgentEvent{
+								EventType: singleagent.EventTypeOfOutputEmitter,
+								OutputEmitter: &schema.Message{
+									Role:    schema.Assistant,
+									Content: wfMsg.DataMessage.Content,
+								},
+							}
+							sw.Send(outputEmitterEvent, nil)
+						}
+					}
+				}
+			}()
 		}
 		_, _ = r.runner.Stream(ctx, req, composeOpts...)
 	}()

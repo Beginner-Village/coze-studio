@@ -19,6 +19,7 @@ package agentflow
 import (
 	"context"
 
+	"github.com/bytedance/sonic"
 	"github.com/coze-dev/coze-studio/backend/api/model/ocean/cloud/bot_common"
 	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossworkflow"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow"
@@ -46,7 +47,9 @@ func newWorkflowTools(ctx context.Context, conf *workflowConfig) ([]workflow.Too
 
 	if len(workflowTools) > 0 {
 		for _, workflowTool := range workflowTools {
-			if workflowTool.TerminatePlan() == vo.UseAnswerContent {
+			// Only mark as "return directly" if it uses answer content AND doesn't contain OutputEmitter
+			// OutputEmitter is for intermediate output and shouldn't cause the agent to terminate
+			if workflowTool.TerminatePlan() == vo.UseAnswerContent && !hasOutputEmitter(&workflowTool) {
 				toolInfo, err := workflowTool.Info(ctx)
 				if err != nil {
 					return nil, nil, err
@@ -60,4 +63,31 @@ func newWorkflowTools(ctx context.Context, conf *workflowConfig) ([]workflow.Too
 	}
 
 	return workflowTools, toolsReturnDirectly, err
+}
+
+// hasOutputEmitter checks if the workflow contains OutputEmitter nodes
+func hasOutputEmitter(wf *workflow.ToolFromWorkflow) bool {
+	if wf == nil {
+		return false
+	}
+	
+	workflowEntity := (*wf).GetWorkflow()
+	if workflowEntity == nil || workflowEntity.CanvasInfo == nil {
+		return false
+	}
+	
+	// Parse the Canvas JSON string
+	var canvas vo.Canvas
+	if err := sonic.UnmarshalString(workflowEntity.CanvasInfo.Canvas, &canvas); err != nil {
+		return false
+	}
+	
+	// Check all nodes in the workflow for OutputEmitter (BlockTypeBotMessage)
+	for _, node := range canvas.Nodes {
+		if node != nil && node.Type == vo.BlockTypeBotMessage {
+			return true
+		}
+	}
+	
+	return false
 }

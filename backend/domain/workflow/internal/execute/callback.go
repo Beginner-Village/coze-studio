@@ -704,6 +704,8 @@ func (n *NodeHandler) OnEnd(ctx context.Context, info *callbacks.RunInfo, output
 		}
 	}
 
+	// Set Answer field for OutputEmitter (for display) and Exit node (for final answer)
+	// But OutputEmitter should not terminate the workflow
 	if c.NodeType == entity.NodeTypeOutputEmitter {
 		e.Answer = output.(map[string]any)["output"].(string)
 	} else if c.NodeType == entity.NodeTypeExit && *c.TerminatePlan == vo.UseAnswerContent {
@@ -1105,7 +1107,103 @@ func (n *NodeHandler) OnEndWithStreamOutput(ctx context.Context, info *callbacks
 
 			n.ch <- e
 		})
-	case entity.NodeTypeExit, entity.NodeTypeOutputEmitter, entity.NodeTypeSubWorkflow:
+	case entity.NodeTypeOutputEmitter:
+		// Handle OutputEmitter as a non-terminal streaming node
+		consumer := func(ctx context.Context) context.Context {
+			defer output.Close()
+			fullOutput := make(map[string]any)
+			var firstEvent, previousEvent, secondPreviousEvent *Event
+			for {
+				chunk, err := output.Recv()
+				if err != nil {
+					if err == io.EOF {
+						if previousEvent != nil {
+							previousEmpty := len(previousEvent.Answer) == 0
+							if previousEmpty { // concat the empty previous chunk with the second previous chunk
+								if secondPreviousEvent != nil {
+									secondPreviousEvent.StreamEnd = true
+									n.ch <- secondPreviousEvent
+								} else {
+									previousEvent.StreamEnd = true
+									n.ch <- previousEvent
+								}
+							} else {
+								if secondPreviousEvent != nil {
+									n.ch <- secondPreviousEvent
+								}
+
+								previousEvent.StreamEnd = true
+								n.ch <- previousEvent
+							}
+						} else { // only sent first event, or no event at all
+							n.ch <- &Event{
+								Type:      NodeStreamingOutput,
+								Context:   c,
+								Output:    fullOutput,
+								StreamEnd: true,
+							}
+						}
+						break
+					}
+					if _, ok := schema.GetSourceName(err); ok {
+						continue
+					}
+					logs.Errorf("node OnEndWithStreamOutput failed to receive stream output: %v", err)
+					return n.OnError(ctx, info, err)
+				}
+
+				if secondPreviousEvent != nil {
+					n.ch <- secondPreviousEvent
+				}
+
+				fullOutput, err = nodes.ConcatTwoMaps(fullOutput, chunk.(map[string]any))
+				if err != nil {
+					logs.Errorf("failed to concat two maps: %v", err)
+					return n.OnError(ctx, info, err)
+				}
+
+				deltaEvent := &Event{
+					Type:    NodeStreamingOutput,
+					Context: c,
+					Output:  fullOutput,
+				}
+
+				if delta, ok := chunk.(map[string]any)["output"]; ok {
+					// For OutputEmitter, set Answer for display but mark it as intermediate
+					deltaEvent.Answer = strings.TrimSuffix(delta.(string), nodes.KeyIsFinished)
+					deltaEvent.outputExtractor = func(o map[string]any) string {
+						str, ok := o["output"].(string)
+						if ok {
+							return str
+						}
+						return fmt.Sprint(o["output"])
+					}
+				}
+
+				if firstEvent == nil { // prioritize sending the first event asap.
+					firstEvent = deltaEvent
+					n.ch <- firstEvent
+				} else {
+					secondPreviousEvent = previousEvent
+					previousEvent = deltaEvent
+				}
+			}
+
+			// Send NodeEndStreaming event for OutputEmitter but don't terminate workflow
+			e := &Event{
+				Type:      NodeEndStreaming,
+				Context:   c,
+				Output:    fullOutput,
+				RawOutput: fullOutput,
+				Duration:  time.Since(time.UnixMilli(c.StartTime)),
+				extra:     &entity.NodeExtra{},
+			}
+
+			n.ch <- e
+			return ctx
+		}
+		return consumer(ctx)
+	case entity.NodeTypeExit, entity.NodeTypeSubWorkflow:
 		consumer := func(ctx context.Context) context.Context {
 			defer output.Close()
 			fullOutput := make(map[string]any)

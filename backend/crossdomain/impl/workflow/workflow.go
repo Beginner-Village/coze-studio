@@ -95,3 +95,7 @@ func (i *impl) GetWorkflowIDsByAppID(ctx context.Context, appID int64) ([]int64,
 		return a.ID
 	}), err
 }
+
+func (i *impl) WithMessagePipe() (einoCompose.Option, *schema.StreamReader[*workflowEntity.Message]) {
+	return i.DomainSVC.WithMessagePipe()
+}

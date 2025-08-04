@@ -43,6 +43,7 @@ const (
 	EventTypeOfSuggest         EventType = "suggest"
 	EventTypeOfKnowledge       EventType = "knowledge"
 	EventTypeOfInterrupt       EventType = "interrupt"
+	EventTypeOfOutputEmitter   EventType = "output_emitter"
 )
 
 type AgentEvent struct {
@@ -54,6 +55,7 @@ type AgentEvent struct {
 	Suggest         *schema.Message
 	Knowledge       []*schema.Document
 	Interrupt       *InterruptInfo
+	OutputEmitter   *schema.Message
 }
 
 type SingleAgent struct {

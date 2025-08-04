@@ -64,6 +64,11 @@ func (e *Event) SendRunEvent(runEvent entity.RunEvent, runItem *entity.ChunkRunI
 
 func (e *Event) SendMsgEvent(runEvent entity.RunEvent, messageItem *entity.ChunkMessageItem, sw *schema.StreamWriter[*entity.AgentRunResponse]) {
 	resp := e.buildMessageEvent(runEvent, messageItem)
+	// Log the event being sent
+	if messageItem != nil && messageItem.Content != "" {
+		// This will help us see if events are actually being sent
+		println("[DEBUG] SendMsgEvent:", string(runEvent), "ID:", messageItem.ID, "Content:", messageItem.Content[:min(50, len(messageItem.Content))])
+	}
 	sw.Send(resp, nil)
 }
 

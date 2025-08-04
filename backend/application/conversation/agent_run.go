@@ -135,6 +135,11 @@ func (c *ConversationApplicationService) pullStream(ctx context.Context, sseSend
 			ackMessageInfo = chunk.ChunkMessageItem
 			sseSender.Send(ctx, buildMessageChunkEvent(run.RunEventMessage, buildARSM2Message(chunk, req)))
 		case entity.RunEventMessageDelta, entity.RunEventMessageCompleted:
+			// Debug log for OutputEmitter messages
+			if chunk.ChunkMessageItem != nil && chunk.ChunkMessageItem.Content != "" {
+				logs.CtxInfof(ctx, "[DEBUG] Sending SSE event %s for message ID %d with content: %s", 
+					chunk.Event, chunk.ChunkMessageItem.ID, chunk.ChunkMessageItem.Content[:min(50, len(chunk.ChunkMessageItem.Content))])
+			}
 			sseSender.Send(ctx, buildMessageChunkEvent(run.RunEventMessage, buildARSM2Message(chunk, req)))
 		default:
 			logs.CtxErrorf(ctx, "unknown handler event:%v", chunk.Event)
@@ -145,6 +150,14 @@ func (c *ConversationApplicationService) pullStream(ctx context.Context, sseSend
 
 func buildARSM2Message(chunk *entity.AgentRunResponse, req *run.AgentRunRequest) []byte {
 	chunkMessageItem := chunk.ChunkMessageItem
+
+	// Debug log the Ext map for OutputEmitter messages
+	if chunkMessageItem.Ext != nil {
+		if outputEmitter, exists := chunkMessageItem.Ext["output_emitter"]; exists {
+			logs.Infof("[DEBUG] buildARSM2Message: Message ID %d has output_emitter=%s in Ext map", 
+				chunkMessageItem.ID, outputEmitter)
+		}
+	}
 
 	chunkMessage := &run.RunStreamResponse{
 		ConversationID: strconv.FormatInt(chunkMessageItem.ConversationID, 10),
@@ -183,9 +196,24 @@ func buildARSM2Message(chunk *entity.AgentRunResponse, req *run.AgentRunRequest)
 		}
 	}
 
+	// Only clear content for final answer messages that are NOT OutputEmitter
+	// OutputEmitter messages should keep their content even when finished
 	if chunk.ChunkMessageItem.IsFinish && chunkMessageItem.MessageType == crossDomainMessage.MessageTypeAnswer {
-		chunkMessage.Message.Content = ""
-		chunkMessage.Message.ReasoningContent = ptr.Of("")
+		// Check if this is an OutputEmitter message by looking at the Ext map
+		isOutputEmitter := false
+		if chunkMessageItem.Ext != nil {
+			if val, exists := chunkMessageItem.Ext["output_emitter"]; exists && val == "true" {
+				isOutputEmitter = true
+				logs.Infof("[DEBUG] buildARSM2Message: Found OutputEmitter message ID %d, keeping content", chunkMessageItem.ID)
+			}
+		}
+		
+		// Only clear content for non-OutputEmitter answer messages
+		if !isOutputEmitter {
+			logs.Infof("[DEBUG] buildARSM2Message: Clearing content for non-OutputEmitter answer message ID %d", chunkMessageItem.ID)
+			chunkMessage.Message.Content = ""
+			chunkMessage.Message.ReasoningContent = ptr.Of("")
+		}
 	}
 
 	mCM, _ := json.Marshal(chunkMessage)
@@ -195,6 +223,13 @@ func buildARSM2Message(chunk *entity.AgentRunResponse, req *run.AgentRunRequest)
 func buildExt(extra map[string]string) *message.ExtraInfo {
 	if extra == nil {
 		return nil
+	}
+
+	// Debug logging to see what's in the extra map
+	if outputEmitter, exists := extra["output_emitter"]; exists {
+		logs.Infof("[DEBUG] buildExt: output_emitter exists in extra map with value: %s", outputEmitter)
+	} else {
+		logs.Infof("[DEBUG] buildExt: output_emitter NOT found in extra map. Keys: %v", extra)
 	}
 
 	return &message.ExtraInfo{
@@ -214,6 +249,7 @@ func buildExt(extra map[string]string) *message.ExtraInfo {
 		ExecuteDisplayName:  extra["execute_display_name"],
 		TaskType:            extra["task_type"],
 		ReferFormat:         extra["refer_format"],
+		OutputEmitter:       extra["output_emitter"],
 	}
 }
 func buildErrMsg(ackChunk *entity.ChunkMessageItem, err *entity.RunError, id int64) []byte {
