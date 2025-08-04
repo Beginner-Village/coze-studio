@@ -596,8 +596,19 @@ func genRequestString(req *http.Request, body []byte) (string, error) {
 		return "", fmt.Errorf("[genRequestString] marshal failed, err=%s", err)
 	}
 
-	if body != nil {
-		requestStr, err = sjson.SetRaw(requestStr, "body", string(body))
+	if body != nil && len(body) > 0 {
+		bodyStr := string(body)
+		// 确保body是有效的JSON，如果为空则使用"{}"
+		if bodyStr == "" {
+			bodyStr = "{}"
+		}
+		requestStr, err = sjson.SetRaw(requestStr, "body", bodyStr)
+		if err != nil {
+			return "", fmt.Errorf("[genRequestString] set body failed, err=%s", err)
+		}
+	} else {
+		// 如果body为nil或空，设置为空对象
+		requestStr, err = sjson.SetRaw(requestStr, "body", "{}")
 		if err != nil {
 			return "", fmt.Errorf("[genRequestString] set body failed, err=%s", err)
 		}
