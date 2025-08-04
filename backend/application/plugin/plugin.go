@@ -1161,7 +1161,8 @@ func (p *PluginApplicationService) UpdateBotDefaultParams(ctx context.Context, r
 }
 
 func (p *PluginApplicationService) DebugAPI(ctx context.Context, req *pluginAPI.DebugAPIRequest) (resp *pluginAPI.DebugAPIResponse, err error) {
-	_, err = p.validateDraftPluginAccess(ctx, req.PluginID)
+	// 调试API只需要debug权限，成员也可以试运行
+	_, _, err = p.validatePluginPermission(ctx, req.PluginID, "debug")
 	if err != nil {
 		return nil, errorx.Wrapf(err, "validateDebugAPIRequest failed")
 	}
