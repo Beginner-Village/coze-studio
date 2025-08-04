@@ -112,9 +112,14 @@ func (p *PluginApplicationService) validatePluginPermission(ctx context.Context,
 		return nil, 0, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "session is required"))
 	}
 
+	// 先尝试获取草稿插件，如果失败则尝试获取已发布插件
 	plugin, err := p.DomainSVC.GetDraftPlugin(ctx, pluginID)
 	if err != nil {
-		return nil, 0, errorx.Wrapf(err, "GetDraftPlugin failed, pluginID=%d", pluginID)
+		// 如果草稿插件不存在，尝试获取已发布的插件
+		plugin, err = p.DomainSVC.GetOnlinePlugin(ctx, pluginID)
+		if err != nil {
+			return nil, 0, errorx.Wrapf(err, "Plugin not found (tried both draft and published), pluginID=%d", pluginID)
+		}
 	}
 
 	// 1. 检查是否为插件原始创建者（向后兼容）
