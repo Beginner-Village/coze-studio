@@ -152,9 +152,12 @@ func (c *impl) checkResumeInfo(_ context.Context, historyMsg []*message.Message)
 
 func (c *impl) buildSchemaMessage(ctx context.Context, msgs []*message.Message) []*schema.Message {
 	schemaMessage := make([]*schema.Message, 0, len(msgs))
+	
+	logs.CtxInfof(ctx, "[DEBUG] buildSchemaMessage: Processing %d messages", len(msgs))
 
-	for _, msgOne := range msgs {
+	for i, msgOne := range msgs {
 		if msgOne.ModelContent == "" {
+			logs.CtxInfof(ctx, "[DEBUG] buildSchemaMessage: Skipping message %d (RunID: %d) - empty ModelContent", i, msgOne.RunID)
 			continue
 		}
 		if msgOne.MessageType == message.MessageTypeVerbose || msgOne.MessageType == message.MessageTypeFlowUp {
@@ -163,10 +166,14 @@ func (c *impl) buildSchemaMessage(ctx context.Context, msgs []*message.Message) 
 		var sm *schema.Message
 		err := json.Unmarshal([]byte(msgOne.ModelContent), &sm)
 		if err != nil {
+			logs.CtxErrorf(ctx, "[DEBUG] buildSchemaMessage: Failed to unmarshal ModelContent for message %d: %v", i, err)
 			continue
 		}
+		logs.CtxInfof(ctx, "[DEBUG] buildSchemaMessage: Successfully processed message %d - Role: %s, Content preview: %.50s...", i, sm.Role, sm.Content)
 		schemaMessage = append(schemaMessage, c.parseMessageURI(ctx, sm))
 	}
+	
+	logs.CtxInfof(ctx, "[DEBUG] buildSchemaMessage: Returning %d schema messages to LLM", len(schemaMessage))
 
 	return schemaMessage
 }

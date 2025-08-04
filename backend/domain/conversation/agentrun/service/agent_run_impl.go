@@ -25,6 +25,7 @@ import (
 	"io"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -370,20 +371,44 @@ func (c *runImpl) handlerHistory(ctx context.Context, rtDependence *runtimeDepen
 	}
 
 	if len(runRecordList) == 0 {
+		logs.CtxInfof(ctx, "[DEBUG HISTORY] No run records found for conversation %d", rtDependence.runMeta.ConversationID)
 		return nil, nil
 	}
 
 	runIDS := c.getRunID(runRecordList)
+	logs.CtxInfof(ctx, "[DEBUG HISTORY] Found %d run records with IDs: %v", len(runRecordList), runIDS)
 
 	history, err := crossmessage.DefaultSVC().GetByRunIDs(ctx, rtDependence.runMeta.ConversationID, runIDS)
 	if err != nil {
 		return nil, err
 	}
 
+	logs.CtxInfof(ctx, "[DEBUG HISTORY] Retrieved %d messages from database before merging", len(history))
+	for i, msg := range history {
+		isOutputEmitter := msg.Ext != nil && msg.Ext["output_emitter"] == "true"
+		contentPreview := msg.Content
+		if len(contentPreview) > 50 {
+			contentPreview = contentPreview[:50] + "..."
+		}
+		logs.CtxInfof(ctx, "[DEBUG HISTORY] Message %d: ID=%d, RunID=%d, Role=%s, Type=%s, Content='%s', OutputEmitter=%v", 
+			i, msg.ID, msg.RunID, msg.Role, msg.MessageType, contentPreview, isOutputEmitter)
+	}
+
 	// Special handling for multiple assistant messages from OutputEmitter
 	// When there are multiple assistant messages with the same reply_id in a single turn,
 	// we need to merge them or only keep the last one for the LLM context
 	history = c.mergeOutputEmitterMessages(ctx, history)
+
+	logs.CtxInfof(ctx, "[DEBUG HISTORY] After merging: %d messages for LLM context", len(history))
+	for i, msg := range history {
+		isOutputEmitter := msg.Ext != nil && msg.Ext["output_emitter"] == "true"
+		contentPreview := msg.Content
+		if len(contentPreview) > 50 {
+			contentPreview = contentPreview[:50] + "..."
+		}
+		logs.CtxInfof(ctx, "[DEBUG HISTORY] Final Message %d: ID=%d, RunID=%d, Role=%s, Type=%s, Content='%s', OutputEmitter=%v", 
+			i, msg.ID, msg.RunID, msg.Role, msg.MessageType, contentPreview, isOutputEmitter)
+	}
 
 	return history, nil
 }
@@ -422,35 +447,86 @@ func (c *runImpl) mergeOutputEmitterMessages(ctx context.Context, history []*msg
 		}
 		
 		// If there are multiple assistant messages (OutputEmitter + final answer),
-		// we need to handle them specially - keep them both for proper context
+		// merge them into a single assistant message for proper LLM context
 		if len(assistantMsgs) > 1 {
-			logs.CtxInfof(ctx, "Found %d assistant messages in run %d, keeping them in proper order", len(assistantMsgs), runID)
+			logs.CtxInfof(ctx, "Found %d assistant messages in run %d, merging them into one", len(assistantMsgs), runID)
 			
 			// Separate OutputEmitter messages from final LLM answers
-			var outputEmitterMsgs []*msgEntity.Message
-			var otherAssistantMsgs []*msgEntity.Message
+			var outputEmitterContents []string
+			var finalAnswer *msgEntity.Message
 			
 			for _, msg := range assistantMsgs {
 				if msg.Ext != nil && msg.Ext["output_emitter"] == "true" {
-					// This is an OutputEmitter message, keep it as independent context
-					outputEmitterMsgs = append(outputEmitterMsgs, msg)
+					// This is an OutputEmitter message, collect its content
+					if msg.Content != "" {
+						outputEmitterContents = append(outputEmitterContents, msg.Content)
+					}
 				} else {
-					// This is a regular LLM answer
-					otherAssistantMsgs = append(otherAssistantMsgs, msg)
+					// This is the final LLM answer, use the latest one
+					finalAnswer = msg
 				}
 			}
 			
-			// Add messages in chronological order: other messages first, then OutputEmitter, then final answers
+			// Add other messages (user, tool calls, tool responses, etc.)
 			result = append(result, otherMsgs...)
 			
-			// Add OutputEmitter messages (these provide important tool output context)
-			result = append(result, outputEmitterMsgs...)
-			
-			// Add other assistant messages (final LLM responses)
-			result = append(result, otherAssistantMsgs...)
+			// Create a merged assistant message
+			if len(outputEmitterContents) > 0 && finalAnswer != nil {
+				// Merge OutputEmitter content with final answer
+				mergedContent := strings.Join(outputEmitterContents, "\n\n")
+				if finalAnswer.Content != "" {
+					mergedContent = mergedContent + "\n\n" + finalAnswer.Content
+				}
+				finalAnswer.Content = mergedContent
+				
+				// Also update ModelContent to ensure LLM gets the merged content
+				buildModelContent := &schema.Message{
+					Role:    schema.Assistant,
+					Content: mergedContent,
+				}
+				mc, err := json.Marshal(buildModelContent)
+				if err == nil {
+					finalAnswer.ModelContent = string(mc)
+				}
+				
+				result = append(result, finalAnswer)
+			} else if len(outputEmitterContents) > 0 {
+				// Only OutputEmitter, no final answer
+				firstOutputEmitter := assistantMsgs[0] // Use first OutputEmitter as base
+				mergedContent := strings.Join(outputEmitterContents, "\n\n")
+				firstOutputEmitter.Content = mergedContent
+				
+				// Also update ModelContent
+				buildModelContent := &schema.Message{
+					Role:    schema.Assistant,
+					Content: mergedContent,
+				}
+				mc, err := json.Marshal(buildModelContent)
+				if err == nil {
+					firstOutputEmitter.ModelContent = string(mc)
+				}
+				
+				result = append(result, firstOutputEmitter)
+			} else if finalAnswer != nil {
+				// Only final answer, no OutputEmitter
+				result = append(result, finalAnswer)
+			}
 		} else {
 			// Normal case: 0 or 1 assistant message
 			result = append(result, msgs...)
+		}
+	}
+	
+	// Debug logging for history messages
+	logs.CtxInfof(ctx, "[DEBUG] Final history messages being sent to LLM:")
+	for i, msg := range result {
+		if msg.Role == schema.Assistant && msg.MessageType == message.MessageTypeAnswer {
+			logs.CtxInfof(ctx, "[DEBUG] Message %d - RunID: %d, Role: %s, Type: %s", i, msg.RunID, msg.Role, msg.MessageType)
+			logs.CtxInfof(ctx, "[DEBUG]   Content preview: %.100s...", msg.Content)
+			logs.CtxInfof(ctx, "[DEBUG]   ModelContent: %s", msg.ModelContent)
+			logs.CtxInfof(ctx, "[DEBUG]   Has ModelContent: %v", msg.ModelContent != "")
+		} else {
+			logs.CtxInfof(ctx, "[DEBUG] Message %d - RunID: %d, Role: %s, Type: %s", i, msg.RunID, msg.Role, msg.MessageType)
 		}
 	}
 	
@@ -972,6 +1048,7 @@ func (c *runImpl) handlerOutputEmitter(ctx context.Context, outputMsg *schema.Me
 	}
 	
 	// Set the content BEFORE building the send message
+	// Add context prefix to make OutputEmitter content more explicit for LLM
 	outputEmitterMsg.Content = outputMsg.Content
 	
 	// Add a marker to identify this as an OutputEmitter message BEFORE building send message
@@ -996,6 +1073,18 @@ func (c *runImpl) handlerOutputEmitter(ctx context.Context, outputMsg *schema.Me
 	// OutputEmitter sends complete message directly (no need for delta + completed)
 	c.runEvent.SendMsgEvent(entity.RunEventMessageCompleted, sendMsg, sw)
 	
+	// Build ModelContent for the OutputEmitter message
+	modelContent := &schema.Message{
+		Role:    schema.Assistant,
+		Content: outputMsg.Content,
+	}
+	mc, err := json.Marshal(modelContent)
+	if err != nil {
+		logs.CtxErrorf(ctx, "Failed to marshal ModelContent for OutputEmitter: %v", err)
+		mc = []byte("{}")
+	}
+	logs.CtxInfof(ctx, "[DEBUG] OutputEmitter saving with ModelContent: %s", string(mc))
+	
 	msgMeta := &message.Message{
 		ID:             outputEmitterMsg.ID,
 		ConversationID: outputEmitterMsg.ConversationID,
@@ -1007,6 +1096,7 @@ func (c *runImpl) handlerOutputEmitter(ctx context.Context, outputMsg *schema.Me
 		MessageType:    message.MessageTypeAnswer,
 		ContentType:    message.ContentTypeText,
 		Content:        outputMsg.Content,
+		ModelContent:   string(mc),
 		Ext:            outputEmitterMsg.Ext,
 	}
 	
