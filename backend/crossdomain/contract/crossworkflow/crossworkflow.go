@@ -20,6 +20,7 @@ import (
 	"context"
 
 	einoCompose "github.com/cloudwego/eino/compose"
+	"github.com/cloudwego/eino/schema"
 
 	"github.com/coze-dev/coze-studio/backend/domain/workflow"
 	workflowEntity "github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
@@ -36,16 +37,26 @@ type Workflow interface {
 	ReleaseApplicationWorkflows(ctx context.Context, appID int64, config *ReleaseWorkflowConfig) ([]*vo.ValidateIssue, error)
 	GetWorkflowIDsByAppID(ctx context.Context, appID int64) ([]int64, error)
 	SyncExecuteWorkflow(ctx context.Context, config vo.ExecuteConfig, input map[string]any) (*workflowEntity.WorkflowExecution, vo.TerminatePlan, error)
+	StreamExecute(ctx context.Context, config vo.ExecuteConfig, input map[string]any) (*schema.StreamReader[*workflowEntity.Message], error)
 	WithExecuteConfig(cfg vo.ExecuteConfig) einoCompose.Option
 }
 
 type ExecuteConfig = vo.ExecuteConfig
+type WorkflowMessage = workflowEntity.Message
 type ExecuteMode = vo.ExecuteMode
 
 const (
 	ExecuteModeDebug     ExecuteMode = "debug"
 	ExecuteModeRelease   ExecuteMode = "release"
 	ExecuteModeNodeDebug ExecuteMode = "node_debug"
+)
+
+type SyncPattern = vo.SyncPattern
+
+const (
+	SyncPatternSync   SyncPattern = "sync"
+	SyncPatternAsync  SyncPattern = "async"
+	SyncPatternStream SyncPattern = "stream"
 )
 
 type TaskType = vo.TaskType

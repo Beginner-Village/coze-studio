@@ -35,13 +35,16 @@ import (
 	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/agentrun"
 	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/message"
 	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/singleagent"
+	"github.com/coze-dev/coze-studio/backend/api/model/ocean/cloud/bot_common"
 	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossagent"
 	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossmessage"
+	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossworkflow"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/internal"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/internal/dal/model"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/repository"
 	msgEntity "github.com/coze-dev/coze-studio/backend/domain/conversation/message/entity"
+	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
 	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
@@ -69,6 +72,7 @@ type runtimeDependence struct {
 
 type Components struct {
 	RunRecordRepo repository.RunRecordRepo
+	ImagexSVC     imagex.ImageX
 }
 
 func NewService(c *Components) Run {
@@ -142,7 +146,11 @@ func (c *runImpl) run(ctx context.Context, sw *schema.StreamWriter[*entity.Agent
 
 	rtDependence.questionMsgID = input.ID
 
-	err = c.handlerStreamExecute(ctx, sw, history, input, rtDependence)
+	if rtDependence.agentInfo.BotMode == bot_common.BotMode_WorkflowMode {
+		err = c.handlerWfAsAgentStreamExecute(ctx, sw, rtDependence)
+	} else {
+		err = c.handlerAgentStreamExecute(ctx, sw, history, input, rtDependence)
+	}
 	return
 }
 
@@ -158,18 +166,51 @@ func (c *runImpl) handlerAgent(ctx context.Context, rtDependence *runtimeDepende
 	return agentInfo, nil
 }
 
-func (c *runImpl) handlerStreamExecute(ctx context.Context, sw *schema.StreamWriter[*entity.AgentRunResponse], historyMsg []*msgEntity.Message, input *msgEntity.Message, rtDependence *runtimeDependence) (err error) {
+func (c *runImpl) handlerWfAsAgentStreamExecute(ctx context.Context, sw *schema.StreamWriter[*entity.AgentRunResponse], rtDependence *runtimeDependence) (err error) {
+	wfID, _ := strconv.ParseInt(rtDependence.agentInfo.LayoutInfo.WorkflowId, 10, 64)
+	wfStreamer, err := crossworkflow.DefaultSVC().StreamExecute(ctx, crossworkflow.ExecuteConfig{
+		ID:           wfID,
+		ConnectorID:  rtDependence.runMeta.ConnectorID,
+		ConnectorUID: rtDependence.runMeta.UserID,
+		AgentID:      ptr.Of(rtDependence.runMeta.AgentID),
+		Mode:         crossworkflow.ExecuteModeRelease,
+		BizType:      crossworkflow.BizTypeAgent,
+		SyncPattern:  crossworkflow.SyncPatternStream,
+	}, map[string]any{
+		"input": "你有什么功能？",
+	})
 	mainChan := make(chan *entity.AgentRespEvent, 100)
 
-	ar := &singleagent.AgentRuntime{
+	var wg sync.WaitGroup
+	wg.Add(2)
+	safego.Go(ctx, func() {
+		defer wg.Done()
+		c.pullWfStream(ctx, mainChan, wfStreamer)
+	})
+	safego.Go(ctx, func() {
+		defer wg.Done()
+		c.push(ctx, mainChan, sw, rtDependence)
+	})
+	wg.Wait()
+	return err
+}
+
+func (c *runImpl) handlerAgentStreamExecute(ctx context.Context, sw *schema.StreamWriter[*entity.AgentRunResponse], historyMsg []*msgEntity.Message, input *msgEntity.Message, rtDependence *runtimeDependence) (err error) {
+	mainChan := make(chan *entity.AgentRespEvent, 100)
+
+	ar := &crossagent.AgentRuntime{
 		AgentVersion:     rtDependence.runMeta.Version,
 		SpaceID:          rtDependence.runMeta.SpaceID,
+		AgentID:          rtDependence.runMeta.AgentID,
 		IsDraft:          rtDependence.runMeta.IsDraft,
 		ConnectorID:      rtDependence.runMeta.ConnectorID,
 		PreRetrieveTools: rtDependence.runMeta.PreRetrieveTools,
+		Input:            internal.TransMessageToSchemaMessage(ctx, []*msgEntity.Message{input}, c.ImagexSVC)[0],
+		HistoryMsg:       internal.TransMessageToSchemaMessage(ctx, internal.HistoryPairs(historyMsg), c.ImagexSVC),
+		ResumeInfo:       internal.ParseResumeInfo(ctx, historyMsg),
 	}
 
-	streamer, err := crossagent.DefaultSVC().StreamExecute(ctx, historyMsg, input, ar)
+	streamer, err := crossagent.DefaultSVC().StreamExecute(ctx, ar)
 	if err != nil {
 		return errors.New(errorx.ErrorWithoutStack(err))
 	}
@@ -424,7 +465,23 @@ func (c *runImpl) handlerInput(ctx context.Context, sw *schema.StreamWriter[*ent
 	}
 	return cm, nil
 }
+func (c *runImpl) pullWfStream(ctx context.Context, mainChan chan *entity.AgentRespEvent, events *schema.StreamReader[*crossworkflow.WorkflowMessage]) {
+	defer func() {
+		close(mainChan)
 
+	}()
+	for {
+		st, re := events.Recv()
+		logs.CtxInfof(ctx, "pullWfStream Recv:%v,err:%v", conv.DebugJsonToStr(st), re)
+		if re != nil {
+			errChunk := &entity.AgentRespEvent{
+				Err: re,
+			}
+			mainChan <- errChunk
+			return
+		}
+	}
+}
 func (c *runImpl) pull(_ context.Context, mainChan chan *entity.AgentRespEvent, events *schema.StreamReader[*crossagent.AgentEvent]) {
 	defer func() {
 		close(mainChan)
