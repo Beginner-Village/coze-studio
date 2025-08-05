@@ -41,7 +41,6 @@ import (
 	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossworkflow"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/internal"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/internal/dal/model"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/repository"
 	msgEntity "github.com/coze-dev/coze-studio/backend/domain/conversation/message/entity"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
@@ -403,7 +402,11 @@ func (c *runImpl) handlerHistory(ctx context.Context, rtDependence *runtimeDepen
 		conversationTurns = ptr.From(rtDependence.agentInfo.ModelInfo.ShortMemoryPolicy.HistoryRound)
 	}
 
-	runRecordList, err := c.RunRecordRepo.List(ctx, rtDependence.runMeta.ConversationID, rtDependence.runMeta.SectionID, conversationTurns)
+	runRecordList, err := c.RunRecordRepo.List(ctx, &entity.ListRunRecordMeta{
+		ConversationID: rtDependence.runMeta.ConversationID,
+		SectionID:      rtDependence.runMeta.SectionID,
+		Limit:          conversationTurns,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -422,7 +425,7 @@ func (c *runImpl) handlerHistory(ctx context.Context, rtDependence *runtimeDepen
 	return history, nil
 }
 
-func (c *runImpl) getRunID(rr []*model.RunRecord) []int64 {
+func (c *runImpl) getRunID(rr []*entity.RunRecordMeta) []int64 {
 	ids := make([]int64, 0, len(rr))
 	for _, c := range rr {
 		ids = append(ids, c.ID)
