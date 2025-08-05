@@ -112,7 +112,20 @@ func (dao *RunRecordDAO) List(ctx context.Context, meta *entity.ListRunRecordMet
 	logs.CtxInfof(ctx, "list run record req:%v, sectionID:%v, limit:%v", meta.ConversationID, meta.SectionID, meta.Limit)
 	m := dao.query.RunRecord
 	do := m.WithContext(ctx).Where(m.ConversationID.Eq(meta.ConversationID)).Debug().Where(m.Status.NotIn(string(entity.RunStatusDeleted)))
-
+	if meta.BeforeID > 0 {
+		runRecord, err := m.Where(m.ID.Eq(meta.BeforeID)).First()
+		if err != nil {
+			return nil, err
+		}
+		do = do.Where(m.CreatedAt.Lt(runRecord.CreatedAt))
+	}
+	if meta.AfterID > 0 {
+		runRecord, err := m.Where(m.ID.Eq(meta.AfterID)).First()
+		if err != nil {
+			return nil, err
+		}
+		do = do.Where(m.CreatedAt.Gt(runRecord.CreatedAt))
+	}
 	if meta.SectionID > 0 {
 		do = do.Where(m.SectionID.Eq(meta.SectionID))
 	}

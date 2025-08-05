@@ -163,4 +163,6 @@ type ListRunRecordMeta struct {
 	SectionID      int64  `json:"section_id"`
 	Limit          int32  `json:"limit"`
 	OrderBy        string `json:"order_by"` //desc asc
+	BeforeID       int64  `json:"before_id"`
+	AfterID        int64  `json:"after_id"`
 }
