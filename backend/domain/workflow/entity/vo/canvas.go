@@ -17,6 +17,8 @@
 package vo
 
 import (
+	"fmt"
+
 	"github.com/coze-dev/coze-studio/backend/api/model/ocean/cloud/workflow"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/model"
 	"github.com/coze-dev/coze-studio/backend/pkg/i18n"
@@ -826,6 +828,133 @@ const defaultEnUSInitCanvasJsonSchema = `{
  }
 }`
 
+const defaultZhCNInitCanvasJsonSchemaChat = `{
+	"nodes": [{
+		"id": "100001",
+		"type": "1",
+		"meta": {
+			"position": {
+				"x": 0,
+				"y": 0
+			}
+		},
+		"data": {
+			"outputs": [{
+				"type": "string",
+				"name": "USER_INPUT",
+				"required": true
+			}, {
+				"type": "string",
+				"name": "CONVERSATION_NAME",
+				"required": false,
+				"description": "本次请求绑定的会话，会自动写入消息、会从该会话读对话历史。",
+				"defaultValue": "%s"
+			}],
+			"nodeMeta": {
+				"title": "开始",
+				"icon": "https://lf3-static.bytednsdoc.com/obj/eden-cn/dvsmryvd_avi_dvsm/ljhwZthlaukjlkulzlp/icon/icon-Start.png",
+				"description": "工作流的起始节点，用于设定启动工作流需要的信息",
+				"subTitle": ""
+			}
+		}
+	}, {
+		"id": "900001",
+		"type": "2",
+		"meta": {
+			"position": {
+				"x": 1000,
+				"y": 0
+			}
+		},
+		"data": {
+			"nodeMeta": {
+				"title": "结束",
+				"icon": "https://lf3-static.bytednsdoc.com/obj/eden-cn/dvsmryvd_avi_dvsm/ljhwZthlaukjlkulzlp/icon/icon-End.png",
+				"description": "工作流的最终节点，用于返回工作流运行后的结果信息",
+				"subTitle": ""
+			},
+			"inputs": {
+				"terminatePlan": "useAnswerContent",
+				"streamingOutput": true,
+				"inputParameters": [{
+					"name": "output",
+					"input": {
+						"type": "string",
+						"value": {
+							"type": "ref"
+						}
+					}
+				}]
+			}
+		}
+	}]
+}`
+const defaultEnUSInitCanvasJsonSchemaChat = `{
+	"nodes": [{
+		"id": "100001",
+		"type": "1",
+		"meta": {
+			"position": {
+				"x": 0,
+				"y": 0
+			}
+		},
+		"data": {
+			"outputs": [{
+				"type": "string",
+				"name": "USER_INPUT",
+				"required": true
+			}, {
+				"type": "string",
+				"name": "CONVERSATION_NAME",
+				"required": false,
+				"description": "The conversation bound to this request will automatically write messages and read conversation history from that conversation.",
+				"defaultValue": "%s"
+			}],
+			"nodeMeta": {
+				"title": "Start",
+				"icon": "https://lf3-static.bytednsdoc.com/obj/eden-cn/dvsmryvd_avi_dvsm/ljhwZthlaukjlkulzlp/icon/icon-Start.png",
+				"description": "The starting node of the workflow, used to set the information needed to initiate the workflow.",
+				"subTitle": ""
+			}
+		}
+	}, {
+		"id": "900001",
+		"type": "2",
+		"meta": {
+			"position": {
+				"x": 1000,
+				"y": 0
+			}
+		},
+		"data": {
+			"nodeMeta": {
+				"title": "End",
+				"icon": "https://lf3-static.bytednsdoc.com/obj/eden-cn/dvsmryvd_avi_dvsm/ljhwZthlaukjlkulzlp/icon/icon-End.png",
+				"description": "The final node of the workflow, used to return the result information after the workflow runs.",
+				"subTitle": ""
+			},
+			"inputs": {
+				"terminatePlan": "useAnswerContent",
+				"streamingOutput": true,
+				"inputParameters": [{
+					"name": "output",
+					"input": {
+						"type": "string",
+						"value": {
+							"type": "ref"
+						}
+					}
+				}]
+			}
+		}
+	}]
+}`
+
 func GetDefaultInitCanvasJsonSchema(locale i18n.Locale) string {
 	return ternary.IFElse(locale == i18n.LocaleEN, defaultEnUSInitCanvasJsonSchema, defaultZhCNInitCanvasJsonSchema)
+}
+
+func GetDefaultInitCanvasJsonSchemaChat(locale i18n.Locale, name string) string {
+	return ternary.IFElse(locale == i18n.LocaleEN, fmt.Sprintf(defaultEnUSInitCanvasJsonSchemaChat, name), fmt.Sprintf(defaultZhCNInitCanvasJsonSchemaChat, name))
 }

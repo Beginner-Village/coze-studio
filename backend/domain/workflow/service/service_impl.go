@@ -39,6 +39,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/canvas/adaptor"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/canvas/convert"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/intentdetector"
+	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/knowledge"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/llm"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/repo"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
@@ -560,6 +561,9 @@ func isEnableChatHistory(s *schema.NodeSchema) bool {
 	case entity.NodeTypeIntentDetector:
 		llmParam := s.Configs.(*intentdetector.Config).LLMParams
 		return llmParam.EnableChatHistory
+	case entity.NodeTypeKnowledgeRetriever:
+		chatParam := s.Configs.(*knowledge.RetrieveConfig).ChatHistorySetting
+		return chatParam != nil && chatParam.EnableChatHistory
 	default:
 		return false
 	}
@@ -1678,7 +1682,7 @@ func (i *impl) GetWorkflowDependenceResource(ctx context.Context, workflowID int
 // It returns an error with the reason if the check fails.
 func (i *impl) checkBotAgentNodes(nodes []*vo.Node) error {
 	for _, node := range nodes {
-		if node.Type == vo.BlockTypeCreateConversation || node.Type == vo.BlockTypeConversationDelete || node.Type == vo.BlockTypeConversationUpdate || node.Type == vo.BlockTypeConversationList {
+		if node.Type == entity.NodeTypeCreateConversation.IDStr() || node.Type == entity.NodeTypeConversationDelete.IDStr() || node.Type == entity.NodeTypeConversationUpdate.IDStr() || node.Type == entity.NodeTypeConversationList.IDStr() {
 			return errors.New("不支持在对话流内添加会话相关节点")
 		}
 	}

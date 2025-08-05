@@ -230,7 +230,7 @@ func collectNodes(ctx context.Context, nodes []*vo.Node, repo workflow.Repositor
 		}
 		*allNodes = append(*allNodes, node)
 
-		if node.Type == vo.BlockTypeBotSubWorkflow && node.Data != nil && node.Data.Inputs != nil {
+		if node.Type == entity.NodeTypeSubWorkflow.IDStr() && node.Data != nil && node.Data.Inputs != nil {
 			workflowIDStr := node.Data.Inputs.WorkflowID
 			if workflowIDStr == "" {
 				continue

@@ -45,8 +45,9 @@ type contextKey string
 const chatHistoryKey contextKey = "chatHistory"
 
 type RetrieveConfig struct {
-	KnowledgeIDs      []int64
-	RetrievalStrategy *knowledge.RetrievalStrategy
+	KnowledgeIDs       []int64
+	RetrievalStrategy  *knowledge.RetrievalStrategy
+	ChatHistorySetting *vo.ChatHistorySetting
 }
 
 func (r *RetrieveConfig) Adapt(_ context.Context, n *vo.Node, _ ...nodes.AdaptOption) (*schema.NodeSchema, error) {
@@ -69,6 +70,10 @@ func (r *RetrieveConfig) Adapt(_ context.Context, n *vo.Node, _ ...nodes.AdaptOp
 		knowledgeIDs = append(knowledgeIDs, k)
 	}
 	r.KnowledgeIDs = knowledgeIDs
+
+	if inputs.ChatHistorySetting != nil {
+		r.ChatHistorySetting = inputs.ChatHistorySetting
+	}
 
 	retrievalStrategy := &knowledge.RetrievalStrategy{}
 
@@ -164,9 +169,10 @@ func (r *RetrieveConfig) Build(_ context.Context, _ *schema.NodeSchema, _ ...sch
 	}
 
 	return &Retrieve{
-		knowledgeIDs:      r.KnowledgeIDs,
-		retrievalStrategy: r.RetrievalStrategy,
-		retriever:         knowledge.GetKnowledgeOperator(),
+		knowledgeIDs:       r.KnowledgeIDs,
+		retrievalStrategy:  r.RetrievalStrategy,
+		retriever:          knowledge.GetKnowledgeOperator(),
+		ChatHistorySetting: r.ChatHistorySetting,
 	}, nil
 }
 

@@ -229,7 +229,7 @@ func (c *conversationImpl) findReplaceWorkflowByConversationName(ctx context.Con
 	shouldReplacedWorkflow := func(nodes []*vo.Node) (bool, error) {
 		var startNode *vo.Node
 		for _, node := range nodes {
-			if node.Type == vo.BlockTypeBotStart {
+			if node.Type == entity.NodeTypeEntry.IDStr() {
 				startNode = node
 			}
 		}
@@ -277,7 +277,7 @@ func (c *conversationImpl) replaceWorkflowsConversationName(ctx context.Context,
 	replaceConversionName := func(nodes []*vo.Node, conversionName string) error {
 		var startNode *vo.Node
 		for _, node := range nodes {
-			if node.Type == vo.BlockTypeBotStart {
+			if node.Type == entity.NodeTypeEntry.IDStr() {
 				startNode = node
 			}
 		}

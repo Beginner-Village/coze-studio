@@ -204,6 +204,13 @@ func (c *Config) Adapt(_ context.Context, n *vo.Node, _ ...nodes.AdaptOption) (*
 	c.SystemPrompt = convertedLLMParam.SystemPrompt
 	c.UserPrompt = convertedLLMParam.Prompt
 
+	if convertedLLMParam.EnableChatHistory {
+		c.ChatHistorySetting = &vo.ChatHistorySetting{
+			EnableChatHistory: true,
+			ChatHistoryRound:  convertedLLMParam.ChatHistoryRound,
+		}
+	}
+
 	var resFormat Format
 	switch convertedLLMParam.ResponseFormat {
 	case crossmodel.ResponseFormatText:
@@ -322,7 +329,14 @@ func llmParamsToLLMParam(params vo.LLMParam) (*crossmodel.LLMParams, error) {
 		case "systemPrompt":
 			strVal := param.Input.Value.Content.(string)
 			p.SystemPrompt = strVal
-		case "chatHistoryRound", "generationDiversity", "frequencyPenalty", "presencePenalty":
+		case "chatHistoryRound":
+			strVal := param.Input.Value.Content.(string)
+			int64Val, err := strconv.ParseInt(strVal, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			p.ChatHistoryRound = int64Val
+		case "generationDiversity", "frequencyPenalty", "presencePenalty":
 		// do nothing
 		case "topP":
 			strVal := param.Input.Value.Content.(string)

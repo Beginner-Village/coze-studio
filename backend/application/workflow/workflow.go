@@ -196,7 +196,7 @@ func (w *ApplicationService) CreateWorkflow(ctx context.Context, req *workflow.C
 		if !req.IsSetProjectID() || mustParseInt64(req.GetProjectID()) == 0 || !createConversation {
 			conversationName = "Default"
 		}
-		wf.InitCanvasSchema = entity.GetDefaultInitCanvasJsonSchemaChat(i18n.GetLocale(ctx), conversationName)
+		wf.InitCanvasSchema = vo.GetDefaultInitCanvasJsonSchemaChat(i18n.GetLocale(ctx), conversationName)
 	}
 
 	id, err := GetWorkflowDomainSVC().Create(ctx, wf)

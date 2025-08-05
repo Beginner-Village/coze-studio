@@ -61,6 +61,10 @@ func (c *Config) Adapt(_ context.Context, n *vo.Node, _ ...nodes.AdaptOption) (*
 		return nil, fmt.Errorf("intent detector node's llmParam is nil")
 	}
 
+	if n.Data.Inputs.ChatHistorySetting != nil {
+		c.ChatHistorySetting = n.Data.Inputs.ChatHistorySetting
+	}
+
 	llmParam, ok := param.(vo.IntentDetectorLLMParam)
 	if !ok {
 		return nil, fmt.Errorf("llm node's llmParam must be LLMParam, got %v", llmParam)
@@ -149,9 +153,10 @@ func (c *Config) Build(ctx context.Context, _ *schema2.NodeSchema, _ ...schema2.
 	}
 
 	return &IntentDetector{
-		isFastMode:   c.IsFastMode,
-		systemPrompt: c.SystemPrompt,
-		runner:       r,
+		isFastMode:         c.IsFastMode,
+		systemPrompt:       c.SystemPrompt,
+		runner:             r,
+		ChatHistorySetting: c.ChatHistorySetting,
 	}, nil
 }
 
