@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export enum FileItemStatus {
   Success = 'success',
   UploadFail = 'uploadFail',
@@ -23,5 +23,5 @@ export enum FileItemStatus {
   Wait = 'wait',
 }
 
-// 支持预览的图片类型
+// Image types that support preview
 export const PREVIEW_IMAGE_TYPE = ['jpg', 'jpeg', 'png', 'webp', 'svg'];

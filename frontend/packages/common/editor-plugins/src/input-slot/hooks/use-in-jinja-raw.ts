@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useState } from 'react';
 
 import { useEditor } from '@coze-editor/editor/react';
@@ -57,7 +57,7 @@ export const useSelectionInJinjaRaw = () => {
 
     editor.$on('viewUpdate', checkInJinjaRaw);
 
-    // 初始检查
+    // Initial inspection
     checkInJinjaRaw();
 
     return () => {

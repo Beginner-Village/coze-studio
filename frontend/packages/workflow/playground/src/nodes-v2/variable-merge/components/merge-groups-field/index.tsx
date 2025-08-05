@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import {
@@ -35,7 +35,7 @@ interface Props {
 }
 
 /**
- * 变量聚合分组
+ * variable aggregation grouping
  * @param param0
  * @returns
  */

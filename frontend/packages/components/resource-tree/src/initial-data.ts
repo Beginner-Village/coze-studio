@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FlowDocumentJSON } from '@flowgram-adapter/fixed-layout-editor';
 // only for test
 export const initialData: FlowDocumentJSON = {
   nodes: [
-    // 开始节点
+    // start node
     {
       id: 'start_0',
       type: 'split',
@@ -31,7 +31,7 @@ export const initialData: FlowDocumentJSON = {
           id: 'noop',
           type: 'block',
           blocks: [
-            // 分支节点
+            // branch node
             {
               id: 'condition_0',
               type: 'split',

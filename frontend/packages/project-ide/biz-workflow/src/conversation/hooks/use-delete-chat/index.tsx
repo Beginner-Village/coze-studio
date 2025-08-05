@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useMemo, useState } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -68,7 +68,7 @@ export const useDeleteChat = ({
     }));
 
   /**
-   * 给外部的 check，用作 replace 请求
+   * To an external check, used as a replace request
    */
   const handleDelete = async (_chat?: ProjectConversation) => {
     setChat(_chat);
@@ -109,7 +109,7 @@ export const useDeleteChat = ({
         setReplace([]);
         setVisible(false);
         Toast.success(I18n.t('wf_chatflow_112'));
-        // 删除成功后刷新列表
+        // Refresh the list after successful deletion
         manualRefresh();
         setActivateChat(undefined);
       } else {

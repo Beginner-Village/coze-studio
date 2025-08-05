@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 节点侧拉窗
+ * Node side window
  */
 import {
   type PropsWithChildren,
@@ -28,7 +28,10 @@ import {
 import classnames from 'classnames';
 import { type NodeMeta } from '@coze-workflow/base/types';
 import { concatNodeTestId } from '@coze-workflow/base';
-import { FlowNodeFormData, NodeRender } from '@flowgram-adapter/free-layout-editor';
+import {
+  FlowNodeFormData,
+  NodeRender,
+} from '@flowgram-adapter/free-layout-editor';
 import { type FlowNodeEntity } from '@flowgram-adapter/free-layout-editor';
 
 import {
@@ -124,7 +127,7 @@ export const NodeSideSheet: React.FC<NodeFormPanelProps> = ({
     }
   }, [showTestNodeForm, node]);
 
-  // 节点删除时需要关闭本面板
+  // This panel needs to be closed when a node is deleted
   useEffect(() => {
     const disposable = node.onDispose(() => {
       floatLayoutService.close();

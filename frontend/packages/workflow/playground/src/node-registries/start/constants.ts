@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { nanoid } from 'nanoid';
 import { ViewVariableType } from '@coze-workflow/variable';
 
-// 定义固定出参
+// Define fixed exported parameters
 export const OUTPUTS = [
   {
     key: nanoid(),
@@ -38,7 +38,7 @@ export const OUTPUTS = [
   },
 ];
 
-/** 场景工作流角色信息关键字 */
+/** scenario workflow role information keyword */
 export const ROLE_INFORMATION_KEYWORD = 'role_information';
 
 export const DEFAULT_ROLE_NAME = 'role';

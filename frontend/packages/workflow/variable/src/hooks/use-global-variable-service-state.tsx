@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useMemo } from 'react';
 
 import { useRefresh, useService } from '@flowgram-adapter/free-layout-editor';
@@ -25,7 +25,7 @@ import {
 } from '../services/global-variable-service';
 
 interface Params {
-  // 是否监听变量加载完成事件（变量下钻可能发生变化）
+  // Whether to listen for variable load completion events (variable drill-down may change)
   listenVariableLoaded?: boolean;
 }
 

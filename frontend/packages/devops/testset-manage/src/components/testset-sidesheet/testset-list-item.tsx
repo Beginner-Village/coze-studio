@@ -13,18 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type MouseEvent, useState } from 'react';
 
 import dayjs from 'dayjs';
 import cls from 'classnames';
 import { I18n } from '@coze-arch/i18n';
-import {
-  Popconfirm,
-  Tooltip,
-  Typography,
-  UIButton,
-} from '@coze-arch/bot-semi';
+import { Popconfirm, Tooltip, Typography, UIButton } from '@coze-arch/bot-semi';
 import {
   IconDeleteOutline,
   IconEdit,
@@ -39,9 +34,9 @@ import s from './testset-list-item.module.less';
 interface TestsetListItemProps {
   data: TestsetData;
   onEdit?: (data: TestsetData) => void;
-  /** 点击了删除 */
+  /** I clicked delete. */
   onClickDelete?: () => void;
-  /** 确认删除 */
+  /** Confirm deletion */
   onDelete?: (data: TestsetData) => Promise<void>;
 }
 

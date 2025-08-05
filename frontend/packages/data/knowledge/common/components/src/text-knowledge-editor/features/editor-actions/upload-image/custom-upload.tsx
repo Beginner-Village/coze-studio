@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type PropsWithChildren } from 'react';
 
 import { DataNamespace, dataReporter } from '@coze-data/reporter';
@@ -79,7 +79,7 @@ export const handleCustomUploadRequest = async ({
   }
 
   try {
-    // 业务逻辑
+    // business logic
     onBeforeUpload?.();
     const { name, fileInstance } = file;
 

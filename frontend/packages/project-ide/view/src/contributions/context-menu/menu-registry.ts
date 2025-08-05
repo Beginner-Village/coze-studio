@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type React from 'react';
 
 import { inject, injectable } from 'inversify';
@@ -25,7 +25,7 @@ import { type CanHandle, ContextMenu } from './context-menu';
 export const MenuService = Symbol('MenuService');
 
 /**
- * menu service 注册
+ * Menu service registration
  */
 export interface MenuService {
   addMenuItem: (options: ContextMenu.IItemOptions) => void;

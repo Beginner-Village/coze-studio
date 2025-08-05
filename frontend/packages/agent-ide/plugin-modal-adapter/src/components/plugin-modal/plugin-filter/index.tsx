@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import classNames from 'classnames';
 import { I18n } from '@coze-arch/i18n';
 import { useSpaceStore } from '@coze-arch/bot-studio-store';
@@ -48,7 +48,7 @@ export const PluginFilter: React.FC<PluginFilterProps> = ({
   const spaceType = useSpaceStore(store => store.space.space_type);
   const defaultId = getDefaultPluginCategory().id;
   const onChangeAfterDiff = (freshType: typeof type) => {
-    // 如果是在搜索，把搜索置空
+    // If you are searching, leave the search blank
     if (isSearching) {
       onChange(freshType);
       return;

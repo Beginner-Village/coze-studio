@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { type FC, type ReactNode } from 'react';
 
 import { KnowledgeE2e } from '@coze-data/e2e';
@@ -56,7 +56,7 @@ export const UploadUnitTable: FC<UploadUnitTableProps> = props => {
         const curStatus = getProcessStatus(item?.status);
         const statusDescript = item?.statusDescript || '';
 
-        // 使用getColumns获取每个项目的信息
+        // Use getColumns to obtain information for each item
         const columnInfo: ColumnInfo = getColumns
           ? getColumns(item, index)
           : {};

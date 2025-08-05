@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   ASTFactory,
   type ASTNodeJSON,
@@ -26,7 +26,7 @@ import {
 } from './custom-key-path-expression';
 
 /**
- * 遍历表达式，对列表进行遍历，获取遍历后的变量类型
+ * Traverse the expression, traverse the list, and get the traversed variable type
  */
 export class WrapArrayExpression extends CustomKeyPathExpression {
   static kind = 'WrapArrayExpression';

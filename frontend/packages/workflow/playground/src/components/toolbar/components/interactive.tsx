@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useState } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -46,7 +46,7 @@ export const Interactive = () => {
   useEffect(() => {
     tools.setMouseScrollDelta(zoom => zoom / 20);
 
-    // 从缓存读取交互模式，应用生效
+    // Read interactive mode from cache, application takes effect
     const preferInteractiveType = getPreferInteractiveType();
     tools.setInteractiveType(preferInteractiveType as IdeInteractiveType);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- init

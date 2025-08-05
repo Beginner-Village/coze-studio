@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import JSONBig from 'json-bigint';
 import { REPORT_EVENTS } from '@coze-arch/report-events';
 import { reporter } from '@coze-arch/logger';
@@ -38,7 +38,7 @@ export const typeSafeJSONParse = (
     }
     return JSON.parse(String(v));
   } catch (e) {
-    // 日志解析
+    // log parsing
     if (options?.needReport) {
       reporter.errorEvent({
         error: e as Error,

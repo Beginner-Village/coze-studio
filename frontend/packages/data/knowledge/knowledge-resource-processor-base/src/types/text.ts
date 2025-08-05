@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export enum SegmentMode {
   AUTO,
   CUSTOM,
@@ -46,6 +46,6 @@ export interface CustomSegmentRule {
   separator: Seperator;
   maxTokens: number;
   preProcessRules: PreProcessRule[];
-  /** 分段重叠度 */
+  /** segmented overlap */
   overlap: number;
 }

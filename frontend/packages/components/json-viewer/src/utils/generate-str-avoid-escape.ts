@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-// 对象中的文本，避免字符被转译
+
+// Text in the object to avoid characters being translated
 export const generateStrAvoidEscape = (str: string) => {
   const characters = {
     '\\': '\\\\',

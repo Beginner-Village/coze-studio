@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import mime from 'mime-types';
 import { I18n } from '@coze-arch/i18n';
 
@@ -28,7 +28,7 @@ export const acceptValidate = (fileName: string, accept?: string) => {
   const fileExtension = getFileExtension(fileName);
   const mimeType = mime.lookup(fileExtension);
 
-  // image/* 匹配所有的图片类型
+  // Image/* matches all image types
   if (acceptList.includes('image/*') && mimeType?.startsWith?.('image/')) {
     return undefined;
   }

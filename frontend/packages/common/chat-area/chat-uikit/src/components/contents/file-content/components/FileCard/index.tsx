@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import classNames from 'classnames';
@@ -206,7 +206,7 @@ const FileCard: FC<IFileCardProps> = props => {
             <div
               // chat-uikit-file-card__progress-wrap
               className={classNames(
-                // TODO: ui 补充进度条颜色
+                // TODO: ui supplement progress bar color
                 'coz-fg-hglt-dim absolute top-0 left-0 w-[280px] h-[72px]',
                 'chat-uikit-file-card-progress-animation',
               )}

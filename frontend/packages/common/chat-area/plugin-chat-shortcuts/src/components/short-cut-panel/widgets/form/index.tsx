@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useRef } from 'react';
 
 import { type FormApi } from '@coze-arch/bot-semi/Form';
@@ -30,7 +30,7 @@ export const DSLForm: DSLComponent = ({
   const formRef = useRef<FormApi>();
 
   /**
-   * text类型组件交互 支持 placeholder 表示默认值
+   * Text type component interaction, support placeholder to represent default value
    * @param formValues
    */
   const onSubmitWrap = (formValues: FormValue) => {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useMemo } from 'react';
 
 import classNames from 'classnames';
@@ -45,7 +45,7 @@ export type RadioProps = SetterComponentProps<
     direction?: 'vertical' | 'horizontal';
     customClassName?: string;
     radioCardClassName?: string;
-    // 忽略 readonly 状态，强制可交互
+    // Ignore readonly state, force interactivity
     ignoreReadonly?: boolean;
     disabled?: boolean;
   }

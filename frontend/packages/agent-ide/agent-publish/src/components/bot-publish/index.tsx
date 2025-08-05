@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMemo, useRef, useState } from 'react';
 
@@ -126,7 +126,7 @@ export const AgentPublishPage = () => {
   const publishBtn = (
     <UIButton
       theme="solid"
-      //解决异步请求botInfo未返回时可以点击publish产生的错误
+      //Resolve the error caused by clicking publish when the asynchronous request botInfo is not returned
       disabled={Boolean(publishDisabled) || !botInfo.name}
       loading={publishLoading}
       onClick={handlePublish}

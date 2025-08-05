@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { resolve } from 'path';
 
 import { mergeConfig, type UserConfig } from 'vitest/config';
@@ -46,7 +46,7 @@ const calBasePreset = (preset: string) => {
 
 export interface OtherConfig {
   /**
-   * 用于修复semi的package.json导出的配置问题
+   * Used to fix the configuration issue of semi's package.json export
    */
   fixSemi: boolean;
 }

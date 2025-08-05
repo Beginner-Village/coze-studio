@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { createContext } from 'react';
 
 import { type ActionController, type ActionSize } from '../types';
@@ -26,7 +26,7 @@ export const ActionBarContext = createContext<{
   controller: {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     hideActionBar: () => {},
-    // 重新定位
+    // reposition
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     rePosition: () => {},
   },

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { REPORT_EVENTS } from '@coze-arch/report-events';
 import { I18n } from '@coze-arch/i18n';
 import { UIModal } from '@coze-arch/bot-semi';
@@ -36,7 +36,7 @@ export const checkOutPluginContext = async (pluginId: string) => {
   const user = data?.user;
 
   /**
-   * 有人占用 & 不是自己
+   * Someone occupies & not themselves
    */
   if (data?.Occupied && user && !user.self) {
     UIModal.info({

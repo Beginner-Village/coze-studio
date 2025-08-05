@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/no-deep-relative-import -- svg */
 import { useState, type ComponentProps, type CSSProperties } from 'react';
 
@@ -156,7 +156,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         </span>
       </InsertLinkPopover>
 
-      {/* 暂时禁用，后续放开 */}
+      {/* Temporarily disabled, later released */}
       {SHOW_ADD_NAME_BTN && (
         <Tooltip content={I18n.t('add_nickname')}>
           <UIButton

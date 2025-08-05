@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 资源类型
+ * resource type
  */
 export type ResourceType = 'workflow' | 'knowledge' | 'ui-builder';
 /**
- * 模式类型
+ * schema type
  */
 export type ModeType = 'dev' | 'ui-builder';

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReportLog } from '@/report-log';
 import {
   ContentType,
@@ -106,7 +106,7 @@ describe('SendMessageService', () => {
       extra_info: { local_message_id: '456' },
     };
     const options: SendMessageOptions = {};
-    // 1s后上传成功
+    // Upload successful after 1s
     setTimeout(() => {
       preSendLocalMessageEventsManager.emit(
         PreSendLocalMessageEventsEnum.FILE_UPLOAD_STATUS_CHANGE,
@@ -119,7 +119,7 @@ describe('SendMessageService', () => {
         },
       );
     }, 1000);
-    // 2s后发送成功
+    // Sent successfully after 2s
     setTimeout(() => {
       preSendLocalMessageEventsManager.emit(
         PreSendLocalMessageEventsEnum.MESSAGE_SEND_SUCCESS,
@@ -144,7 +144,7 @@ describe('SendMessageService', () => {
       extra_info: { local_message_id: '789' },
     };
     const options: SendMessageOptions = {};
-    // 1s后上传成功
+    // Upload successful after 1s
     setTimeout(() => {
       preSendLocalMessageEventsManager.emit(
         PreSendLocalMessageEventsEnum.FILE_UPLOAD_STATUS_CHANGE,

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { create } from 'zustand';
 import { produce } from 'immer';
@@ -47,7 +47,7 @@ export interface RequiredBotPrompt extends BotPrompt {
   record_id?: string;
 }
 
-/** Persona & Prompt 区域 */
+/** Persona & Prompted Areas */
 export interface PersonaStore {
   systemMessage: RequiredBotPrompt;
   optimizePrompt: string;
@@ -79,11 +79,11 @@ export const usePersonaStore = create<PersonaStore & PersonaAction>()(
           prompt_type: PromptType.SYSTEM,
           isOptimize: false,
           record_id: '',
-        }) as unknown as RequiredBotPrompt,
+        } as unknown as RequiredBotPrompt),
       transformVo2Dto: persona =>
         ({
           prompt: persona?.data || '',
-        }) as unknown as BotInfoForUpdate['prompt_info'],
+        } as unknown as BotInfoForUpdate['prompt_info']),
       initStore: botData => {
         const { setPersonaByImmer, transformDto2Vo } = get();
         botData &&

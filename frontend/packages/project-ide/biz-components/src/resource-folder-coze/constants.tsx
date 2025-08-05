@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -39,7 +39,7 @@ export const iconFolderOpended = (
 
 export const VARIABLE_RESOURCE_ID = 'variables';
 
-/* 资源文件名最大字符数 */
+/* Maximum number of characters for a resource file name */
 export const RESOURCE_NAME_MAX_LEN = 50;
 export const resourceIconMap = {
   [BizResourceTypeEnum.Workflow]: <IconCozWorkflow />,
@@ -102,5 +102,5 @@ export const contextMenuDTOToVOMap = {
 export const MAX_DEEP = 6;
 export const TAB_SIZE = 14;
 export const ITEM_HEIGHT = 28;
-/* 禁用文件夹功能 */
+/* Disable folder feature */
 export const DISABLE_FOLDER = true;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import cx from 'classnames';
@@ -67,7 +67,7 @@ export default function Header() {
         </span>
       </div>
 
-      {/* description 目前只在 LLM 的 output 中存在 */}
+      {/* Description currently only exists in LLM output */}
       {withDescription ? (
         <div className={styles.description}>
           <span className={styles.text}>

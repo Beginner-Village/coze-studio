@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCallback, useState } from 'react';
 
 import { type Point, type TMat2D, type Canvas } from 'fabric';
@@ -40,7 +40,7 @@ export const useViewport = ({
         return;
       }
       const _vpt: TMat2D = [...vpt];
-      // 限制 viewport 移动区域：不能移出画布
+      // Limit viewport movement area: Cannot move out of canvas
       if (_vpt[4] > 0) {
         _vpt[4] = 0;
       }

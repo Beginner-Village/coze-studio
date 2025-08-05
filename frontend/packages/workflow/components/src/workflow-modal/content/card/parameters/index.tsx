@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useContext, type FC } from 'react';
 
 import classNames from 'classnames';
@@ -148,7 +148,7 @@ export const WorkflowParameters: FC<WorkflowParametersProps> = ({
     return context?.modalState.dataSourceType === DataSourceType.Workflow;
   }
   const getParameters = (): Array<WorkflowParameterItem> => {
-    // 这么拆分虽然有点冗余, 但是可以正确进行类型推导
+    // Although this split is a bit redundant, it allows for correct type derivation
     if (isTypeWorkflow(data)) {
       return (
         data.start_node?.node_param?.input_parameters?.map(item => {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useCallback } from 'react';
 
 import {
@@ -24,7 +24,10 @@ import { type WorkflowNodeEntity } from '@flowgram-adapter/free-layout-editor';
 import { useValidationService } from '@coze-workflow/base/services';
 import { StandardNodeType, useNodeTestId } from '@coze-workflow/base';
 import { I18n } from '@coze-arch/i18n';
-import { IconCozPlayFill, IconCozStopCircle } from '@coze-arch/coze-design/icons';
+import {
+  IconCozPlayFill,
+  IconCozStopCircle,
+} from '@coze-arch/coze-design/icons';
 import { IconButton, Tooltip, Toast } from '@coze-arch/coze-design';
 
 import { WorkflowRunService } from '@/services';
@@ -102,9 +105,9 @@ export const TestRunSingleNodeButton: React.FC = () => {
   );
 
   /**
-   * - condition, start, end 不需要单节点运行
-   * - 全局配置 canTestRun 是否可试运行
-   * - 流程组件属性配置 disabledSingleNodeTest 是否禁用单节点试运行
+   * - condition, start, end no single node operation required
+   * - Globally configure whether canTestRun can practice running
+   * - Process component property configuration disabledSingleNodeTest whether to disable single node practice run
    */
   if (
     [

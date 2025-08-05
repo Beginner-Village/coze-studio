@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useEffect, useRef } from 'react';
 
 import { debounce } from 'lodash';
@@ -50,7 +50,7 @@ export class ViewRenderer {
     comp: React.FunctionComponent;
   }[] = [];
 
-  // 全局挂载，进入画布只会执行一次。
+  // Global mount, entering the canvas will only be executed once.
   globalReactPortals: {
     key?: string;
     comp: React.FunctionComponent;
@@ -86,8 +86,8 @@ export class ViewRenderer {
   }, 0);
 
   /**
-   * 转成 react
-   * 注入 shell，避免 inject cycle
+   * To react
+   * Inject shell to avoid injection cycle
    */
   toReactComponent(shell: ApplicationShell): React.FC {
     if (this.reactComp) {

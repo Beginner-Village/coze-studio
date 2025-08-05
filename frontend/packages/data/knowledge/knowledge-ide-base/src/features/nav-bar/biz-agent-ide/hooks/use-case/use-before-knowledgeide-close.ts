@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo, useState } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
-import { useKnowledgeParams, useKnowledgeStore } from '@coze-data/knowledge-stores';
+import {
+  useKnowledgeParams,
+  useKnowledgeStore,
+} from '@coze-data/knowledge-stores';
 import { I18n } from '@coze-arch/i18n';
 import { SceneType, usePageJumpService } from '@coze-arch/bot-hooks';
 import { StorageLocation } from '@coze-arch/bot-api/knowledge';
@@ -96,7 +99,7 @@ export const useBeforeKnowledgeIDEClose = ({
   };
 
   const handleBotIdeBack = () => {
-    // Bot IDE检查是否有绑定knowledge，如果有绑定知识库正常关闭，没有绑定确认提示处理
+    // Bot IDE checks whether there is binding knowledge. If there is binding knowledge base, it will be closed normally, and there is no binding confirmation prompt.
     if (hasAddDataset) {
       Modal.confirm({
         title: I18n.t('bot_ide_knowledge_confirm_title'),
@@ -124,17 +127,17 @@ export const useBeforeKnowledgeIDEClose = ({
             console.error(error);
           } finally {
             setLoading(false);
-            // 无论成功无论都跳转一次
+            // Jump once regardless of success
             handleFullModalBack();
           }
         },
         onCancel: () => {
-          // 取消，正常跳转
+          // Cancel, jump normally
           handleFullModalBack();
         },
       });
     } else {
-      // 正常绑定不做弹窗拦截
+      // Normal binding does not do pop-up interception
       handleFullModalBack();
     }
   };

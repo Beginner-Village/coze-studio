@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { nanoid } from 'nanoid';
 import { FlowNodeFormData } from '@flowgram-adapter/free-layout-editor';
 import { type FlowNodeEntity } from '@flowgram-adapter/free-layout-editor';
@@ -82,7 +82,7 @@ const updateOutputWithNewType = (
 };
 
 export const useSyncOutput = (outputPath: string, node: FlowNodeEntity) => {
-  // TODO: 改到 effects 中实现 ，依赖节点引擎支持自定义事件触发 effects
+  // TODO: Changed to effects, relying on the node engine to support custom event triggering effects
   const updateOutput = (output: ParsedOutput[]) => {
     if (outputPath) {
       const formModel =

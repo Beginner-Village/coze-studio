@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type RefObject, useEffect, useRef } from 'react';
 
 import { useLatest, useKeyPress } from 'ahooks';
@@ -101,7 +101,7 @@ export const useAudioRecordInteraction = ({
         return;
       }
       const { clientX, clientY } = getClientPosition(eventType);
-      // 获取元素的边界信息
+      // Get the boundary information of the element
       const rect = activeZoneElement.getBoundingClientRect();
       const isOutRect =
         clientX < rect.left ||
@@ -109,7 +109,7 @@ export const useAudioRecordInteraction = ({
         clientY < rect.top ||
         clientY > rect.bottom;
 
-      // 判断触摸点是否在元素范围内
+      // Determine whether the touch point is within the scope of the element
       if (isOutRect && !isMoveLeave.current) {
         isMoveLeave.current = true;
         onMoveLeaveRef.current?.();
@@ -201,7 +201,7 @@ export const useAudioRecordInteraction = ({
   });
   useEffect(
     () => () => {
-      // 避免异常情况下事件无法卸载
+      // Avoid events that cannot be uninstalled under abnormal circumstances
       document.removeEventListener('mousemove', onPointerMove);
       document.removeEventListener('touchmove', onPointerMove);
     },

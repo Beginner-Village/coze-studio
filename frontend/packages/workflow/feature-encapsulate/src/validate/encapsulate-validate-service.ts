@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { inject, injectable } from 'inversify';
 import { type StandardNodeType } from '@coze-workflow/base/types';
 import {
@@ -87,8 +87,8 @@ export class EncapsulateValidateServiceImpl
       this.encapsulateValidateManager.getNodesValidators();
 
     for (const nodesValidator of nodesValidators) {
-      // 如果节点校验器需要包含起始节点和结束节点，则直接校验
-      // 否则需要排除起始节点和结束节点
+      // If the node validator needs to include a start node and an end node, it is directly validated
+      // Otherwise, the start and end nodes need to be excluded.
       nodesValidator.validate(
         nodesValidator.includeStartEnd ? nodes : excludeStartEnd(nodes),
         validateResult,

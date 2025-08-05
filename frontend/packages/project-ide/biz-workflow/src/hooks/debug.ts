@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ProjectResourceActionKey } from '@coze-arch/bot-api/plugin_develop';
 
 export const workflowActions = [
@@ -36,7 +36,7 @@ export const workflowActions = [
     hint: '复制到资源库',
   },
   {
-    // 切换为 chatflow
+    // Switch to chatflow
     key: ProjectResourceActionKey.SwitchToChatflow,
     enable: true,
   },

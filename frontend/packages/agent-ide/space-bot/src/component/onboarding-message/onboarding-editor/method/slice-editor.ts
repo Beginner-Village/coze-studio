@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { RefObject } from 'react';
 
 import { ZoneDelta } from '@coze-common/md-editor-adapter';
@@ -36,7 +36,7 @@ export const sliceEditor = (editorRef: RefObject<Editor>, maxCount: number) => {
   const sliceCount = currentCount - maxCount;
   if (sliceCount > 0) {
     const delta = new ZoneDelta({ zoneId: zone });
-    // 保留maxCount, 删除之后的内容
+    // Keep maxCount, delete the content
     delta.retain(maxCount).delete(sliceCount);
     editor.getContentState().apply(delta);
   }

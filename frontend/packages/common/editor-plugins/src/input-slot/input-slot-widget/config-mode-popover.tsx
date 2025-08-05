@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useState } from 'react';
 
 import { useEditor } from '@coze-editor/editor/react';
@@ -39,7 +39,7 @@ export const ConfigModeWidgetPopover = (props: {
     }
     const handleViewUpdate = (e: ViewUpdate) => {
       if (e.docChanged) {
-        // 判断当前光标是否在 slot 节点内
+        // Determine whether the current cursor is in the slot node
         const { state } = e;
         const range = templateParser.getCursorInMarkNodeRange(state);
         if (!range) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { PlaygroundApi } from '@coze-arch/bot-api';
 import { type SaveRequest } from '@coze-studio/autosave';
 
@@ -24,7 +24,7 @@ import { type BizKey, type ScopeStateType } from '@/save-manager/types';
 import { saveFetcher } from '../utils/save-fetcher';
 
 /**
- * 自动保存统一请求方法
+ * Autosave Uniform Request Method
  */
 export const saveRequest: SaveRequest<ScopeStateType, BizKey> = async (
   payload: ScopeStateType,

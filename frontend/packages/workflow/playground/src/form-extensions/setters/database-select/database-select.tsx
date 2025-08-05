@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 import { Modal } from '@coze-arch/coze-design';
 import { JsonViewer } from '@coze-common/json-viewer';
@@ -103,7 +103,7 @@ export const DatabaseSelect = ({
     });
   }
 
-  // 运维平台中，直接展示数据库 ID 信息即可，因为在运维平台无法拉取到数据库信息
+  // In the operation and maintenance platform, you can directly display the database ID information, because the database information cannot be pulled in the operation and maintenance platform.
   if (IS_BOT_OP && value) {
     return <JsonViewer data={value} />;
   }

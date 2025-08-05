@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 import classNames from 'classnames';
 import { I18n } from '@coze-arch/i18n';
@@ -46,7 +46,7 @@ interface MockDataCardProps {
   bizCtx: infra.BizCtx;
 }
 
-/** mock data 展示卡片 */
+/** Mock data display card */
 export function MockDataCard({
   mock,
   readOnly,

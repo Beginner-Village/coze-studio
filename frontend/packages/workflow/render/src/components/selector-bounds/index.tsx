@@ -13,19 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 // import { domUtils } from '@flowgram-adapter/common';
 import { type FlowSelectorBoundsLayerOptions } from '@flowgram-adapter/free-layout-editor';
-import { SelectionService, useService } from '@flowgram-adapter/free-layout-editor';
+import {
+  SelectionService,
+  useService,
+} from '@flowgram-adapter/free-layout-editor';
 
 import { getSelectionBounds } from '../../utils/selection-utils';
 
 import styles from './index.module.less';
 
 /**
- * 选择框
+ * select box
  * @param props
  * @constructor
  */

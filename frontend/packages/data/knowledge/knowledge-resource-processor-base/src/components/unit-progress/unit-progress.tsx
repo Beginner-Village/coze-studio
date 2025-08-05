@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo } from 'react';
 
 import { getFormatTypeFromUnitType } from '@coze-data/utils';
@@ -79,7 +79,7 @@ const renderSubText = (
   }
   let subDesc = '';
   if (hasURLImport) {
-    // 更新频率
+    // update frequency
     const updateInterval = hoursToDays(item?.update_interval || 0);
     subDesc = getFrequencyMap(updateInterval);
   } else {

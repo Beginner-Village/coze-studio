@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReactNode, useMemo, useState } from 'react';
 
 import { partition } from 'lodash-es';
@@ -26,7 +26,10 @@ import {
 } from '@coze-agent-ide/space-bot';
 import { MonetizePublishInfo } from '@coze-studio/components/monetize';
 import { I18n } from '@coze-arch/i18n';
-import { IconCozArrowRight, IconCozDiamondFill } from '@coze-arch/coze-design/icons';
+import {
+  IconCozArrowRight,
+  IconCozDiamondFill,
+} from '@coze-arch/coze-design/icons';
 import { Tooltip } from '@coze-arch/coze-design';
 import { type ColumnProps } from '@coze-arch/bot-semi/Table';
 import { Avatar, Space, Typography, UITable } from '@coze-arch/bot-semi';
@@ -103,7 +106,7 @@ const getCheckboxProps = (record: PublishConnectorInfo, disabled: boolean) => {
   return {
     disabled: !!disableTip || disabled,
     id: record.id,
-    // Offline状态没有tooltip
+    // Offline status No tooltip
     children: disableTip ? (
       <Tooltip content={disableTip}>
         <span className={styles['disable-tooltip']} />
@@ -152,7 +155,7 @@ export const TableCollection = (props: PublishTableProps) => {
     [dataSourceForChannel, connectorBrandInfoMap],
   );
 
-  // 无全选按钮因此所有表格使用相同check配置
+  // There is no select all button, so all tables use the same check configuration
   const baseConfigForChecker = {
     hidden: true,
     fixed: 'left' as const,
@@ -212,9 +215,9 @@ export const TableCollection = (props: PublishTableProps) => {
             : [record.id, ...ids],
         );
       }
-    }, // 点击行选中
-    onMouseEnter: () => onMouseEnter(record), // 鼠标移入行
-    onMouseLeave: () => onMouseLeave(record), // 鼠标移出行
+    }, // Click on the line to select
+    onMouseEnter: () => onMouseEnter(record), // mouseover
+    onMouseLeave: () => onMouseLeave(record), // mouse movement
   });
   const tableCommonProps = {
     className: classNames(styles['publish-table']),
@@ -285,7 +288,7 @@ function TableTittleExtra({
   platforms: PublishConnectorInfo[];
   botInfo: PublisherBotInfo;
 }) {
-  // 付费墙
+  // paywall
   const isAvailable = useBenefitAvailable({
     scene: PremiumPaywallScene.API,
   });

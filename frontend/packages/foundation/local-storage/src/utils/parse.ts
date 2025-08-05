@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type CacheDataItems, type LocalStorageCacheData } from '../types';
 import { LOCAL_STORAGE_CACHE_KEYS } from '../config';
 
@@ -27,7 +27,7 @@ const isValidDataItem = (data: unknown): data is CacheDataItems => {
 const isObject = (value: unknown): value is object =>
   !!value && typeof value === 'object' && value !== null;
 
-// 判断本地缓存中的值是否与 LocalStorageCacheData 类型定义匹配
+// Determines if a value in the local cache matches the LocalStorageCacheData type definition
 const isValidCacheData = (value: unknown): value is LocalStorageCacheData => {
   if (!isObject(value)) {
     return false;

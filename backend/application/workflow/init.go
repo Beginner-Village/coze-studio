@@ -17,10 +17,12 @@
 package workflow
 
 import (
+	"context"
+
 	"github.com/cloudwego/eino/compose"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"github.com/coze-dev/coze-studio/backend/application/internal"
 	wfconversation "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/conversation"
 	wfdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/database"
 	wfknowledge "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/knowledge"
@@ -43,17 +45,19 @@ import (
 	crosssearch "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/search"
 	crossvariable "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/variable"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/service"
+	"github.com/coze-dev/coze-studio/backend/infra/contract/cache"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/coderunner"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
+	"github.com/coze-dev/coze-studio/backend/pkg/logs"
 )
 
 type ServiceComponents struct {
 	IDGen              idgen.IDGenerator
 	DB                 *gorm.DB
-	Cache              *redis.Client
+	Cache              cache.Cmdable
 	DatabaseDomainSVC  dbservice.Database
 	VariablesDomainSVC variables.Variables
 	PluginDomainSVC    plugin.PluginService
@@ -66,9 +70,16 @@ type ServiceComponents struct {
 	CodeRunner         coderunner.Runner
 }
 
-func InitService(components *ServiceComponents) *ApplicationService {
+func InitService(ctx context.Context, components *ServiceComponents) (*ApplicationService, error) {
+	bcm, ok, err := internal.GetBuiltinChatModel(ctx, "WKR_")
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		logs.CtxWarnf(ctx, "workflow builtin chat model for knowledge recall not configured")
+	}
 	workflowRepo := service.NewWorkflowRepository(components.IDGen, components.DB, components.Cache,
-		components.Tos, components.CPStore)
+		components.Tos, components.CPStore, bcm)
 	workflow.SetRepository(workflowRepo)
 
 	workflowDomainSVC := service.NewWorkflowService(workflowRepo)
@@ -87,5 +98,5 @@ func InitService(components *ServiceComponents) *ApplicationService {
 	SVC.TosClient = components.Tos
 	SVC.IDGenerator = components.IDGen
 
-	return SVC
+	return SVC, err
 }

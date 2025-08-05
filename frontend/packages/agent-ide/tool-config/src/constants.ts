@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type TabDisplayItems } from '@coze-arch/bot-api/developer_api';
 
 import { ToolKey, AgentSkillKey, ToolGroupKey } from './types';
@@ -53,7 +53,7 @@ export const TOOL_KEY_TO_API_STATUS_KEY_MAP: {
 };
 
 /**
- * 这里的顺序 决定展示的顺序 请注意
+ * The order here determines the order of presentation, please note
  */
 export const TOOL_GROUP_CONFIG = {
   [ToolGroupKey.SKILL]: 'Skill',

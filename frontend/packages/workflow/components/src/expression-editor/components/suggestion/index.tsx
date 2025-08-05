@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, useRef, type RefObject } from 'react';
 
 import classNames from 'classnames';
@@ -45,7 +45,7 @@ interface ExpressionEditorSuggestionProps {
 }
 
 /**
- * 自动提示
+ * autoprompt
  */
 export const ExpressionEditorSuggestion: FC<
   ExpressionEditorSuggestionProps

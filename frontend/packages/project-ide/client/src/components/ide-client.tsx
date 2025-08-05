@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, {
   useMemo,
   forwardRef,
@@ -34,7 +34,7 @@ import { createDefaultPreset } from '../create-default-preset';
 export interface IDEClientProps {
   options: (ctx: IDEClientContext) => IDEClientOptions;
   container?: interfaces.Container;
-  containerModules?: interfaces.ContainerModule[]; // 注入的 IOC 包
+  containerModules?: interfaces.ContainerModule[]; // Injected IOC packet
   children?: React.ReactNode;
   className?: string;
 }

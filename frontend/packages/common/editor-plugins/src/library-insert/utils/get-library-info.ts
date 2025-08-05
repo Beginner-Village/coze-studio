@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { merge } from 'lodash-es';
 
 import {
@@ -57,7 +57,7 @@ const defaultLibraryBlockInfo: Record<
     icon: imageIcon,
   },
 };
-// 根据资源类型获取对应的信息
+// Get the corresponding information according to the resource type
 export const getLibraryBlockInfoFromTemplate = (props: {
   template: string;
   templateParser: TemplateParser;

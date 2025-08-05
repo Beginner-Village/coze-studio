@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 承载 project ide app 业务逻辑的插件
+ * Plugin to host the business logic of the project ide app
  */
 import { type NavigateFunction } from 'react-router-dom';
 

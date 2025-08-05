@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo, type FC } from 'react';
 
 import type {
@@ -52,7 +52,7 @@ export const SystemPrompt: FC<SystemPromptProps> = props => {
   const getConversationId = () => '';
   const getPromptContextInfo = useMemo(
     () => () => ({
-      // workflow 场景下 bot_id 不用传
+      // No need to pass bot_id workflow scenario
       botId: '',
       name,
       description: desc,

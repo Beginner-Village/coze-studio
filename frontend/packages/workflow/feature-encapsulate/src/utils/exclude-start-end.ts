@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { StandardNodeType } from '@coze-workflow/base';
 import { type WorkflowNodeEntity } from '@flowgram-adapter/free-layout-editor';
 
 /**
- * 排除开始和结束节点
+ * Exclude start and end nodes
  * @param nodes
  * @returns
  */

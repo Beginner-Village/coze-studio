@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export enum TraceChartsMode {
   Table,
   FlameThread,
 }
 
 export const MAX_TRACE_LENGTH = 50;
-/** 日志最多查询 7 天 */
+/** Log query for up to 7 days */
 export const MAX_TRACE_TIME = 7;

@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Validate } from '@flowgram-adapter/free-layout-editor';
 import { nodeMetaValidator } from '@coze-workflow/nodes';
 
 /**
- * node meta 校验
+ * Node meta check
  * @param param0
  * @returns
  */

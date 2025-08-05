@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -22,7 +22,7 @@ import { Select } from '@coze-arch/coze-design';
 import { type SettingOnErrorItemProps } from '../../types';
 
 /**
- * 重试次数
+ * number of retries
  */
 export const RetryTimes: FC<SettingOnErrorItemProps<number>> = ({
   value,

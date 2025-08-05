@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -33,5 +33,5 @@ export function useInitProjectRole(spaceId: string, projectId: string) {
     setIsReady(projectId, true);
   }, [projectId]);
 
-  return isReady; // 是否初始化完成。
+  return isReady; // Whether the initialization is complete.
 }

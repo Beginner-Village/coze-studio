@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReactNode, type FC } from 'react';
 
 import classNames from 'classnames';
@@ -34,7 +34,7 @@ const MoreButton: FC<IProps> = props => {
 
   return (
     <UIKitTooltip
-      // 为了点调起选择文件的事件时收起 tooltip
+      // Collapse tooltip when the selected file event is invoked
       disableFocusListener
       content={tooltipContent}
       hideToolTip={layout === Layout.MOBILE}

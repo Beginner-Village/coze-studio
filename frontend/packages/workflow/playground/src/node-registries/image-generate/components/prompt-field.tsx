@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 
 import { ExpressionEditorField } from '@/node-registries/common/components';
@@ -24,7 +24,7 @@ export const PromptField = withField(
     const { name } = useField();
     const promptName = `${name}.prompt`;
     const negativePromptName = `${name}.negative_prompt`;
-    // 保障和之前节点testID不变
+    // Guarantee that the testID of the previous node remains unchanged
     const promptTestIDSuffix = name.replace('inputs.', '');
     const negativePromptTestIDSuffix = name.replace('inputs.', '');
 

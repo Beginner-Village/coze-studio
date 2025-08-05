@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -50,7 +50,7 @@ export const MemoryToolPane: React.FC = () => {
   const menuList: MemoryDebugDropdownMenuItem[] = useMemo(() => {
     const list: EnhancedMemoryDebugDropdownMenuItem[] = [
       /**
-       * 变量
+       * variable
        */
       {
         icon: <IconCozVariables />,
@@ -60,7 +60,7 @@ export const MemoryToolPane: React.FC = () => {
         isEnabled: Boolean(variables.length && !isFromStore),
       },
       /**
-       * 已存数据库
+       * stored database
        */
       {
         icon: <IconCozDatabase />,

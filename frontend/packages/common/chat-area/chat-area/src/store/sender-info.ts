@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { create } from 'zustand';
 import { isEqual, merge } from 'lodash-es';
@@ -31,7 +31,7 @@ interface SenderInfoState {
   userInfoMap: UserInfoMap;
   userInfo: UserSenderInfo | null;
   /**
-   * 目前只有 coze home 在用
+   * Currently only cozing homes are in use
    */
   waitingSenderId: string | null;
 }
@@ -56,9 +56,9 @@ interface SenderInfoAction {
   getMessageUserInfo: (userId?: string) => UserSenderInfo | null;
   setUserInfoMap: (userInfoMap: UserInfoMap) => void;
   /**
-   * 获取形象信息
-   * @param senderId 发送者Id
-   * @param role 该参数请勿使用，近期下线
+   * Get image information
+   * @param senderId
+   * @Param role Please do not use this parameter, it will be offline in the near future
    * @returns AvatarInfo | undefined
    */
   getBotInfo: (senderId?: string) => SenderInfo | undefined;

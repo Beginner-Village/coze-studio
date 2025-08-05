@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { type FC } from 'react';
 
 import classnames from 'classnames';
@@ -32,7 +32,7 @@ interface Props {
 }
 
 /**
- * 添加分组按钮
+ * Add group button
  * @param param0
  * @returns
  */

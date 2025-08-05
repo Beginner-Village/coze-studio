@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { IconButton } from '@coze-arch/coze-design';
 import { IconSideFoldOutlined } from '@coze-arch/bot-icons';
 
 import { useOpenGlobalLayoutSideSheet } from './global-layout/hooks';
 
-// 用于在移动端模式开启侧边栏
+// Use to open sidebar in mobile end mode
 export const SideSheetMenu = () => {
   const open = useOpenGlobalLayoutSideSheet();
 

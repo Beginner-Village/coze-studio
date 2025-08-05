@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 import { type RuleItem } from '@coze-arch/bot-semi/Form';
 
@@ -24,7 +24,7 @@ export const REAL_DATA_MOCKSET = {
   name: I18n.t('real_data'),
 };
 
-// 初始化仅有real_data
+// Initialization only real_data
 export const MOCK_OPTION_LIST = [REAL_DATA_MOCKSET];
 
 export const POLLING_INTERVAL = 10000;
@@ -48,7 +48,7 @@ export const mockSetInfoRules: {
           message: I18n.t('create_plugin_modal_nameerror'),
         }
       : {
-          pattern: /^[\w\s\u4e00-\u9fa5]+$/u, // 国内增加支持中文
+          pattern: /^[\w\s\u4e00-\u9fa5]+$/u, // Increased domestic support for Chinese
           message: I18n.t('create_plugin_modal_nameerror_cn'),
         },
   ],

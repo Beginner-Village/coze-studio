@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import EventEmitter from 'eventemitter3';
 import { logger } from '@coze-arch/logger';
 
@@ -38,7 +38,7 @@ class FeatureFlagStorage extends EventEmitter {
         return false;
       }
 
-      // 从 remote 取值
+      // Get value from remote
       if (Reflect.has(cache, name)) {
         return Reflect.get(cache, name);
       }

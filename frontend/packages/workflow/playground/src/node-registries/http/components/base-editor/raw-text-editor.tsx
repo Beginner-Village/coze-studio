@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { forwardRef, useCallback, useEffect, useRef } from 'react';
 
 import { type EditorAPI } from '@coze-editor/editor/preset-universal';
@@ -46,7 +46,7 @@ export const BaseRawTextEditor = forwardRef<HTMLDivElement, RawTextEditorProps>(
       [onChange],
     );
 
-    // 值受控;
+    // Value controlled;
     useEffect(() => {
       const editor = apiRef.current;
 

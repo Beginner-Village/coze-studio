@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import classNames from 'classnames';
 import { getKnowledgeIDEQuery } from '@coze-data/knowledge-common-services';
-import { useDataNavigate, useKnowledgeParams } from '@coze-data/knowledge-stores';
+import {
+  useDataNavigate,
+  useKnowledgeParams,
+} from '@coze-data/knowledge-stores';
 import { IconCozArrowLeft } from '@coze-arch/coze-design/icons';
 import { IconButton, Typography } from '@coze-arch/coze-design';
 
@@ -24,12 +27,12 @@ interface UploadActionNavbarProps {
   title: string;
 }
 
-// 上传页面导航栏
+// Upload page navigation bar
 export const UploadActionNavbar = ({ title }: UploadActionNavbarProps) => {
   const params = useKnowledgeParams();
   const resourceNavigate = useDataNavigate();
 
-  // TODO: hzf biz的分化在Scene层维护
+  // TODO: Scene layer maintenance of hzf biz differentiation
   const fromProject = params.biz === 'project';
   const handleBack = () => {
     const query = getKnowledgeIDEQuery() as Record<string, string>;

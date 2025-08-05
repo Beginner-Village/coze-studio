@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { get, isUndefined } from 'lodash-es';
 import { I18n } from '@coze-arch/i18n';
 import { type Validate } from '@flowgram-adapter/free-layout-editor';
@@ -23,11 +23,11 @@ import { getVariableViewType } from '../utils/get-variable-view-type';
 import { createValueExpressionInputValidate } from '../../materials/create-value-expression-input-validate';
 
 export const variableValidator: Validate = options => {
-  // todo 目前表单引擎删除元素会传一个undefined, 校验先跳过，后续节点引擎修复了移除
+  // Todo currently deletes the element of the form engine and will pass an undefined one. The verification is skipped first, and the subsequent node engine fixes the removal.
   if (isUndefined(options?.value)) {
     return;
   }
-  // 校验表达式
+  // check expression
   const validator = createValueExpressionInputValidate({
     required: true,
   });
@@ -40,12 +40,12 @@ export const variableValidator: Validate = options => {
   const paths = get(options, 'name', '').split('.');
   const index = paths.pop();
 
-  // 第一项不需要校验
+  // The first item does not require verification
   if (index === '0') {
     return;
   }
 
-  // 校验变量类型和第一项是否一致
+  // Verify that the variable type is consistent with the first item
   const { node } = options.context;
   const { variableService } = options.context.playgroundContext;
   const variables = get(options.formValues, paths);

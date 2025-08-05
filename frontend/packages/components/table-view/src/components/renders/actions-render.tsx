@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import classNames from 'classnames';
 import { IconCozEdit, IconCozTrashCan } from '@coze-arch/coze-design/icons';
 import { Button } from '@coze-arch/coze-design';
@@ -26,12 +26,12 @@ export interface ActionsRenderProps {
   index: number;
   editProps?: {
     disabled: boolean;
-    // 编辑回调
+    // edit callback
     onEdit?: (record: TableViewRecord, index: number) => void;
   };
   deleteProps?: {
     disabled: boolean;
-    // 删除回调
+    // Delete callback
     onDelete?: (index: number) => void;
   };
   className?: string;

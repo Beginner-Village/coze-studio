@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { memo } from 'react';
 
 import { type ComponentTypesMap } from '../../types';
@@ -58,7 +58,7 @@ export const MessageGroupBody: ComponentTypesMap['messageGroupBody'] = memo(
           );
         })}
         {Boolean(functionCallMessageIdList.length) && (
-          // 看起来 functioncall 消息的 answer action 挑战了 MessageBoxProvider 的设计
+          // It seems that the functioncall answer action challenges the design of the MessageBoxProvider
           <MessageBoxProvider
             groupId={groupId}
             messageUniqKey={functionCallMessageIdList.at(0) ?? ''}
@@ -67,7 +67,7 @@ export const MessageGroupBody: ComponentTypesMap['messageGroupBody'] = memo(
             isFirstUserOrFinalAnswerMessage={false}
             isLastUserOrFinalAnswerMessage={false}
           >
-            {/* function call运行过程 */}
+            {/* Function call */}
             <FunctionCallMessageBox
               messageGroup={messageGroup}
               getBotInfo={getBotInfo}

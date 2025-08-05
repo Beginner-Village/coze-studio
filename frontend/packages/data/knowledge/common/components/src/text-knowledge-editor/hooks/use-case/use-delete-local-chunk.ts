@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Chunk } from '@/text-knowledge-editor/types/chunk';
 import { deleteLocalChunk as deleteLocalChunkService } from '@/text-knowledge-editor/services/inner/chunk-op.service';
 
@@ -27,7 +27,7 @@ export const useDeleteLocalChunk = ({
   onChunksChange,
 }: UseDeleteLocalChunkProps) => {
   /**
-   * 处理本地分片的删除操作
+   * Handle deletion of local shardings
    */
   const deleteLocalChunk = (chunk: Chunk) => {
     if (!chunk.local_slice_id) {

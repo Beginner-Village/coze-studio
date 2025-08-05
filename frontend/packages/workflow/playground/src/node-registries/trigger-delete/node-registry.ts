@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   DEFAULT_NODE_META_PATH,
   DEFAULT_OUTPUTS_PATH,
@@ -37,7 +37,7 @@ export const TRIGGER_DELETE_NODE_REGISTRY: WorkflowNodeRegistry<NodeTestMeta> =
       size: { width: 360, height: 130.7 },
       nodeMetaPath: DEFAULT_NODE_META_PATH,
       outputsPath: DEFAULT_OUTPUTS_PATH,
-      inputParametersPath: INPUT_PATH, // 入参路径，试运行等功能依赖该路径提取参数
+      inputParametersPath: INPUT_PATH, // Imported parameter path, practice running and other functions rely on this path to extract parameters
       test,
       helpLink: '/open/docs/guides/delete_timed_trigger',
     },

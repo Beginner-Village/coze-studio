@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { createLocateChunkId } from '../../services/locate-segment';
 
 /**
- * 滚动到选中的元素
- * @param selectionIDs 选中的元素ID数组
+ * Scroll to the selected element
+ * @Param selectionIDs array of selected element IDs
  */
 export const useScrollToSelection = (selectionIDs?: string[]) => {
   useEffect(() => {

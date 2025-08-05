@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { createContext, useContext } from 'react';
 
 import { type DatasetDataScrollList } from '@/service';
 
-// 表格操作相关的 Context
+// Context related to table manipulation
 interface TableActionsContextType {
   setCurIndex: (index: number | ((prev: number) => number)) => void;
   setCurSliceId: (id: string | ((prev: string) => string)) => void;

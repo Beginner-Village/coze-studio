@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { logger } from '@coze-arch/logger';
 import { I18n, type I18nKeysNoOptionsType } from '@coze-arch/i18n';
 import { IconCozTrashCan, IconCozPlus } from '@coze-arch/coze-design/icons';
@@ -78,7 +78,7 @@ export const ConnectorField = (props: ConnectorFieldProps) => {
   }
 
   function createRules(fieldSchema: FormSchemaItem): RuleItem[] {
-    // 确保 formItemSchema.rules 是一个数组
+    // Make sure formItemSchema.rules is an array
     const itemRules = fieldSchema.rules ?? [];
 
     const rules = itemRules.map(rule => {
@@ -91,7 +91,7 @@ export const ConnectorField = (props: ConnectorFieldProps) => {
       return { ...rule, ...(ruleMessage && { message: ruleMessage }) };
     });
 
-    // 添加 'required' 规则
+    // Add'required 'rule
     rules.push({
       required: fieldSchema.required,
       message: I18n.t('bot_publish_field_placeholder', {
@@ -116,7 +116,7 @@ export const ConnectorField = (props: ConnectorFieldProps) => {
           logger.error({ error: e as Error });
           values = [];
         }
-        // 添加一个默认空值
+        // Add a default null value
         if (!values.length) {
           values.push('');
         }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import mitt, { type Emitter } from 'mitt';
 import { EVENT_NAMES } from '@coze-arch/bot-tea';
 import {
@@ -23,7 +23,7 @@ import {
 
 import { type NLPromptModalVisibilityProps } from './type';
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- mitt 不认 interface
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- mitt do not recognize interface
 type VisibilityEvent = {
   visibilitychange:
     | { isShow: true; openModalSource: OpenModalSource }

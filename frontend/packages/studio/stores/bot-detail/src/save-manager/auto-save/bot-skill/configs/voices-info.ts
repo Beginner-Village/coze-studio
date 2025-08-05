@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { merge } from 'lodash-es';
 import { type BotInfoForUpdate } from '@coze-arch/idl/playground_api';
 import { DebounceTime, type HostedObserverConfig } from '@coze-studio/autosave';
@@ -35,7 +35,7 @@ export const voicesInfoConfig: RegisterVariables = {
   selector: store => ({ voicesInfo: store.voicesInfo, tts: store.tts }),
   debounce: DebounceTime.Immediate,
   middleware: {
-    // ! any warning 改动的时候要仔细
+    // Be careful when changing any warnings
     onBeforeSave: (
       values: Values,
     ): Pick<Required<BotInfoForUpdate>, 'voices_info'> => ({

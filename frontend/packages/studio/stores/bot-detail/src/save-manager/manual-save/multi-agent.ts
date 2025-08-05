@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useSpaceStore } from '@coze-arch/bot-studio-store';
 import { type MultiAgentConnectorType } from '@coze-arch/bot-api/playground_api';
 import { PlaygroundApi } from '@coze-arch/bot-api';
@@ -27,7 +27,7 @@ import { useBotInfoStore } from '@/store/bot-info';
 import { saveFetcher } from '../utils/save-fetcher';
 import { ItemTypeExtra } from '../types';
 
-// skill结构化的接口
+// Skills Structured Interface
 export async function saveUpdateAgents(agent: Agent) {
   return await saveFetcher(
     () =>

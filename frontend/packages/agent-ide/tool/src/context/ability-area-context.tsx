@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type FC,
   type PropsWithChildren,
@@ -75,7 +75,7 @@ export const AbilityAreaContextProvider: FC<
     clearStore: clearToolAreaStore,
   } = useToolAreaStore.getState();
   /**
-   * 清除
+   * clear
    */
   useEffect(() => {
     updateIsModeSwitching(modeSwitching);

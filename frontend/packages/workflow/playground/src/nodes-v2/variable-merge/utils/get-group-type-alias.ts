@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type WorkflowNodeEntity } from '@flowgram-adapter/free-layout-editor';
 import { type WorkflowVariableService } from '@coze-workflow/variable';
 
@@ -21,7 +21,7 @@ import { type MergeGroup } from '../types';
 import { getVariableTypeAlias } from './get-variable-type-alias';
 
 /**
- * 获取分组类型别名
+ * Get group type alias
  */
 export function getGroupTypeAlias(
   mergeGroup: MergeGroup,

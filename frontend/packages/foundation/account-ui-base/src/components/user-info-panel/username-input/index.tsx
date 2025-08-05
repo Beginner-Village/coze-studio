@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import classNames from 'classnames';
 import { I18n } from '@coze-arch/i18n';
 import { Form, Input, type InputProps } from '@coze-arch/coze-design';
@@ -23,7 +23,7 @@ import s from './index.module.less';
 export const USER_NAME_MAX_LEN = 20;
 
 interface InputWithCountProps extends InputProps {
-  // 设置字数限制并显示字数统计
+  // Set word limits and display word count
   getValueLength?: (value?: InputProps['value'] | string) => number;
 }
 

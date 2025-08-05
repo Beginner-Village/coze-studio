@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import classNames from 'classnames';
@@ -27,7 +27,7 @@ import { eventBus } from '@/text-knowledge-editor/event';
 import { type PreviewContextMenuItemProps } from './module';
 
 /**
- * 在特定分片前添加新分片的菜单项组件
+ * Add a new sharding's menu item component before a specific sharding
  */
 export const AddBeforeAction: React.FC<PreviewContextMenuItemProps> = ({
   chunk,
@@ -44,7 +44,7 @@ export const AddBeforeAction: React.FC<PreviewContextMenuItemProps> = ({
       'cursor-not-allowed': isDisabled,
     });
 
-  // 在特定分片前添加新分片
+  // Add new shardings before specific shardings
   const { addEmptyChunkBefore } = useAddEmptyChunkAction({
     chunks,
     onChunksChange: ({ newChunk, chunks: newChunks }) => {

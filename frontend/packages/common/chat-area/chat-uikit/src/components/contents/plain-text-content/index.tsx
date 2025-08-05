@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { type MessageMentionListFields } from '@coze-common/chat-core/src/message/types';
@@ -61,7 +61,7 @@ const getMentionBotContent = ({
   mentioned,
   getBotInfo,
 }: IPlainTextMessageContentProps) => {
-  // 接口真不一定返回了 mention_list
+  // The interface does not necessarily return mention_list
   if (!mentioned) {
     return '';
   }

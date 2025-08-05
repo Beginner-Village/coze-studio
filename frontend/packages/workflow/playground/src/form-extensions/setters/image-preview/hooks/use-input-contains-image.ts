@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCallback, useState } from 'react';
 
 import { type FlowNodeEntity } from '@flowgram-adapter/free-layout-editor';
@@ -44,7 +44,7 @@ export const useInputContainsImage = (node: FlowNodeEntity) => {
     [node, variablePathList],
   );
 
-  // 监听变量变化后触发重新计算
+  // Trigger recalculation after listening for variable changes
   useListenVariableChange({
     variablePathList,
     callback: () => setInputContainsImage(getInputContainsImage()),

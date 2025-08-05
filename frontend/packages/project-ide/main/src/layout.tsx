@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useParams } from 'react-router-dom';
 import React from 'react';
 
@@ -33,7 +33,7 @@ const ProjectIDEContainer = ({
 }) => {
   useDestoryProject(projectId);
 
-  // 初始化Project角色数据
+  // Initializing Project Role Data
   const isCompleted = useInitProjectRole(spaceId, projectId);
 
   return isCompleted ? (

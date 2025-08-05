@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ViewVariableType } from '@coze-workflow/base/types';
 import { reporter } from '@coze-arch/logger';
 import { I18n } from '@coze-arch/i18n';
@@ -42,7 +42,7 @@ export const useGetSceneFlowRoleListSchema = () => {
         player_description: item.description,
       })),
       component: {
-        // 数组渲染的setter
+        // Array rendering setter
         type: 'Array',
       },
       decorator: {

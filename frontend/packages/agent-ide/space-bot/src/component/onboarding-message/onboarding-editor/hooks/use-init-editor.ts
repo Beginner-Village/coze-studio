@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useRef } from 'react';
 
 import { initEditorByPrologue } from '../method/init-editor';
@@ -45,7 +45,7 @@ export const useInitEditor = ({
         editorRef,
       });
     }
-    // 滚动到顶部
+    // Scroll to top
     editorRef.current?.scrollModule?.scrollTo({
       top: 0,
     });

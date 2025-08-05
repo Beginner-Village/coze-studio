@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useShallow } from 'zustand/react/shallow';
 import classNames from 'classnames';
 import { I18n } from '@coze-arch/i18n';
@@ -100,7 +100,7 @@ export function PublishBasicInfo() {
             'left-0',
             '!coz-bg-max',
           )}
-          // 比渠道 tab 高就可以, 避免遮挡
+          // It is higher than the channel tab to avoid occlusion.
           textAreaStyle={{ zIndex: CONNECTOR_TAB_BAR_Z_INDEX + 1 }}
           onChange={value => {
             setProjectPublishInfo({

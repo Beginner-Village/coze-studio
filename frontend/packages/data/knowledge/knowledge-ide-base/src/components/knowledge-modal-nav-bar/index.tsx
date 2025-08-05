@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useEffect } from 'react';
 
 import classNames from 'classnames';
@@ -111,7 +111,7 @@ export const KnowledgeModalNavBar: React.FC<KnowledgeModalNavBarProps> = ({
       <div className={styles.toolbar}>
         <Space spacing={12}>
           {isImageFormat ? <PhotoFilter /> : null}
-          {/* 导入按钮 */}
+          {/* import button */}
           {canEdit ? importKnowledgeSourceButton : null}
           {actionButtons}
         </Space>

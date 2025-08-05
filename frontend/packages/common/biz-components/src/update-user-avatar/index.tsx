@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type CSSProperties, type ForwardedRef, forwardRef } from 'react';
 
 import classNames from 'classnames';
@@ -68,7 +68,7 @@ export const UpdateUserAvatar = forwardRef(
         const { fileInstance } = file;
 
         if (fileInstance) {
-          //   业务
+          //   business
           const resp = await uploadAvatar(fileInstance);
           onChange?.(resp.web_uri);
           onUpdateSuccess?.(resp.web_uri);

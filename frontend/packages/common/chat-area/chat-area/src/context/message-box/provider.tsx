@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type PropsWithChildren } from 'react';
 
 import { isEqual } from 'lodash-es';
@@ -42,13 +42,13 @@ export const MessageBoxProvider: React.FC<
   const isGroupChatActive = useWaitingStore(state =>
     getIsGroupChatActive({ ...state, groupId }),
   );
-  // 通过messageId获取message
+  // Get message by messageId
   const message = useMessagesStore(
     state => state.findMessage(messageUniqKey),
     isEqual,
   );
 
-  // 通过messageId获取message meta
+  // Get message meta by messageId
   const meta = useMessageMetaStore(
     state => state.getMetaByMessage(messageUniqKey),
     isEqual,

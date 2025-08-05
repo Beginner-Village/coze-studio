@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type GrabNode } from '../../types/node';
 import { isGrabTextNode } from './is-grab-text-node';
 import { isGrabLink } from './is-grab-link';
 import { isGrabImage } from './is-grab-image';
 
 /**
- * 获取人性化文本内容
+ * Access to user-friendly text content
  */
 export const getHumanizedContentText = (normalizeNodeList: GrabNode[]) => {
   let content = '';

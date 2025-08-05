@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState, type PropsWithChildren } from 'react';
 
 import classNames from 'classnames';
@@ -26,7 +26,7 @@ export interface CollapsePanelProps extends PropsWithChildren {
 }
 
 /**
- * 用 Collapsible 封装的更符合 UI 设计的折叠面板
+ * A collapsible panel with Collapsible for better UI design
  */
 export function CollapsePanel({
   header,

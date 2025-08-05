@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 
 import { AuthStatus } from '@coze-arch/idl/developer_api';
 import { useResetLocationState } from '@coze-arch/bot-hooks';
 
-// 三方授权成功，调用成功回调
+// The three-party authorization is successful, and the callback is successful.
 export const useAuthSuccess = (bindSuccess: (id: string) => void) => {
   const { state } = useLocation();
   const { oauth2, authStatus } = (state ?? history.state ?? {}) as Record<

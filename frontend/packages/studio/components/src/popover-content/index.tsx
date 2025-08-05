@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, {
   Suspense,
   lazy,
@@ -25,7 +25,7 @@ import React, {
 import classNames from 'classnames';
 
 import s from './index.module.less';
-// react-markdown 20ms 左右的 longtask
+// React-markdown longtask around 20ms
 const LazyReactMarkdown = lazy(() => import('react-markdown'));
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ReactMarkdown = (props: any) => (

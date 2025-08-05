@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/shallow';
 import { type NodeEvent } from '@coze-arch/bot-api/workflow_api';
@@ -38,7 +38,7 @@ export interface QuestionFormState {
 }
 
 export interface QuestionFormAction {
-  /** 更新状态 */
+  /** update status */
   patch: (next: Partial<QuestionFormState>) => void;
 }
 

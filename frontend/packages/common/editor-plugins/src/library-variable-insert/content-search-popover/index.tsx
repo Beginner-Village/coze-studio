@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useEffect, useState } from 'react';
 
 import {
@@ -129,7 +129,7 @@ export const ContentSearchPopover = ({
             activeKey={activeTab}
             onChange={key => {
               setActiveTab(key);
-              // 保证切换tab后光标仍然定位在编辑器上
+              // Make sure the cursor is still positioned on the editor after switching tabs
               setTimeout(() => {
                 editorRef.current?.$view.focus();
               }, 0);

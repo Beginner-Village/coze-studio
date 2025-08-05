@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ViewVariableType } from '@coze-workflow/base';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -34,5 +34,5 @@ export enum DescriptionLine {
   Multi = 'multiline',
 }
 
-// 名称最长20字符
+// Name up to 20 characters
 export const MAX_NAME_LENGTH = 20;

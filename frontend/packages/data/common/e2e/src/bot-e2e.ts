@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export enum BotE2e {
   BotTab = 'bot.tab',
   BotListSearch = 'bot.list.search.input',
@@ -22,7 +22,7 @@ export enum BotE2e {
   BotListIconDel = 'bot.list.delete.icon',
   BotListIconEdit = 'bot.list.edit.icon',
   BotKnowledgeAutoMaticBtn = 'bot.knowledge.auto_matic.btn',
-  /** 知识库设置弹框 */
+  /** Knowledge base settings pop-up box */
   BotKnowledgeSettingModalTitle = 'bot.knowledge.setting.modal.title.text',
   BotKnowledgeSettingModalAutoRadio = 'bot.knowledge.setting.modal.auto.radio',
   BotKnowledgeSettingModalManualRadio = 'bot.knowledge.setting.modal.manual.radio',
@@ -32,7 +32,7 @@ export enum BotE2e {
   BotKnowledgeSettingShowSourceDisplaySwitch = 'bot.knowledge.setting.show.source.display.switch',
   BotKnowledgeSettingShowSourceModeCardRadio = 'bot.knowledge.setting.show.source.mode.cardlist.radio',
   BotKnowledgeSettingShowSourceModeTextRadio = 'bot.knowledge.setting.show.source.mode.replybottom.radio',
-  /** 选择知识库列表 */
+  /** Select Knowledge Base List */
   BotKnowledgeSelectListModalCreateBtn = 'bot.knowledge.select.list.modal.create.btn',
   BotKnowledgeSelectListModalCreateDateSelect = 'bot.knowledge.select.list.modal.create.date.select',
   BotKnowledgeSelectListModalAllTab = 'bot.knowledge.select.list.modal.all.tab',

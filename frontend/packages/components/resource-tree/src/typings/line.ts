@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type FlowNodeEntity,
   type IPoint,
@@ -28,23 +28,23 @@ export interface CustomLine {
 }
 
 /**
- * 资源 icon 类型
+ * Resource icon type
  */
 export enum NodeType {
-  WORKFLOW, // 工作流
-  CHAT_FLOW, // 对话流
-  KNOWLEDGE, // 知识库
-  PLUGIN, // 插件
-  DATABASE, // 数据库
+  WORKFLOW, // Workflow
+  CHAT_FLOW, // conversation flow
+  KNOWLEDGE, // Knowledge Base
+  PLUGIN, // plugin
+  DATABASE, // database
 }
 
 /**
- * 资源来源
+ * source of resources
  */
 export enum DependencyOrigin {
-  LIBRARY, // 资源库
+  LIBRARY, // resource library
   APP, // App / Project
-  SHOP, // 商店
+  SHOP, // store
 }
 
 export interface EdgeItem {

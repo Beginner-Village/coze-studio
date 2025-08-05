@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMutation, type DefaultError } from '@tanstack/react-query';
 import { MemoryApi } from '@coze-arch/bot-api';
 
@@ -28,7 +28,7 @@ export const useNl2SqlMutation = () => {
   } = useMutation<string, DefaultError, { text: string }>({
     mutationFn: async ({ text }) => {
       const data = await MemoryApi.GetNL2SQL({
-        // 后端接口定义有问题 bot_id为必传 实际不需要 跟后端沟通这里传0处理
+        // There is a problem with the back-end interface definition bot_id must be passed, but it is not actually needed. Communicate with the back-end and pass 0 processing here.
         bot_id: 0,
         database_id: databaseID,
         text,

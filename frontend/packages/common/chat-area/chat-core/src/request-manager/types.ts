@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type InternalAxiosRequestConfig,
   type AxiosResponse,
@@ -62,7 +62,7 @@ interface Hooks {
       | InternalChannelSendMessageConfig
       | Promise<InternalChannelSendMessageConfig>
   >;
-  //为何这样，是由于OpenSdk 与 CozeSdk消息差异过大，缺少了Ack消息，需要构造出来。
+  //The reason for this is that OpenSdk and CozeSdk messages are too different, missing Ack messages and need to be constructed.
   onGetMessageStreamParser?: (
     requestMessageRawBody: Record<string, unknown>,
   ) => FetchSteamConfig<ParsedEvent>['streamParser'];

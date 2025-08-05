@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useState } from 'react';
 
 import { UIBreadcrumb } from '@coze-studio/components';
@@ -42,12 +42,12 @@ export function MockSetPageBreadcrumb({
 }: MockSetPageBreadcrumbProps) {
   const routeResponse = usePageJumpResponse(PageType.PLUGIN_MOCK_DATA);
 
-  // 插件详情
+  // plugin details
   const [pluginInfo, setPluginInfo] = useState<PluginMetaInfo>({
     name: routeResponse?.pluginName,
   });
 
-  // 获取当前 plugin 信息
+  // Get current plugin information
   const getPluginInfo = async () => {
     try {
       const res = await DeveloperApi.GetPluginInfo(

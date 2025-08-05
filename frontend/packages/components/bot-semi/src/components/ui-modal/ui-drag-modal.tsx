@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { createPortal } from 'react-dom';
 import React, {
   ComponentProps,
@@ -42,7 +42,7 @@ export type UIDragModalType =
 export type UIDragModalProps = ComponentProps<typeof Modal> & {
   type?: UIDragModalType;
   focusKey?: string;
-  onWindowFocus?: (v: string) => void; // 当前窗口被点击时的回调
+  onWindowFocus?: (v: string) => void; // Callback when the current window is clicked
 };
 
 export const UIDragModal: FC<PropsWithChildren<UIDragModalProps>> = props => {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -45,7 +45,7 @@ export const useReloadKnowledgeIDE = () => {
     })),
   );
 
-  // 监听数据变化并更新 store
+  // Monitor data changes and update store
   useEffect(() => {
     if (!isDataSetLoading && dataSetDetail) {
       setDataSetDetail(dataSetDetail);

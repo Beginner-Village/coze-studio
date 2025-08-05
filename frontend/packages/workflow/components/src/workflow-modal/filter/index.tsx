@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, useContext, useMemo } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -56,7 +56,7 @@ const flowModeOptions = [
     value: WorkflowMode.ChatFlow,
   },
 ].filter(item => {
-  // 开源版本暂不支持对话流
+  // The open-source version does not currently support conversation streaming
   if (item.value === WorkflowMode.ChatFlow && IS_OPEN_SOURCE) {
     return false;
   }

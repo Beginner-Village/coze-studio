@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, it, expect } from 'vitest';
 
 import { refInputParametersParser } from '../../../../src/utils/schema-extractor/parsers/ref-input-parameters';
@@ -184,7 +184,7 @@ describe('ref-input-parameters-parser', () => {
         param4: undefined,
         param5: {
           type: 'string',
-          value: {}, // 空的 value 对象
+          value: {}, // Empty value object
         },
       },
     ];

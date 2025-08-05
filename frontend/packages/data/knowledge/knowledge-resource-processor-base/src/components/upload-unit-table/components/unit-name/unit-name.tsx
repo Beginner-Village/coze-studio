@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState, useEffect, type FC } from 'react';
 
 import { KNOWLEDGE_UNIT_NAME_MAX_LEN } from '@coze-data/knowledge-modal-base';
@@ -39,7 +39,7 @@ export const UnitName: FC<UnitNameProps> = ({
   inModal = false,
 }) => {
   const { type, name, validateMessage, dynamicErrorMessage } = record;
-  const [value, setValue] = useState(name); // 需要用自身state，否则出现无法输入中文的bug
+  const [value, setValue] = useState(name); // You need to use your own state, otherwise there will be a bug that cannot enter Chinese.
   const [validData, setValidData] = useState({ valid: true, errorMsg: '' });
 
   const getValidateMessage = (val: string) =>

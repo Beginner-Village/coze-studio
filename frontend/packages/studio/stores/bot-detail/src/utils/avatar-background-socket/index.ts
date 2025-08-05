@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { withSlardarIdButton } from '@coze-studio/bot-utils';
 import { logger } from '@coze-arch/logger';
 import { I18n } from '@coze-arch/i18n';
 import { arrayBufferToObject } from '@coze-arch/bot-utils';
-import {
-  type GenPicMessage,
-  PicType,
-} from '@coze-arch/bot-api/playground_api';
+import { type GenPicMessage, PicType } from '@coze-arch/bot-api/playground_api';
 import { PlaygroundApi } from '@coze-arch/bot-api';
 import webSocketManager, {
   type Connection,
@@ -62,7 +59,7 @@ class AvatarBackgroundWebSocket {
       });
       this.addWSEventListener();
     } catch (error) {
-      // 重试一次
+      // Try again.
       if (retry) {
         this.createConnection(false);
       }
@@ -126,7 +123,7 @@ class AvatarBackgroundWebSocket {
         image: { dotStatus: backgroundStaticImageDotStatus },
       } = generateBackGroundModal;
       const { status } = task;
-      // 收到消息后更新头像或背景
+      // Update avatar or background after receiving message
       const updateState = (
         key: string,
         setImmer:
@@ -141,7 +138,7 @@ class AvatarBackgroundWebSocket {
               ? DotStatus.Success
               : DotStatus.Fail;
         } else {
-          // 标为已读
+          // Mark as read
           if (taskBotId !== '0') {
             PlaygroundApi.MarkReadNotice({
               bot_id: taskBotId,
@@ -213,7 +210,7 @@ class AvatarBackgroundWebSocket {
 }
 
 const getPluginServiceId = () => {
-  // region/service_id映射
+  // Region/service_id mapping
   const regionServiceIdMap = {
     boe: 16778137,
     cn: 33554636,
@@ -230,7 +227,7 @@ export const avatarBackgroundWebSocket = new AvatarBackgroundWebSocket(
 );
 
 export function initAvatarBackgroundWebSocket() {
-  // 创建连接
+  // Create connection
   setTimeout(() => {
     const {
       generateAvatarModal: {

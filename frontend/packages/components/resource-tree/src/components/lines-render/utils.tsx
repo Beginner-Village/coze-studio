@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type IPoint, Rectangle } from '@flowgram-adapter/fixed-layout-editor';
 
 export enum BezierControlType {
@@ -26,9 +26,9 @@ export enum BezierControlType {
 const CONTROL_MAX = 300;
 
 /**
- * 获取贝塞尔曲线垂直方向的控制节点
- * @param fromPos 起始点
- * @param toPos 终点
+ * Get the control node for the vertical direction of the Bézier curve
+ * @param fromPos starting point
+ * @param toPos destination
  */
 export function getBezierVerticalControlPoints(
   fromPos: IPoint,

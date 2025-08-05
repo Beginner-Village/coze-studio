@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import path from 'path';
 import type { Rule } from 'eslint';
 import semver from 'semver';
@@ -56,7 +56,7 @@ export const disallowDepRule: Rule.RuleModule = {
         return;
       }
       const [, blockVersion, tips] = definition;
-      // 没有提供 version 参数，判定为不允许所有版本号
+      // No version parameter is provided, and it is determined that all version numbers are not allowed
       if (typeof blockVersion !== 'string' || blockVersion.length <= 0) {
         context.report({
           node,

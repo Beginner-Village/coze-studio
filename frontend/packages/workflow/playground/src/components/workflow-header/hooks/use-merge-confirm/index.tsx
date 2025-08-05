@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/no-deep-relative-import */
 
 import { I18n } from '@coze-arch/i18n';
@@ -109,7 +109,7 @@ export const useMergeConfirm = () => {
                 resolve(false);
               }}
               onOk={async () => {
-                // merge完后刷新刷新画布
+                // Refresh the canvas after merging
                 await saveService.reloadDocument({});
                 Toast.success(
                   I18n.t('workflow_publish_multibranch_merge_success'),

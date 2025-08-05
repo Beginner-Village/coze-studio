@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState, type ComponentProps, type PropsWithChildren } from 'react';
 
 import { Form, Popover, UIButton, UIInput } from '@coze-arch/bot-semi';
@@ -26,7 +26,7 @@ export interface InsertLinkPopoverProps
 }
 
 /**
- * 全受控
+ * fully controlled
  */
 export const InsertLinkPopover: React.FC<
   PropsWithChildren<InsertLinkPopoverProps>

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { inject, injectable, postConstruct } from 'inversify';
@@ -176,7 +176,7 @@ export class DebugBarWidget extends ReactWidget {
 
   render() {
     return (
-      // 不走 lumino widget 逻辑，通过 css 控制显隐
+      // Do not use the lumino widget logic, control the hidden through css
       <div
         className="debug-bar-widget-container"
         ref={this.ref}

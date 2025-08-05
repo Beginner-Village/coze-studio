@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type NodeResult } from '@coze-workflow/base';
 
 /**
- * log images 业务逻辑太重了，本期暂不抽
+ * Log images business logic is too heavy, this period will not draw
  */
 export type LogImages = React.FC<{
   testRunResult: NodeResult;

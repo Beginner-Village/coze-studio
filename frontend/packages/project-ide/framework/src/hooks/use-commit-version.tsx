@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useIDEGlobalStore } from '../context';
 
 export const useCommitVersion = () => {
-  // 内置了 shallow 操作，无需 useShallow
+  // Built-in shallow operation, no useShallow
   // eslint-disable-next-line @coze-arch/zustand/prefer-shallow
   const { version, patch } = useIDEGlobalStore(store => ({
     version: store.version,

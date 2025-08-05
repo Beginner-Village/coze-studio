@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type AbilityKey } from '@coze-agent-ide/tool-config';
 
 import { useEvent } from '../event/use-event';
@@ -21,7 +21,7 @@ import { EventCenterEventName } from '../../typings/scoped-events';
 import { type IToggleContentBlockEventParams } from '../../typings/event';
 
 /**
- * 私有的hooks，不对外暴露使用
+ * Private hooks, not exposed to the outside world
  * @returns
  */
 

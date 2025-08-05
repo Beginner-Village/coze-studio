@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCollaborationStore } from '../store/collaboration';
 
 export function createStorage<T extends object>(
@@ -43,7 +43,7 @@ export const storageLocal = createStorage<Record<string, string | undefined>>(
   {},
 );
 
-// NOTICE: 定制逻辑： baseVersion转从 bot_detail_store中获取
+// NOTICE: Custom logic: baseVersion to get from bot_detail_store
 export const storage = new Proxy(storageLocal, {
   get: (target, prop: string, receiver) => {
     if (prop === 'baseVersion') {

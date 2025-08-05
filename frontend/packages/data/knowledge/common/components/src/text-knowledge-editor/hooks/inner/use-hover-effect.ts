@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState } from 'react';
 
 export const useHoverEffect = () => {
   const [hoveredChunk, setHoveredChunk] = useState<string | null>(null);
 
-  // 处理鼠标悬停事件
+  // Handling mouse hover events
   const handleMouseEnter = (chunkId: string) => {
     setHoveredChunk(chunkId);
   };
 
-  // 处理鼠标离开事件
+  // Handling mouse away events
   const handleMouseLeave = () => {
     setHoveredChunk(null);
   };

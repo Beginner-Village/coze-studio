@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ComponentProps } from 'react';
 
 import { EnumImageModel } from '@coze-workflow/setters';
@@ -26,7 +26,7 @@ type ImageModelSelectProps = Omit<
 >;
 
 /**
- * 图像模型选择器
+ * Image model selector
  */
 export const ImageModelSelectField = withField<ImageModelSelectProps>(props => {
   const { value, readonly, onChange, errors } = useField<number>();

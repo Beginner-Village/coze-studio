@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FlowNodeEntity } from '@flowgram-adapter/free-layout-editor';
 import { EntityData } from '@flowgram-adapter/free-layout-editor';
 import {
@@ -47,7 +47,7 @@ export class WorkflowNodeInputVariablesData extends EntityData {
   }
 
   /**
-   * 获取输入的表单值
+   * Get the entered form value
    */
   get inputParameters(): InputValueVO[] {
     const registry = this.entity.getNodeRegister() as WorkflowNodeRegistry;
@@ -65,7 +65,7 @@ export class WorkflowNodeInputVariablesData extends EntityData {
   }
 
   /**
-   * 获取所有的输入变量，包括变量名和引用的变量实例
+   * Get all input variables, including variable names and referenced variable instances
    */
 
   get inputVariables(): InputVariable[] {

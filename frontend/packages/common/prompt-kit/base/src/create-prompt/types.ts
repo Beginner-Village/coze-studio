@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ModalProps } from '@coze-arch/coze-design';
 
 export interface PromptContextInfo {
@@ -33,22 +33,22 @@ export interface PromptConfiguratorModalProps extends ModalProps {
   workflowId?: string;
   defaultPrompt?: string;
   canEdit?: boolean;
-  /** 用于埋点: 页面来源 */
+  /** For event tracking: page source */
   source: string;
   enableDiff?: boolean;
   promptSectionConfig?: {
-    /** 提示词输入框的 placeholder */
+    /** Cue word text box placeholder */
     editorPlaceholder?: React.ReactNode;
-    /** 提示词划词actions */
+    /** Cue action */
     editorActions?: React.ReactNode;
-    /** 头部 actions */
+    /** Head actions */
     headerActions?: React.ReactNode;
-    /** 提示词输入框的 active line placeholder */
+    /** Cue text box active line placeholder */
     editorActiveLinePlaceholder?: React.ReactNode;
-    /** 提示词输入框的 extensions */
+    /** Tip text box extensions */
     editorExtensions?: React.ReactNode;
   };
-  /** 最外层容器插槽 */
+  /** outermost container slot */
   containerAppendSlot?: React.ReactNode;
   importPromptWhenEmpty?: string;
   getConversationId?: () => string | undefined;

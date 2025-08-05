@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 import React, { type FC, useContext } from 'react';
 
@@ -120,7 +120,7 @@ export const WorkflowCard: FC<WorkflowCardProps> = props => {
       : undefined;
 
   const renderStatusValue = () => {
-    // 添加项目里的工作流节点、官方示例不展示发布状态
+    // Add workflow nodes in the project, official examples do not show release status
     if (
       isSelectProjectCategory(context?.modalState) ||
       workflowCategory === WorkflowCategory.Example
@@ -138,7 +138,7 @@ export const WorkflowCard: FC<WorkflowCardProps> = props => {
     return null;
   };
   const renderBottomLeftDesc = () => {
-    // 商品底部
+    // bottom of the product
     if (!isTypeWorkflow(data)) {
       const timeRender = `${I18n.t('workflow_add_list_updated')} ${formatTime(
         data.meta_info.listed_at,
@@ -175,7 +175,7 @@ export const WorkflowCard: FC<WorkflowCardProps> = props => {
       );
     }
 
-    // 用户创建的，展示修改时间
+    // User-created, showing modification time
     if (isSpaceWorkflow || workflowCategory === WorkflowCategory.Example) {
       const showCreator =
         (creator !== MineActiveEnum.Mine && isTeam) ||
@@ -186,12 +186,12 @@ export const WorkflowCard: FC<WorkflowCardProps> = props => {
               data.create_time,
             )}`
           : status === WorkFlowListStatus.HadPublished
-            ? `${I18n.t('workflow_add_list_publised')} ${formatTime(
-                data.update_time,
-              )}`
-            : `${I18n.t('workflow_add_list_updated')} ${formatTime(
-                data.update_time,
-              )}`;
+          ? `${I18n.t('workflow_add_list_publised')} ${formatTime(
+              data.update_time,
+            )}`
+          : `${I18n.t('workflow_add_list_updated')} ${formatTime(
+              data.update_time,
+            )}`;
       return (
         <div className={styles.info}>
           {showCreator ? (
@@ -214,7 +214,7 @@ export const WorkflowCard: FC<WorkflowCardProps> = props => {
       );
     }
 
-    // 官方模板，展示创作者
+    // Official template, showcasing creators
     if (!isSpaceWorkflow) {
       return (
         <div className={styles.creator}>

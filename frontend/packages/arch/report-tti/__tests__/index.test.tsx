@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
 import { useReportTti } from '../src/index';
 
-// 模拟 custom-perf-metric 模块
+// Simulate custom-perf-metric module
 vi.mock('../src/utils/custom-perf-metric', () => ({
   reportTti: vi.fn(),
   REPORT_TTI_DEFAULT_SCENE: 'init',
 }));
 
-// 导入被模拟的函数，以便在测试中访问
+// Import mocked functions for access in tests
 import { reportTti } from '../src/utils/custom-perf-metric';
 
 describe('useReportTti', () => {

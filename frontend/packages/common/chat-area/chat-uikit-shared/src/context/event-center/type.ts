@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type RefObject } from 'react';
 
 import { type Emitter } from 'mitt';
@@ -23,7 +23,7 @@ export enum UIKitEvents {
   AFTER_CARD_RENDER,
 }
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- mitt 的类型不认 interface
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- mitt's type does not recognize interface
 export type UIKitEventMap = {
   [UIKitEvents.WINDOW_RESIZE]: undefined;
   [UIKitEvents.AFTER_CARD_RENDER]: { messageId: string };

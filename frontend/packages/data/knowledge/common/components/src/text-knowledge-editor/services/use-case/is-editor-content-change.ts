@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Chunk } from '@/text-knowledge-editor/types/chunk';
 
 import { processEditorContent } from '../inner/document-editor.service';
 
 /**
- * 判断内容是否改变
+ * Determine whether the content has changed
  */
 export const isEditorContentChange = (
   chunks: Chunk[],

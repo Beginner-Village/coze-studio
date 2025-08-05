@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { DatePicker } from '@coze-arch/coze-design';
 
 import { type DefaultValueInputProps } from './types';
@@ -40,7 +40,7 @@ export function InputTime({
       disabled={disabled}
       format="yyyy-MM-dd HH:mm:ss"
       onChange={(date, dateString) => {
-        // onBlur才会触发保存
+        // onBlur will only trigger the save.
         if (typeof dateString === 'string' || dateString === undefined) {
           onBlur?.(dateString);
         }

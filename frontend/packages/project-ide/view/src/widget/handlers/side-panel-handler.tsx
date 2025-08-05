@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { injectable } from 'inversify';
 
 import { type FlowDockPanel } from '../dock-panel';
@@ -22,7 +22,7 @@ import { Panel, BoxLayout, BoxPanel, PanelLayout } from '../../lumino/widgets';
 export const SidePanelHandlerFactory = Symbol('SidePanelHandlerFactory');
 
 /**
- * 侧边栏分级面板 handler
+ * Sidebar grading panel handler
  */
 @injectable()
 export class SidePanelHandler {

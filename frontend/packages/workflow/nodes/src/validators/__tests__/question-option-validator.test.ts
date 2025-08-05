@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ZodIssueCode } from 'zod';
 import { describe, it, vi, expect } from 'vitest';
 
 import { questionOptionValidator } from '../question-option-validator';
 
-// 模拟 I18n.t 方法
+// Simulation I18n.t method
 vi.mock('@coze-arch/i18n', () => ({
   I18n: { t: vi.fn(key => `translated_${key}`) },
 }));

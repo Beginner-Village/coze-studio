@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import {
@@ -61,7 +61,7 @@ export function SubWorkflowContent() {
       const subWorkflowDetail = subWorkflowService.getApiDetail(
         identifier,
       ) as WorkflowDetailInfoData;
-      // 应用内的工作流不带版本 或 其他没有版本号的情况，直接刷新
+      // The workflow in the application does not have a version, or in other cases without a version number, it is directly refreshed
       if (subWorkflowDetail?.project_id || !subWorkflowDetail?.flow_version) {
         recreateNodeForm(node, playgroundContext);
         return;

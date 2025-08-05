@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { nanoid } from 'nanoid';
 import mitt from 'mitt';
 import { type PluginRegistryEntry } from '@coze-common/chat-area';
@@ -62,7 +62,7 @@ export const createGrabPlugin = (params: CreateGrabPluginParams) => {
 
       const eventCenter = mitt<EventCenter>();
 
-      // 默认注入preference
+      // Default injection preference
       storeSet.usePreferenceStore
         .getState()
         .updateEnableGrab(preference.enableGrab);

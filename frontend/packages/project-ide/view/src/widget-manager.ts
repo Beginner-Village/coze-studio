@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { inject, injectable, type interfaces, named } from 'inversify';
 import {
   type AsClass,
@@ -134,7 +134,7 @@ export class WidgetManager {
   }
 
   /**
-   * 使用工厂模式注册
+   * Register with factory mode
    */
   async getOrCreateWidgetFromURI<T extends ReactWidget>(
     uri: URI,

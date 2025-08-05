@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { size } from 'lodash-es';
 import classNames from 'classnames';
 import {
@@ -35,7 +35,7 @@ interface IItemGridView {
 
 export function ItemGridView(props: IItemGridView) {
   const { title, resources, showStatus = false, onResourceClick } = props;
-  // HACK: 由于 grid 布局下边界线是透出的背景色，所以 resource 数量为单数的时候需要补齐一个
+  // HACK: Since the boundary line under the grid layout is the transparent background color, one needs to be filled when the number of resources is singular
   const isEven = size(resources) % 2 === 0;
   const finalResources = isEven
     ? resources

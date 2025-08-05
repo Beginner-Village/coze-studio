@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import omit from 'lodash-es/omit';
 import { type NodeDataDTO, type InputValueVO } from '@coze-workflow/base';
 
@@ -22,7 +22,7 @@ interface FormData {
 }
 
 /**
- * 前端表单数据 -> 节点后端数据
+ * Front-end form data - > node back-end data
  * @param value
  * @returns
  */

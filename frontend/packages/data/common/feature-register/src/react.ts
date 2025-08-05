@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useSyncExternalStore } from 'use-sync-external-store/shim';
 
 import type { IExternalStore } from './external-store';
 
 /**
- * 订阅拥有 subscribe 和 getSnapshot 方法的抽象 registry 的变化，内部使用 useSyncExternalStore 实现
+ * Changes to the abstract registry with subscribe and getSnapshot methods, internally using useSyncExternalStore implementation
  */
 export const useRegistryState = <T>(registry: IExternalStore<T>) => {
   const state = useSyncExternalStore(

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import {
@@ -39,7 +39,7 @@ interface VisionProps {
 }
 
 /**
- * 视觉理解配置
+ * Visual understanding configuration
  */
 export const Vision: FC<VisionProps> = () => {
   const enabledTypes = useModelEnabledTypes();

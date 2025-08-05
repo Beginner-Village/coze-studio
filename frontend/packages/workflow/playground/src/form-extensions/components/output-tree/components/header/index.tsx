@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 import React from 'react';
 
@@ -90,13 +90,13 @@ export default function Header({
           </div>
         ) : null}
 
-        {/* 对象操作占位符 */}
+        {/* Object operation placeholder */}
         {config.hasObjectLike ? <div className="w-6"></div> : null}
 
-        {/* 必填占位符 */}
+        {/* Required placeholder */}
         {config.hasRequired ? <div className="w-6"></div> : null}
 
-        {/* 删除按钮占位符 */}
+        {/* Delete button placeholder */}
         <div className="w-6"></div>
       </div>
     </div>

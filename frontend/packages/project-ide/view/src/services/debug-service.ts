@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { inject, injectable } from 'inversify';
 
 import { DebugBarWidget } from '../widget/react-widgets/debug-bar-widget';
@@ -21,7 +21,7 @@ import { createPortal } from '../utils';
 import { ApplicationShell } from '../shell/application-shell';
 import { ViewOptions } from '../constants/view-options';
 
-// 控制 debug
+// Control debugging
 @injectable()
 export class DebugService {
   @inject(ViewOptions) viewOptions: ViewOptions;

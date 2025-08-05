@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { isEmpty, isNil } from 'lodash-es';
 import type { NodeContext } from '@flowgram-adapter/free-layout-editor';
 import { nodeUtils } from '@coze-workflow/nodes';
@@ -22,7 +22,7 @@ import { type NodeDataDTO, type ValueExpression } from '@coze-workflow/base';
 import { type FormData } from './types';
 
 /**
- * 节点后端数据 -> 前端表单数据
+ * Node Backend Data - > Frontend Form Data
  */
 export const transformOnInit = (value: FormData, context: NodeContext) => {
   if (!value) {
@@ -78,7 +78,7 @@ export const transformOnInit = (value: FormData, context: NodeContext) => {
 };
 
 /**
- * 前端表单数据 -> 节点后端数据
+ * Front-end form data - > node back-end data
  * @param value
  * @returns
  */

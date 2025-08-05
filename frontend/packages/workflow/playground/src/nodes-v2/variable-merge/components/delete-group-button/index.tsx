@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { type FC } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -31,7 +31,7 @@ interface Props {
 }
 
 /**
- * 删除分组按钮
+ * Delete group button
  * @param param0
  * @returns
  */

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCallback, useEffect } from 'react';
 
 import { debounce } from 'lodash-es';
@@ -76,7 +76,7 @@ export const useValidateWorkflow = () => {
 };
 
 /**
- * 校验的触发频率
+ * trigger frequency of validation
  */
 const DEBOUNCE_TIME = 2000;
 

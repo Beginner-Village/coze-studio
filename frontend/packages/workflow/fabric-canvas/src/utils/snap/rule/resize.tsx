@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { findLatestObject } from '../util';
 import { Snap } from '../../../typings';
 
@@ -27,20 +27,20 @@ type Attribute =
 
 interface Config {
   /**
-   * 影响到的属性
+   * Affected properties
    */
   key: Attribute;
   /**
-   * 吸附方向
+   * adsorption direction
    */
   direction: 'x' | 'y';
   /**
-   * 吸附到的值
+   * Adsorbed value
    */
   snapValue: number[];
 }
 
-// 计算目标元素的未来位置
+// Calculate the future position of the target element
 const getNextHelplinePoint = ({
   targetPoint,
   latestDistance,

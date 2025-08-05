@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useRef, useState } from 'react';
 
 import { IconClose } from '@douyinfe/semi-icons';
@@ -67,7 +67,7 @@ export const Form: React.FC<FormProps> = ({ onSubmit, onCancel }) => {
   };
 
   return (
-    // 防止触发节点选中
+    // Prevent trigger node selection
     <div onClick={e => e.stopPropagation()}>
       <header className={styles.header}>
         <span className={styles.title}>{I18n.t('workflow_240218_11')}</span>

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import classNames from 'classnames';
 import {
   FieldArray,
@@ -47,7 +47,7 @@ interface ParametersInputGroupFieldProps
   hiddenTypes?: boolean;
   hiddenTypeTag?: boolean;
   /**
-   * 输入框默认类型，但不限制可选变量类型
+   * Text box default type, but does not restrict optional variable types
    */
   inputType?: ViewVariableType;
   disabledTypes?: ViewVariableType[];

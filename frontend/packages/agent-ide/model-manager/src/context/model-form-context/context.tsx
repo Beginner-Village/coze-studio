@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type PropsWithChildren, createContext, useState, useRef } from 'react';
 
 import { cloneDeep } from 'lodash-es';
@@ -32,7 +32,7 @@ export const ModelFormProvider: React.FC<
 > = ({ hideDiversityCollapseButton = false, children }) => {
   const [isGenerationDiversityOpen, setGenerationDiversityOpen] = useState(
     hideDiversityCollapseButton,
-  ); // 隐藏展开收起按钮时则始终展开
+  ); // Always expand when hiding the expand hide button
   const customizeValueMapRef = useRef<
     ModelFormContextProps['customizeValueMap']
   >({});

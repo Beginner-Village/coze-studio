@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import classNames from 'classnames';
@@ -30,7 +30,7 @@ export const LinePopover = (props: Record<string, any>) => {
   const { hasError, bezier, position } = line;
 
   const { bbox } = bezier;
-  // 相对位置
+  // relative position
   const toRelative = (p: IPoint) => ({
     x: p.x - bbox.x + PADDING,
     y: p.y - bbox.y + PADDING,
@@ -49,7 +49,7 @@ export const LinePopover = (props: Record<string, any>) => {
       visible={isHovered && hasError}
       {...other}
     >
-      {/* tooltip锚点，需要计算线条的中心位置 */}
+      {/* Tooltip anchor point, you need to calculate the center position of the line */}
       <div
         style={{
           left,

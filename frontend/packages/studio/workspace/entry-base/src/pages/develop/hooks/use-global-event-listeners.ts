@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import {
@@ -33,7 +33,7 @@ export const useGlobalEventListeners = ({
     const handlerRefreshFavList = (
       refreshFavListParams: RefreshFavListParams,
     ) => {
-      // 只在工作空间收藏取消收藏变化的时候刷新列表
+      // Refresh the list only when the workspace collection is cancelled and the collection is changed.
       if (refreshFavListParams.emitPosition === 'favorites-list-item') {
         reload();
       }

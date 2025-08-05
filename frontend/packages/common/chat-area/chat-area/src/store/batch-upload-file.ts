@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 import { produce } from 'immer';
@@ -33,7 +33,7 @@ export interface BatchUploadState {
 }
 
 export interface BatchUploadAction {
-  //  向 fileIdList、fileDataMap、添加新数据
+  //  Add new data to fileIdList, fileDataMap
   immerCreateFileData: (id: string, file: File) => void;
   immerDeleteFileDataById: (id: string) => void;
   immerUpdateFileDataById: (
@@ -42,7 +42,7 @@ export interface BatchUploadAction {
   ) => void;
   getFileDataList: () => FileData[];
   getFileType: (id: string) => FileType | undefined;
-  // 是否有正在上传的文件
+  // Is there a file being uploaded?
   hasFileNotSuccess: () => boolean;
   clearAllData: () => void;
   getExistingFileCount: () => number;

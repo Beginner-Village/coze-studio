@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type ChatCore from '@coze-common/chat-core';
 import { safeAsyncThrow } from '@coze-common/chat-area-utils';
 
@@ -33,7 +33,7 @@ export const getFakeChatCore = () => {
         `!!!chatCore not found, make sure to call chatArea hooks inside chatAreaProvider!!! ${callTip}`,
       );
 
-      // 已经最大化兼容了，我感觉
+      // It has been maximally compatible, I feel
       return () => Object.create(null);
     },
   });

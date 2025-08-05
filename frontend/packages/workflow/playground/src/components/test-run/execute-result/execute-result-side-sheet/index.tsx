@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/no-deep-relative-import */
 import React from 'react';
 
@@ -36,7 +36,7 @@ import styles from './index.module.less';
 
 const { Text } = Typography;
 
-/** 抽屉宽度 */
+/** drawer width */
 const EXECUTE_RESULT_SIDE_SHEET_WIDTH = 400;
 
 export const ExecuteResultSideSheet = () => {

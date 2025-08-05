@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type create } from 'zustand';
 
 export interface SetterAction<T> {
   /**
-   * 增量更新
+   * incremental update
    *
    * @example
    * // store.x: { a: 1, b: 2 }
@@ -27,7 +27,7 @@ export interface SetterAction<T> {
    */
   (state: Partial<T>): void;
   /**
-   * 全量更新
+   * full update
    *
    * @example
    * // store.x: { a: 1, b: 2 }

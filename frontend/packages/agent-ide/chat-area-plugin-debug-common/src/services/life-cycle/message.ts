@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMultiAgentStore } from '@coze-studio/bot-detail-store/multi-agent';
 import { useManuallySwitchAgentStore } from '@coze-studio/bot-detail-store';
 import {
@@ -88,7 +88,7 @@ export const messageLifeCycleServiceGenerator: WriteableMessageLifeCycleServiceG
 
     reportReceiveEvent(message);
 
-    // 如果是创建定时任务的消息的话，需要刷新任务列表
+    // If it is a message to create a scheduled task, you need to refresh the task list.
     if (isCreateTaskMessage(message)) {
       refreshTaskList();
     }

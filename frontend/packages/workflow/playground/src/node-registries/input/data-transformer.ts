@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { variableUtils } from '@coze-workflow/variable';
 
 import { type FormData, type NodeDataDTO } from './types';
 
 /**
- * 前端表单数据 -> 节点后端数据
+ * Front-end form data - > node back-end data
  * @param value
  * @returns
  */
@@ -31,4 +31,4 @@ export const transformOnSubmit = (value: FormData): NodeDataDTO =>
         value.outputs?.map(o => variableUtils.viewMetaToDTOMeta(o)) || [],
       ),
     },
-  }) as unknown as NodeDataDTO;
+  } as unknown as NodeDataDTO);

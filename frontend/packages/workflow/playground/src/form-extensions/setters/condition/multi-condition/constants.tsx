@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ConditionType } from '@coze-arch/idl/workflow_api';
 import { I18n } from '@coze-arch/i18n';
 import {
@@ -44,9 +44,9 @@ export const operatorMap = {
   [ConditionType.LengthGtEqual]: <IconCozGreaterEqual />,
   [ConditionType.LengthLt]: <IconCozLess />,
   [ConditionType.LengthLtEqual]: <IconCozLessEqual />,
-  // 包含
+  // contain
   [ConditionType.Contains]: <IconCozProperSuperset />,
-  // 不包含
+  // Do not include
   [ConditionType.NotContains]: <IconCozProperSupersetSlash />,
   // isEmpty
   [ConditionType.Null]: <IconCozEqual />,

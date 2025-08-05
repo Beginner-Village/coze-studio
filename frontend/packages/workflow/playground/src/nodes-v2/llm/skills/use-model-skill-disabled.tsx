@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useService } from '@flowgram-adapter/free-layout-editor';
 
 import { WorkflowModelsService } from '@/services';
@@ -21,7 +21,7 @@ import { WorkflowModelsService } from '@/services';
 import { useModelType } from '../hooks/use-model-type';
 
 /**
- * 判断模型是不是支持技能
+ * Is the judgment model a supporting skill?
  */
 export function useModelSkillDisabled() {
   const modelType = useModelType();

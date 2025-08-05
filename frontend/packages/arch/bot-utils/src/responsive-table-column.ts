@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable no-magic-numbers */
 export enum WidthThresholds {
   Small = 1280,
@@ -55,11 +55,11 @@ export const responsiveTableColumn = (
     return 'auto';
   }
 
-  // 查找第一个符合条件的项
+  // Find the first eligible item
   const range =
     colWidthRanges.find(colWidth => width >= colWidth.threshold) ||
     defaultRange;
 
-  // 返回 minWidth 或找到的 columnWidth，取决于哪个更大
+  // Return minWidth or found columnWidth, depending on which is larger
   return Math.max(minWidth, range.columnWidth);
 };

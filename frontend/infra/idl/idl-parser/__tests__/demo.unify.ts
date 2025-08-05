@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable */
 
 import * as t from '../src/unify/index';
@@ -46,8 +46,8 @@ enum Gender {
 }
 
 // const map<Gender, string> genderMap = {
-//   Gender.Male: '男性',
-//   Gender.Female: '女性', 
+//   Gender. Male: 'Male',
+//   Gender. Female: 'Female',
 // }
 
 union FuncRequest {
@@ -182,7 +182,7 @@ const document = t.parse(
     'index.proto': indexContent,
     'base.proto': baseContent,
     'extra.proto': extraContent,
-  }
+  },
 );
 const statement = document.statements[0] as t.InterfaceWithFields;
 console.log(statement);

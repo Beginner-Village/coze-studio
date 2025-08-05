@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState, useEffect } from 'react';
 
 import { featureFlagStorage } from './utils/storage';
@@ -22,7 +22,7 @@ import { getFlags } from './get-flags';
 
 export const useFlags = (): [FEATURE_FLAGS] => {
   const plainFlags = getFlags();
-  // 监听 fg store 事件，触发 react 组件响应变化
+  // Listens to the fg store event and triggers the react component to respond to changes
   const [, setTick] = useState<number>(0);
 
   useEffect(() => {

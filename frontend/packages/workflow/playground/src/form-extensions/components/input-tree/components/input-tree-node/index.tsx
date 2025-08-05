@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useRef } from 'react';
 
 import classNames from 'classnames';
@@ -68,25 +68,27 @@ export default function InputTreeNode(props: InputTreeNodeProps) {
     disableDelete,
   } = props;
 
-  // 当前值
+  // current value
   const value = data as TreeNodeCustomData;
   const treeNodeRef = useRef<HTMLDivElement>(null);
   const columnsStyle = useColumnsStyle(columnsRatio, level);
-  const testName = `/inputs/inputParameters${(data.field || '').replaceAll('.', '/').replace(/\[(\d+)\]/g, '/$1')}`;
+  const testName = `/inputs/inputParameters${(data.field || '')
+    .replaceAll('.', '/')
+    .replace(/\[(\d+)\]/g, '/$1')}`;
   const nameRef = useRef(value?.name);
   const inputRef = useRef(value?.input);
 
-  // 删除时
+  // When deleting
   const onDelete = () => {
     onChange(ChangeMode.Delete, value);
   };
 
-  // 新增子项时
+  // When adding a child
   const onAppend = () => {
     onChange(ChangeMode.Append, value);
   };
 
-  // 更新名称
+  // update name
   const onNameChange = (name: string) => {
     if (value.name === name) {
       return;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -77,7 +77,7 @@ export const useContentDebug = ({
       debugApiInfo && tool_id ? (
         <Debug
           pluginType={pluginInfo?.plugin_type}
-          disabled={false} // 是否可调试
+          disabled={false} // Is it debuggable?
           setDebugStatus={setDebugStatus}
           pluginId={String(plugin_id)}
           apiId={String(tool_id)}
@@ -113,7 +113,7 @@ export const useContentDebug = ({
         >
           <Debug
             pluginType={pluginInfo?.plugin_type}
-            disabled={false} // 是否可调试
+            disabled={false} // Is it debuggable?
             setDebugStatus={setDebugStatus}
             pluginId={String(plugin_id)}
             apiId={String(tool_id)}

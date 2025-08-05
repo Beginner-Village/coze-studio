@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   DEFAULT_NODE_META_PATH,
   DEFAULT_NODE_SIZE,
@@ -41,7 +41,7 @@ export const CODE_NODE_REGISTRY: WorkflowNodeRegistry<NodeTestMeta> = {
     test,
     nodeMetaPath: DEFAULT_NODE_META_PATH,
     outputsPath: DEFAULT_OUTPUTS_PATH,
-    inputParametersPath: INPUT_PATH, // 入参路径，试运行等功能依赖该路径提取参数
+    inputParametersPath: INPUT_PATH, // Imported parameter path, practice running and other functions rely on this path to extract parameters
     enableCopilotGenerateTestNodeForm: true,
     helpLink: '/open/docs/guides/code_node',
   },

@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { snakeCase } from 'lodash-es';
 import { injectable, inject } from 'inversify';
-import { reporter } from '@coze-workflow/base';
 import {
   type AddOrDeleteLineOperationValue,
   type AddOrDeleteWorkflowNodeOperationValue,
@@ -25,6 +24,7 @@ import {
 } from '@flowgram-adapter/free-layout-editor';
 import { DisposableCollection } from '@flowgram-adapter/common';
 import { type Operation, OperationService } from '@flowgram-adapter/common';
+import { reporter } from '@coze-workflow/base';
 
 @injectable()
 export class WorkflowOperationReportService {
@@ -77,7 +77,9 @@ export class WorkflowOperationReportService {
         fromPort = '',
         toPort = '',
       } = value as AddOrDeleteLineOperationValue;
-      return `${eventName} from ${from}${this.portToString(fromPort)} to ${to}${this.portToString(toPort)}`;
+      return `${eventName} from ${from}${this.portToString(
+        fromPort,
+      )} to ${to}${this.portToString(toPort)}`;
     }
 
     if (
@@ -112,7 +114,7 @@ export class WorkflowOperationReportService {
   private shouldReport(operation: Operation) {
     const { value, type } = operation;
 
-    // 修改同一个节点，同一个属性只上报一次， 防止频繁编辑上报过多
+    // Modify the same node and report the same attribute only once to prevent frequent editing and reporting too much
     if (
       this.isChangeDataType(type) &&
       this.lastOperation &&

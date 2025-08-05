@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type PropsWithChildren, useState } from 'react';
 
 import { renderHook } from '@testing-library/react-hooks';
@@ -27,7 +27,7 @@ describe('page jump', () => {
   const spaceID = '234';
   const workflowID = '345';
 
-  // eslint-disable-next-line @typescript-eslint/naming-convention -- 这是组件
+  // eslint-disable-next-line @typescript-eslint/naming-convention -- this is the component
   const MockWorkflowPage = () => {
     const jumpResponse = usePageJumpResponse(PageType.WORKFLOW);
     const [cleared, setCleared] = useState(false);

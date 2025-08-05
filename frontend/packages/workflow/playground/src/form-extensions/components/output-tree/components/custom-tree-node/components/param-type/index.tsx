@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/no-deep-relative-import */
 import React, { useState } from 'react';
 
@@ -42,15 +42,15 @@ interface ParamTypeProps {
   level: number;
   onSelectChange?: SelectProps['onChange'];
   disabled?: boolean;
-  /** 不支持使用的类型 */
+  /** Types not supported */
   disabledTypes?: ViewVariableType[];
-  /** 隐藏类型 */
+  /** hidden type */
   hiddenTypes?: ViewVariableType[];
   style?: React.CSSProperties;
 }
 
 const defaultDisabledTypes = [];
-// 目前仅开始节点支持声明文件类型变量
+// Currently only the start node supports declaring file type variables
 const defaultHiddenTypes = FILE_TYPES;
 
 export default function ParamType({
@@ -120,7 +120,9 @@ export default function ParamType({
                     'param-type-select',
                   )}
                   className={classNames(
-                    `flex items-center justify-between gap-0.5 pl-[3px] pr-[3px] rounded-[6px] ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`,
+                    `flex items-center justify-between gap-0.5 pl-[3px] pr-[3px] rounded-[6px] ${
+                      disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+                    }`,
                     'border border-solid bg-transparent',
                     {
                       'semi-input-wrapper-error': options.showError,

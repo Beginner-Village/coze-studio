@@ -72,9 +72,9 @@ Deployment steps:
    # Start the service
    cd docker
    cp .env.example .env
-   docker compose --profile "*" up -d
+   docker compose up -d
    ```
-   After the service starts, it is normal for the `coze-minio-setup` , `coze-mysql-setup-init-sql` , and `coze-mysql-setup-schema` containers to be in an exited state (exit 0). For common startup failure issues, **please refer to the [FAQ](https://github.com/coze-dev/coze-studio/wiki/9.-FAQ)**.
+   For common startup failure issues, **please refer to the [FAQ](https://github.com/coze-dev/coze-studio/wiki/9.-FAQ)**.
 4. After starting the service, you can open Coze Studio by accessing `http://localhost:8888/` through your browser.
 
 
@@ -106,7 +106,7 @@ This project uses the Apache 2.0 license. For details, please refer to the [LICE
 ## Community contributions
 We welcome community contributions. For contribution guidelines, please refer to [CONTRIBUTING](https://github.com/coze-dev/coze-studio/blob/main/CONTRIBUTING.md) and [Code of conduct](https://github.com/coze-dev/coze-studio/blob/main/CODE_OF_CONDUCT.md). We look forward to your contributions!
 ## Security and privacy
-If you discover potential security issues in the project, or believe you may have found a security issue, please notify the ByteDance security team through our [security center](https://security.bytedance.com/src) or [vulnerability reporting mailbox](https://code.byted.org/flowdevops/cozeloop/blob/feat/release/sec@bytedance.com).
+If you discover potential security issues in the project, or believe you may have found a security issue, please notify the ByteDance security team through our [security center](https://security.bytedance.com/src) or [vulnerability reporting email](sec@bytedance.com).
 Please **do not** create public GitHub Issues.
 ## Join Community
 

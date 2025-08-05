@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export { extendASTNodes } from './extend-ast';
 export {
   parseNodeOutputByViewVariableMeta,
@@ -21,5 +21,5 @@ export {
 } from './utils/create-ast';
 export { WorkflowVariableFacadeService } from './workflow-variable-facade-service';
 
-// 重命名为 WorkflowVariable，便于业务理解
+// Rename to WorkflowVariable for easier business understanding
 export { WorkflowVariableFacade as WorkflowVariable } from './workflow-variable-facade';

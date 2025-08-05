@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { get } from 'lodash-es';
 import { I18n } from '@coze-arch/i18n';
 import {
@@ -31,13 +31,13 @@ import FormRender from './form';
 import { transformOnInit, transformOnSubmit } from './data-transformer';
 
 export const DATABASE_NODE_FORM_META: WorkflowNodeRegistry['formMeta'] = {
-  // 节点表单渲染
+  // Node form rendering
   render: () => <FormRender />,
 
-  // 验证触发时机
+  // verification trigger timing
   validateTrigger: ValidateTrigger.onChange,
 
-  // 验证规则
+  // validation rules
   validate: {
     nodeMeta: nodeMetaValidate,
     'inputParameters.*.name': createNodeInputNameValidate({
@@ -56,21 +56,21 @@ export const DATABASE_NODE_FORM_META: WorkflowNodeRegistry['formMeta'] = {
     },
   },
 
-  // 默认值
+  // default value
   defaultValues: {
     inputParameters: [{ name: 'input' }],
     databaseInfoList: [],
     outputs: getOutputsDefaultValue(),
   },
 
-  // 副作用
+  // side effect
   effect: {
     outputs: provideNodeOutputVariablesEffect,
   },
 
-  // 初始化数据转换
+  // Initialize data conversion
   formatOnInit: transformOnInit,
 
-  // 提交数据转换
+  // commit data conversion
   formatOnSubmit: transformOnSubmit,
 };

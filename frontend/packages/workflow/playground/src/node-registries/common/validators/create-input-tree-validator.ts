@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Validate } from '@flowgram-adapter/free-layout-editor';
 import { inputTreeValidator } from '@coze-workflow/nodes';
 
 /**
- * 树形输入校验器
+ * tree input validator
  * @param param0
  * @returns
  */

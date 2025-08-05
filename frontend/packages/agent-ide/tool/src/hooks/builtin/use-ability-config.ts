@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useAbilityConfigContext } from '../../context/ability-config-context';
 
 /**
- * 用户内部获取ToolKey使用
+ * Users obtain ToolKey usage internally
  */
 export const useAbilityConfig = () => {
   const { abilityKey, scope } = useAbilityConfigContext();

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useTableData } from '../../context/table-data-context';
 
 const ADD_BTN_HEIGHT = 56;
 
 export const useScroll = () => {
   const { sliceListData } = useTableData();
-  // 滚动表格到底部
+  // Scroll table to the bottom
   const scrollTableBodyToBottom = () => {
     const bodyDom = document.querySelector(
       '.table-view-box .semi-table-container>.semi-table-body',

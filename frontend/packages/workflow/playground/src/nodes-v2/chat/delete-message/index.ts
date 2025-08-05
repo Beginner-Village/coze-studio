@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 删除消息节点 */
+
+/** Delete message node */
 
 export { DELETE_MESSAGE_NODE_REGISTRY } from './node-registry';

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState, useEffect } from 'react';
 
 import { type EditorAPI } from '@coze-editor/editor/preset-universal';
@@ -56,7 +56,7 @@ function useSelection(editor: EditorAPI | undefined) {
     const view = editor.$view;
 
     function updateSelection(update?: ViewUpdate) {
-      // 忽略 replaceTextByRange 导致的 selection change（效果：不触发 selection 变更，进而不显示推荐面板）
+      // Ignore the selection change caused by replaceTextByRange (effect: no selection change is triggered, and the recommendation panel is not displayed)
       if (update?.transactions.some(tr => isSkipSelectionChangeUserEvent(tr))) {
         setSelection(undefined);
         return;

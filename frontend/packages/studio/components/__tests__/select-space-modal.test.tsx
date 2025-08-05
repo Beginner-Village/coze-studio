@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { render, fireEvent, act } from '@testing-library/react';
 
 import { SelectSpaceModal } from '../src/select-space-modal';
@@ -77,10 +77,10 @@ describe('SelectSpaceModal', () => {
       wrapper.getByDisplayValue('mockBot(duplicate_rename_copy)'),
     ).toBeInTheDocument();
 
-    // 检查表单是否存在
+    // Check if the form exists
     expect(wrapper.getByRole('form')).toBeInTheDocument();
 
-    // 检查确定和取消按钮
+    // Check OK and Cancel buttons
     expect(
       wrapper.getByRole('button', { name: 'confirm' }),
     ).toBeInTheDocument();

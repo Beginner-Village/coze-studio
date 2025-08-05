@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 import { Image } from '@coze-arch/bot-semi';
 import { Collapsible } from '@coze-studio/components/collapsible-icon-button';
@@ -32,7 +32,7 @@ export function SingleAgentModelView(props: SingleAgentModelViewProps) {
     <SingleAgentModelViewBase
       {...props}
       triggerRender={m => (
-        // 模型临期时强制完整展示临期提示
+        // Forced full display of Advent prompts during model Advent
         <Collapsible
           itemKey={itemKey}
           fullContent={

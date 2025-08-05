@@ -13,6 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-// TODO 源码待迁移。 开发 cli ，依赖引用路径
+
+// TODO source code to be migrated. Develop cli, rely on the reference path
 export { InputParameters } from '@/components/node-render/node-render-new/fields/input-parameters';

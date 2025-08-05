@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCallback, useMemo } from 'react';
 
 import { useClearHistory } from '@coze-workflow/history';
@@ -124,12 +124,12 @@ export const SubmitButton = () => {
     return vcsData?.type !== VCSCanvasType.Draft;
   }, [saving, viewStatus, vcsDataType]);
 
-  // 无协作者不展示, 无编辑权限不展示
+  // No collaborator does not show, no editing permission does not show
   if (!isCollaboratorMode || readonly) {
     return null;
   }
 
-  // 提交流程见:
+  // See the submission process:
   const handleSubmit = async () => {
     sendTeaEvent(EVENT_NAMES.workflow_submit, {
       workflow_id: workflowId,

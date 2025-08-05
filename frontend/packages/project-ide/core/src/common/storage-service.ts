@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { injectable, postConstruct } from 'inversify';
 
 export const StorageService = Symbol('StorageService');
 
 /**
- * 存储数据到缓存
+ * Store data to cache
  */
 export interface StorageService {
   /**

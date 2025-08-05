@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Scene } from '@coze-common/chat-core';
 import { exhaustiveCheckForRecord } from '@coze-common/chat-area-utils';
 import { type Reporter } from '@coze-arch/logger';
@@ -45,7 +45,7 @@ export class PreInitStoreService {
   }
 
   /**
-   * 清除 Store Set
+   * Clear Store Set
    */
   public clearStoreSet() {
     if (!this.prePositionedStoreSet) {

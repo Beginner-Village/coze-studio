@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { expect, it } from 'vitest';
 
 import { SchemaExtractorParserName } from '../constant';
@@ -61,10 +61,10 @@ it('extract schema with outputs parser', () => {
     ],
   });
   const extractedSchema = schemaExtractor.extract({
-    // code 代码节点 5
+    // Code Code Node 5
     [StandardNodeType.Code]: [
       {
-        // 对应output name
+        // Corresponding output name
         name: 'outputs',
         path: 'outputs',
         parser: SchemaExtractorParserName.OUTPUTS,

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ViewVariableType } from '@coze-workflow/base';
 import { I18n } from '@coze-arch/i18n';
 
@@ -64,7 +64,7 @@ export enum DTOFieldType {
 }
 
 /**
- * 后端数据类型 -> 前端数据类型
+ * Backend Data Types - > Frontend Data Types
  */
 export const fileTypeDTOToVO = {
   [DTOFieldType.File]: ViewVariableType.File,
@@ -72,7 +72,7 @@ export const fileTypeDTOToVO = {
 };
 
 /**
- * 前端数据类型 -> 后端数据类型
+ * Front-end data types - > Back-end data types
  */
 export const fileTypeVOToDTO = {
   [ViewVariableType.File]: DTOFieldType.File,

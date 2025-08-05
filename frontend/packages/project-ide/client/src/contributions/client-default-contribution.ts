@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { inject, injectable } from 'inversify';
 import {
@@ -35,12 +35,12 @@ export class ClientDefaultContribution
   protected readonly openerService: OpenerService;
 
   /**
-   * IDE 初始化阶段
+   * IDE initialization phase
    */
   onInit() {}
 
   /**
-   * 注册 commands
+   * Registration commands
    * @param registry
    */
   registerCommands(registry: CommandRegistry) {}

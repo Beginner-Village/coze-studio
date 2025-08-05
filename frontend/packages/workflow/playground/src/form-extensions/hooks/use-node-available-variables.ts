@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { type FlowNodeEntity } from '@flowgram-adapter/free-layout-editor';
@@ -36,7 +36,7 @@ export const useNodeServiceAndRefreshForTitleChange = () => {
 
   useEffect(() => {
     const dipose = nodesService.onNodesTitleChange(() => refresh());
-    // 等document 加载完 rehaje 渲染完才能拿到标题数据
+    // Wait until the document is loaded and rehaje is rendered before you can get the title data.
     const dispose2 = doc.onLoaded(() => refresh());
     return () => {
       dipose.dispose();

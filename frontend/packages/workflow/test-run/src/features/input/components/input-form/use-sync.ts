@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { useMemoizedFn } from 'ahooks';
@@ -25,7 +25,7 @@ export const useSync = (inputEvent: NodeEvent | undefined) => {
   const testRunService = useTestRunService();
 
   const eventSync = useMemoizedFn((event: NodeEvent | undefined) => {
-    // 结束
+    // end
     if (!event) {
       testRunService.continueTestRun();
       return;

@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, it, expect } from 'vitest';
 
 import { DotStatus } from '../../src/types/generate-image';
 
-// 模拟 PicType 枚举
+// Analog PicType Enumeration
 enum MockPicType {
   AVATAR = 1,
   BACKGROUND = 2,
 }
 
-// 模拟 GetPicTaskData 类型
+// Emulate the GetPicTaskData type
 interface MockTask {
   type: MockPicType;
   status: number;
@@ -40,7 +40,7 @@ interface MockGetPicTaskData {
   notices?: MockNotice[];
 }
 
-// 简化版的 getDotStatus 函数
+// Simplified version of getDotStatus function
 function simplifiedGetDotStatus(
   data: MockGetPicTaskData | null,
   picType: MockPicType,
@@ -54,7 +54,7 @@ function simplifiedGetDotStatus(
 
   return task?.status === DotStatus.Generating ||
     notices.some(item => item.type === picType && item.un_read)
-    ? (task?.status ?? DotStatus.None)
+    ? task?.status ?? DotStatus.None
     : DotStatus.None;
 }
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import classNames from 'classnames';
 import { I18n } from '@coze-arch/i18n';
 import { Tag, Tooltip } from '@coze-arch/coze-design';
@@ -30,10 +30,10 @@ interface FilterPageConfig {
 }
 
 interface Document {
-  // TODO: 扩充
+  // TODO: Expansion
   id: string;
   title: string;
-  /** 是否存在过滤内容 */
+  /** Is there filtered content? */
   filterPageConfigList: FilterPageConfig[];
 }
 

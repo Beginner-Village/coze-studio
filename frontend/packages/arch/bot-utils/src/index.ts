@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export { arrayBufferToObject } from './array-buffer-to-object';
 
 export { isMobile } from './is-mobile';
@@ -66,7 +66,7 @@ export {
   draftEventEmitter,
 } from './event-handler';
 export { setMobileBody, setPCBody } from './viewport';
-/** 获取设备信息 */
+/** Get device information */
 export {
   getIsIPhoneOrIPad,
   getIsIPad,

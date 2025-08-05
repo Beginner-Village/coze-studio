@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 import { useState } from 'react';
 
@@ -75,7 +75,7 @@ export const DocSelector = ({
     }
     try {
       const regx = new RegExp(searchValue);
-      // 搜索结果不展示「全部内容」选项
+      // Search results do not show the "All Content" option
       return (
         (op.value !== 'all' && op.value === value) ||
         (op?.text as string)?.match(regx)

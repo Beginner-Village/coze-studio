@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 
 interface SignMobileStore {
-  /** 标识有没有弹出过提示 */
+  /** Has the logo ever popped up? */
   mobileTips: boolean;
 }
 

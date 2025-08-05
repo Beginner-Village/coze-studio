@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 import { Document, Page, pdfjs } from 'react-pdf';
 import { useMemo, useRef, useState } from 'react';
@@ -42,7 +42,7 @@ const options = {
         `//lf-cdn.coze.cn/obj/unpkg/pdfjs-dist/${pdfjs.version}/cmaps/`
       : // cp-disable-next-line
         `//sf-cdn.coze.com/obj/unpkg-va/pdfjs-dist/${pdfjs.version}/cmaps/`,
-  // 提升性能
+  // Boost performance
   cMapPacked: true,
 };
 

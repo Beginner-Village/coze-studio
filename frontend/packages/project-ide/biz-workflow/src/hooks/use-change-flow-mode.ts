@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   useIDENavigate,
   getURIByResource,
@@ -50,7 +50,7 @@ export const useChangeFlowMode = () => {
     const uri = getURIByResource('workflow', workflowId);
     const widgetContext = view.getWidgetContextFromURI(uri);
     const widgetOpened = Boolean(widgetContext?.widget);
-    // 已经打开的 widget，加 refresh 参数刷新，未打开的直接打开会刷新
+    // For widgets that have been opened, add the refresh parameter to refresh. If they are not opened, they will be refreshed if they are opened directly.
     navigate(`/workflow/${workflowId}${widgetOpened ? '?refresh=true' : ''}`);
   };
 };

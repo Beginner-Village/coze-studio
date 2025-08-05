@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { FlowNodeBaseType } from '@flowgram-adapter/free-layout-editor';
 import type {
   WorkflowEdgeJSON,
@@ -37,5 +37,5 @@ export interface WorkflowJSON {
   edges: WorkflowEdgeJSON[];
 }
 
-// 节点模版类型
+// Node template type
 export { NodeTemplateType } from '@coze-arch/bot-api/workflow_api';

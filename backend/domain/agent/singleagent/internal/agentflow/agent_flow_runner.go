@@ -60,8 +60,9 @@ type AgentRunner struct {
 	runner            compose.Runnable[*AgentRequest, *schema.Message]
 	requireCheckpoint bool
 
-	containWfTool bool
-	modelInfo     *modelmgr.Model
+	returnDirectlyTools map[string]struct{}
+	containWfTool       bool
+	modelInfo           *modelmgr.Model
 }
 
 func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (
@@ -69,7 +70,7 @@ func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (
 ) {
 	executeID := uuid.New()
 
-	hdl, sr, sw := newReplyCallback(ctx, executeID.String())
+	hdl, sr, sw := newReplyCallback(ctx, executeID.String(), r.returnDirectlyTools)
 
 	go func() {
 		defer func() {

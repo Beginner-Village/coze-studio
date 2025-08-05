@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { StandardNodeType } from '@coze-workflow/base';
 
 import {
@@ -30,7 +30,7 @@ export class LoopContextValidator extends BaseNodeValidator {
       return null;
     }
 
-    // Break / SetVariable / Continue 只允许在 Loop SubCanvas 内
+    // Break/SetVariable/Continue Only allowed in Loop SubCanvas
     if (
       [
         StandardNodeType.Break,

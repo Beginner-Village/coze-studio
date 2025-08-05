@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FormDataTypeName } from '@flowgram-adapter/free-layout-editor';
 import { type ViewVariableType } from '@coze-workflow/base';
 
 export interface OutputType {
   name: string;
   required: boolean;
-  // hack: 目前后端保存后会回显成 ParamTypeAlias 类型，
-  // 前端使用的是 FormDataTypeName 字符串类型。
+  // Hack: At present, the backend will echo to ParamTypeAlias type after saving.
+  // The front end uses the FormDataTypeName string type.
   type: FormDataTypeName | ViewVariableType;
   key: string;
 }

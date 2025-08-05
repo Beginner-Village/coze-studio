@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useState } from 'react';
 
 import { type IPoint } from '@flowgram-adapter/fixed-layout-editor';
@@ -41,7 +41,7 @@ function getPath(params: {
 
   const { controls } = params;
 
-  // 渲染端点位置计算
+  // Render endpoint position calculation
   const renderToPos: IPoint = { x: toPos.x, y: toPos.y };
 
   const getPathData = (): string => {

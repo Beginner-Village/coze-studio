@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type SendMessageOptions } from '@coze-common/chat-core';
 import { type SendTextMessagePayload } from '@coze-common/chat-uikit-shared';
 
@@ -46,7 +46,7 @@ const getCreateTextMessageImplement =
   };
 
 /**
- * 发送文本消息，需要初始化成功后使用
+ * Send a text message, which needs to be used after successful initialization.
  */
 export const useSendTextMessage = () => {
   const deps = useMethodCommonDeps();

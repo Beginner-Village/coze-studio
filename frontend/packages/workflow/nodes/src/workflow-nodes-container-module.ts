@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ContainerModule } from 'inversify';
 import {
   WorkflowJSONFormatContribution,
@@ -31,7 +31,7 @@ export const WorkflowNodesContainerModule = new ContainerModule(
     bindContributions(bind, WorkflowJSONFormat, [
       WorkflowJSONFormatContribution,
     ]);
-    // 这里兼容老的 画布 document
+    // Compatible with old canvas documents
     bind(WorkflowDocumentWithFormat).toSelf().inSingletonScope();
     rebind(WorkflowDocument).toService(WorkflowDocumentWithFormat);
   },

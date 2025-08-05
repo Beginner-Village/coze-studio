@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useCallback } from 'react';
 
 import {
@@ -42,7 +42,7 @@ export const useLifeCycle = (
     contextKeyService.setContext('widgetContext', widgetContext);
   }, [widgetContext]);
   const shell = useIDEService<ApplicationShell>(ApplicationShell);
-  // 生命周期管理
+  // Life Cycle Management
   useEffect(() => {
     const currentUri = (shell.mainPanel.currentTitle?.owner as ProjectIDEWidget)
       ?.uri;

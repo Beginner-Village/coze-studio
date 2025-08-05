@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { isGlobalVariableKey } from '@coze-workflow/variable';
 import { getSortedInputParameters } from '@coze-workflow/nodes';
@@ -33,15 +33,15 @@ export const generateParametersToProperties = (
   }
 
   const fields = parameters.filter(i => {
-    /** 对象引用类型不需要过滤，全是静态字段的需要过滤 */
+    /** Object reference types do not need to be filtered, all static fields need to be filtered */
     if (i.input?.type === ValueExpressionType.OBJECT_REF) {
       return !isStaticObjectRef(i);
     }
-    /** 非引用类型直接过滤，引用值不存在直接过滤 */
+    /** Direct filtering of non-reference types, no direct filtering of reference values */
     if (i.input?.type !== 'ref' || !i.input?.content) {
       return false;
     }
-    /** 如果引用来自于自身，则不需要再填写 */
+    /** If the reference is from itself, there is no need to fill it in */
     const [nodeId] = i.input.content.keyPath || [];
     if (nodeId && nodeId === node.id) {
       return false;

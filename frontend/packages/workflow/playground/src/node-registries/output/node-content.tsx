@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { InputParameters } from '../common/components';
 import { useFlags } from '@coze-arch/bot-flags';
 import { MessageContent as OutputContentOld } from '@/components/node-render/node-render-new/content/message-content';
@@ -22,7 +22,7 @@ import { I18n } from '@coze-arch/i18n';
 
 export function OutputContent() {
   const [FLAGS] = useFlags();
-  // 社区版暂不支持该功能
+  // The community edition does not support this function for the time being
   if (!FLAGS['bot.automation.output_node_v2']) {
     return <OutputContentOld />;
   }

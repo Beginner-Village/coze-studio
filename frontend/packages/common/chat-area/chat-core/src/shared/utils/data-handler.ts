@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { pickBy, type merge, mergeWith, isArray } from 'lodash-es';
 
 export const filterEmptyField = <T extends Record<string, unknown>>(
@@ -27,7 +27,7 @@ export const filterEmptyField = <T extends Record<string, unknown>>(
 export type PartiallyRequired<T, K extends keyof T> = Omit<T, K> &
   Required<Pick<T, K>>;
 
-// enum转换为联合类型
+// Enum to union type
 export type EnumToUnion<T extends Record<string, string>> = T[keyof T];
 
 export const muteMergeWithArray = (...args: Parameters<typeof merge>) =>

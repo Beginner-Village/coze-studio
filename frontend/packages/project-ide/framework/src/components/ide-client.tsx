@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useCallback } from 'react';
 
 import { IDEClient, type IDEClientOptions } from '@coze-project-ide/client';
@@ -59,8 +59,8 @@ export const ProjectIDEClient: React.FC<
   return (
     <IDEClient
       options={options}
-      // 兼容 mnt e2e 环境，在 e2e 环境下，高度会被坍缩成 0
-      // 因此需要额外的样式兼容
+      // Compatible with mnt e2e environment, in e2e environment, the height will collapse to 0
+      // Therefore, additional style compatibility is required
       // className={(window as any)._mnt_e2e_testing_ ? 'e2e-flow-container' : ''}
       className="e2e-flow-container"
     >

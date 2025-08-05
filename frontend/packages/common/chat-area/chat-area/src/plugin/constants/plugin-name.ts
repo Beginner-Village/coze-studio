@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export const enum PluginName {
   Demo = 'demo',
   MemoryComponents = 'memoryComponents',
@@ -28,9 +28,9 @@ export const enum PluginName {
   ChatPlayground = 'ChatPlayground',
   PremiumPlans = 'PremiumPlans',
   TemplateMessageSelector = 'TemplateMessageSelector',
-  WebsdkChatCozeSdkPlugin = 'WebsdkChatCozeSdkPlugin', // WebSdk的走openApi的plugin
-  WebsdkDefaultChatPlugin = 'WebsdkDefaultChatPlugin', // WebSdk的默认plugin
-  WebsdkChatCommonPlugin = 'WebsdkChatCommonPlugin', // WebSdk的公共plugin
+  WebsdkChatCozeSdkPlugin = 'WebsdkChatCozeSdkPlugin', // WebSdk go openApi plugin
+  WebsdkDefaultChatPlugin = 'WebsdkDefaultChatPlugin', // Default plugin for WebSdk
+  WebsdkChatCommonPlugin = 'WebsdkChatCommonPlugin', // WebSdk public plugin
   UIBuilderChatUIPlugin = 'UIBuilderChatUIPlugin', // UIBuilderChatPlugin
   UIBuilderEventcallbackPlugin = 'UIBuilderEventcallbackPlugin', // UIBuilderEventcallbackPlugin
   AgentTemplateSubScene = 'AgentTemplateSubScene',

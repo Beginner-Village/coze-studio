@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useNavigate } from 'react-router-dom';
 
 import { useRequest } from 'ahooks';
@@ -36,7 +36,7 @@ import { type UseEntityConfigHook } from './types';
 
 const { TableAction } = Table;
 /**
- * 知识库tag：
+ * Knowledge base tags:
  * 0-text
  * 1-table
  * 2-image
@@ -48,7 +48,7 @@ const knowledgeSubTypeTextMap: Record<number, I18nKeysNoOptionsType> = {
 };
 
 /**
- * 禁用状态tag：
+ * Disable status tag:
  * 3-disabled
  * */
 const knowledgeBizStatusTextMap: Record<number, I18nKeysNoOptionsType> = {
@@ -166,13 +166,15 @@ export const useKnowledgeConfig: UseEntityConfigHook = ({
   } = useCreateKnowledgeModalV2({
     onFinish: (datasetID, unitType, shouldUpload) => {
       navigate(
-        `/space/${spaceId}/knowledge/${datasetID}${shouldUpload ? '/upload' : ''}?type=${unitType}&from=create`,
+        `/space/${spaceId}/knowledge/${datasetID}${
+          shouldUpload ? '/upload' : ''
+        }?type=${unitType}&from=create`,
       );
       closeCreateKnowledgeModal();
     },
   });
 
-  // 删除
+  // delete
   const { run: delKnowledge } = useRequest(
     (datasetId: string) =>
       KnowledgeApi.DeleteDataset({
@@ -187,14 +189,14 @@ export const useKnowledgeConfig: UseEntityConfigHook = ({
     },
   );
 
-  // 开启开关
+  // turn on switch
   const { run: enableKnowledge, loading } = useRequest(
     (enableStatus: boolean, record: ResourceInfo) =>
       KnowledgeApi.UpdateDataset({
         dataset_id: record.res_id,
         name: record.name,
         description: record.desc,
-        icon_uri: record.biz_extend?.icon_uri, // 从业务字段获取
+        icon_uri: record.biz_extend?.icon_uri, // Get from business field
         status: enableStatus
           ? DatasetStatus.DatasetReady
           : DatasetStatus.DatasetForbid,
@@ -228,7 +230,7 @@ export const useKnowledgeConfig: UseEntityConfigHook = ({
         const deleteDisabled = !item.actions?.find(
           action => action.key === ActionKey.Delete,
         )?.enable;
-        // knowledge 资源启用状态开关 enable 的是否禁用状态（即switch标签的禁用状态）
+        // Knowledge Resource Enabled Status Whether the switch enabled is disabled (i.e. the disabled state of the switch label)
         const enableDisabled = !item.actions?.find(
           action => action.key === ActionKey.EnableSwitch,
         )?.enable;

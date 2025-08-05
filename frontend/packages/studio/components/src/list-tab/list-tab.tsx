@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type PropsWithChildren, type ReactNode } from 'react';
 
 import cs from 'classnames';
@@ -37,7 +37,7 @@ export const ListTab: React.FC<PropsWithChildren<BotListHeaderProps>> = ({
     {...props}
     tabPaneMotion={false}
     type="button"
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- react 组件
+    // eslint-disable-next-line @typescript-eslint/naming-convention -- react component
     renderTabBar={(innerProps, Node) => (
       <div className={cs(s.header, containerClass)}>
         <Node {...innerProps} />

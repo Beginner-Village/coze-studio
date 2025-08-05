@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useState } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -24,8 +24,8 @@ import { UIIconButton } from '@coze-arch/bot-semi';
 const DELAY = 4000;
 
 /**
- * 复制按钮，点击后切换到成功状态
- * 默认延迟 4 秒
+ * Copy button, click and switch to success state
+ * Default delay of 4 seconds
  */
 export const CopyButton = ({
   value = '',

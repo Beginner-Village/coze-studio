@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useShallow } from 'zustand/react/shallow';
 import { ContentType } from '@coze-common/chat-core';
 
@@ -99,7 +99,7 @@ export const useRegenerateMessage = () => {
 };
 
 /**
- * 根据message_id重新发送消息
+ * Resend messages according to message_id
  */
 export const useRegenerateMessageByUserMessageId = () => {
   const regenerateMessage = useRegenerateMessage();

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable complexity */
 import { isString } from 'lodash-es';
@@ -91,14 +91,14 @@ const parseData = (
     nodeSchema?.type === StandardNodeType.Text &&
     isString(rawOutput) &&
     rawOutput?.length > 0;
-  // 文本节点的 raw_out 不需要反序列化，一定是 string，badcase：用户拼接的 json 字符串如 '{}'、'123',反序列化后会变成object 和 number
+  // The raw_out of the text node does not need to be deserialized, it must be a string, badcase: the json string spliced by the user such as '{}'、' 123 'will become object and number after deserialization
   const rawOutputData = textHasRawout
     ? rawOutput?.toString?.()
     : rawOutput
-      ? typeSafeJSONParse(rawOutput) || rawOutput?.toString?.()
-      : undefined;
+    ? typeSafeJSONParse(rawOutput) || rawOutput?.toString?.()
+    : undefined;
 
-  /** Code、Llm 节点需要展示 raw */
+  /** Code, Llm nodes need to display raw */
   const hasRawOutput =
     (Boolean(nodeSchema?.type) &&
       [
@@ -107,7 +107,7 @@ const parseData = (
         StandardNodeType.Question,
       ].includes(nodeSchema?.type as StandardNodeType)) ||
     textHasRawout;
-  // Start、Input 节点只展示输入
+  // Start and Input nodes only display input
   const hasOutput =
     nodeSchema?.type !== StandardNodeType.Start &&
     nodeSchema?.type !== StandardNodeType.Input;
@@ -121,8 +121,8 @@ const parseData = (
     const outputTitle = inputAsOutput
       ? '输出变量'
       : rawOutputData
-        ? '最终输出'
-        : '输出';
+      ? '最终输出'
+      : '输出';
     outputData &&
       dataList.push({
         title: outputTitle,
@@ -151,7 +151,7 @@ const parseData = (
   return {
     dataList,
     imgList: parseImagesFromOutputData({
-      // batch data 的 output 下钻了一层，需要再包一层和 output 的 schema 保持一致
+      // The output of batch data is drilled down one layer, and another layer needs to be wrapped to be consistent with the schema of the output.
       outputData: isBatch
         ? {
             outputList: [typeSafeJSONParse(outputJsonString)].filter(Boolean),

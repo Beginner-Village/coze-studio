@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { WidgetType } from '@codemirror/view';
 
 import type { InputVariableInfo, RangeType } from './types';
@@ -33,11 +33,11 @@ export class VariableSubfixWidget extends WidgetType {
     super();
   }
 
-  // 插入 editor 中的变量块 dom
+  // Insert variable block dom in editor
   toDOM() {
     const node = document.createElement('span');
     node.classList.add(s.content);
-    // 全局变量光标样式
+    // Global variable cursor style
     if (this.variableContext.varaibleInfo.globalVariableKey) {
       node.classList.add(s['pointer-content']);
     }

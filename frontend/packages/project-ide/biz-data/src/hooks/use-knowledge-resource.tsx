@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReactNode, useCallback } from 'react';
 
 import {
@@ -59,7 +59,7 @@ const useKnowledgeResource = (): UseKnowledgeResourceReturn => {
   const IDENav = useIDENavigate();
   // const openResource = useOpenResource();
 
-  // 创建knowledge
+  // Creating knowledge
   const {
     modal: createKnowledgeModal,
     open: openCreateKnowledgeModal,
@@ -70,12 +70,14 @@ const useKnowledgeResource = (): UseKnowledgeResourceReturn => {
       refetch();
       close();
       IDENav(
-        `/knowledge/${datasetID}?type=${unitType}${shouldUpload ? '&module=upload' : ''}`,
+        `/knowledge/${datasetID}?type=${unitType}${
+          shouldUpload ? '&module=upload' : ''
+        }`,
       );
     },
   });
 
-  // 更新 knowledge 状态，主要用于禁用启用
+  // Update knowledge status, mainly to disable enable
   const updateKnowledge = async (
     datasetID: string,
     datasetName: string,

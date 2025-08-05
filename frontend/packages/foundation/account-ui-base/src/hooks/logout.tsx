@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
@@ -40,7 +40,7 @@ export const useLogout = (): UseLogoutReturnType => {
       onOk={async () => {
         await logout();
         setVisible(false);
-        // 跳转到根路径
+        // Jump to root path
         navigate('/');
       }}
       onCancel={() => {

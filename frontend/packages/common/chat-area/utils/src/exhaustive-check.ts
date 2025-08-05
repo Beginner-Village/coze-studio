@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 检查没有遗漏的项
+ * Check for no missing items
  */
 export const exhaustiveCheckForRecord = (_: Record<string, never>) => undefined;
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type WorkflowNodeEntity } from '@flowgram-adapter/free-layout-editor';
 import { type PlaygroundContext } from '@coze-workflow/nodes';
 import { ValueExpression, ValueExpressionType } from '@coze-workflow/base';
@@ -23,11 +23,11 @@ export interface ValueExpressionValidatorProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value: any;
   /**
-   * 是否必填
+   * Is it required?
    */
   required?: boolean;
   /**
-   * ValueExpression 所在的node
+   * ValueExpression node
    */
   node: WorkflowNodeEntity;
   playgroundContext: PlaygroundContext;
@@ -43,7 +43,7 @@ export const valueExpressionValidator = ({
 }: ValueExpressionValidatorProps) => {
   const { variableValidationService } = playgroundContext;
 
-  // 校验空值
+  // check null value
   if (ValueExpression.isEmpty(value)) {
     if (!required) {
       return;

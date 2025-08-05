@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCallback } from 'react';
 
 import { useService } from '@flowgram-adapter/free-layout-editor';
 import { HistoryService } from '@flowgram-adapter/common';
 
 /**
- * 清空undo redo历史栈
+ * Undo redo history stack
  * @returns
  */
 export function useClearHistory(): {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { type ConditionLogic } from '@coze-workflow/base';
@@ -55,9 +55,9 @@ const Operator: FC<{
     4: <IconCozGreaterEqual />,
     5: <IconCozLess />,
     6: <IconCozLessEqual />,
-    // 包含
+    // contain
     7: <IconCozProperSuperset />,
-    // 不包含
+    // Do not include
     8: <IconCozProperSupersetSlash />,
     // isEmpty
     9: <IconCozEqual />,

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Chunk } from '@/text-knowledge-editor/types/chunk';
 
 import { useUpdateRemoteChunk } from './use-update-remote-chunk';
@@ -63,7 +63,7 @@ export const useSaveChunk = ({
   });
 
   /**
-   * 处理远程分片的保存逻辑
+   * Handling save logic for remote shardings
    */
   const saveRemoteChunk = async (chunk: Chunk) => {
     if (chunk.content === '') {
@@ -74,7 +74,7 @@ export const useSaveChunk = ({
   };
 
   /**
-   * 处理本地分片的保存逻辑
+   * Save logic for handling local shardings
    */
   const saveLocalChunk = async (chunk: Chunk) => {
     if (chunk.content === '') {
@@ -85,7 +85,7 @@ export const useSaveChunk = ({
   };
 
   /**
-   * 保存分片的主函数
+   * Save the main function of sharding
    */
   const saveChunk = async (chunk: Chunk) => {
     if (!chunk.local_slice_id) {

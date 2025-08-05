@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, useMemo } from 'react';
 
 import { type ExpressionEditorTreeNode } from '@coze-workflow/components';
@@ -70,7 +70,7 @@ export const ExpandSheetEditor: FC<ExpressionEditorProps> = props => {
   const getConversationId = () => '';
   const getPromptContextInfo = useMemo(
     () => () => ({
-      // workflow 场景下 bot_id 不用传
+      // No need to pass bot_id workflow scenario
       botId: '',
       name,
       description: desc,

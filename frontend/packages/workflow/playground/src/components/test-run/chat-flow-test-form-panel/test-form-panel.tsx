@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { useMemoizedFn } from 'ahooks';
@@ -90,7 +90,7 @@ const ChatFlowTestRunHistory = (props: {
         type: IntelligenceType.Project,
       };
 
-  // 获取开始节点的默认值
+  // Get the default value of the start node
   return (
     <ChatHistory
       type={CreateEnv.Draft}
@@ -111,8 +111,8 @@ const ChatFlowTestRunHistory = (props: {
         conversation_id: conversationInfo?.conversationId,
       }}
       onGetChatFlowExecuteId={(executeId: string) => {
-        // 帮助后端 @zhangshiqi.live 兼容逻辑
-        // 当已经有正在执行的轮询时不使用新给的 executeId
+        // Help backend @zhangshiqi.live compatibility logic
+        // Do not use the newly given executeId when there is already a polling in progress
         if (
           runService.globalState.viewStatus === WorkflowExecStatus.EXECUTING
         ) {
@@ -143,7 +143,7 @@ const ChatflowFormPanel = ({ node }: ChatFlowTestFormPanelProps) => {
     }
   });
   useEffect(() => {
-    // 默认打开
+    // Open by default
     init();
   }, []);
   return visible ? <ChatFlowTestForm node={node} /> : null;

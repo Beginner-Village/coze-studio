@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
  * base components
  */
@@ -22,7 +22,7 @@ export { FormPanelLayout } from './form-panel';
 export { TraceIconButton, BaseTestButton } from './test-button';
 export { ResizablePanel } from './resizable-panel';
 export { BasePanel } from './resizable-panel/base-panel';
-// 禁止直接导出 form-engine 避免 formily 包被打到首屏
+// Prohibit direct export of form-engine to avoid formily packages being hit to the first screen
 // export { FormCore } from './form-engine';
 export { NodeEventInfo } from './node-event-info';
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type ViewVariableMeta,
   type NodeDataDTO as BaseNodeDataDTO,
@@ -24,7 +24,7 @@ export type FormData = {
 
 export type NodeDataDTO = {
   inputs: {
-    // 输出参数类型信息 JSON.stringify(VariableMetaDTO[])
+    // Output parameter type information JSON.stringify (VariableMetaDTO [])
     outputSchema: string;
   };
 } & Pick<BaseNodeDataDTO, 'outputs' | 'nodeMeta'>;

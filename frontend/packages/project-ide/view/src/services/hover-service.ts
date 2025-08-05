@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type React from 'react';
 
 import { type Root, createRoot } from 'react-dom/client';
@@ -100,7 +100,7 @@ export interface HoverRequest {
   position: HoverPosition;
   cssClasses?: string[];
   visualPreview?: (width: number) => HTMLElement | undefined;
-  /** hover 位置偏移 */
+  /** Hover position offset */
   offset?: number;
 }
 

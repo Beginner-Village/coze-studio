@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import classNames from 'classnames';
@@ -59,7 +59,7 @@ export const DragArea: FC<IDragArea> = props => {
         model.setFocus(false);
         onStartDrag(e);
         selectNode(e);
-        playground.node.focus(); // 防止节点无法被删除
+        playground.node.focus(); // Prevent nodes from being deleted
       }}
       onFocus={onFocus}
       onBlur={onBlur}

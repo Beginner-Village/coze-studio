@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ruleTester } from '../tester';
 import { preferShallow } from './index';
 
@@ -25,7 +25,7 @@ ruleTester.run('prefer-shallow', preferShallow, {
     'new Foo()',
     'useShallowedFooStore()',
     'useFooStore((s) => s.value)',
-    'useFooStore(selector)', // 暂时豁免
+    'useFooStore(selector)', // Temporary exemption
     'useShallowFooStore(() => ({}))',
     'useFooStore(useShallow(() => ({})))',
     'useFooStore(useShallow(() => ([])))',

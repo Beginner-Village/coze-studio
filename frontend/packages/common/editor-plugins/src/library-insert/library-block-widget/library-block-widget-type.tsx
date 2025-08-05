@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type RefObject, useLayoutEffect, useState } from 'react';
 
 import { type Root, createRoot } from 'react-dom/client';
@@ -91,7 +91,7 @@ export class LibraryBlockWidgetType extends WidgetType {
     }
 
     if (!this.mounted) {
-      // 同步渲染，避免抖动
+      // Synchronized rendering to avoid jitter
       this.renderLibraryBlock(this.options);
       this.renderTooltip(this.options);
       this.mounted = true;
@@ -271,7 +271,7 @@ export const LibraryBlockWidgetReactCom = (props: {
     </span>
   );
 
-  // 只在tooltipConfig存在时渲染Tooltip
+  // Render Tooltip only if tooltipConfig exists
   if (!tooltipConfig) {
     return baseElement;
   }

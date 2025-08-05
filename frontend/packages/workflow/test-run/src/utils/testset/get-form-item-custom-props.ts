@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import Ajv from 'ajv';
 import { I18n } from '@coze-arch/i18n';
 
@@ -86,8 +86,8 @@ function workflowJsonToJsonSchema(workflowJson: any) {
 }
 
 /**
- * 自定义表单的额外参数
- * 目前只对array和object表单加jsonSchema校验
+ * Customize the form's additional parameters
+ * Currently only jsonSchema validation is applied to array and object forms
  */
 export function getTestsetFormItemCustomProps(
   formItemSchema: FormItemSchema,

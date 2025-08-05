@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { flatten, get } from 'lodash-es';
 import { type WorkflowNodeJSON } from '@flowgram-adapter/free-layout-editor';
@@ -69,10 +69,10 @@ function getImgList(data: unknown, schema: Schema): string[] {
 }
 
 /**
- * 从节点 output data 中解析图片链接
- * @param outputData 节点输出数据 JSON 序列化后的字符串
- * @param nodeSchema 节点 schema
- * @param excludeNodeTypes 不解析该类型节点的图片链接
+ * Parse image links from node output data
+ * @Param outputData node output data JSON serialized string
+ * @param nodeSchema
+ * @Param excludeNodeTypes does not resolve image links for nodes of this type
  */
 export function parseImagesFromOutputData({
   outputData,

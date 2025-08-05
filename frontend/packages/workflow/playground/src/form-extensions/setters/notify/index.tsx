@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import classnames from 'classnames';
@@ -26,7 +26,7 @@ export const Notify: FC<{
   text: string;
   align?: 'left' | 'center' | 'right';
   className?: string;
-  // 是否换行
+  // Whether to wrap
   isBreakLine?: boolean;
 }> = ({ text, align = 'center', className = '', isBreakLine = false }) => (
   <div

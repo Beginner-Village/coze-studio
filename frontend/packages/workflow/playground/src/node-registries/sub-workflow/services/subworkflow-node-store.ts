@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/shallow';
 
@@ -23,12 +23,12 @@ interface SubWorkflowNodeServiceState {
   loading: boolean;
 
   /**
-   * 子流程节点数据，key 为子流程具体工具的唯一标识，value 为子流程节点数据
+   * Sub-process node data, key is the unique identifier of the specific tool of the sub-process, and value is the sub-process node data
    */
   data: Record<string, SubWorkflowDetailDTO>;
 
   /**
-   * 子流程节点数据加载错误信息，key 为子流程具体工具的唯一标识，value 为错误信息
+   * The sub-process node data loads the error message, the key is the unique identifier of the specific tool of the sub-process, and the value is the error message.
    */
   error: Record<string, string | undefined>;
 }

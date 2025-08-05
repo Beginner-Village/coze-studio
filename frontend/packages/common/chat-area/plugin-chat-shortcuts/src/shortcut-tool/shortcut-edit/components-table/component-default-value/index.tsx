@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -86,7 +86,7 @@ export const ComponentDefaultValue: FC<ComponentDefaultValueProps> = props => {
     );
   }
   if (type === 'upload') {
-    // 先置灰,后续放开上传默认值
+    // Grey out first, then release the upload default value.
     return <UploadField />;
     // return (
     //   <UploadDefaultValue

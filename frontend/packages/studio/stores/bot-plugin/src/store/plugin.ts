@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function -- store */
 /* eslint-disable max-lines-per-function -- store */
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
@@ -157,7 +157,7 @@ export const createPluginStore = (options: {
 
           setUpdatedInfo({
             updated_api_names: res?.updated_api_names || [],
-            created_api_names: res?.created_api_names || [], //暂时只判断新增的tool的mockset权限
+            created_api_names: res?.created_api_names || [], //For the time being, only the mockset permission of the newly added tool is judged.
           });
         },
         init: async () => {
@@ -185,7 +185,7 @@ export const createPluginStore = (options: {
           const user = data?.user;
 
           /**
-           * 有人占用 & 不是自己
+           * Someone occupies & not themselves
            */
           if (data?.Occupied && user && !user.self) {
             UIModal.info({

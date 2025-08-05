@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useNavigate } from 'react-router-dom';
 import React, { type FC } from 'react';
 
@@ -33,7 +33,10 @@ import {
   ConnectorDynamicStatus,
   type ConnectorInfo,
 } from '@coze-arch/bot-api/developer_api';
-import { IconCozArrowRightFill, IconCozMore } from '@coze-arch/coze-design/icons';
+import {
+  IconCozArrowRightFill,
+  IconCozMore,
+} from '@coze-arch/coze-design/icons';
 import { Dropdown, IconButton, Tooltip } from '@coze-arch/coze-design';
 
 import { LinkDropItem } from './link-drop-item';
@@ -125,7 +128,7 @@ export const MoreMenuButton: FC = () => {
 
   const hasMorePlatform = extendedConnectors?.some(item => !item.share_link);
 
-  // 不展示open条件 1.来自 explore的bot(已经没有 explore 了) 2. 未发布过平台的bot 3. 历史版本的bot(考虑revert后展示) 4.发布过的所有平台都没有分享链接
+  // Do not display open conditions 1. Bot from explore (no more explore) 2. Bot from unreleased platform 3. Bot of historical version (display after considering revert) 4. All released platforms do not share links
   const hideOpenIn =
     !extendedConnectors?.length ||
     (version && historyVisible) ||
@@ -135,7 +138,7 @@ export const MoreMenuButton: FC = () => {
 
   const [FLAGS] = useFlags();
 
-  //有编辑权限 && 有发布的业务线
+  //Have editing rights & & have published business lines
   const showPublishManageMenu = !isReadOnly && hasPublish;
 
   const { ready, inited } = useIsPublishRecordReady({
@@ -144,7 +147,7 @@ export const MoreMenuButton: FC = () => {
     spaceId,
     enable:
       showPublishManageMenu &&
-      // 即将支持，敬请期待
+      // Support soon, so stay tuned.
       FLAGS['bot.studio.publish_management'] &&
       !IS_OPEN_SOURCE,
   });
@@ -172,7 +175,7 @@ export const MoreMenuButton: FC = () => {
     <Dropdown
       render={
         <Dropdown.Menu mode="menu">
-          {/* 即将支持，敬请期待 */}
+          {/* Support soon, so stay tuned. */}
           {showPublishManageMenu &&
           FLAGS['bot.studio.publish_management'] &&
           !IS_OPEN_SOURCE
@@ -196,7 +199,7 @@ export const MoreMenuButton: FC = () => {
             : null}
           {hideOpenIn ? null : (
             <>
-              {/* 即将支持，敬请期待 */}
+              {/* Support soon, so stay tuned. */}
               {showPublishManageMenu &&
               FLAGS['bot.studio.publish_management'] &&
               !IS_OPEN_SOURCE ? (
@@ -208,7 +211,7 @@ export const MoreMenuButton: FC = () => {
                     connectors={extendedConnectors?.filter(
                       item =>
                         item.share_link &&
-                        // 只读态仅显示状态正常的发布渠道
+                        // Read-only status Only display normal release channels
                         (!isReadOnly ||
                           item.connector_status ===
                             ConnectorDynamicStatus.Normal),

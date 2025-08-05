@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-// 集中管理coze中使用的虚拟列表依赖
+
+// Centralized management of virtual list dependencies used in coze
 
 export {
   FixedSizeList,

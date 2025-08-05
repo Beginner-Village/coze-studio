@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { RushConfiguration } from '@rushstack/rush-sdk';
 
 const getRushConfiguration = (() => {
@@ -41,7 +41,7 @@ class PkgRootWebpackPlugin extends OriginPkgRootWebpackPlugin {
     const mergedOptions = Object.assign({}, options || {}, {
       root: '@',
       packagesDirs: rushJsonPackagesDir,
-      // 排除apps/*，减少处理时间
+      // Exclude apps/* to reduce processing time
       excludeFolders: [],
     });
     super(mergedOptions);

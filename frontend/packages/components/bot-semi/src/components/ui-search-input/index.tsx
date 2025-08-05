@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ForwardedRef, forwardRef, useImperativeHandle, useRef } from 'react';
 
 import { InputProps } from '@douyinfe/semi-ui/lib/es/input';
@@ -27,7 +27,7 @@ export type UISearchInputProps = InputProps & {
 type InputRefType = HTMLInputElement | null;
 
 /**
- * 搜索场景下的 Input 组件 结合 composition api 优化了中文输入场景
+ * Input component in the search scene, combined with the composition API to optimize the Chinese input scene
  * @returns Input
  */
 export const UISearchInput = forwardRef(

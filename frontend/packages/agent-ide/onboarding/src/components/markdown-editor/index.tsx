@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type CSSProperties } from 'react';
 
 import classNames from 'classnames';
@@ -33,12 +33,12 @@ export interface MarkdownEditorProps {
   style?: CSSProperties;
   maxLength?: number | undefined;
   getValueLength?: (value: string) => number;
-  /** 超过最大长度时截断函数 */
+  /** Truncated function when maximum length is exceeded */
   getSlicedTextOnExceed?: (value: string) => string;
 }
 
 /**
- * 全受控组件
+ * fully controlled component
  */
 export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   value,

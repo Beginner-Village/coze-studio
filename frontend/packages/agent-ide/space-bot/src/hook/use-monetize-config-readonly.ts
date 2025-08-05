@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { userStoreService } from '@coze-studio/user-store';
 import { useBotInfoStore } from '@coze-studio/bot-detail-store/bot-info';
 import { useBotDetailIsReadonly } from '@coze-studio/bot-detail-store';
 
 /**
- * bot 付费配置是否可编辑
+ * Is the bot paid configuration editable?
  *
- * 与 bot 是否可编辑的区别：作者本人可以编辑，有 bot 编辑权限的协作者也无法修改付费配置
+ * The difference between whether the bot is editable: the author himself can edit, and collaborators with bot editing rights cannot modify the paid configuration
  */
 export function useMonetizeConfigReadonly() {
   const userId = userStoreService.useUserInfo()?.user_id_str;

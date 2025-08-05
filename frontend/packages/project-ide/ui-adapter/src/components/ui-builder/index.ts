@@ -13,6 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-// @file 开源版暂时不提供用户界面功能，本文件中导出的方法用于未来拓展使用。
+
+// The @file open source version does not provide user interface functions for the time being. The methods exported in this file are for future expansion.
 export const UIBuilder = (_props: any) => null;

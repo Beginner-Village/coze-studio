@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { type FC } from 'react';
 
 import {
@@ -45,7 +45,7 @@ export const TableLocalTaskList: FC<
     return null;
   }
 
-  // 实现自己的getTableLocalInfo方法
+  // Implement your own getTableLocalInfo method
   const getTableLocalInfo = (data: RenderColumnsProps) => {
     const { record } = data;
     const curStatus = getProcessStatus(record?.status);

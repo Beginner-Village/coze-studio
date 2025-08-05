@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { getUnselectAllImplement } from '../public/use-unselect-all';
 import { useMethodCommonDeps } from '../context/use-method-common-deps';
 import { FileManagerEventNames, fileManager } from '../../utils/file-manage';
@@ -60,8 +60,8 @@ export const getClearHistoryImplement =
       fileManager.emit(FileManagerEventNames.CANCEL_UPLOAD_FILE);
 
       /**
-       * 请注意，这里的顺序一定是先调用 break_message 接口，然后再调用 clear_history 接口
-       * 顺序不能变，否则接口会报错
+       * Note that the order here must be to call the break_message interface first, then the clear_history interface
+       * The order cannot be changed, otherwise the interface will report an error.
        */
       await stopResponding();
       const res = await chatCore.clearHistory();

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useRef, useState } from 'react';
 
 import { defer, delay } from 'lodash-es';
@@ -56,12 +56,12 @@ export const useFloatMenuListener = ({
   } | null>(null);
 
   /**
-   * 是否在 Scrolling 中
+   * In Scrolling
    */
   const [isScrolling, setIsScrolling] = useState(false);
 
   /**
-   * Scrolling 计时器
+   * Scrolling timer
    */
   const scrollingTimer = useRef<NodeJS.Timeout | null>(null);
 

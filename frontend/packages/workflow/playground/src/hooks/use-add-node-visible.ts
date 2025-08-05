@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 左侧添加节点面板的显示隐藏状态，需要被别的地方消费，所以抽象成一个全局 state
+ * Add the display hidden state of the node panel on the left, which needs to be consumed elsewhere, so it is abstracted into a global state.
  */
 
 import { create } from 'zustand';

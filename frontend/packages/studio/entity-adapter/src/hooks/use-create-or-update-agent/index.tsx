@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type MutableRefObject, useEffect, useState, Fragment } from 'react';
 
 import { useBotInfoStore } from '@coze-studio/bot-detail-store/bot-info'; // Keep if botId is needed directly
@@ -37,7 +37,7 @@ import {
 export interface CreateAgentEntityProps {
   onBefore?: () => void;
   onError?: () => void;
-  /** 只有需要 onSuccess 回调阻断弹窗自动关闭时，才需要返回 Promise */
+  /** Return Promise only if you need the onSuccess callback to block the pop-up window from closing automatically. */
   onSuccess?: (
     botId?: string,
     spaceId?: string,
@@ -51,13 +51,13 @@ export interface CreateAgentEntityProps {
   mode: 'update' | 'add';
   showSpace?: boolean;
   /**
-   * 需要从外部控制在哪个空间创建 bot 时，传入此参数
-   * 仅适用于创建
+   * Pass this parameter when you need to control externally which space to create the bot in
+   * Only suitable for creating
    */
   spaceId?: string;
   /**
-   * navi 导航栏
-   * space workspace 右上角的按钮
+   * Navigation bar
+   * Button in the upper right corner of the space workspace
    * */
   bizCreateFrom?: 'navi' | 'space';
 }
@@ -82,7 +82,7 @@ export const useCreateOrUpdateAgent = ({
   onSuccess,
   onError,
   mode,
-  showSpace = false, // 默认不显示
+  showSpace = false, // Not displayed by default
   spaceId: outerSpaceId,
   bizCreateFrom,
 }: CreateAgentEntityProps) => {
@@ -138,7 +138,7 @@ export const useCreateOrUpdateAgent = ({
               'spaceId',
               hide_operation
                 ? res?.bot_space_list?.[0].id
-                : (spaceId ?? res?.bot_space_list?.[0].id),
+                : spaceId ?? res?.bot_space_list?.[0].id,
             );
           }
         });
@@ -149,7 +149,7 @@ export const useCreateOrUpdateAgent = ({
   }, [visible]);
 
   /**
-   * @param _ 开源版本暂不支持此参数
+   * @Param _ open source version does not support this parameter
    */
   const startEdit = (_?: boolean) => {
     setVisible(true);

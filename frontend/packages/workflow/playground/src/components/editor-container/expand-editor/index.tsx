@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { FC } from 'react';
 
 import classNames from 'classnames';
@@ -39,16 +39,16 @@ interface ExpandEditorContainerProps {
 }
 
 /**
- * 弹窗编辑器容器
- * @param editorTitle 弹窗标题
- * @param editorTooltip 弹窗说明
- * @param actions 标题工具栏
- * @param closeButton 自定义关闭按钮
- * @param closeIconClassName 关闭按钮样式
- * @param editorContent 弹窗编辑器区域
- * @param containerClassName 容器样式
- * @param headerClassName 标题样式
- * @param contentClassName 编辑器区域样式
+ * pop-up editor container
+ * @param editorTitle popup title
+ * @param editorTooltip pop-up description
+ * @param actions title toolbar
+ * @param closeButton Custom close button
+ * @param closeIconClassName Close button style
+ * @param editorContent pop-up editor area
+ * @param containerClassName Container style
+ * @param headerClassName title style
+ * @param contentClassName editor area style
  */
 export const ExpandEditorContainer: FC<ExpandEditorContainerProps> = props => {
   const {
@@ -83,7 +83,9 @@ export const ExpandEditorContainer: FC<ExpandEditorContainerProps> = props => {
           ) : null}
         </span>
         <span className={styles.rightSide}>
-          {actions?.map((action, index) => <span key={index}>{action}</span>)}
+          {actions?.map((action, index) => (
+            <span key={index}>{action}</span>
+          ))}
           {closeButton ?? (
             <Tooltip content={I18n.t('node_http_json_collapse')}>
               <span>

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { isObject } from 'lodash-es';
@@ -28,19 +28,19 @@ import styles from './base-panel.module.less';
 interface BasePanelProps {
   className?: string;
   /**
-   * 面板头，不传不渲染
+   * Panel header, no pass and no render
    */
   header?: React.ReactNode;
   /**
-   * 面板脚，不传不渲染
+   * Panel foot, do not pass and do not render
    */
   footer?: React.ReactNode;
   /**
-   * 默认初始高度，不支持响应式
+   * Default initial height, does not support responsive
    */
   height?: number;
   /**
-   * 是否可拖拽改变高度
+   * Can you drag and drop to change the height?
    */
   resizable?:
     | boolean
@@ -49,7 +49,7 @@ interface BasePanelProps {
         max?: number;
       };
   /**
-   * 点击关闭事件，仅当渲染面板头时可能触发
+   * Click to close the event, which may only be triggered when rendering the panel header
    */
   onClose?: () => void;
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -39,7 +39,7 @@ export const Preview: FC<{ layout?: Layout }> = ({ layout }) => {
   };
   return (
     <ImagePreview
-      // image preview 的默认 z index 比 toast 要高，调小一些
+      // The default z index for image preview is higher than toast and smaller
       zIndex={1009}
       previewCls={layout === Layout.MOBILE ? s['image-preview-mobile'] : ''}
       src={previewURL}

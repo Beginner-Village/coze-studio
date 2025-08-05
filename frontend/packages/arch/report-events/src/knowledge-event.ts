@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export enum KnowledgeEvents {
   // knowledge
   KnowledgeListDataset = 'knowledge_list_dataset',
@@ -101,10 +101,10 @@ export enum KnowledgeEvents {
   KnowledgeSearchFeishuDocument = 'knowledge_search_feishu_document',
   KnowledgeGetFeishuDocumentTreeList = 'knowledge_get_feishu_document_tree_list',
 
-  // bot页面中的知识库
+  // Knowledge base in bot page
   KnowledgeGetDataSetList = 'knowledge_get_dataset_list',
 
-  // 新版知识库交互
+  // New Knowledge Base Interaction
   KnowledgeGetDataSetDeatil = 'knowledge_get_dataset_detail',
 
   KnowledgeRefreshDocument = 'knowledge_refresh_document',

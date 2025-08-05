@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type PropsWithChildren,
   createContext,
@@ -105,7 +105,7 @@ export const UploadProvider = ({
   });
 
   useUpdateEffect(() => {
-    // 全部上传完成后再触发onchange，避免刷新画布后状态丢失
+    // After all uploads are completed, onchange will be triggered to avoid state loss after refreshing the canvas.
     if (!isUploading) {
       handleChange();
     }

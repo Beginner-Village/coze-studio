@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 节点来源
+ * Node source
  */
 
 import { I18n } from '@coze-arch/i18n';

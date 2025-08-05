@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { KnowledgeE2e } from '@coze-data/e2e';
@@ -27,14 +27,14 @@ import { eventBus } from '@/text-knowledge-editor/event';
 import { type HoverEditBarActionProps } from './module';
 
 /**
- * 在特定分片前添加新分片的操作组件
+ * Add the action component of a new sharding before a specific sharding
  */
 export const AddBeforeAction: React.FC<HoverEditBarActionProps> = ({
   chunk,
   chunks = [],
   disabled,
 }) => {
-  // 在特定分片前添加新分片
+  // Add new shardings before specific shardings
   const { addEmptyChunkBefore } = useAddEmptyChunkAction({
     chunks,
     onChunksChange: ({ newChunk, chunks: newChunks }) => {

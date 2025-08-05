@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type WorkFlowItemType } from '@coze-studio/bot-detail-store';
 import { type ToolParams } from '@coze-arch/bot-api/playground_api';
 import { type Dataset } from '@coze-arch/bot-api/knowledge';
@@ -23,7 +23,7 @@ import type { ShortCutCommand } from '@coze-agent-ide/tool-config';
 export enum OpenModeType {
   OnlyOnceAdd = 'only_once_add',
 }
-// TODO: hzf 两份定义?
+// TODO: hzf two definitions?
 export interface SkillsModalProps {
   tabsConfig?: {
     plugin?: {
@@ -44,9 +44,9 @@ export interface SkillsModalProps {
     };
   };
   tabs: ('plugin' | 'workflow' | 'datasets' | 'imageFlow')[];
-  /** 打开弹窗模式：
-   * 默认不传
-   * only_once_add：仅可添加一次后关闭，并返回callback函数
+  /** Open pop-up mode:
+   * Do not pass by default
+   * only_once_add: close after adding only once and return the callback function
    */
   openMode?: OpenModeType;
   openModeCallback?: (val?: PluginApi | WorkFlowItemType) => void;

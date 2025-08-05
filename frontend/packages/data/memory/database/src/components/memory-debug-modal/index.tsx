@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { type Attributes } from 'react';
 
 import { BotE2e } from '@coze-data/e2e';
@@ -93,7 +93,7 @@ export const useMemoryDebugModal = ({
               </span>
             }
           >
-            {/* 给 children 传递 onCancel 参数，用于从内部关闭弹窗 */}
+            {/* Pass the onCancel parameter to children to close the pop-up window from within */}
             {React.isValidElement(item.component)
               ? React.cloneElement(item.component, {
                   onCancel: close,

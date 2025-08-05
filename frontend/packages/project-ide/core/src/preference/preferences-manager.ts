@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { injectable } from 'inversify';
-import { isObject, type SchemaDecoration, Emitter } from '@flowgram-adapter/common';
+import {
+  isObject,
+  type SchemaDecoration,
+  Emitter,
+} from '@flowgram-adapter/common';
 
 import { type PreferenceSchema } from './preference-contribution';
 
@@ -33,7 +37,7 @@ class PreferencesManager {
 
   public init(data: any) {
     /**
-     * 从远程或者本地读取用户配置
+     * Read user configuration remotely or locally
      */
     Object.assign(this.preferences, data);
     this.preferencesChange.fire();
@@ -41,13 +45,13 @@ class PreferencesManager {
 
   public setSchema(schema: PreferenceSchema) {
     const { properties } = schema;
-    /** 这里先做简单校验，后面要做整个 validateSchema */
+    /** Here is a simple verification first, followed by the entire validateSchema. */
     if (!properties || !isObject(properties)) {
       return;
     }
     Object.entries<SchemaDecoration>(properties).forEach(([key, value]) => {
       if (this.schema.properties[key]) {
-        // 重复定义的不覆盖，先报个警告
+        // Repeatedly defined do not cover, report a warning first
         console.error(
           'Preference name collision detected in the schema for property: ',
           key,

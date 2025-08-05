@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { WorkflowDocument } from '@flowgram-adapter/free-layout-editor';
 import { delay } from '@flowgram-adapter/common';
 
-/** 生成连线 */
+/** connect generation */
 export const createLoopFunctionLines = async (params: {
   document: WorkflowDocument;
   loopId: string;
   loopFunctionId: string;
 }) => {
-  await delay(30); // 等待节点创建完毕
+  await delay(30); // Wait for the node to be created
   const { document, loopId, loopFunctionId } = params;
   document.linesManager.createLine({
     from: loopId,

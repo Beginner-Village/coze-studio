@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 
 interface DebugPanelStore {
-  /** debug panel 展示状态 */
+  /** Debug panel display status */
   isDebugPanelShow: boolean;
-  /** 当前选中的debug query id */
+  /** Currently selected debug query id */
   currentDebugQueryId: string;
 }
 

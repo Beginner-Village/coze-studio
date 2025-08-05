@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { create } from 'zustand';
 import { type ChatCore } from '@coze-common/chat-core';
@@ -23,7 +23,7 @@ import { getFakeChatCore } from '../utils/fake-chat-core';
 export type InitStatus = 'unInit' | 'loading' | 'initSuccess' | 'initFail';
 
 export interface GlobalInitState {
-  /** 响应式 */
+  /** responsive */
   initStatus: InitStatus;
   chatCore: ChatCore | null;
   offChatCoreListen: () => void;

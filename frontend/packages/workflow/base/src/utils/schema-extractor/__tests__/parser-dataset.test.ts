@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { expect, it } from 'vitest';
 
 import { SchemaExtractorParserName } from '../constant';
@@ -69,10 +69,10 @@ it('extract schema with dataset param parser', () => {
     ],
   });
   const extractedSchema = schemaExtractor.extract({
-    // knowledge 知识库节点 6
+    // Knowledge Base Node 6
     [StandardNodeType.Dataset]: [
       {
-        // 对应知识库名称
+        // Corresponding knowledge base name
         name: 'datasetParam',
         path: 'inputs.datasetParam',
         parser: SchemaExtractorParserName.DATASET_PARAM,

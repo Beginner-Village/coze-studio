@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ASTFactory, type ASTNode } from '@flowgram-adapter/free-layout-editor';
 import { type VariableConsumerAbilityOptions } from '@flowgram-adapter/free-layout-editor';
 
 /**
- * TODO 数组内 variable-consumer 拿不到 value 值
+ * The variable-consumer in the TODO array cannot get the value value.
  */
 export const consumeRefValueExpression: VariableConsumerAbilityOptions = {
   key: 'consume-ref-value-expression',

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type NodeFormContext } from '@flowgram-adapter/free-layout-editor';
 
 import { getVariableInfoFromExpression } from '../variable-support/utils';
@@ -32,7 +32,7 @@ export const expressionStringValidator = (
   const { required = true, emptyMessage, invalidMessage } = options;
   const doubleBracedPattern = /{{([^}]+)}}/g;
   const matches = expressionStr?.match(doubleBracedPattern);
-  // 去除字符串里的 {{}}
+  // Remove {{}} from string
   const matchesContent = matches?.map((varStr: string) =>
     varStr.replace(/^{{|}}$/g, ''),
   );

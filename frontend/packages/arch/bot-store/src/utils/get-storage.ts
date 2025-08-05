@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type StateStorage } from 'zustand/middleware';
 import { throttle } from 'lodash-es';
 import localForage from 'localforage';
@@ -26,7 +26,7 @@ const instance = localForage.createInstance({
 const throttleTime = 1000;
 
 /**
- * 获取store数据持久化引擎
+ * Get stored data persistence engine
  */
 export const getStorage = (): StateStorage => {
   const persistStorage: StateStorage = {
@@ -42,5 +42,5 @@ export const getStorage = (): StateStorage => {
   return persistStorage;
 };
 
-/** @deprecated - 持久化方案有问题，废弃 */
+/** @Deprecated - problem with persistence scheme, deprecated */
 export const clearStorage = instance.clear;

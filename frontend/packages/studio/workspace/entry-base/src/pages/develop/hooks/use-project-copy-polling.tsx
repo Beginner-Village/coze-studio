@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useNavigate } from 'react-router-dom';
 import { type Dispatch, type SetStateAction, useEffect } from 'react';
 
@@ -84,7 +84,7 @@ export const useProjectCopyPolling = ({
           });
         }),
       );
-      // 需要重新封装下
+      // Need to be re-packaged
       list.forEach(item => {
         if (item.entity_status === IntelligenceStatus.Using) {
           const successToastId = Toast.success({

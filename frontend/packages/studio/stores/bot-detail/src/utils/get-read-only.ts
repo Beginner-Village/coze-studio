@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { usePageRuntimeStore } from '../store/page-runtime';
 import { useCollaborationStore, EditLockStatus } from '../store/collaboration';
 
 /**
- * 非响应式；参考 useBotDetailIsReadonly 方法
+ * Non-responsive; reference useBotDetailIsReadonly method
  */
 export function getBotDetailIsReadonly() {
   const pageRuntime = usePageRuntimeStore.getState();

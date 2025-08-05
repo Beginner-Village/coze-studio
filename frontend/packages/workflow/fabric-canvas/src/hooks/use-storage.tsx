@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState } from 'react';
 
 import { useMemoizedFn, useUpdateEffect } from 'ahooks';
@@ -25,7 +25,7 @@ export interface Options<T> {
 const storage: Record<string, unknown> = {};
 
 /**
- * 持久化保存到内存
+ * Persistent save to memory
  */
 export function useStorageState<T>(key: string, options: Options<T> = {}) {
   function getStoredValue() {

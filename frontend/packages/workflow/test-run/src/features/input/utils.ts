@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { variableUtils } from '@coze-workflow/variable';
 import { ViewVariableType } from '@coze-workflow/base';
 import { I18n } from '@coze-arch/i18n';
@@ -153,7 +153,7 @@ const translateField = (temp: any) => {
 
   return {
     title: temp.name,
-    // 一期固定为 string
+    // Fixed as string
     type: 'string',
     'x-decorator-props': {
       tag: temp.type,

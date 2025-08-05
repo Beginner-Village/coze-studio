@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useState } from 'react';
 
 import { pick } from 'lodash-es';
@@ -26,7 +26,7 @@ const pickSimpleNodeRenderData = (data: FlowNodeRenderData) =>
 
 /**
  * @deprecated
- * 获取当前节点的渲染数据，包括expanded等渲染相关的状态
+ * Get the rendering data of the current node, including expanded and other rendering-related states
  */
 export const useNodeRenderData = () => {
   const node = useCurrentEntity();
@@ -48,7 +48,7 @@ export const useNodeRenderData = () => {
 
   return {
     ...nodeRenderData,
-    expanded: true, // Coze V2 没有节点折叠
+    expanded: true, // Coze V2 has no node folding
     toggleNodeExpand: initialRenderData.toggleExpand.bind(initialRenderData),
   };
 };

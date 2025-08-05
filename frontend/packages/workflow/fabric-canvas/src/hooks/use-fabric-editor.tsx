@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 import { useEffect, useMemo } from 'react';
 
@@ -78,8 +78,8 @@ export const useFabricEditor = ({
 }) => {
   const schema: FabricSchema = useMemo(() => {
     /**
-     * 兼容历史数据
-     * 删除时机，见 apps/fabric-canvas-node-render/utils/replace-ref-value.ts 注释
+     * Compatible with historical data
+     * Delete timing, see apps/fabric-canvas-node-render/utils/replace-ref-value.ts comment
      */
     if (
       !_schema?.customVariableRefs &&
@@ -106,7 +106,7 @@ export const useFabricEditor = ({
   const objectLength = useMemo(() => schema.objects.length, [schema]);
 
   /**
-   * 最大可添加元素数量限制
+   * Maximum number of elements that can be added
    */
   const MAX_OBJECT_LENGTH = 50;
   const couldAddNewObject = useMemo(
@@ -121,7 +121,7 @@ export const useFabricEditor = ({
     height: schema.height,
   });
 
-  // 初始化 fabric canvas
+  // Initialize fabric canvas
   const { canvas, loadFromJSON } = useInitCanvas({
     startInit,
     ref: ref.current,

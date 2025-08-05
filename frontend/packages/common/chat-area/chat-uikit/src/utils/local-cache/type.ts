@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export interface StoreStruct {
   coze_home_mention_tip_showed: boolean;
   coze_home_favorite_list_display: boolean;
@@ -26,5 +26,5 @@ type StoreStructRange = Record<keyof StoreStruct, boolean | string | number>;
 
 const storeStructRangeCheck = (range: StoreStructRange) => 0;
 declare const voidStruct: StoreStruct;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- 类型测试
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- type testing
 const dryRun = () => storeStructRangeCheck(voidStruct);

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useShallow } from 'zustand/react/shallow';
 
 import { useChatAreaStoreSet } from '../context/use-chat-area-context';
@@ -42,7 +42,7 @@ export const useBotInfoWithSenderId = (senderId?: string) => {
 };
 
 /**
- * 返回 action，稳定引用
+ * Return action, stable reference
  */
 export const useSetBotInfoBatch = () => {
   const { useSenderInfoStore } = useChatAreaStoreSet();

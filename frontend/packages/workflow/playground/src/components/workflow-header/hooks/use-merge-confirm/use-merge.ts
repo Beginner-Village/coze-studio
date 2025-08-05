@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useContext } from 'react';
 
 import { workflowApi } from '@coze-workflow/base';
@@ -39,7 +39,7 @@ export const useMerge = () => {
 
       const mergeResults = Object.values(DiffItems).reduce((result, key) => {
         let mergeResult;
-        // 无冲突，选择最新的
+        // No conflict, choose the latest
         if (!retainedResult[key]) {
           if (submitDiff?.[key]?.modify) {
             mergeResult = submitDiff?.[key]?.after;
@@ -47,7 +47,7 @@ export const useMerge = () => {
             mergeResult = draftDiff?.[key]?.after;
           }
         } else {
-          // 有冲突选对应的
+          // If there is a conflict, choose the corresponding one.
           if (retainedResult[key] === 'submit') {
             mergeResult = submitDiff?.[key]?.after;
           } else {

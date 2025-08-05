@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { isMobile, setMobileBody, setPCBody } from '@coze-arch/bot-utils';
@@ -38,7 +38,7 @@ export const useLayoutResponsive = () => {
   useEffect(() => {
     if (config.showMobileTips) {
       if (!mobileTips && isMobile()) {
-        openMobileTipsModal(); // 不适配移动端弹窗提示
+        openMobileTipsModal(); // Not suitable for mobile end pop-up window prompt
         setMobileTips(true);
       }
 

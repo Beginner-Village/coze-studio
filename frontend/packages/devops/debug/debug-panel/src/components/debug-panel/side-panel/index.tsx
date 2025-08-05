@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable max-lines-per-function */
 /* eslint-disable max-params */
 /* eslint-disable @coze-arch/max-line-per-function */
@@ -195,7 +195,7 @@ export const SideDebugPanel = (props: SideDebugPanelProps) => {
       if (!spanCategory) {
         await handleFetchTracesMetaInfo();
       }
-      // 从某条消息进入
+      // Enter from a message
       if (entranceMessageLogId) {
         try {
           const spans = await handleFetchQueryDetail(entranceMessageLogId);
@@ -232,7 +232,7 @@ export const SideDebugPanel = (props: SideDebugPanelProps) => {
           setLoading(false);
         }
       }
-      //直接进入
+      //Direct entry
       else {
         try {
           const spans = await handleFetchQuery();

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type FC,
   type RefObject,
@@ -55,7 +55,7 @@ interface ExpressionEditorSuggestionProps {
 }
 
 /**
- * 自动提示
+ * autoprompt
  */
 export const VarExpressionEditorSuggestion: FC<
   ExpressionEditorSuggestionProps

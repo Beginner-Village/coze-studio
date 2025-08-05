@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * http chunk 的 slardar 自定义事件
+ * HTTP chunk slardar custom event
  */
 export enum SlardarEvents {
-  // 调用 controller.abort 的代码发生的报错 不在预期之内
+  // The error occurred in the code calling controller.abort, which is not expected
   HTTP_CHUNK_UNEXPECTED_ABORT_ERROR = 'http_chunk_unexpected_abort_error',
 }

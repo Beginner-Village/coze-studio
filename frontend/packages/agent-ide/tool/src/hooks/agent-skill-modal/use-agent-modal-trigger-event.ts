@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type AgentModalTabKey } from '@coze-agent-ide/tool-config';
 
 import { useEvent } from '../event/use-event';
@@ -24,7 +24,7 @@ import {
 } from '../../typings/event';
 
 /**
- * 内部使用的方法，不对外使用，用于抛出事件
+ * Methods used internally, not externally, for throwing events
  */
 export const useAgentModalTriggerEvent = () => {
   const { emit } = useEvent();

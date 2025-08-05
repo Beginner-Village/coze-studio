@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, type PropsWithChildren, type MouseEventHandler } from 'react';
 
 import classNames from 'classnames';
@@ -22,7 +22,7 @@ import { ToolTooltip } from '../tool-tooltip';
 import { type ToolButtonCommonProps } from '../../typings/button';
 
 type ToolItemActionProps = ToolButtonCommonProps & {
-  /** 是否展示hover样式 **/
+  /** Whether to display hover style **/
   hoverStyle?: boolean;
 };
 

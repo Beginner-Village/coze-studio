@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   type Canvas,
@@ -57,7 +57,7 @@ describe('useGroup', () => {
       add: vi.fn(),
       remove: vi.fn(),
       getObjects: vi.fn(),
-      // 添加必要的 fabric.Object 属性
+      // Add the necessary fabric. Object properties
       noScaleCache: false,
       lockMovementX: false,
       lockMovementY: false,

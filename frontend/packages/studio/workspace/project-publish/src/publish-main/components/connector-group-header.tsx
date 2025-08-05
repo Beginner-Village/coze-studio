@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type AnimationEventHandler } from 'react';
 
 import classNames from 'classnames';
@@ -49,7 +49,7 @@ export function ConnectorGroupHeader({
   type,
   onAnimationEnd,
 }: ConnectorGroupHeaderProps) {
-  // 付费墙
+  // paywall
   const isAPIOrSDK = type === ConnectorClassification.APIOrSDK;
   const isAvailable = useBenefitAvailable({
     scene: PremiumPaywallScene.API,

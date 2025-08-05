@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { nanoid } from '@flowgram-adapter/free-layout-editor';
 import { ViewVariableType } from '@coze-workflow/variable';
 
-// 定义固定出参
+// Define fixed exported parameters
 export const OUTPUTS = [
   {
     key: nanoid(),

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 import {
   type Dispatch,
@@ -96,7 +96,7 @@ export const useBaseInfo = ({
     formRef.current?.formApi.setValue('desc', desc);
   });
 
-  // 提交基础信息
+  // Submit basic information
   const submitBaseInfo = async () => {
     const status = await formRef.current?.formApi
       .validate()

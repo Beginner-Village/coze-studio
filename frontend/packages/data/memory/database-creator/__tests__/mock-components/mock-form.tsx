@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, {
   useCallback,
@@ -98,7 +98,7 @@ export const MockForm = React.forwardRef(
     }));
     useEffect(() => {
       eventEmitter.on('change', (...args: any[]) => {
-        // 实际上都是假的咯 假设 args 第一个参数是 field 第二个参数是具体 value
+        // In fact, it is all false. Suppose the first argument of args is field and the second argument is a specific value.
         valuesRef.current[args[0]] = args[1];
         props.onValueChange(valuesRef.current, args[1]);
       });

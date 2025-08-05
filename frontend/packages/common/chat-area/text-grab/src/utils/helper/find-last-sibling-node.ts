@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { getAncestorAttributeValue } from '../get-ancestor-attribute-value';
 
 /**
- * 寻找某节点的最后一个兄弟节点
- * @param node 寻找节点
+ * Find the last sibling of a node
+ * @param node find node
  * @returns
  */
 export const findLastSiblingNode = ({

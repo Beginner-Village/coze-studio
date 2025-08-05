@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 表单物料
+ * form material
  */
 export { InputString } from './input-string';
 export { FieldItem } from './field-item';

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { DatasetParams } from '../../types/data-set';
 import type {
   InputValueDTO,
@@ -29,7 +29,7 @@ export type SchemaExtractorConfig = Partial<
 
 export interface SchemaExtractorNodeConfig {
   name: string;
-  /** lodash.get 入参格式 */
+  /** Lodash.get imported parameter format */
   path: string;
   parser?: SchemaExtractorParserName | Function;
   displayName?: string;
@@ -93,7 +93,7 @@ export type SchemaExtractorOutputsParser = (outputs: VariableMetaDTO[]) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value?: any;
   isImage?: boolean;
-  // 默认值里包含图片时，图片信息单独放到这里
+  // When the default value includes pictures, the picture information is put here separately.
   images?: string[];
 }[];
 

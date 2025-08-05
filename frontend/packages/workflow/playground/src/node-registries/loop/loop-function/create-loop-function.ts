@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type {
   WorkflowDocument,
   WorkflowNodeEntity,
@@ -26,7 +26,7 @@ import { createLoopFunctionTemplateData } from './create-loop-function-template-
 import { createLoopFunctionLines } from './create-loop-function-lines';
 import { createLoopFunctionJSON } from './create-loop-function-json';
 
-/** 创建 Loop 循环体节点 */
+/** Create Loop Body Node */
 export const createLoopFunction = async (
   loopNode: WorkflowNodeEntity,
   loopJson: WorkflowNodeJSON,

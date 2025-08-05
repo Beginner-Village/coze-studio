@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type WorkflowNodeRegistry,
   type WorkflowNodeJSON,
@@ -21,7 +21,7 @@ import {
 } from '@flowgram-adapter/free-layout-editor';
 
 /**
- * 是否包含有子画布的节点
+ * Is there a node with a child canvas?
  */
 export const hasSubCanvasNodes = (
   workflowDocument: WorkflowDocument,

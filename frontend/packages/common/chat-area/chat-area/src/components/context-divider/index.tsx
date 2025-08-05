@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import classNames from 'classnames';
 
 import { useShowBackGround } from '../../hooks/public/use-show-bgackground';
@@ -50,7 +50,7 @@ export const ContextDivider = ({ text }: ContextDividerProps) => {
       <div
         className={classNames(
           styles['divider-line'],
-          // ui 要求分割线颜色特别处理 不使用 token
+          // UI requires special handling of divider color, no token is used
           styles['coz-divider-line-style'],
           {
             '!coz-bg-images-secondary': showBackground,

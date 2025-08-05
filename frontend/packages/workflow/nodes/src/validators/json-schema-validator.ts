@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import Ajv from 'ajv';
 import {
   variableUtils,
@@ -43,7 +43,7 @@ export const jsonSchemaValidator = (
     return valid;
     // eslint-disable-next-line @coze-arch/use-error-in-catch
   } catch (error) {
-    // parse失败说明不是合法值
+    // Parse failure indicates that it is not a legal value
     return false;
   }
 };

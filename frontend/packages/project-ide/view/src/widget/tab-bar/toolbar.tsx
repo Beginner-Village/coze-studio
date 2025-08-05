@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useMemo } from 'react';
 
 import { inject, injectable } from 'inversify';
@@ -84,7 +84,7 @@ export class TabBarToolbar extends ReactWidget {
       ) as ReactWidget;
       return (factory?.toolbarItems || [])
         .filter(item => {
-          // 默认是 ToolbarAlign.TRAILING
+          // Default is ToolbarAlign. TRAILING
           if (!this.align) {
             return !item.align || item.align === ToolbarAlign.TRAILING;
           }

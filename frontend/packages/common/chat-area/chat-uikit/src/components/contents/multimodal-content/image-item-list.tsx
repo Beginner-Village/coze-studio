@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { type ImageMixItem } from '@coze-common/chat-core';
@@ -60,7 +60,7 @@ export const ImageItemList: FC<ImageItemListProps> = ({
           />
         ) : (
           <div
-            // 这里借用了 messageBoxInner 的样式风格
+            // Here we borrow the style of messageBoxInner
             className={typeSafeMessageBoxInnerVariants({
               color: 'whiteness',
               border: null,

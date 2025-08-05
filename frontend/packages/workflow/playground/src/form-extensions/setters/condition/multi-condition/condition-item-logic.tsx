@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -25,11 +25,11 @@ import styles from './condition-item-logic.module.less';
 
 export interface ConditionItemLogicProps {
   /**
-   * 逻辑 And Or
+   * And Logic Or
    */
   logic: Logic;
   /**
-   * 逻辑 And Or change 回调
+   * And Or change the logic
    */
   onChange: (logic: Logic) => void;
   showStroke?: boolean;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useEffect } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -36,7 +36,7 @@ export const UserPrompt = ({ field, fieldState }) => {
   const isUserPromptRequired = curModel?.is_up_required ?? false;
 
   useEffect(() => {
-    // TODO: 临时方案，待节点引擎提供新 api 后替换
+    // TODO: Temporary solution, replaced after the node engine provides a new API
     field._fieldModel.validate();
   }, [isUserPromptRequired]);
 

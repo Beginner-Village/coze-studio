@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useEffect } from 'react';
 
 import { URI } from '../common';
@@ -29,7 +29,7 @@ export interface URILabelProps {
 }
 
 /**
- * 渲染 Label 的 react 组件
+ * React component for rendering Label
  * @param props
  * @constructor
  */

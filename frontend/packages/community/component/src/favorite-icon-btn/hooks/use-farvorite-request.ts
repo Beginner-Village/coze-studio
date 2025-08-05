@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemoizedFn } from 'ahooks';
 import { type ProductEntityType } from '@coze-arch/bot-api/product_api';
 import { ProductApi } from '@coze-arch/bot-api';
@@ -35,7 +35,7 @@ export const useFavoriteStatusRequest = ({
       setIsFavorite(!isCurFavorite);
       try {
         await ProductApi.PublicFavoriteProduct({
-          // 后端不能处理空字符串
+          // Backend cannot handle empty strings
           product_id: productId || undefined,
           entity_type: entityType as ProductEntityType,
           is_cancel: isCurFavorite,

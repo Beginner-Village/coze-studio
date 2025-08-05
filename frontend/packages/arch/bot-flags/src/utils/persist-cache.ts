@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { logger } from '@coze-arch/logger';
 
 import { type FEATURE_FLAGS } from '../types';
@@ -26,7 +26,7 @@ const isFlagsShapeObj = (obj: unknown) => {
   if (typeof obj === 'object') {
     const shape = obj as FEATURE_FLAGS;
     return (
-      // 如果包含任意属性值不是 boolean，则认为不是 flags 对象
+      // If any property value is not a boolean, it is not considered a flags object
       Object.keys(shape).some(r => typeof shape[r] !== 'boolean') === false
     );
   }

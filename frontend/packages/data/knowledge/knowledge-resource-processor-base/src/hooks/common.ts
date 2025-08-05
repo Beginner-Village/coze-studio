@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useRef, useEffect } from 'react';
 
 import { type StoreApi, type UseBoundStore } from 'zustand';
@@ -124,7 +124,7 @@ export const useCreateDocument = <
         }
         options?.onSuccess && options.onSuccess(res);
       } catch (e) {
-        // 创建失败，默认渲染处理的数据
+        // Failed to create, default rendering of processed data
         const error = e as Error;
         const fakeProgressList = reqParams?.document_bases?.map(item => ({
           ...item,

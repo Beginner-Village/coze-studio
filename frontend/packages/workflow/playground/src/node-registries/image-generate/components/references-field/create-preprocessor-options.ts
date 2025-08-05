@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n, type I18nKeysNoOptionsType } from '@coze-arch/i18n';
 
 import thumbnail7 from '../../assets/reference-7.png';
@@ -69,7 +69,7 @@ function isPreprocessorDisabled({
 }) {
   let disabled = false;
 
-  // 如果当前选项的预处理器已经被当前项选中 从allSelectedPreprocessor中移除
+  // If the preprocessor for the current option is already selected by the current item, remove it from the allSelectedPreprocessor
   allSelectedPreprocessor = allSelectedPreprocessor.filter(
     item =>
       !(
@@ -78,12 +78,12 @@ function isPreprocessorDisabled({
       ),
   );
 
-  // 不能添加相同的模型
+  // The same model cannot be added
   if (allSelectedPreprocessor.includes(currentOptionPreprocessor)) {
     disabled = true;
   }
 
-  // 1到4编号最多只能出现两个 4以上编号的模型不做限制
+  // Numbers 1 to 4 can only appear at most two models with numbers above 4, and there is no limit.
   const group = [1, 2, 3, 4];
   if (group.includes(currentOptionPreprocessor)) {
     const isPreprocessorGroup =

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { createContext } from 'react';
 
 import { type ComponentTypesMap } from '../components/types';
 
 export interface ChatAreaCustomComponents {
   /**
-   * @deprecated 废弃，请使用插件化方案
+   * @Deprecated, please use the plugin scheme
    */
   componentTypes?: Partial<ComponentTypesMap>;
 }

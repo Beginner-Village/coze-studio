@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useRef, type FC } from 'react';
 
 import { useSize } from 'ahooks';
@@ -40,7 +40,7 @@ export const FabricPreview: FC<IFabricPreview> = props => {
       oldWidth.current = size?.width || 0;
     }
 
-    // 防止抖动，当宽度变化 > 20 时才更新宽度
+    // To prevent jitter, update the width when the width changes > 20
     if (size?.width && size.width - oldWidth.current > 20) {
       oldWidth.current = size?.width || 0;
     }

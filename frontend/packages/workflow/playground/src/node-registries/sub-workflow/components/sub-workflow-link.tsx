@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useMemo, type FC } from 'react';
 
 import { type WorkflowDetailInfoData } from '@coze-workflow/base';
@@ -40,16 +40,16 @@ export const SubWorkflowLink: FC<{
     ? (workflowDetail as WorkflowDetailInfoData)?.project_id
     : undefined;
 
-  // 获取最新的 commitId
+  // Get the latest commitId
   const commitId = useMemo(() => {
-    /** 来自资源库的流程需要获取最新的版本号 */
+    /** The process from the repository requires obtaining the latest version number */
     const latestVersion = isProjectWorkflow
       ? undefined
       : workflowDetail.latest_flow_version;
 
     const { workflowVersion } = identifier;
 
-    /** 是否是最新版本的子流程 */
+    /** Is it the latest version of the subprocess? */
     const isLatest = !workflowVersion || workflowVersion === latestVersion;
     return isLatest ? undefined : workflowDetail.commit_id;
   }, [workflowDetail, isProjectWorkflow]);
@@ -63,7 +63,7 @@ export const SubWorkflowLink: FC<{
       e.stopPropagation();
       return;
     }
-    // 存在 project id 时，是引用的 project 内的 workflow
+    // When there is a project id, it is the workflow within the referenced project.
     if (subWorkflowProjectId && projectApi?.navigate) {
       projectApi?.navigate(`/workflow/${workflowId}`);
     } else {

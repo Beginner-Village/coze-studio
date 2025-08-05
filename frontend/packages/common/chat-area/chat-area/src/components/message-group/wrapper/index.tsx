@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type PropsWithChildren, memo } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -125,7 +125,7 @@ export const MessageGroupWrapper: React.FC<
       return findMessageById(state.metaList, userMessageId);
     }, isEqual);
 
-    // TODO: 目前服务端不支持打断本地消息。不能删除正在发送中的消息。需要标志这个状态
+    // TODO: Current server level does not support interrupting local messages. Sending messages cannot be deleted. This status needs to be flagged
     const isSendingMessage = Boolean(userMessageMeta?.isSending);
 
     const deleteMessageGroup = useDeleteMessageGroup();

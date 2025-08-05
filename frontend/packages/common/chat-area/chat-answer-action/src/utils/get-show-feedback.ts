@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Message, type MessageMeta } from '@coze-common/chat-area';
 
 import { getIsPushedMessage } from './get-is-pushed-message';
@@ -30,13 +30,13 @@ export const getShowFeedback = ({
   >;
   latestSectionId: string;
 }): boolean => {
-  // 是否是推送的消息
+  // Is it a pushed message?
   const isPushedMessage = getIsPushedMessage(message);
   if (isPushedMessage) {
     return false;
   }
 
-  // 来自最后一个消息组的 final answer
+  // The final answer from the last message group
   return (
     meta.isGroupLastAnswerMessage &&
     meta.isFromLatestGroup &&

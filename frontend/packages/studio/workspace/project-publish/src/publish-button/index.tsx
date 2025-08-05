@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable complexity */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useNavigate } from 'react-router-dom';
@@ -91,7 +91,7 @@ export const PublishButton = ({
     intelligenceId: projectId,
     spaceId,
     enable: !!(
-      // 即将支持，敬请期待
+      // Support soon, so stay tuned.
       (
         FLAGS['bot.studio.publish_management'] &&
         hasPublished &&
@@ -170,7 +170,9 @@ export const PublishButton = ({
                 onClick={() => open()}
               >
                 <span className="flex-grow mr-[8px]">
-                  {`${I18n.t('app_ide_publish_modal_recent_publication')} ${latestVersion?.version_number}`}
+                  {`${I18n.t('app_ide_publish_modal_recent_publication')} ${
+                    latestVersion?.version_number
+                  }`}
                 </span>
                 {tag}
                 <IconButton
@@ -186,7 +188,7 @@ export const PublishButton = ({
               <Divider />
             </div>
 
-            {/* 即将支持，敬请期待 */}
+            {/* Support soon, so stay tuned. */}
             {FLAGS['bot.studio.publish_management'] && !IS_OPEN_SOURCE ? (
               <div>
                 <div className="coz-fg-secondary font-[500] px-[8px] pt-[4px] pb-0 mb-[2px]">

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type CustomComponent } from '../types/plugin-component';
 import { type PluginName } from '../constants/plugin-name';
 import { usePluginList } from './use-plugin-list';
 
 interface ComponentConfig<K extends keyof CustomComponent> {
   pluginName: PluginName;
-  // eslint-disable-next-line @typescript-eslint/naming-convention -- 符合预期
+  // eslint-disable-next-line @typescript-eslint/naming-convention -- as expected
   Component: CustomComponent[K];
 }
 

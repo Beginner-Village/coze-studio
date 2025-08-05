@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ContentType } from '@coze-common/chat-core';
 import { type InsertedElementItem } from '@coze-arch/bot-md-box-adapter';
 
@@ -27,12 +27,12 @@ export interface OnTextContentRenderingContext {
 
 export interface OnMessageBoxRenderContext {
   /**
-   * 动态注入的自定义渲染组件
+   * Dynamic injection of custom rendering components
    */
-  // eslint-disable-next-line @typescript-eslint/naming-convention -- 符合预期的命名
+  // eslint-disable-next-line @typescript-eslint/naming-convention -- matches the expected naming
   MessageBox?: CustomComponent['MessageBox'];
   /**
-   * 消息体
+   * message body
    */
   message: Message<ContentType>;
   /**

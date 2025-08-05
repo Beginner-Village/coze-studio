@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import BigNumber from 'bignumber.js';
 
 /**
- * 是不是大数字
+ * Is it a big number?
  * @param value
  * @returns
  */
@@ -26,7 +26,7 @@ export function isBigNumber(value: unknown): value is BigNumber {
 }
 
 /**
- * 大数字转字符串
+ * Large number to string
  * @param value
  * @returns
  */

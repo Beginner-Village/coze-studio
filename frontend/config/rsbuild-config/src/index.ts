@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import path from 'path';
 
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
@@ -28,7 +28,7 @@ import { SemiRspackPlugin } from '@douyinfe/semi-rspack-plugin';
 const getDefine = () => {
   const define = {};
   Object.keys(GLOBAL_ENVS).forEach(key => {
-    // 在rspack的define中，字符串需要前后拼接上双引号，才能在代码中作为字符串使用。
+    // In the definition of rspack, strings need to be enclosed in double quotes before they can be used as strings in code.
     if (typeof GLOBAL_ENVS[key] === 'string') {
       define[key] = `"${GLOBAL_ENVS[key]}"`;
     } else {
@@ -48,7 +48,9 @@ export const overrideBrowserslist = [
 
 const generateCdnPrefix = () => {
   if (process.env.CDN_INNER_CN) {
-    return `https://${process.env.CDN_INNER_CN}/${process.env.CDN_PATH_PREFIX ? `${process.env.CDN_PATH_PREFIX}/` : ''}`;
+    return `https://${process.env.CDN_INNER_CN}/${
+      process.env.CDN_PATH_PREFIX ? `${process.env.CDN_PATH_PREFIX}/` : ''
+    }`;
   }
   return '/';
 };
@@ -115,7 +117,7 @@ export const defineConfig = (options: Partial<RsbuildConfig>) => {
         ),
       },
       include: [
-        // 以下几个包包含未降级的 ES 2022 语法（private methods）需要参与打包
+        // The following packages contain undegraded ES 2022 syntax (private methods) that need to be packaged
         /\/node_modules\/(marked|@dagrejs|@tanstack)\//,
       ],
     },

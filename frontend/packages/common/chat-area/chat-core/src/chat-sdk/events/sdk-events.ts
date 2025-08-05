@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export enum SdkEventsEnum {
   MESSAGE_RECEIVED_AND_UPDATE = 'message_received_and_update',
   /**
-   * 监测拉取回复消息状态变化
+   * Monitor pull reply message status changes
    */
   MESSAGE_PULLING_STATUS = 'message_pulling_status',
   ERROR = 'error',

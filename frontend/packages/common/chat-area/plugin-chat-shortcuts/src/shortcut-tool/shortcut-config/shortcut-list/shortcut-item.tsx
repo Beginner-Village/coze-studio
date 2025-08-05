@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, useEffect, useRef } from 'react';
 
 import type { ShortCutCommand } from '@coze-agent-ide/tool-config';
@@ -54,7 +54,7 @@ export const ShortcutItem: FC<ShortcutItemProps> = ({
   useEffect(() => {
     connect(dropRef, dragRef);
   }, [dragRef, dropRef]);
-  // 点击删除，弹出二次确认弹窗
+  // Click Delete to pop up the secondary confirmation pop-up window.
   const openConfirmRemoveModal = () => {
     UIModal.info({
       title: I18n.t('bot_ide_shortcut_removal_confirm'),

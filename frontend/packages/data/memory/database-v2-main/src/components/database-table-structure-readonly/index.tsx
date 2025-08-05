@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useRef, useState } from 'react';
 
 import { type TableMemoryItem } from '@coze-studio/bot-detail-store';
@@ -30,7 +30,7 @@ import keyExample from '../../assets/key-example.png';
 import s from './index.module.less';
 
 function getTableStructureColumns(): ColumnProps<TableMemoryItem>[] {
-  // 字段表头内容来自 ../database-table-structure/index.tsx:578
+  // The field header content comes from../database-table-structure/index.tsx: 578
   return [
     {
       title: (
@@ -140,7 +140,7 @@ export function DatabaseTableStructureReadonly({
           columns,
           dataSource,
           scroll: {
-            // 表头的高度是 40px
+            // The height of the watch header is 40px.
             y: tableHeight > 40 ? tableHeight - 40 : 'auto',
           },
         }}

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import path from 'path';
 
 import { type ApiConfig } from './types';
@@ -25,7 +25,7 @@ function requiredWithoutCache(src, onError?) {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Module } = require('module');
   try {
-    // disable 了 require 的缓存，这样可以改变了 mock 数据后，无需重启服务。
+    // Disable the required cache so that you can change the mock data without restarting the service.
     const originCache = Module._cache;
     Module._cache = {};
     // eslint-disable-next-line security/detect-non-literal-require, @typescript-eslint/no-require-imports

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useState } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -38,8 +38,8 @@ export const TestsetBotProjectSelect = (props: BotSelectProps) => {
         const isNeedBotEnv = await queryNeedBot(testFormType, startNode);
         const { hasLTMNode, hasConversationNode } = isNeedBotEnv;
 
-        // 会话类节点，子流程（Chatflow）不能选择 Bot，因为Bot不支持多会话
-        // LTM 节点不能选择 Project，因为 Project 还没有 LTM 能力
+        // Session class nodes, subflows (Chatflow) cannot select Bot because Bot does not support multi-session
+        // The LTM node cannot select Project because Project does not yet have LTM capabilities
         const needDisableBot = hasConversationNode;
         const botDisableOptions = {
           disableBot: needDisableBot,

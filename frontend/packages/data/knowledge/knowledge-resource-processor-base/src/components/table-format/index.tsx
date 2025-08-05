@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-// 组件相关
+
+// component related
 export {
   TableSettingBar,
   type TableSettingBarProps,

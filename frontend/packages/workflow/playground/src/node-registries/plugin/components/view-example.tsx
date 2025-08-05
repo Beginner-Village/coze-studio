@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { type ApiNodeDetailDTO } from '@coze-workflow/nodes';
@@ -44,9 +44,9 @@ export const ViewExample = (props: Props) => {
     return null;
   }
 
-  // workflow 比较特殊的点在于，节点级别的话，popupcontainer 是设置在节点而不是画布上
-  // 因此这里需要通过 ConfigProvider 配置 popupContainer，覆盖 NodeRender 上的 ConfigProvider，
-  // 否则在节点级别不会展示出来
+  // The special thing about workflow is that at the node level, the popupcontainer is set on the node rather than the canvas
+  // Therefore, you need to configure the popupContainer through the ConfigProvider, overriding the ConfigProvider on the NodeRender.
+  // Otherwise it will not be displayed at the node level
   return (
     <ConfigProvider getPopupContainer={() => document.body}>
       {exampleNode}

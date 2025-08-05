@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { getFixedSingleAgentSchema } from '../src/utils/model/get-fixed-single-agent-schema';
 import {
   ModelFormComponent,
@@ -271,7 +271,7 @@ describe('get-fixed-single-agent-schema', () => {
                 label: 'mockedI18n',
                 popoverContent: 'mockedI18n',
               },
-              // 放到最前面
+              // Put it up front.
               'x-index': 0,
             },
             max_tokens: {

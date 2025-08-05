@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { z } from 'zod';
 import { I18n } from '@coze-arch/i18n';
 import { type ValidatorProps } from '@flowgram-adapter/free-layout-editor';
@@ -59,7 +59,7 @@ export const nodeMetaValidator = ({
     return nodes?.length > 1;
   }
 
-  // 增加节点名重复校验
+  // Add Node Name Duplicate Validation
   const schema = NodeMetaSchema.refine(
     ({ title }: NodeMeta) => !isTitleRepeated(title),
     {

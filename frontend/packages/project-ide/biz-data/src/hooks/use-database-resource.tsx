@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReactNode, useCallback } from 'react';
 
 import {
@@ -58,7 +58,7 @@ const useDatabaseResource = (): UseDatabaseResourceReturn => {
   const IDENav = useIDENavigate();
   // const openResource = useOpenResource();
 
-  // 创建 Database
+  // Create Database
   const {
     modal: createDatabaseModal,
     open: openCreateDatabaseModal,

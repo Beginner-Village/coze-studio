@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type LocalStorageCacheConfig } from './types';
 
-// 统一维护 key 定义避免出现冲突
+// Maintain key definitions uniformly to avoid conflicts
 export const LOCAL_STORAGE_CACHE_KEYS = [
   'coachmark',
   'workspace-spaceId',

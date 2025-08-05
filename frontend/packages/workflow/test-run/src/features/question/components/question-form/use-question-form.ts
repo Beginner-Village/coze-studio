@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useLayoutEffect } from 'react';
 
 import { useMemoizedFn } from 'ahooks';
@@ -33,7 +33,7 @@ export const useQuestionForm = (questionEvent: NodeEvent | undefined) => {
     patch: store.patch,
   }));
   const eventSync = useMemoizedFn((event: NodeEvent | undefined) => {
-    // 结束
+    // end
     if (!event) {
       testRunService.continueTestRun();
       return;

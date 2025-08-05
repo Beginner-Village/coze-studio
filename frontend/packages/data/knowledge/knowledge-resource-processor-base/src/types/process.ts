@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReactNode } from 'react';
 
 export enum ProcessStatus {
-  Processing, // 处理中
-  Complete, // 处理完成
-  Failed, // 处理失败
+  Processing, // Processing
+  Complete, // Processing complete
+  Failed, // Processing failed
 }
 export interface ProcessProgressItemProps {
   className?: string | undefined;

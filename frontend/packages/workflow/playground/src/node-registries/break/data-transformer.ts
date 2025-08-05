@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type NodeDataDTO } from '@coze-workflow/base';
 
 import { type FormData } from './types';
 
 /**
- * 节点后端数据 -> 前端表单数据
+ * Node Backend Data - > Frontend Form Data
  */
 export const transformOnInit = (value: NodeDataDTO) => value;
 
 /**
- * 前端表单数据 -> 节点后端数据
+ * Front-end form data - > node back-end data
  * @param value
  * @returns
  */

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { nanoid } from 'nanoid';
 import { SliceStatus } from '@coze-arch/bot-api/knowledge';
 
@@ -31,7 +31,7 @@ export const createLocalChunk = (props: { sequence: string }): Chunk => {
 };
 
 /**
- * 更新本地分片
+ * Update local sharding
  */
 export const updateLocalChunk = ({
   chunks,
@@ -44,34 +44,34 @@ export const updateLocalChunk = ({
 }): Chunk[] =>
   chunks.map(c => (c.local_slice_id === localChunkSliceId ? newChunk : c));
 
-// 删除本地分片
+// Delete local sharding
 export const deleteLocalChunk = (
   chunks: Chunk[],
   localChunkSliceId: string,
 ): Chunk[] => chunks.filter(c => c.local_slice_id !== localChunkSliceId);
 
 /**
- * 更新文档分片内容
+ * Update document sharding content
  */
 export const updateChunkContent = (chunk: Chunk, content: string): Chunk => ({
   ...chunk,
   content,
 });
 
-// 删除远程分片
+// Delete remote sharding
 export const deleteRemoteChunk = (
   chunks: Chunk[],
   remoteChunkSliceId: string,
 ): Chunk[] => chunks.filter(c => c.slice_id !== remoteChunkSliceId);
 
 /**
- * 更新chunks
+ * Update chunks
  */
 export const updateChunks = (chunks: Chunk[], chunk: Chunk): Chunk[] =>
   chunks.map(c => (c.slice_id === chunk.slice_id ? chunk : c));
 
 /**
- * 创建远程分片
+ * Create remote sharding
  */
 export const createRemoteChunk = (props: {
   sequence: string;

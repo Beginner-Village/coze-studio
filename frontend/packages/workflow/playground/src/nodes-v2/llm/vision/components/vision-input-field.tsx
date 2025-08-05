@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import {
@@ -38,7 +38,7 @@ interface VisionInputFieldProps {
 }
 
 /**
- * 输入字段
+ * input field
  */
 export const VisionInputField: FC<VisionInputFieldProps> = ({
   readonly,

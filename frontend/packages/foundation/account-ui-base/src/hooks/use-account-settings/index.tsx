@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReactElement, useState } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -28,7 +28,7 @@ export interface TabItem {
   id: string;
   tabName: string;
   /**
-   * @param close 关闭setting弹窗
+   * @param close settings pop-up
    * @returns ReactElement
    */
   content: (close?: () => void) => ReactElement;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { nanoid } from 'nanoid';
 import { useMemoizedFn } from 'ahooks';
 import { workflowApi } from '@coze-workflow/base/api';
@@ -37,7 +37,7 @@ export const useSendMessage = () => {
   const testRunService = useTestRunService();
 
   const send = useMemoizedFn(async (text: string) => {
-    // 前端先填入回答
+    // Fill in the answer first
     const temp: ReceivedMessage = {
       content: text,
       type: MessageType.Answer,

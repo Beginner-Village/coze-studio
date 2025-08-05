@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export const enum EventNames {
-  // 重发消息
+  // resend message
   RESEND_MESSAGE = 'resendMessage',
-  // 发送文本消息
+  // Send a text message
   SEND_TEXT_MESSAGE = 'sendTextMessage',
-  // 更新卡片状态
+  // Update card status
   UPDATE_CARD_STATUS = 'updateCardStatus',
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type URI } from '@coze-project-ide/client';
 
 import { type ProjectIDEServices } from '../types';
@@ -21,10 +21,10 @@ import { type WidgetService } from '../plugins/create-preset-plugin/widget-servi
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface WidgetContext<T = any> {
-  uri?: URI; // 当前 widget 的 uri
-  store: T; // 当前 widget 的 store
+  uri?: URI; // The URI of the current widget
+  store: T; // The current widget store
   widget: WidgetService;
-  services: ProjectIDEServices; // 全局的 ide 服务
+  services: ProjectIDEServices; // Global IDE service
 }
 
 export const WidgetContext = Symbol('WidgetContext');

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import dayjs from 'dayjs';
 import { REPORT_EVENTS as ReportEventNames } from '@coze-arch/report-events';
 import { reporter } from '@coze-arch/logger';
@@ -84,8 +84,8 @@ export async function saveFetcher(
 }
 
 /**
- * 更新bot草稿信息的结构
- * @returns 根据标记返回使用不同请求体的更新bot
+ * Update the structure of bot draft information
+ * @Returns update bots using different request bodies based on tags
  */
 export function updateBotRequest(structPayload: BotInfoForUpdate) {
   const { botId } = useBotInfoStore.getState();

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Canvas } from 'fabric';
 import { renderHook, act } from '@testing-library/react';
@@ -50,7 +50,7 @@ describe('useInitCanvas', () => {
   const mockRequestRenderAll = vi.fn();
   const mockDispose = vi.fn();
   const mockOn = vi.fn(() => () => {
-    // 清理函数
+    // cleanup function
   });
   let mockCanvas: any;
 

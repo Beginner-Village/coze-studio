@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { WorkflowNodeEntity } from '@flowgram-adapter/free-layout-editor';
 import { type NodeData, WorkflowNodeData } from '@coze-workflow/nodes';
 import type { BasicStandardNodeTypes } from '@coze-workflow/base';
 import { I18n } from '@coze-arch/i18n';
 
-/** 同步节点模版数据 */
+/** Synchronize node template data */
 export const createLoopFunctionTemplateData = (
   loopNode: WorkflowNodeEntity,
   loopFunctionNode: WorkflowNodeEntity,

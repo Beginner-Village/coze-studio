@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 import { produce } from 'immer';
@@ -21,7 +21,7 @@ import { type SendFileMessagePayload } from '@coze-common/chat-uikit-shared';
 
 export interface FileState {
   /**
-   * 临时存储文件的
+   * Temporary storage of files
    * key: local_message_id
    */
   temporaryFile: Record<string, SendFileMessagePayload | null>;
@@ -32,14 +32,14 @@ export interface FileState {
 
 export interface FileAction {
   /**
-   * 更新临时存储的文件
+   * Update temporarily stored files
    */
   updateTemporaryFile: (
     localMessageId: string,
     payload: SendFileMessagePayload,
   ) => void;
   /**
-   * 删除临时存储的文件（通过localMessageId）
+   * Delete temporarily stored files (via localMessageId)
    * @param localMessageId
    * @returns
    */

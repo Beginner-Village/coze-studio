@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { forwardRef } from 'react';
 
 import classNames from 'classnames';
@@ -26,7 +26,7 @@ import {
 import styles from './index.module.less';
 
 /**
- * 在 size:small 的基础上，覆盖了 padding ，5px -> 4px
+ * On the basis of size: small, overlay padding, 5px - > 4px
  */
 export const MyIconButton = forwardRef<
   SemiButton,

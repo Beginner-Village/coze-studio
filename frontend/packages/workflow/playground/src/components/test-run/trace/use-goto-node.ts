@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { workflowApi } from '@coze-workflow/base';
 import { I18n } from '@coze-arch/i18n';
 import { Toast } from '@coze-arch/coze-design';
@@ -61,7 +61,7 @@ export const useGotoNode = () => {
 
   const goto = async (params: GotoParams) => {
     const { nodeId, workflowId, executeId, subExecuteId } = params;
-    // 同一个流程，直接 focus 节点即可
+    // The same process, directly focus on the node
     if (workflowId === globalState.workflowId && nodeId) {
       const scrolled = await scrollToNode(nodeId);
       if (!scrolled) {
@@ -70,7 +70,7 @@ export const useGotoNode = () => {
       return;
     }
 
-    // 运维平台特殊跳转逻辑
+    // Special jumping logic of operation and maintenance platform
     if (IS_BOT_OP) {
       const searchParams = new URLSearchParams();
       searchParams.append('workflow_id', workflowId);
@@ -84,7 +84,7 @@ export const useGotoNode = () => {
       return;
     }
 
-    // 宿主流程为资源库流程，直接打开浏览器新 tab 跳转
+    // The host process is the resource library process, directly open the new tab of the browser to jump
     if (!isInProject) {
       gotoLibrary(params);
       return;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ComponentProps, type PropsWithChildren } from 'react';
 
 import classNames from 'classnames';
@@ -58,7 +58,7 @@ export const DeleteMessage: React.FC<PropsWithChildren<DeleteMessageProps>> = ({
           />
         }
         onClick={() => {
-          // 通过 groupId 索引即可
+          // Just index through groupId.
           deleteMessageGroup(groupId);
         }}
         color="secondary"

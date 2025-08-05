@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { SettingOnErrorProcessType } from '@coze-workflow/nodes';
@@ -25,7 +25,7 @@ import { type Option } from './types';
 import { OptionItem } from './option-item';
 
 /**
- * 超时
+ * timeout
  */
 export const ProcessType: FC<
   SettingOnErrorItemProps<SettingOnErrorProcessType> & {

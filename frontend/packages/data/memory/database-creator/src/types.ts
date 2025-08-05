@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type DatabaseInfo } from '@coze-studio/bot-detail-store';
 import {
   type AlterBotTableResponse,
@@ -28,9 +28,9 @@ export enum CreateType {
   custom = 'custom',
   template = 'template',
   excel = 'excel',
-  // 推荐建表
+  // recommended table
   recommend = 'recommend',
-  // 输入自然语言建表
+  // Enter natural language to build a table
   naturalLanguage = 'naturalLanguage',
 }
 

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type CustomComponent } from '../types/plugin-component';
 
 /**
- * 创建 自定义组件 的辅助函数
+ * Create a custom component helper function
  */
 export const createCustomComponents = (
   customComponents: Partial<CustomComponent>,

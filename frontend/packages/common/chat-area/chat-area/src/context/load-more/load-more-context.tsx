@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { createContext, type PropsWithChildren } from 'react';
 
 import {
@@ -28,7 +28,7 @@ export const LoadMoreContext = createContext<{
 });
 
 /**
- * 反模式起飞
+ * Anti-pattern takeoff
  */
 export const LoadMoreProvider = (
   props: PropsWithChildren<{

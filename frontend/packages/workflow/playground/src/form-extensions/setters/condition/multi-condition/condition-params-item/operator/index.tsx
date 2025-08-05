@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useMemo } from 'react';
 
 import { ViewVariableType } from '@coze-workflow/base/types';
@@ -51,7 +51,7 @@ export default function Operator(props: OperatorProps) {
   const { value, onChange, sourceType, onBlur, validateStatus, testId } = props;
   const { concatTestId } = useNodeTestId();
 
-  // 根据引用变量更改对应的options
+  // Change the corresponding options according to the reference variable
   const options = useMemo(() => {
     if (sourceType && ViewVariableType.isFileType(sourceType)) {
       return convertMap2options(fileConditionValueMap, {

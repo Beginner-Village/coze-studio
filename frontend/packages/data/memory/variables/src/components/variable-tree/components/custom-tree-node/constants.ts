@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ViewVariableType } from '@/store';
 
 export enum ChangeMode {
@@ -24,7 +24,7 @@ export enum ChangeMode {
   Replace,
 }
 
-// JSON类型
+// JSON type
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const JSONLikeTypes = [
   ViewVariableType.Object,

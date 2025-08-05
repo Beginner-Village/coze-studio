@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState, type FC } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -35,8 +35,8 @@ interface UseCreateToolProps {
   plugin_id: string;
   onClickWrapper?: (fn: () => void) => () => Promise<void>;
   /**
-   * 点击创建工具按钮前的回调函数
-   * @returns {boolean | void} 返回false时将阻止后续动作
+   * The callback function before clicking the Create Tool button
+   * @Returns {boolean | void} returns false to block subsequent actions
    */
   onBeforeClick?: () => void;
   disabled: boolean;
@@ -151,7 +151,7 @@ export const useCreateTool = ({
 };
 
 /**
- * @description 创建工具
+ * @description creation tool
  */
 export const CreateTool: FC<CreateToolProps> = props => {
   const { content } = useCreateTool({

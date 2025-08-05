@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable complexity */
 
 import { isUndefined, omit } from 'lodash-es';
@@ -176,7 +176,7 @@ export const fetchStartNodeTriggerFormValue = async ({
       project_id: projectId ?? '',
       workflow_id: workflowId ?? '',
       project_version: projectVersion,
-      /** 本期传递DEBUG_PRESET */
+      /** Delivery DEBUG_PRESET */
       set_type: TriggerSetType.DEBUG_PRESET,
     });
 
@@ -199,7 +199,7 @@ export const fetchStartNodeTriggerFormValue = async ({
     });
 
     /**
-     * cronjob 数据结构要做一下转换
+     * The cronjob data structure needs to be transformed
      *
      * {crontab:'0 0 0 * * *',crontabType:'selecting'}
      *

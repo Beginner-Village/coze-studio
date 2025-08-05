@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useState } from 'react';
 
 import { useRequest } from 'ahooks';
@@ -60,7 +60,7 @@ export function MonetizeConfig() {
     },
   );
 
-  /** loading 时展示为激活态（默认值） */
+  /** Show as active when loading (default) */
   const btnDisplayOn = loading ? true : monetizeConfig.isOn;
 
   return (

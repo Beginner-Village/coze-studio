@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useRef } from 'react';
 
 import { useHover } from 'ahooks';
@@ -65,7 +65,7 @@ export const ThumbsUp: React.FC<ThumbsUpProps> = ({
           : MessageFeedbackType.Like,
       },
     }).then(() => {
-      // 接口调用后再切换展示状态
+      // Switch the display state after the interface is called.
       onClick?.();
     });
   };

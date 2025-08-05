@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReactCropperElement } from 'react-cropper';
 import { type RefObject } from 'react';
 
@@ -123,7 +123,7 @@ export const useSubmitCroppedImage = ({
       ) {
         upload(currentOriginImage.fileInstance);
       } else {
-        // 回填文件时 不需要存原图
+        // When backfilling the document, there is no need to save the original image.
         handleUploadAllSuccess();
       }
     } catch (error) {

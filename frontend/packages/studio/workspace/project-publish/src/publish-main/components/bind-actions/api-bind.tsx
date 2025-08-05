@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -65,7 +65,7 @@ export const ApiBind = (props: ApiBindProps) => {
     });
 
   useEffect(() => {
-    // 初始化时校验一次是否有workflow
+    // Check if there is a workflow once during initialization.
     if (checked && !workflowOptionsLoading) {
       formApi.validate(['api_workflow']);
     }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { customAlphabet } from 'nanoid';
@@ -37,16 +37,26 @@ const uriMap: Record<
   | ViewVariableType.ArrayObject,
   string
 > = {
-  [ViewVariableType.ArrayString]: `${VARIABLE_TYPE_ALIAS_MAP[ViewVariableType.ArrayString]}_${nanoid()}`,
-  [ViewVariableType.ArrayNumber]: `${VARIABLE_TYPE_ALIAS_MAP[ViewVariableType.ArrayNumber]}_${nanoid()}`,
-  [ViewVariableType.ArrayInteger]: `${VARIABLE_TYPE_ALIAS_MAP[ViewVariableType.ArrayInteger]}_${nanoid()}`,
-  [ViewVariableType.ArrayBoolean]: `${VARIABLE_TYPE_ALIAS_MAP[ViewVariableType.ArrayBoolean]}_${nanoid()}`,
-  [ViewVariableType.ArrayObject]: `${VARIABLE_TYPE_ALIAS_MAP[ViewVariableType.ArrayObject]}_${nanoid()}`,
+  [ViewVariableType.ArrayString]: `${
+    VARIABLE_TYPE_ALIAS_MAP[ViewVariableType.ArrayString]
+  }_${nanoid()}`,
+  [ViewVariableType.ArrayNumber]: `${
+    VARIABLE_TYPE_ALIAS_MAP[ViewVariableType.ArrayNumber]
+  }_${nanoid()}`,
+  [ViewVariableType.ArrayInteger]: `${
+    VARIABLE_TYPE_ALIAS_MAP[ViewVariableType.ArrayInteger]
+  }_${nanoid()}`,
+  [ViewVariableType.ArrayBoolean]: `${
+    VARIABLE_TYPE_ALIAS_MAP[ViewVariableType.ArrayBoolean]
+  }_${nanoid()}`,
+  [ViewVariableType.ArrayObject]: `${
+    VARIABLE_TYPE_ALIAS_MAP[ViewVariableType.ArrayObject]
+  }_${nanoid()}`,
 };
 
 /**
- * 生成一个随机的 json 文件 uri
- * @param schemaUri jsonSchema 的唯一标识
+ * Generate a random JSON file URI
+ * @param schemaUri jsonSchema unique identifier
  * @returns
  */
 export const generateJsonFileUri = (schemaUri: string) =>

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export interface SlardarConfig {
   sessionId?: string;
   [key: string]: unknown;
@@ -55,7 +55,7 @@ export interface Slardar {
   off: (event: string, callback: (...args: unknown[]) => void) => void;
 }
 
-// 可用于约束传入的slardar实例类型
+// The slardar instance types that can be used to constrain incoming
 export type SlardarInstance = Slardar;
 
 export type { Slardar as default };

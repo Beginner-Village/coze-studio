@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type CSSProperties, useCallback, useState } from 'react';
 
 import { get } from 'lodash-es';
@@ -85,7 +85,7 @@ export function ViewVariableSelect(
         return;
       }
 
-      // 禁用类型，清空
+      // Disable type, clear
       if (disabledTypes.includes(variableMeta.type)) {
         setValidation({ status: 'error' });
         onChange({ type: ValueExpressionType.REF });

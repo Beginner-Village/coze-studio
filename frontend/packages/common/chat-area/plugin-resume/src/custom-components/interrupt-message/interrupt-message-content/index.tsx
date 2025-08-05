@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import classNames from 'classnames';
 import {
   PluginName,
@@ -38,7 +38,7 @@ export const InterruptMessageContent: React.FC<{
   const { sendResumeMessage, stopResponding } =
     plugin.chatAreaPluginContext?.writeableAPI.message ?? {};
 
-  // 获取中断场景、续聊id
+  // Get interrupt scene, continue chat id
   const toolCall =
     interruptMessage.required_action?.submit_tool_outputs?.tool_calls?.[0];
 

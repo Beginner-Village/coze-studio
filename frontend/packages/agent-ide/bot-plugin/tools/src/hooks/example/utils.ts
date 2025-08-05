@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { nanoid } from 'nanoid';
 import { get } from 'lodash-es';
 import {
@@ -33,7 +33,7 @@ export const typesConfig = {
   boolean: ParameterType.Bool,
 };
 
-// tool 数据回显用
+// Tool data recall
 interface ExampleReqParamsType {
   [key: string]: string | number | null | object | boolean;
 }
@@ -59,7 +59,7 @@ export const setEditToolExampleValue = (
   setDefault(requestParams, exampleReqParams);
 };
 
-// 重置 type is_required sub_parameters
+// Resettype is_required sub_parameters
 // @ts-expect-error -- linter-disable-autofix
 export const resetWorkflowKey = currentTarget => {
   if (Array.isArray(currentTarget)) {
@@ -125,7 +125,7 @@ export const resetStoreKey = currentTarget => {
     currentTarget.local_disable = false;
     currentTarget.location = undefined;
     currentTarget.id = nanoid();
-    // store 那边是 sub_params 字段 个人 的是 sub_parameters
+    // The store over there is sub_params field, personal, sub_parameters
     if (!('sub_parameters' in currentTarget)) {
       currentTarget.sub_parameters = [];
     }

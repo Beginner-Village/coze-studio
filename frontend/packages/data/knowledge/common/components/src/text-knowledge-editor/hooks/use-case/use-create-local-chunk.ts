@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Chunk } from '@/text-knowledge-editor/types/chunk';
 import { updateLocalChunk } from '@/text-knowledge-editor/services/inner/chunk-op.service';
 import { useCreateChunk } from '@/text-knowledge-editor/hooks/inner/use-create-chunk';
@@ -36,7 +36,7 @@ export const useCreateLocalChunk = ({
   });
 
   /**
-   * 处理本地分片的创建操作
+   * Handle the creation of local shardings
    */
   const createLocalChunk = async (chunk: Chunk) => {
     if (!chunk.local_slice_id) {

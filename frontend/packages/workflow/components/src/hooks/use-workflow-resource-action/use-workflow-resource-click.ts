@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { ResourceInfo } from '@coze-arch/bot-api/plugin_develop';
 import { useNavigate } from 'react-router-dom';
 
@@ -32,7 +32,7 @@ export const useWorkflowResourceClick = (spaceId?: string) => {
     goWorkflowDetail(workflowId, spaceId);
   };
 
-  /** 打开流程编辑页 */
+  /** Open the process edit page */
   const goWorkflowDetail = (workflowId?: string, sId?: string) => {
     if (!workflowId || !sId) {
       return;

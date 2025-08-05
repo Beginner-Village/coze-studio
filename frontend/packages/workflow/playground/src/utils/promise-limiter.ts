@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 限制并发数
+ * Limit concurrency
  */
 export class PromiseLimiter<T> {
   private concurrency: number;

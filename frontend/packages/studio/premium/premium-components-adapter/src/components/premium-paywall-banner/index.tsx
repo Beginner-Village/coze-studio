@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export { useFetchKnowledgeBenefit } from './use-fetch-knowledge-benefit';
 export enum PremiumPaywallBannerScene {
-  Knowledge, // 知识库场景
-  Token, // 其余 Token 消耗场景
+  Knowledge, // Knowledge base scenario
+  Token, // Token consumption scenarios
 }
 
 export function PremiumPaywallBanner(_props: {

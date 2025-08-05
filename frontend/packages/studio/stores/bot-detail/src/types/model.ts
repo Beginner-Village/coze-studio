@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { Model, ModelInfo } from '@coze-arch/bot-api/developer_api';
 
-/** 模型设置 */
+/** Model Settings */
 export interface BotDetailModel {
   config: ModelInfo;
-  /** 全部可选模型 */
+  /** All optional models */
   modelList: Model[];
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, type MouseEvent } from 'react';
 
 import semver from 'semver';
@@ -58,7 +58,7 @@ export const SubWorkflowCategoryList: FC<SubWorkflowCategoryListProps> = ({
 
     try {
       onAddingNode?.(true);
-      // 补全版本信息
+      // Complete version information
       const versionName = await getWorkflowVersionByPluginId({
         spaceId,
         pluginId: nodeTemplate.plugin_id,

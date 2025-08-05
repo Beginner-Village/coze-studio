@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   useCurrentEntity,
   useService,
@@ -21,7 +21,7 @@ import {
 import { WorkflowVariableFacadeService } from '@coze-workflow/variable';
 
 /**
- * 获取变量，并校验变量作用域
+ * Get the variable and verify the scope of the variable
  * @param keyPath
  * @returns
  */

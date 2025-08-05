@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type PropsWithChildren, type FC } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -43,7 +43,7 @@ const Mask: FC<PropsWithChildren> = ({ children }) => (
   </div>
 );
 
-// 在需要时渲染错误状态 & loading
+// Rendering error states when needed & loading
 const LoginCheckMask: FC<{ needLogin: boolean; loginOptional: boolean }> = ({
   needLogin,
   loginOptional,

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type ValueExpression,
   type OutputValueVO,
@@ -77,7 +77,7 @@ export namespace TriggerForm {
 
   export type FormMeta = FormItemMeta[];
 
-  // 表单值
+  // form value
   export interface FormValue {
     [TriggerFormIsOpenName]?: boolean;
     [TriggerFormEventTypeName]?: TriggerFormEventType;

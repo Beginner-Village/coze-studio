@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type PropsWithChildren } from 'react';
 
 import classNames from 'classnames';
 
 import s from './index.module.less';
 
-// TODO 后续迭代扩展时props可细化
+// Props can be refined when subsequent iterations of TODO are expanded
 interface ActionBarHoverContainerProps {
   style?: React.CSSProperties;
 }

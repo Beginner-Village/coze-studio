@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 import { produce } from 'immer';
@@ -30,7 +30,7 @@ import {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
- * 满足 System 需要额外增加
+ * Additional System Requirements
  */
 export interface WriteableLifeCycleServicesAddition<T = any, K = any> {
   lifeCycleServices?:

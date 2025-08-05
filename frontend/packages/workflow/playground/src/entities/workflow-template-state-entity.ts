@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Workflow } from '@coze-arch/idl/workflow_api';
 import { ConfigEntity } from '@flowgram-adapter/free-layout-editor';
 import { Emitter } from '@flowgram-adapter/common';
@@ -33,7 +33,7 @@ export class WorkflowTemplateStateEntity extends ConfigEntity<WorkflowTemplateSt
   previewInfo: Workflow;
   dataList: Workflow[];
 
-  // 更新后触发
+  // Triggered after update
   onPreviewUpdatedEmitter = new Emitter();
   onPreviewUpdated = this.onPreviewUpdatedEmitter.event;
 

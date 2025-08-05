@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type CommonLogOptions, LogAction, LogLevel } from '../types';
 import { SlardarReportClient, type SlardarInstance } from '../slardar';
 import { Logger } from '../logger';
@@ -25,7 +25,7 @@ export interface LoggerCommonProperties {
 }
 
 export interface SlardarMeta {
-  meta?: Record<string, unknown>; // Combination of `categories` and `metrics`, check more: 
+  meta?: Record<string, unknown>; // Combination of `categories` and `metrics`, check more:
 }
 
 export interface CustomLog extends SlardarMeta, LoggerCommonProperties {
@@ -86,7 +86,7 @@ export class Reporter {
   }
 
   /**
-   * 创建一个带有preset的reporter，一般可以配置专属的`namespace`和`scope`
+   * Create a reporter with preset, you can generally configure your own'namespace 'and'scope'.
    * @param preset
    * @returns
    */
@@ -102,8 +102,8 @@ export class Reporter {
   }
 
   /**
-   * 初始化reporter
-   * @param slardarInstance 需要上报的slardar实例
+   * Initialization reporter
+   * @param slardarInstance The slardar instance that needs to be reported
    * @returns
    */
   init(slardarInstance: SlardarInstance) {
@@ -137,8 +137,8 @@ export class Reporter {
 
   /// Custom Log
   /**
-   * 上报一个info日志
-   * @param event 
+   * Report an info log
+   * @param event
    * @returns
    */
   info(log: CustomLog) {
@@ -146,8 +146,8 @@ export class Reporter {
   }
 
   /**
-   * 上报一个success日志
-   * @param event 
+   * Report a success log
+   * @param event
    * @returns
    */
   success(log: CustomLog) {
@@ -156,8 +156,8 @@ export class Reporter {
   }
 
   /**
-   * 上报一个warning日志
-   * @param event 
+   * Report a warning log
+   * @param event
    * @returns
    */
   warning(log: CustomLog) {
@@ -166,8 +166,8 @@ export class Reporter {
   }
 
   /**
-   * 上报一个error日志
-   * @param event 
+   * Report an error log
+   * @param event
    * @returns
    */
   error(log: CustomErrorLog) {
@@ -180,8 +180,8 @@ export class Reporter {
 
   /// Custom Event
   /**
-   * 上报一个自定义event事件
-   * @param event 
+   * Report a custom event
+   * @param event
    * @returns
    */
   event<EventEnum extends string>(event: CustomEvent<EventEnum>) {
@@ -190,8 +190,8 @@ export class Reporter {
   }
 
   /**
-   * 上报一个错误event事件（LogLevel = 'error'）
-   * @param event 
+   * Report an error event (LogLevel = 'error')
+   * @param event
    * @returns
    */
   errorEvent<EventEnum extends string>(event: ErrorEvent<EventEnum>) {
@@ -202,8 +202,8 @@ export class Reporter {
   }
 
   /**
-   * 上报一个成功event事件（LogLevel = 'success'）
-   * @param event 
+   * Report a success event (LogLevel = 'success')
+   * @param event
    * @returns
    */
   successEvent<EventEnum extends string>(event: CustomEvent<EventEnum>) {
@@ -213,7 +213,7 @@ export class Reporter {
 
   /// Trace Event
   /**
-   * 性能追踪，可以记录一个流程中多个步骤间隔的耗时：
+   * Performance tracking allows you to track the time spent between multiple steps in a process.
    * @param event
    * @returns
    */
@@ -305,7 +305,7 @@ export class Reporter {
       ...e,
       meta: {
         ...e.meta,
-        // !NOTE: Slardar不支持`a.b`的字段的正则搜索（会报错），需要把`error.message`和`error.name`铺平放到第一层
+        // ! NOTE: Slardar does not support regular search for fields of'a.b ' (will report an error), you need to lay'error.message' and 'error.name 'on the first layer
         errorMessage: event.error.message,
         errorName: event.error.name,
         level: event.level ?? 'error',

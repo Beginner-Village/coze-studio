@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useService } from '@flowgram-adapter/free-layout-editor';
 import {
   useWorkflowNode,
@@ -39,7 +39,7 @@ export const TriggerUpsertContent = () => {
     inputParameters as unknown as NodeDataVO;
 
   const dynamicKeys = triggerNodeFormMeta.reduce((acc, d) => {
-    // cronjob 要特化处理，取 content
+    // Cronjob needs to be specialized, take the content
     if (d.name === TriggerForm.TriggerFormCronjobName) {
       acc[d.label] = dynamicInputs?.[d.name]?.content;
     } else {

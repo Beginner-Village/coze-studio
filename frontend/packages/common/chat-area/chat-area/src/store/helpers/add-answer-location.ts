@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type MessageMeta } from '../types';
 
 export const addAnswerLocation = (metaList: MessageMeta[]) => {
   const answerMessageMeta = metaList.filter(meta => meta.type === 'answer');
-  // 从后向前扫描，遇到第一个不同的reply_id，重新开始设置 isFirstAnswer
+  // Scan from backwards to forwards, encounter the first different reply_id, restart setting isFirstAnswer
   let lastAnswerMeta = null;
   for (let i = answerMessageMeta.length - 1; i >= 0; i--) {
     const current = answerMessageMeta[i];

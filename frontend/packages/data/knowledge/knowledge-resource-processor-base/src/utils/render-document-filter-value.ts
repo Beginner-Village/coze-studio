@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 
 import {
@@ -30,9 +30,9 @@ export const getSortedFilterPages = (filterPagesConfig: FilterPageConfig[]) =>
 export const getFilterPagesString = (pages: number[]) => pages.join(' / ');
 
 /**
- * 渲染为形如下方例子的内容:
- * 论文 1：过滤第 2 / 4 / 6 页；设置了页面局部过滤
- * 论文 2：过滤第 1 页...
+ * Render as the following example:
+ * Paper 1: Filter page 2/4/6; set page local filtering
+ * Paper 2: Filtering Page 1...
  */
 export const renderDocumentFilterValue = ({
   filterValue,

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -34,7 +34,7 @@ interface ParamTypeProps {
   level: number;
   onSelectChange?: SelectProps['onChange'];
   disabled?: boolean;
-  // 不支持使用的类型
+  // Types not supported
   disabledTypes?: ParamTypeAlias[];
 }
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, expect, it } from 'vitest';
 import { LoadDirection } from '@coze-common/chat-core';
 
@@ -42,7 +42,7 @@ vi.mock('@coze-common/chat-core', () => ({
   },
 }));
 
-// 固定一下参数
+// Fix the parameters
 vi.mock('../../../src/constants/message', () => ({
   MIN_MESSAGE_INDEX_DIFF_TO_ABORT_CURRENT: 10,
 }));

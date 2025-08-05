@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-namespace */
 // eslint-disable-next-line @coze-arch/no-batch-import-or-export
 export * from './share/typings';
@@ -25,7 +25,7 @@ import { type FabricObjectSchema } from './share/typings';
 export interface FormMetaItem {
   name?: string;
   title?: string;
-  // 临时存储，不保存到后端
+  // Temporary storage, not saved to the backend
   cacheSave?: boolean;
   visible?: (formValue: Partial<FabricObjectSchema>) => boolean;
   setter:

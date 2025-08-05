@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -46,8 +46,8 @@ export const PluginModalFilter: FC<PluginModalFilterProp> = ({
   setQuery,
 }) => {
   /**
-   * 空间插件：创建、编辑时间排序
-   * 公共插件：热度、发布时间排序
+   * Space Plugin: Create and Edit Time Sorting
+   * Public plugins: popularity, release time ranking
    * */
   const getFilterItem = () => {
     if (

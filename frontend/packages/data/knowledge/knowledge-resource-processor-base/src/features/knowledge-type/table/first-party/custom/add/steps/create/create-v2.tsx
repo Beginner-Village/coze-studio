@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useEffect, useState } from 'react';
 
 import { nanoid } from 'nanoid';
-import { useDataNavigate, useKnowledgeParams } from '@coze-data/knowledge-stores';
+import {
+  useDataNavigate,
+  useKnowledgeParams,
+} from '@coze-data/knowledge-stores';
 import {
   FooterBtnStatus,
   type ContentProps,
@@ -49,7 +52,7 @@ function getCreateDocumentParams(
   return {
     document_bases: [
       {
-        name: '', // table custom传控
+        name: '', // Table custom control
         source_info: {
           document_source: DocumentSource.Custom,
         },
@@ -102,7 +105,7 @@ export const TableCustomCreate = <
 
   useEffect(() => {
     if (footerStatus !== FooterBtnStatus.LOADING) {
-      setFooterStatus(getCustomStatus(metaData, 'toBeDelete')); // toBeDelete 待删
+      setFooterStatus(getCustomStatus(metaData, 'toBeDelete')); // toBeDelete to be deleted
     }
   }, [metaData]);
 

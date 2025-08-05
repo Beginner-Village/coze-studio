@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { findLastSiblingNode } from '../src/utils/helper/find-last-sibling-node';
 
 describe('findLastSiblingNode', () => {
-  // 设置 DOM 环境
+  // Setting up the DOM environment
   document.body.innerHTML = `
     <div id="ancestor">
       <div id="sibling1" data-scope="valid"></div>

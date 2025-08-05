@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * @deprecated 非常非常坏，尽快换为 typeSafeJsonParse
+ * @Deprecated very very bad, change to typeSafeJsonParse ASAP.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const safeJSONParse: (v: any, emptyValue?: any) => any = (

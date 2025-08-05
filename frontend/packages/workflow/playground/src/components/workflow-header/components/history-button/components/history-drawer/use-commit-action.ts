@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable max-lines-per-function */
 /* eslint-disable @coze-arch/no-deep-relative-import */
 import {
@@ -70,7 +70,7 @@ export function useCommitAction() {
     });
 
     try {
-      // 优先使用提交 ID 来操作, 提交 ID 固定为 OperateType.SubmitOperate 类型
+      // Priority is given to using the commit ID to operate, and the commit ID is fixed to the OperateType. SubmitOperate type
       await workflowApi.RevertDraft({
         workflow_id: globalState.workflowId,
         space_id: globalState.spaceId,
@@ -143,7 +143,7 @@ export function useCommitAction() {
         env: item.env,
       });
     }
-    // 切换版本后需要清空运行结果
+    // You need to dry run results after switching versions
     runService.clearTestRun();
   };
 

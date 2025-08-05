@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
-import { useCurrentField, useCurrentFieldState } from '@flowgram-adapter/free-layout-editor';
+import {
+  useCurrentField,
+  useCurrentFieldState,
+} from '@flowgram-adapter/free-layout-editor';
 
 import { type FormSchemaUIState } from '../types';
 import {
@@ -31,7 +34,7 @@ interface ReactiveFieldProps {
 }
 
 /**
- * 接入响应式的 Field
+ * Access Responsive Fields
  */
 const ReactiveField: React.FC<ReactiveFieldProps> = ({ parentUIState }) => {
   const components = useComponents();
@@ -41,7 +44,7 @@ const ReactiveField: React.FC<ReactiveFieldProps> = ({ parentUIState }) => {
   const formUIState = useFormUIState();
   const fieldState = useCurrentFieldState();
   /**
-   * 自生的 disabled 态由父亲和自身一起控制
+   * The autologous disabled state is controlled by the father along with the self
    */
   const disabled =
     parentUIState?.disabled || uiState.disabled || formUIState.disabled;

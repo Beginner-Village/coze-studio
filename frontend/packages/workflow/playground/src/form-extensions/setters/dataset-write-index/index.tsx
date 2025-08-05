@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, type FC } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -95,7 +95,7 @@ export const DatasetWriteIndex: FC<DatasetWriteIndexProps> = ({
                 },
               })
             }
-            // 一期仅支持默认模型
+            // The first phase only supports the default model.
             disabled={readonly || true}
           />
         </CheckboxWithLabel>
@@ -112,11 +112,11 @@ export const DatasetWriteIndex: FC<DatasetWriteIndexProps> = ({
         }
         disabled
       />
-      {/* 一期禁用 */}
+      {/* phase one ban */}
       {/* {DatasetWriteFLAG ? (
         <CheckboxWithLabel
-          label="分层索引"
-          description="适用于长文档和复杂多步骤推理任务。"
+          Label = "Hierarchical Index"
+          Description = "Suitable for long documents and complex multi-step reasoning tasks."
           checked={value?.hierarchicalIndexing}
           onChange={v =>
             onChange?.({

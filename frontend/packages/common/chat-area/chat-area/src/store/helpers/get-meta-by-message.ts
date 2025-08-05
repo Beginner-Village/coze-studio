@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Message, type MessageMeta } from '../types';
 import { getVerboseContentObj } from '../../utils/verbose';
 import { getIsCardDisabled } from '../../utils/message';
@@ -31,7 +31,7 @@ export const getInitMetaByMessage = ({
   if (!msg) {
     throw new Error(`get message exception: invalid index: ${index}`);
   }
-  // TODO: 这里可以留一个 adapter 的口子
+  // TODO: You can leave an adapter opening here
   return {
     _fromHistory: msg._fromHistory,
     showActions: false,

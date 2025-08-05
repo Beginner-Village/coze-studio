@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { isNumber } from 'lodash-es';
@@ -40,7 +40,7 @@ type Props = SettingOnErrorItemProps<SettingOnErrorExt> & {
 };
 
 /**
- * 其他配置
+ * Other configurations
  */
 export const Ext: FC<Props> = ({
   value,

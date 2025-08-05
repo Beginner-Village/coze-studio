@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { injectable, inject, named } from 'inversify';
 import {
   ContributionProvider,
@@ -45,14 +45,14 @@ class StylingService {
   static readonly PREFIX = 'flowide';
 
   /**
-   * 后面移到 map 里面，现在暂时没想好
+   * Move it to the map later, I haven't thought about it for the time being.
    */
   private cssElement: HTMLStyleElement | undefined;
 
   private css = new Map<string, HTMLStyleElement>();
 
   /**
-   * 收集所有 css 挂载到 <head> 上
+   * Collect all css mounts to < head >
    */
   apply(theme: Theme) {
     const rules: string[] = [];

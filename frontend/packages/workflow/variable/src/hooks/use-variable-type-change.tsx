@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable security/detect-object-injection */
 import { useEffect, useRef } from 'react';
 
@@ -71,7 +71,7 @@ export function useVariableTypeChange(params: HooksParams) {
       toDispose.push(
         variable.onRename(({ modifyIndex, modifyKey }) => {
           if (keyPathRef.current) {
-            // 更改 keyPath 并刷新，重新监听变量变化
+            // Change keyPath and refresh, re-listen for variable changes
             keyPathRef.current[modifyIndex] = modifyKey;
           }
           refresh();

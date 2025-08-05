@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { FooterBtnStatus } from '@coze-data/knowledge-resource-processor-core';
 
 import { SegmentMode, SeperatorType, type CustomSegmentRule } from '@/types';
@@ -32,7 +32,7 @@ export const getButtonNextStatus = (
       return FooterBtnStatus.DISABLE;
     }
   }
-  // TODO: 分层相关
+  // TODO: Hierarchical correlation
 
   return FooterBtnStatus.ENABLE;
 };

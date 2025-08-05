@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useMemo, useState } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -66,7 +66,7 @@ export const useBatchCheckboxDoc = (props: IBatchCheckboxDocProps) => {
     }
     return (checkboxOptions?.map(v => v.document_id) ?? []) as string[];
   }, [checkboxOptions, disabled]);
-  // 初始化所有选中
+  // Initialize all selections
   const initCheckedList = () => {
     setCheckedList(plainOptions);
     setCheckAll(plainOptions?.length > 0);

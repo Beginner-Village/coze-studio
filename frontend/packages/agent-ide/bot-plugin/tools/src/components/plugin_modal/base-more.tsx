@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable max-lines-per-function */
 /* eslint-disable @coze-arch/max-line-per-function */
 import { type Dispatch, type SetStateAction, useEffect, useRef } from 'react';
@@ -110,7 +110,7 @@ export const useBaseMore = ({
     baseInfo.api_extend?.auth_mode,
   ]);
 
-  // 提交基础信息
+  // Submit basic information
   const submitBaseInfo = async () => {
     const status = await formRef.current?.formApi
       .validate()

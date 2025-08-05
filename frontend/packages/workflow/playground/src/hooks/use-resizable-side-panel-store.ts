@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { persist, devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 
@@ -31,7 +31,7 @@ type ResizableSidePanelStore = ResizableSidePanelStoreState &
 const NAME = 'workflow-resizable-side-panel';
 
 /**
- * 可调节宽度的侧拉窗状态，需要持久化
+ * Adjustable width side window state, requires persistence
  */
 export const useResizableSidePanelStore = create<ResizableSidePanelStore>()(
   devtools(

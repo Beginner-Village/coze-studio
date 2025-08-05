@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type PropsWithChildren } from 'react';
 
 import cls from 'classnames';
@@ -25,13 +25,13 @@ import { Avatar, Divider, Tooltip } from '@coze-arch/coze-design';
 
 export type ModelOptionGroupProps =
   | {
-      /** 新模型专区 */
+      /** New Model Zone */
       type: 'new';
       name: string;
       tips?: string;
     }
   | {
-      /** 普通系列模型 */
+      /** Ordinary series model */
       type?: 'normal';
       icon: string;
       name: string;

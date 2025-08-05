@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ConfigEntity } from '@flowgram-adapter/fixed-layout-editor';
 
 interface CustomRenderState {
   version: number;
 }
 /**
- * 渲染相关的全局状态管理
+ * Rendering-related global state management
  */
 export class CustomRenderStateEntity extends ConfigEntity<CustomRenderState> {
   static type = 'CustomRenderStateEntity';

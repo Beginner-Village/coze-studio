@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, startTransition } from 'react';
 
 import type { FlowNodeEntity } from '@flowgram-adapter/free-layout-editor';
@@ -23,7 +23,7 @@ import { FlowNodeVariableData } from '@coze-workflow/variable';
 import { useVariableService } from '@/hooks';
 
 /**
- * 获取变量服务，且监听变量变化，保证重渲染
+ * Get the variable service and listen for variable changes to ensure re-rendering
  */
 export function useAvailableNodeVariables(node: FlowNodeEntity) {
   const refresh = useRefresh();

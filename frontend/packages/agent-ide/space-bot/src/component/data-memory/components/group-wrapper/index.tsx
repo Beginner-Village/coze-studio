@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type PropsWithChildren, type ReactNode, useState } from 'react';
 
 import cls from 'classnames';
@@ -26,7 +26,7 @@ export const VariableGroupWrapper = (
       key: string | ReactNode;
       description: string | ReactNode;
     };
-    defaultOpen?: boolean; // 添加默认展开属性
+    defaultOpen?: boolean; // Add default expansion properties
     level?: number;
   }>,
 ) => {

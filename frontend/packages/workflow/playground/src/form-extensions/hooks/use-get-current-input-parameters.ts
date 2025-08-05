@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * TODO: 这个 hooks 暂时用来获取当前节点的 inputsParameters 以及每个变量对应的类型
+ * TODO: This hooks is temporarily used to get the inputsParameters of the current node and the type corresponding to each variable
  */
 
 import { useState, useEffect } from 'react';

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCallback, useEffect, useMemo, type FC } from 'react';
 
 import classNames from 'classnames';
@@ -78,7 +78,7 @@ export const Canvas: FC<
     setFullscreenPanel(fabricEditor);
   }, [setFullscreenPanel]);
 
-  // 更新节点
+  // update node
   useEffect(() => {
     if (fabricEditor && fullscreenPanelVisible) {
       setFullscreenPanel(fabricEditor);

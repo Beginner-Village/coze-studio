@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useCallback } from 'react';
 
 import { WorkflowNodePanelService } from '@flowgram-adapter/free-layout-editor';
@@ -47,7 +47,7 @@ const useClickPort = () => {
   const getContainer = (fromNode: WorkflowNodeEntity) => {
     const fromContainer = fromNode?.parent;
     if (fromNode?.flowNodeType === FlowNodeBaseType.SUB_CANVAS) {
-      // 子画布内部输入连线
+      // Subcanvas internal input wiring
       return fromNode;
     }
     if (fromContainer?.flowNodeType === FlowNodeBaseType.ROOT) {

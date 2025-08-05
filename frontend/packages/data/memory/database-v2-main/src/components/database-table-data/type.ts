@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type TableMemoryItem } from '@coze-studio/bot-detail-store';
 import { type FieldItemType } from '@coze-arch/bot-api/memory';
 
-// 期待的数据结构是什么样的？
+// What is the expected data structure?
 export interface TableRowCommonData {
   fieldName: string;
   required: boolean;

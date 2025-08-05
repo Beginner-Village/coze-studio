@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type CSSProperties, useEffect } from 'react';
 
 import classNames from 'classnames';
@@ -42,7 +42,7 @@ export interface EditMenuProps {
   };
   onExit?: () => void | Promise<void>;
   onDelete?: (indexs: (string | number)[]) => void | Promise<void>;
-  // 行操作编辑行的回调
+  // Line operations edit line callbacks
   onEdit?: (
     record: TableViewRecord,
     index: string | number,

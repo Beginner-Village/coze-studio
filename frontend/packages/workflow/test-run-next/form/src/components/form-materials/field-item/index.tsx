@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -32,7 +32,7 @@ export const FieldItem: React.FC<React.PropsWithChildren<FieldItemProps>> = ({
   const schema = useFieldSchema();
 
   const isBatchField = schema.path.includes(TestFormFieldName.Batch);
-  /** 批处理变量 tag 增加额外描述 */
+  /** Batch variable tag adds extra description */
   const currentTag =
     tag && isBatchField
       ? `${tag} - ${I18n.t('workflow_detail_node_batch')}`

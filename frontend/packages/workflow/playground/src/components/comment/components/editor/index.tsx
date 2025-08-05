@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, {
   type FC,
   useCallback,
@@ -45,7 +45,7 @@ export const CommentEditor: FC<ICommentEditor> = props => {
   const renderBlock = useCallback(blockProps => <Block {...blockProps} />, []);
   const renderLeaf = useCallback(leafProps => <Leaf {...leafProps} />, []);
 
-  // 同步编辑器内部值变化
+  // Synchronize editor internal value changes
   useEffect(() => {
     const dispose = model.on<CommentEditorEvent.Change>(
       CommentEditorEvent.Change,

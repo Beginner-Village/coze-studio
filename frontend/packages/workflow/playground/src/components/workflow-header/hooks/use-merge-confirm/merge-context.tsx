@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { createContext, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
@@ -55,9 +55,9 @@ const transformMergeDiff = (
       property: DIFF_ITEM_NAMES[key],
       lastVersion: submitDiff?.[key],
       myDraft: draftDiff?.[key],
-      // 两者都有修改视为冲突
+      // Both are modified as conflicts
       isConflict: !!(submitDiff?.[key]?.modify && draftDiff?.[key]?.modify),
-      // 两者中至少有一个有修改，才展示diff
+      // At least one of the two has been modified before the diff is displayed.
       hasDiff: !!(submitDiff?.[key]?.modify || draftDiff?.[key]?.modify),
     }))
     .filter(item => item.hasDiff);

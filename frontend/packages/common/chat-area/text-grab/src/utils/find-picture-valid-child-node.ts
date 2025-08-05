@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { getPictureNodeUrl } from './get-picture-node-url';
 
 /**
- * 获取 TagName 为 Picture 的节点的有效节点
- * @param childNodes NodeListOf<Node> 子节点列表
+ * Get a valid node for the node whose TagName is Picture
+ * @param childNodes NodeListOf < Node > sub-node list
  * @returns Node | null
  */
 export const findPictureValidChildNode = (childNodes: NodeListOf<Node>) =>

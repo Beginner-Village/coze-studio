@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState } from 'react';
 
 import classNames from 'classnames';
@@ -108,7 +108,7 @@ export const useKnowledgeListModal = ({
       canCreate,
       defaultType,
       knowledgeTypeConfigList,
-      // 需要优化属性选择方式
+      // Need to optimize attribute selection
       projectID: category === 'project' ? projectID : '',
       createKnowledgeModal,
     });

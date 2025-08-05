@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { FlowNodeFormData } from '@flowgram-adapter/free-layout-editor';
 import { type WorkflowNodeEntity } from '@flowgram-adapter/free-layout-editor';
 
@@ -24,9 +24,9 @@ interface SubWorkflowInfo {
 }
 
 /**
- * 获取子流程信息
- * @param node 子流程节点
- * @returns spaceId 和 workflowId
+ * Get subprocess information
+ * @param node child process node
+ * @returns spaceId and workflowId
  */
 export function getSubWorkflowInfo(
   node: WorkflowNodeEntity,

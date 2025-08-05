@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 基础表单物料
+ * basic form material
  */
 export { InputNumber, InputNumberProps } from './input-number';
 export { InputString, type InputStringProps } from './input-string';

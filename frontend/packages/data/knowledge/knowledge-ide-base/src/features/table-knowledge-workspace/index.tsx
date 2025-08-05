@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { TableKnowledgeWorkspace } from './components/main';
 
-// 导出组件
+// export component
 export { TableKnowledgeWorkspace };
 export type { TableKnowledgeWorkspaceProps } from './components/main';

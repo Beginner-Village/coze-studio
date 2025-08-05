@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   InputType,
   type shortcut_command,
@@ -39,7 +39,7 @@ export const initComponentsByToolParams = (
     };
   });
 
-// 获取没有被使用的组件
+// Get unused components
 export const getUnusedComponents = (
   shortcut: ShortcutEditFormValues,
 ): shortcut_command.Components[] => {

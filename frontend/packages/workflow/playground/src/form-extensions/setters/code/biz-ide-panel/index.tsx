@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/no-deep-relative-import */
 /**
- * BizIDE 侧拉面板
+ * BizIDE side pull panel
  */
 
 import React, { type FC, type PropsWithChildren } from 'react';

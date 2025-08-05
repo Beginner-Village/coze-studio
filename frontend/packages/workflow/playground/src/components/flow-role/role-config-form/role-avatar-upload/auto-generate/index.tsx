@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { isFunction } from 'lodash-es';
@@ -29,13 +29,7 @@ import {
   IconCozCheckMark,
   IconCozCrossCircle,
 } from '@coze-arch/coze-design/icons';
-import {
-  Tooltip,
-  Toast,
-  Image,
-  AIButton,
-  Space,
-} from '@coze-arch/coze-design';
+import { Tooltip, Toast, Image, AIButton, Space } from '@coze-arch/coze-design';
 import { loadImage } from '@coze-arch/bot-utils';
 import { DeveloperApi } from '@coze-arch/bot-api';
 
@@ -55,7 +49,7 @@ interface AutoGenerateProps {
   };
   showAiAvatar: boolean;
   /**
-   * 最多允许多少个候选
+   * How many candidates are allowed at most?
    * @default 5
    */
   maxCandidateCount?: number;
@@ -66,7 +60,7 @@ interface PictureItem {
   uid: string;
 }
 
-// 自动生成头像错误码
+// Automatically generate avatar error codes
 enum ErrorCode {
   OVER_QUOTA_PER_DAY = 700012034,
   CONTENT_NOT_LEGAL = 700012050,
@@ -176,7 +170,7 @@ export const AutoGenerate = (props: AutoGenerateProps) => {
       });
       const codeNumber = Number((error as { code: number })?.code);
       if (codeNumber === ErrorCode.OVER_QUOTA_PER_DAY) {
-        // 超过单日次数上限
+        // Exceeding the maximum number of times a day
         setTotalCount(MAX_TOTAL_COUNT);
         Toast.error({
           content: I18n.t('bot_edit_profile_pircture_autogen_quota_tooltip'),
@@ -212,7 +206,7 @@ export const AutoGenerate = (props: AutoGenerateProps) => {
   };
 
   useEffect(() => {
-    // 获取当日总生成次数
+    // Get the total number of spawns for the day
     DeveloperApi.GetGenerateIconInfo()
       .then(({ data }) => {
         setTotalCount(Number(data?.current_day_count));
@@ -272,7 +266,7 @@ export const AutoGenerate = (props: AutoGenerateProps) => {
                 [s['loading-hover']]: loadingHover && !picture.url,
               })}
             >
-              {/* 二次hover展示取消 */}
+              {/* Secondary hover display cancelled */}
               {hoverCount.current > 1 && loadingHover && !picture.url ? (
                 <div
                   className={s.mask}
@@ -285,7 +279,7 @@ export const AutoGenerate = (props: AutoGenerateProps) => {
                 </div>
               ) : null}
 
-              {/* 选中图片蒙版 */}
+              {/* Select image mask */}
               {checkedId === idx && (
                 <div className={s.mask}>
                   <IconCozCheckMark className="text-[16]" />

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type TableViewRecord } from '@coze-common/table-view';
 import { type DocTableColumn } from '@coze-arch/bot-api/memory';
 import { type SliceInfo } from '@coze-arch/bot-api/knowledge';
@@ -30,5 +30,5 @@ export interface TranSliceListParams {
   onUpdate?: (record: TableViewRecord, index: number, value?: string) => void;
 }
 
-/** 切片插入的位置 */
+/** Where the slice is inserted */
 export type TPosition = 'top' | 'bottom';

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { produce } from 'immer';
 import {
   type IntelligenceBasicInfo,
@@ -32,7 +32,7 @@ export const produceCopyIntelligenceData = ({
     basicInfo: IntelligenceBasicInfo;
   };
 }) => {
-  // 这是 fallback
+  // This is fallback
   const userInfo = getUserInfo();
   const userLabel = getUserLabel();
   return produce<IntelligenceData>(originTemplateData, draft => {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { z } from 'zod';
 import { produce } from 'immer';
 import { typeSafeJSONParse } from '@coze-arch/bot-utils';
@@ -38,7 +38,7 @@ class PublishAnchorService {
       const stringifyLocalData = localStorage.getItem(this.PUBLISH_ANCHOR_KEY);
       const localData = typeSafeJSONParse(stringifyLocalData);
       const validData = publishAnchorSchema.parse(localData);
-      // 使用 zod 对 localData 进行类型校验
+      // Using zod to type-check localData
       this.anchorValues = validData;
     } catch {
       this.anchorValues = {};

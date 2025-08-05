@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { isUndefined } from 'lodash-es';
 import { ValueExpression } from '@coze-workflow/base/types';
 import { I18n } from '@coze-arch/i18n';
@@ -32,7 +32,7 @@ export const undefinedChecker = value => {
   }
 
   /**
-   * 校验 cronjob 的值是否为空
+   * Verify that the value of cronjob is empty
    * {
    *   type: 'selecting',
    *   content: ValueExpression

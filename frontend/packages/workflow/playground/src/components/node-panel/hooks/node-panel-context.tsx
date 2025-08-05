@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useContext, createContext, type MouseEvent } from 'react';
 
 import { type NodePanelSearchType } from '@coze-arch/bot-api/workflow_api';
@@ -29,7 +29,7 @@ interface NodePanelContextType {
   getScrollContainer?: () => HTMLDivElement | undefined;
   onLoadMore?: (id?: NodePanelSearchType, cursor?: string) => Promise<void>;
   /**
-   * 更新正在添加节点的状态，此时 clickOutside 不会关闭节点面板
+   * Update the status of the node being added, clickOutside will not close the node panel at this time
    * @param isAdding
    * @returns
    */

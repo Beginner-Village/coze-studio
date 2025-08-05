@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { isEmpty } from 'lodash-es';
@@ -43,7 +43,7 @@ export const TemplatePreview = () => {
         }}
       >
         <div className="relative w-full h-full flex justify-center items-center">
-          {/* workflow_id 改变时，画布区重渲染 */}
+          {/* workflow_id changes, the canvas area re-renders */}
           <TemplatePreviewInner
             key={previewInfo?.workflow_id}
             spaceId={previewInfo?.space_id}

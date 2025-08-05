@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { IconCozMore } from '@coze-arch/coze-design/icons';
@@ -35,7 +35,7 @@ const MoreTools = ({
 }) => {
   const handleClick = e => {
     /**
-     * 这里将 event 的 currentTarget 设置成树组件的 wrapper 元素，保证 contextMenu 的 matchItems 方法可以正常遍历。
+     * Here, the currentTarget of the event is set to the wrapper element of the tree component to ensure that the matchItems method of the contextMenu can be traversed normally.
      */
     e.currentTarget = resourceTreeWrapperRef.current;
     contextMenuCallback(e, [resource]);

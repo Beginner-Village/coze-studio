@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type MouseEvent, useRef, type MouseEventHandler } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -31,7 +31,7 @@ import styles from './styles.module.less';
 const HOVER_DELAY = 200;
 
 /**
- * 封装按钮
+ * encapsulation button
  */
 export function EncapsulateButton() {
   const encapsulateRenderService = useService<EncapsulateRenderService>(

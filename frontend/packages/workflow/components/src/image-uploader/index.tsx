@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 import {
   type CSSProperties,
@@ -34,13 +34,7 @@ import {
   IconCozImageBroken,
 } from '@coze-arch/coze-design/icons';
 import { type SelectProps } from '@coze-arch/bot-semi/Select';
-import {
-  Image,
-  ImagePreview,
-  Popover,
-  Space,
-  Spin,
-} from '@coze-arch/bot-semi';
+import { Image, ImagePreview, Popover, Space, Spin } from '@coze-arch/bot-semi';
 
 import useImageUploader from './use-image-uploader';
 import { type ImageRule, ImgUploadErrNo } from './image-uploader';
@@ -52,7 +46,7 @@ interface ImageUploaderProps {
   style?: CSSProperties;
   readonly?: boolean;
   disabled?: boolean;
-  /** 图片上传限制 */
+  /** image upload restrictions */
   rules?: ImageRule;
   value?: { url: string; uri: string } | undefined;
   validateStatus?: SelectProps['validateStatus'];
@@ -61,13 +55,13 @@ interface ImageUploaderProps {
 }
 
 interface ImagePopoverWrapperProps {
-  /** 图片地址 */
+  /** Image address */
   url?: string;
   maxWidth?: number;
   maxHeight?: number;
   minWidth?: number;
   minHeight?: number;
-  /** 是否支持预览 */
+  /** Whether to support preview */
   enablePreview?: boolean;
   children?: React.ReactElement;
 }
@@ -215,7 +209,7 @@ const ImageUploader: FC<ImageUploaderProps> = ({
     return 'image/*';
   }, [rules?.suffix]);
 
-  /** 整体区域支持交互 */
+  /** Overall Area Support Interaction */
   const wrapCanAction = useMemo(
     () => !uri && !loading && !isError && !disabled && !readonly,
     [uri, loading, isError, disabled, readonly],

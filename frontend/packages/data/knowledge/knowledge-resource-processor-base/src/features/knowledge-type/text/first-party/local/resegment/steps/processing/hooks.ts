@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type UseBoundStore, type StoreApi } from 'zustand';
 import { merge } from 'lodash-es';
 import { useRequest } from 'ahooks';
@@ -51,7 +51,7 @@ export const useResegment = <T extends UploadTextLocalResegmentStore>(
   const pollingTaskProgress = usePollingTaskProgress();
   const docId = params.docID ?? '';
 
-  // TODO: 分层相关
+  // TODO: Hierarchical correlation
   const { run: handleProcessText } = useRequest(
     async () => {
       if (!params.datasetID) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useUpdateEffect, usePrevious } from 'ahooks';
 
 import { withNodeConfigForm } from '@/node-registries/common/hocs';
@@ -42,8 +42,8 @@ export const FormRender = withNodeConfigForm(() => {
   );
 });
 
-// 监听引用参考的模型变化触发模型设置的模型校验
-// 用useWatch目前无法监听引用模型 先监听整个表单值
+// Listening to referenced model changes triggers model validation for model settings
+// With useWatch, you can't currently listen to the reference model. Instead, listen to the entire form value first
 function useReferenceModelChangeEffect(callback: () => void) {
   const form = useForm<FormData>();
   const { values } = form;

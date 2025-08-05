@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { type FC, useEffect, useState } from 'react';
 
 import { Typography, UIInput } from '@coze-arch/bot-semi';
@@ -53,7 +53,7 @@ const InputItem = ({
 }: InputItemProps): JSX.Element => {
   const [value, setValue] = useState(val);
   const [errorStatus, setErrorStatus] = useState(false);
-  // 通过check触发校验（提交时）
+  // Trigger validation via check (when committed)
   useEffect(() => {
     if (check === 0 || value === ARRAYTAG || value === ROOTTAG) {
       return;

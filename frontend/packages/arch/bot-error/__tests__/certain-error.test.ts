@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Mock } from 'vitest';
 import { isAxiosError } from 'axios';
 import { isApiError } from '@coze-arch/bot-http';
@@ -118,14 +118,14 @@ describe('bot-error-certain-error', () => {
       sendCertainError(new Error(), handle);
       expect(handle).toHaveBeenCalled();
     });
-    // notInstanceError json stringify 失败的单测
+    // notInstanceError json stringified single test
     errorFuncList.forEach(item => {
       const handle = vi.fn();
       if (item.name !== 'notInstanceError') {
         return;
       }
       (item.func as Mock).mockReturnValue(true);
-      // JSON stringify 会报错的 case
+      // JSON stringify will report an error case
       const b = { a: {} };
       const a = { b: {}, name: 'notInstanceError' };
       b.a = a;

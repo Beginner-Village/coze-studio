@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { I18n } from '@coze-arch/i18n';
 import { UIToast } from '@coze-arch/bot-semi';
 
 import { hasBraces, verifyBracesAndToast } from '../../src/utils/submit';
 
-// 模拟 UIToast 和 I18n
+// Analog UIToast and I18n
 vi.mock('@coze-arch/bot-semi', () => ({
   UIToast: {
     warning: vi.fn(),

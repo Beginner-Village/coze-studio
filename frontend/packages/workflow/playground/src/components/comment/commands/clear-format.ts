@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { CommentEditorCommand } from '../type';
 import { CommentEditorBlockFormat } from '../constant';
 
@@ -21,7 +21,7 @@ export const clearFormatEnterCommand: CommentEditorCommand = {
   key: 'Enter',
   shift: false,
   exec: ({ model, event }) => {
-    // 检查是否正在输入拼音
+    // Check if pinyin is being entered.
     if (event.nativeEvent.isComposing) {
       return;
     }

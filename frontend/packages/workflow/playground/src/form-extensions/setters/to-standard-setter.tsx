@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type SetterComponentProps } from '@flowgram-adapter/free-layout-editor';
 import { useNodeTestId } from '@coze-workflow/base';
 
@@ -21,7 +21,7 @@ import { feedbackStatus2ValidateStatus } from '../components/utils';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export function toStandardSetter(Setter) {
-  // 修复传给setter的表达式不响应的问题
+  // Fix an issue where expressions passed to setters do not respond
   const ObserverSetter = Setter;
   return function StandardSetter(props: SetterComponentProps) {
     const {

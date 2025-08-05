@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 表单引擎
+ * form engine
  */
 export { createSchemaField } from './fields';
 export { FormSchema } from './shared';

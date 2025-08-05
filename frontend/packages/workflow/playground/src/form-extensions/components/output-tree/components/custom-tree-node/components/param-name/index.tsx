@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/no-deep-relative-import */
 import React, { useState } from 'react';
 
@@ -67,7 +67,7 @@ export default function ParamName({
             disabled={disabled}
             handleBlur={name => {
               onChange(name);
-              // validator 时序有问题，加 setTimeout 避免错误信息闪一下
+              // There is a problem with the timing of the validator, add setTimeout to avoid the error message flashing.
               setTimeout(() => {
                 options.onBlur();
               }, 33);

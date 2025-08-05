@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo } from 'react';
 
 import { Input, type InputProps, withField } from '@coze-arch/coze-design';
@@ -35,7 +35,7 @@ const LimitCount: React.FC<LimitCountProps> = ({ maxLen, len }) => (
 );
 
 export interface InputWithCountProps extends InputProps {
-  // 设置字数限制并显示字数统计
+  // Set word limits and display word count
   getValueLength?: (value?: InputProps['value'] | string) => number;
 }
 

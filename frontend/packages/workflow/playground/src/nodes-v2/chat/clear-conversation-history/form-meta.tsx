@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   ValidateTrigger,
   type FormMetaV2,
@@ -35,33 +35,33 @@ interface FormData {
 }
 
 export const CLEAR_CONTEXT_FORM_META: FormMetaV2<FormData> = {
-  // 节点表单渲染
+  // Node form rendering
   render: () => <FormRender />,
 
-  // 验证触发时机
+  // verification trigger timing
   validateTrigger: ValidateTrigger.onChange,
 
-  // 验证规则
+  // validation rules
   validate: {
-    // 必填
+    // Required
     'inputParameters.0.input': createValueExpressionInputValidate({
       required: true,
     }),
   },
 
-  // 副作用管理
+  // Side effect management
   effect: {
     nodeMeta: fireNodeTitleChange,
     outputs: provideNodeOutputVariablesEffect,
     inputParameters: syncConversationNameEffect,
   },
 
-  // 节点后端数据 -> 前端表单数据
+  // Node Backend Data - > Frontend Form Data
   formatOnInit: createTransformOnInit(
     DEFAULT_CONVERSATION_VALUE,
     DEFAULT_OUTPUTS,
   ),
 
-  // 前端表单数据 -> 节点后端数据
+  // Front-end form data - > node back-end data
   formatOnSubmit: transformOnSubmit,
 };

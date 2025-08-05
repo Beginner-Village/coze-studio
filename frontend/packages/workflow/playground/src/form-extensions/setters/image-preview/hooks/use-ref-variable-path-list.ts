@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState } from 'react';
 
 import { isEqual } from 'lodash-es';
@@ -27,14 +27,14 @@ import {
 import { isInputAsOutput } from '../utils';
 
 /**
- * 获取节点inputs中的引用变量路径列表
+ * Get the list of reference variable paths in node inputs
  */
 export const useRefVariablePathList = () => {
   const workflowNode = useWorkflowNode();
   const [pathList, setPathList] = useState<Array<Array<string>>>([]);
   const node = useCurrentEntity();
 
-  // 非目标节点直接返回一个空列表，避免不必要的监听
+  // Non-target nodes directly return an empty list to avoid unnecessary listening
   if (!isInputAsOutput(node?.flowNodeType as StandardNodeType)) {
     return [];
   }

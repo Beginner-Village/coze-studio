@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCurrentEntity } from '@flowgram-adapter/free-layout-editor';
 
 import { getTimeoutConfig } from '../utils/get-timeout-config';
 
 /**
- * 获取超时配置
+ * Get timeout configuration
  * @returns
  */
 export const useTimeoutConfig = (): {

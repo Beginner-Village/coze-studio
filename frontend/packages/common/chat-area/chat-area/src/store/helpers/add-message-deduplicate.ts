@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 新增数据时，筛出不重复的部分
+ * When adding data, filter out non-duplicate parts
  */
 
 import { type Message } from '../types';

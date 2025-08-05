@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import cls from 'classnames';
 import { I18n } from '@coze-arch/i18n';
 import { FormInput, useFormApi } from '@coze-arch/coze-design';
@@ -39,7 +39,7 @@ export const ParamName = (props: {
   const { groups } = useVariableContext();
   const formApi = useFormApi();
 
-  // 使用 ref 缓存最后一次的有效值, Tree组件隐藏的时候会销毁组件，Form表单的Field字段会删除，所以需要缓存
+  // Use ref to cache the last valid value. When the Tree component is hidden, the component will be destroyed, and the Field field of the Form will be deleted, so it needs to be cached.
   useCacheField(data);
 
   return (

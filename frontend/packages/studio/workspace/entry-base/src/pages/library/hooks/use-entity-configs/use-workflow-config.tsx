@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useWorkflowResourceAction } from '@coze-workflow/components';
 import { useUserInfo } from '@coze-foundation/account-adapter';
 import { ResType, WorkflowMode } from '@coze-arch/idl/plugin_develop';
@@ -57,7 +57,7 @@ export const useWorkflowConfig: UseEntityConfigHook = ({
         value: ResType.Workflow,
       },
       parseParams: params => {
-        // 工作流图像流合并之后 选中工作流需要同时也拉取出图像流
+        // After the workflow image stream is merged, the selected workflow needs to also pull out the image stream
         if (params?.res_type_filter?.[0] === ResType.Workflow) {
           return {
             ...params,
@@ -77,7 +77,7 @@ export const useWorkflowConfig: UseEntityConfigHook = ({
           >
             {I18n.t('library_resource_type_workflow')}
           </Menu.Item>
-          {/* 开源版本暂时不支持对话流 */}
+          {/* The open-source version does not support conversation streaming for the time being */}
           {!IS_OPEN_SOURCE ? (
             <Menu.Item
               data-testid="workspace.library.header.create.chatflow"

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { expect, it } from 'vitest';
 
 import { StandardNodeType } from '../../../types';
@@ -38,10 +38,10 @@ it('extract schema with json string parser', () => {
     ],
   });
   const extractedSchema = schemaExtractor.extract({
-    // end 结束节点 2
+    // End End Node 2
     [StandardNodeType.SceneChat]: [
       {
-        // 对应输出指定内容
+        // Corresponding output specified content
         name: 'messages',
         path: 'inputs.Messages',
         parser: SchemaExtractorParserName.JSON_STRING_PARSER,

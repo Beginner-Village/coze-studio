@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 
 import { type FormItemSchema } from '../../types';
@@ -21,8 +21,8 @@ import { FormItemSchemaType } from '../../constants';
 
 /**
  * placeholder
- * - bot：请选择bot
- * - 其他：xx必填
+ * - bot: Please select bot
+ * - Other: xx required
  */
 export function getTestsetFormItemPlaceholder({ name, type }: FormItemSchema) {
   if (type === FormItemSchemaType.BOT) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { get } from 'lodash-es';
 import { variableUtils } from '@coze-workflow/variable';
 import { getDefaultLLMParams, formatModelData } from '@coze-workflow/nodes';
@@ -58,7 +58,7 @@ export function transformOnInit(value, context) {
   );
 
   let llmParam = get(value, 'inputs.llmParam');
-  // 初次拖入画布时：从后端返回值里，解析出来默认值。
+  // When first dragged into the canvas: Parse out the default value from the backend return value.
   if (!llmParam) {
     llmParam = getDefaultLLMParams(models);
   }

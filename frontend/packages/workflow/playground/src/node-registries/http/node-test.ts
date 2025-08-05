@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import md5 from 'md5';
 import { get } from 'lodash-es';
 import { FlowNodeFormData } from '@flowgram-adapter/free-layout-editor';
@@ -34,11 +34,11 @@ const generateExpressionString = (
   {
     node,
     /**
-     * label 前缀，用于表单展示
+     * Label prefix for form display
      */
     labelPrefix = '',
     /**
-     * name 前缀，用于区分变量
+     * Name prefix, used to distinguish variables
      */
     namePrefix = '',
   }: {
@@ -52,7 +52,7 @@ const generateExpressionString = (
   }
   const doubleBracedPattern = /{{([^}]+)}}/g;
   const matches = expressionStr.match(doubleBracedPattern);
-  // 去除字符串里的 {{}}
+  // Remove {{}} from string
   const matchesContent = matches?.map((varStr: string) =>
     varStr.replace(/^{{|}}$/g, ''),
   );
@@ -71,7 +71,7 @@ const generateExpressionString = (
       node.context.variableService.getWorkflowVariableByKeyPath(fieldKeyPath, {
         node,
       });
-    // 重复变量只展示一次
+    // Duplicate variables are displayed only once
     if (
       !cache[fieldName] &&
       workflowVariable &&
@@ -167,7 +167,9 @@ const generateBody = (node: WorkflowNodeEntity) => {
       [
         {
           name: `__${dataPath.replaceAll('.', '_')}_fileURL`,
-          title: `${I18n.t('node_http_body')}-${I18n.t('node_http_body_binary')}`,
+          title: `${I18n.t('node_http_body')}-${I18n.t(
+            'node_http_body_binary',
+          )}`,
           input: parameters?.fileURL,
         },
       ],

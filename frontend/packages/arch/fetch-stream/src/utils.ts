@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type FetchSteamConfig,
   FetchStreamErrorCode,
@@ -36,11 +36,11 @@ export function validateChunk(decodedChunk: string): void {
   let json: unknown;
   try {
     json = JSON.parse(decodedChunk);
-    // eslint-disable-next-line @coze-arch/no-empty-catch, @coze-arch/use-error-in-catch -- 设计如此
+    // eslint-disable-next-line @coze-arch/no-empty-catch, @coze-arch/use-error-in-catch -- designed like this
   } catch {
     /**
-     * 此处捕获 JSON.parse 错误不做任何处理
-     * 正常流式返回 json 解析失败才是正常的
+     * Catch JSON.parse errors here without any processing
+     * It is normal for normal streaming to return json parsing failure.
      */
   }
 

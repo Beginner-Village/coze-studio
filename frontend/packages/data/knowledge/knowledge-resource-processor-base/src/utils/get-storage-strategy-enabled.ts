@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Dataset, StorageLocation } from '@coze-arch/idl/knowledge';
 
 export function getStorageStrategyEnabled(dataset?: Dataset) {
   return (
-    // 云搜索只在国内环境上线
+    // Cloud search is only available in the domestic environment
     IS_CN_REGION &&
-    // 只有知识库首次上传，才可以配置云搜索
+    // Cloud search can only be configured if the knowledge base is uploaded for the first time.
     dataset?.doc_count === 0 &&
     dataset?.storage_location === StorageLocation.Default
   );

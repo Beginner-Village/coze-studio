@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { DEFAULT_NODE_META_PATH } from '@coze-workflow/nodes';
 import {
   StandardNodeType,
@@ -30,7 +30,7 @@ export const OUTPUT_NODE_REGISTRY: WorkflowNodeRegistry = {
     nodeDTOType: StandardNodeType.Output,
     size: { width: 360, height: 78.2 },
     nodeMetaPath: DEFAULT_NODE_META_PATH,
-    inputParametersPath: INPUT_PATH, // 入参路径，试运行等功能依赖该路径提取参数
+    inputParametersPath: INPUT_PATH, // Imported parameter path, practice running and other functions rely on this path to extract parameters
     helpLink: '/open/docs/guides/message_node',
   },
   formMeta: OUTPUT_FORM_META,

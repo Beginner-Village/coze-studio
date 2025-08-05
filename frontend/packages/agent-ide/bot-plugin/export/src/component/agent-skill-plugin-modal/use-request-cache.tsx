@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type MutableRefObject, useEffect } from 'react';
 
 import { setCache, getCache, clearCache } from '@coze-arch/bot-utils';
@@ -169,7 +169,7 @@ export function useInfiniteScrollCacheLoad<
       ] = true;
     });
 
-    //数据去重
+    //Data deduplicated
     const uniqList = (list || []).filter(item => {
       const pluginId = (item as unknown as { pluginInfo: { id: string } })
         ?.pluginInfo?.id;

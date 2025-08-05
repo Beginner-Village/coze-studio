@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import ReactMarkdown from 'react-markdown';
 
 import { Space, Typography } from '@coze-arch/bot-semi';
@@ -34,7 +34,7 @@ export const ConnectorLink = ({
   botId: string;
   initValue?: TFormData;
 }) => {
-  //支持通配URL
+  //Support for wildcard URLs
   const formatUrl = (url?: string) => {
     let newUrl = url ?? '';
     if (newUrl) {

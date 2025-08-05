@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import classNames from 'classnames';
@@ -39,7 +39,7 @@ export function ChangeButton({
 }: ChangeButtonProps) {
   const [FLAGS] = useFlags();
 
-  // 即将支持，敬请期待
+  // Support soon, so stay tuned.
   const showText = modeInfo?.showText || FLAGS['bot.studio.prompt_diff'];
   const ToolTipFragment = tooltip ? Tooltip : React.Fragment;
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useState } from 'react';
 
 import { debounce } from 'lodash-es';
@@ -30,7 +30,7 @@ import { useGlobalState, useLatestWorkflowJson } from '@/hooks';
 
 type CreditsInfo = ReturnType<typeof transPricingRules>;
 /**
- * 和 save debounce 一致
+ * Consistent with saving debounce
  */
 const HIGH_DEBOUNCE_TIME = 1000;
 export const usePluginCredits = (): { credits: CreditsInfo } => {

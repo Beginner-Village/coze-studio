@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { cloneDeep } from 'lodash-es';
 import { DebounceTime, type HostedObserverConfig } from '@coze-studio/autosave';
 
@@ -33,11 +33,11 @@ export const pluginConfig: RegisterSystemContent = {
   debounce: DebounceTime.Immediate,
   middleware: {
     onBeforeSave: dataSource => {
-      // 必须先深克隆，处理原数据会改动 store 的值
+      // You must clone deeply first. Processing the original data will change the value of the store.
       const clonePluginApis = cloneDeep(dataSource);
 
       const newPluginApis = clonePluginApis.map(item => {
-        // ai生成动画仅生效一次，请求接口时删除
+        // AI generated animation only takes effect once, deleted when requesting an interface
         delete item.autoAddCss;
         return item;
       });

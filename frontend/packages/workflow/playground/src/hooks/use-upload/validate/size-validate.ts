@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 
 import { formatBytes } from '../utils/format-bytes';
 
 const DEFAULT_MAX_SIZE = 1024 * 1024 * 20;
 
-/** 文件大小校验  */
+/** file size verification  */
 export const sizeValidate = (
   size: number,
   maxSize: number = DEFAULT_MAX_SIZE,

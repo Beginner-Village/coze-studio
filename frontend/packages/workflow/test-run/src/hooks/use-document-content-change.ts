@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { useService } from '@flowgram-adapter/free-layout-editor';
@@ -26,12 +26,12 @@ import {
 type Listener = (e: WorkflowContentChangeEvent) => void;
 
 /**
- * 监听 document content 变动的 hook
+ * A hook to monitor changes in document content
  */
 export const useDocumentContentChange = (
-  /** 监听器 */
+  /** Listener */
   listener: Listener,
-  /** 监听类型，默认监听所有 */
+  /** Listen type, listen to all by default */
   listenType?: WorkflowContentChangeType,
 ) => {
   const workflowDocument = useService<WorkflowDocument>(WorkflowDocument);

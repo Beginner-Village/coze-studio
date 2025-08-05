@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReactNode, useState } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -114,7 +114,7 @@ export const SingleMode: React.FC<SingleModeProps> = ({
           />
         </ContentView>
 
-        {/* Debug调试台 */}
+        {/* Debug bench */}
         <BotDebugPanel />
         {rightSheetSlot}
         <CoachMark />

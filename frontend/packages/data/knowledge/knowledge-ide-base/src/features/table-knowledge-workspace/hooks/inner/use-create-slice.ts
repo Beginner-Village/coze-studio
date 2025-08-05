@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useKnowledgeStore } from '@coze-data/knowledge-stores';
 
 import { type ISliceInfo } from '@/types/slice';
@@ -30,7 +30,7 @@ export const useCreateSlice = () => {
   const documentList = useKnowledgeStore(state => state.documentList);
   const curDoc = documentList?.[0];
 
-  // 创建切片
+  // Create slice
   const { createSlice } = useCreateSliceService({
     onReload: (createItem: ISliceInfo) => {
       const list =

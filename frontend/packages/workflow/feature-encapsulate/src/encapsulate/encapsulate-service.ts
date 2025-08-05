@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { injectable, inject } from 'inversify';
 import { WorkflowMode } from '@coze-workflow/base/api';
 import {
@@ -105,7 +105,9 @@ export class EncapsulateServiceImpl implements EncapsulateService {
       return this.encapsulateError('encapsulating');
     }
 
-    const name = `${this.encapsulateContext.flowName || ''}_sub_${randomNameSuffix()}`;
+    const name = `${
+      this.encapsulateContext.flowName || ''
+    }_sub_${randomNameSuffix()}`;
     const { selectedNodes } = this.workflowSelectService;
 
     if (selectedNodes.length < 2) {
@@ -119,7 +121,7 @@ export class EncapsulateServiceImpl implements EncapsulateService {
     let res;
     try {
       res = await this.encapsulateNodes(name, selectedNodes);
-      // 封装完成选中封装后的节点
+      // Encapsulation complete Select the encapsulated node
       if (res.success) {
         this.workflowSelectService.selectNode(res.subFlowNode);
       }
@@ -159,7 +161,7 @@ export class EncapsulateServiceImpl implements EncapsulateService {
       return;
     }
 
-    // 获取流程数据
+    // Get process data
     const workflow = await this.encapsulateApiService.getWorkflow(
       info.spaceId && info.spaceId !== '0'
         ? info.spaceId
@@ -176,7 +178,7 @@ export class EncapsulateServiceImpl implements EncapsulateService {
       return;
     }
 
-    // 如果解封子画布里面的节点，需要校验是否有子画布
+    // If you unseal the nodes in the sub-canvas, you need to verify whether there is a sub-canvas.
     if (
       isNodeInSubCanvas(node) &&
       hasSubCanvasNodes(this.workflowDocument, workflow.nodes)
@@ -193,10 +195,10 @@ export class EncapsulateServiceImpl implements EncapsulateService {
 
     this.historyService.startTransaction();
 
-    // 以节点为中心向外扩张
+    // Node-centric expansion
     this.encapsulateNodesService.decapsulateLayout(node, workflow.nodes);
 
-    // 创建节点
+    // Create Node
     const { idsMap, startNode, endNode, middleNodes } =
       await this.encapsulateNodesService.createDecapsulateNodes(
         node,
@@ -204,7 +206,7 @@ export class EncapsulateServiceImpl implements EncapsulateService {
         node.parent?.id,
       );
 
-    // 解封后更新变量引用
+    // Update variable reference after unblocking
     this.encapsulateVariableService.updateVarsAfterDecapsulate(node, {
       idsMap,
       startNode,
@@ -212,7 +214,7 @@ export class EncapsulateServiceImpl implements EncapsulateService {
       middleNodes,
     });
 
-    // 创建连线
+    // Create a connection
     this.encapsulateLinesService.createDecapsulateLines({
       node,
       workflowJSON: workflow as WorkflowJSON,
@@ -223,7 +225,7 @@ export class EncapsulateServiceImpl implements EncapsulateService {
 
     await delay(30);
 
-    // 移除老节点
+    // Remove old node
     await this.encapsulateNodesService.deleteNodes([node]);
     this.historyService.endTransaction();
   }
@@ -245,7 +247,7 @@ export class EncapsulateServiceImpl implements EncapsulateService {
     const startEndRects =
       this.encapsulateNodesService.getEncapsulateStartEndRects(nodes);
 
-    // 生成 json，并更新 JSON 内的变量引用
+    // Generate JSON and update the variable references in JSON
     const json = await this.encapsulateGenerateService.generateWorkflowJSON(
       nodes,
       {
@@ -264,7 +266,7 @@ export class EncapsulateServiceImpl implements EncapsulateService {
     }
 
     try {
-      // 保存流程
+      // save process
       const res = await this.encapsulateApiService.encapsulateWorkflow({
         name,
         desc: name,
@@ -284,7 +286,7 @@ export class EncapsulateServiceImpl implements EncapsulateService {
     }
 
     this.historyService.startTransaction();
-    // 替换成调用流程节点
+    // Replace with calling process node
     const subFlowNode =
       await this.encapsulateNodesService.createEncapsulateNode(
         workflowId,
@@ -292,17 +294,17 @@ export class EncapsulateServiceImpl implements EncapsulateService {
         nodes,
       );
 
-    // 更新变量引用（上下游 + 封装节点本身输入）
+    // Update variable references (upstream and downstream + encapsulate node itself input)
     this.encapsulateVariableService.updateVarsAfterEncapsulate(
       subFlowNode,
       nodes,
       encapsulateVars,
     );
 
-    // 移除老节点
+    // Remove old node
     await this.encapsulateNodesService.deleteNodes(nodes);
 
-    // 生成新连线
+    // Create a new connection
     const { inputLines, outputLines } =
       this.encapsulateLinesService.createEncapsulateLines(ports, subFlowNode);
     await delay(30);

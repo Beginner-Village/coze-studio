@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemoizedFn } from 'ahooks';
 import { type ProjectApi } from '@coze-workflow/playground';
 import {
@@ -24,8 +24,8 @@ import {
 } from '@coze-project-ide/framework';
 
 /**
- * 注入到 workflow 内 project api 的能力。
- * 注：非响应式
+ * The ability to inject project APIs into workflow.
+ * Note: non-responsive
  */
 export const useProjectApi = () => {
   const { sendOpen } = useSendMessageEvent();

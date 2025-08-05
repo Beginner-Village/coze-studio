@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { get, set } from 'lodash-es';
 import {
@@ -32,7 +32,7 @@ export const toJsonValues = (
     return values;
   }
   const jsonValue = get(values, TestFormFieldName.Node);
-  /** 如果无法正常解析，也直接忽略 */
+  /** If it cannot be parsed normally, it will be ignored directly. */
   if (!jsonValue) {
     return values;
   }

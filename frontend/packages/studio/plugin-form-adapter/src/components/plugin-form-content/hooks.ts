@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useRef, useState } from 'react';
 
 import { type FormApi } from '@coze-arch/bot-semi/Form';
@@ -60,7 +60,7 @@ export const usePluginFormState = (): UsePluginFormStateReturn => {
   const [headerList, setHeaderList] = useState<commonParamSchema[]>([
     { name: 'User-Agent', value: 'Coze/1.0' },
   ]);
-  // 合规审核结果
+  // Compliance audit results
   const [isValidCheckResult, setIsValidCheckResult] = useState(true);
   const [pluginTypeCreationMethod, setPluginTypeCreationMethod] =
     useState<string>();

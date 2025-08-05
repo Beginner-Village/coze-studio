@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type FetchSteamConfig,
   FetchStreamErrorCode,
@@ -55,7 +55,7 @@ export interface MessageLifecycleCallbackParams
 
 export type OnMessageCallback = (messageEvent: OnMessageCallbackParams) => void;
 /**
- * 收到的消息结构体异常响应此错误
+ * The received message structure responded abnormally to this error
  */
 export type OnMessageInvalidCallback = (
   error: HttpChunkMessageInvalidErrorInfo,
@@ -68,7 +68,7 @@ export type OnMessageStartCallback = (
 ) => void;
 
 /**
- * HttpChunk 未能建连、意外断开、Abort
+ * HttpChunk failed to connect, accidentally disconnected, aborted
  */
 export type OnErrorCallback = (errorInfo: ErrorInfo) => void;
 

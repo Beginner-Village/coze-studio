@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type MouseEventHandler } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -36,7 +36,7 @@ interface UnbindButtonProps {
 
 const PROJECT_AGENT_TYPE = 1;
 
-// 用于Api or WebSdk 的撤销发布
+// Unpublish for APIs or WebSDKs
 export const UndoButton = (props: UnbindButtonProps) => {
   const {
     bindId,

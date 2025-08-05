@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback } from 'react';
 
@@ -27,7 +27,7 @@ export function useNavigateWorkflowOrBlockwise({
   const navigateToWorkflow = useCallback(
     (workflowId?: string) => {
       if (!workflowId || workflowId === '0') {
-        // 表示是脏数据，提示一下并阻止点击事件
+        // Indicates dirty data, prompt and block the click event
         Toast.warning({
           content: I18n.t('workflow_error_jump_tip'),
           showClose: false,

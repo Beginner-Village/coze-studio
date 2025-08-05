@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { expect, it } from 'vitest';
 
 import { SchemaExtractorParserName } from '../constant';
@@ -94,10 +94,10 @@ it('extract schema with intents param parser', () => {
     ],
   });
   const extractedSchema = schemaExtractor.extract({
-    // end 结束节点 2
+    // End End Node 2
     [StandardNodeType.Intent]: [
       {
-        // 对应input name
+        // Corresponding input name
         name: 'inputs',
         path: 'inputs.inputParameters',
         parser: SchemaExtractorParserName.INPUT_PARAMETERS,

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { inject, injectable } from 'inversify';
 import { ValidationService } from '@coze-workflow/base/services';
 import { StandardNodeType } from '@coze-workflow/base';
@@ -39,7 +39,7 @@ export class EncapsulateFormValidator
   }
 
   async validate(node: WorkflowNodeEntity, result: EncapsulateValidateResult) {
-    // 注释节点不需要校验
+    // Note nodes do not require validation
     if (
       [StandardNodeType.Comment].includes(node.flowNodeType as StandardNodeType)
     ) {

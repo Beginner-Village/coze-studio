@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import copy from 'copy-to-clipboard';
 import { useMemoizedFn } from 'ahooks';
 import { I18n } from '@coze-arch/i18n';
@@ -37,7 +37,7 @@ interface ResultProps {
   onOk: () => void;
 }
 
-// 新建编辑 PAT
+// New Edit PAT
 export const ResultModal = ({ visible, onOk, data }: ResultProps) => {
   const doCopyAsync = useMemoizedFn(() => {
     const targetKey = data?.token;

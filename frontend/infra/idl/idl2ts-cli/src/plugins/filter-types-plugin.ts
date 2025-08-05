@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import path from 'path';
 
 import { type Program, after } from '@coze-arch/idl2ts-plugin';
@@ -186,7 +186,7 @@ export class FilterTypesPlugin {
     } else if (isIdentifier(fieldType)) {
       const statement = getStatementById(fieldType, current);
       if (isEnumDefinition(statement)) {
-        // 强制转位 number
+        // Forced indexing number
         // @ts-expect-error fixme late
         fieldType.type = SyntaxType.I32Keyword;
         let namespace = current.unifyNamespace;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useState } from 'react';
 
 import { type Canvas } from 'fabric';
@@ -40,7 +40,7 @@ export const useBackground = ({
     );
   }, [canvas]);
 
-  // 防抖的作用在于，form.schema.backgroundColor 的变化是异步的，setBackgroundColor 是同步的，两者可能会打架
+  // The effect of stabilization is that the change of form.schema.backgroundColor is asynchronous, and the change of setBackgroundColor is synchronous, and the two may fight
   useDebounceEffect(
     () => {
       setBackgroundColor(schema.backgroundColor as string);

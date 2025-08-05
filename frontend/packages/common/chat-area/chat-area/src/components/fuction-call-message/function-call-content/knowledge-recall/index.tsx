@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 import { RecallSlices } from '@coze-data/llmPlugins';
 
@@ -23,7 +23,7 @@ import { type KnowledgeRecallSlice } from '../../../../store/types';
 
 const getRecallEmptyText = () => I18n.t('recall_knowledge_no_related_slices');
 
-// 云搜索鉴权失败的错误代码
+// BigInt with failed cloud search authentication
 export const KNOWLEDGE_OPEN_SEARCH_ERROR = 708882003;
 
 const getMessageWithStatusCode = (statusCode?: number) => {

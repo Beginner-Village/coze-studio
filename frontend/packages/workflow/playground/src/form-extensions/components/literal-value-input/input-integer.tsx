@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import classNames from 'classnames';
@@ -47,7 +47,7 @@ export const InputInteger: FC<LiteralValueInputProps> = ({
       value={value as number}
       onChange={onChange}
       onBlur={e => {
-        // 拿到取整后的值
+        // Get the rounded value
         setTimeout(() => {
           onBlur?.(e.target.value);
         }, 15);

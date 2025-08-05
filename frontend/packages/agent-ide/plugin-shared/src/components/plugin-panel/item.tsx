@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 
 import { useState } from 'react';
@@ -32,10 +32,7 @@ import {
   UIButton,
   UITag,
 } from '@coze-arch/bot-semi';
-import {
-  ProductStatus,
-  type public_api,
-} from '@coze-arch/bot-api/product_api';
+import { ProductStatus, type public_api } from '@coze-arch/bot-api/product_api';
 import { type PluginApi } from '@coze-arch/bot-api/plugin_develop';
 import { useViewExample } from '@coze-agent-ide/bot-plugin-tools/useViewExample';
 import { Popconfirm } from '@coze-arch/coze-design';
@@ -109,7 +106,7 @@ export const PluginItem: React.FC<PluginItemProps> = ({
     </UITag>
   );
   const isDisabled = marketStatus === ProductStatus?.Unlisted;
-  // 端插件且未添加过 提示适用渠道
+  // The end plug-in has not been added, and the applicable channel is prompted.
   const showAddConfirm =
     isLocalPlugin &&
     ((!isFromWorkflow && !isAdded) || (isFromWorkflow && count === 0));
@@ -131,7 +128,7 @@ export const PluginItem: React.FC<PluginItemProps> = ({
             >
               {name}
             </Typography.Text>
-            {/* 预览预置卡片 */}
+            {/* Preview preview card */}
             {pluginApi?.card_binding_info?.thumbnail ? (
               <CardThumbnailPopover
                 url={pluginApi?.card_binding_info?.thumbnail}

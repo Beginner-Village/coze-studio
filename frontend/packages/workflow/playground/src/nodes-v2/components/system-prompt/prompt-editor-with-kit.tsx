@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, useState, useRef } from 'react';
 
 import classNames from 'classnames';
@@ -91,7 +91,7 @@ export const EditorWithPromptKit: FC<EditorWithPromptKitProps> = props => {
   const promptValue = useRef<string>(value || '');
 
   const [FLAGS] = useFlags();
-  // 即将支持，敬请期待
+  // Support soon, so stay tuned.
   const isHitLLMPromptSkills = FLAGS['bot.automation.llm_prompt_skills'];
 
   const { open, node: PromptLibrary } = usePromptLibraryModal({
@@ -158,7 +158,7 @@ export const EditorWithPromptKit: FC<EditorWithPromptKitProps> = props => {
         <InputSlotWidget mode="input" />
         <LibraryBlockWidget
           {
-            // 即将支持，敬请期待
+            // Support soon, so stay tuned.
             ...(isHitLLMPromptSkills
               ? {
                   librarys: libraries,
@@ -179,7 +179,7 @@ export const EditorWithPromptKit: FC<EditorWithPromptKitProps> = props => {
         />
         <HighlightExpressionOnActive />
 
-        {/* 即将支持，敬请期待 */}
+        {/* Support soon, so stay tuned. */}
         {isHitLLMPromptSkills ? (
           <ContentSearchPopover
             variableTree={variableTree}

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useParams, useSearchParams } from 'react-router-dom';
 
 import { useInfiniteScroll } from 'ahooks';
@@ -35,7 +35,7 @@ interface InfiniteScrollData {
 export const useVoiceOptions = ({ language, voiceType }: VoiceOptionParams) => {
   const { space_id } = useParams<DynamicParams>();
   const [searchParams] = useSearchParams();
-  // 资源库 workflow 详情页的 space_id 在 query string 里
+  // The workflow details page space_id in the query string
   const spaceId = space_id ?? searchParams.get('space_id') ?? '';
 
   const { data, loading, loadMore, loadingMore } = useInfiniteScroll(

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { set } from 'lodash-es';
 import {
   type NodeContext,
@@ -44,7 +44,7 @@ const updateNodePorts = (node: WorkflowNodeRegistry) => {
 
   const meta = node.meta || {};
 
-  // 需要改造成动态通道
+  // It needs to be transformed into a dynamic channel.
   if (!meta.useDynamicPort) {
     set(node, 'meta', {
       ...meta,
@@ -66,7 +66,7 @@ const updateNodeFormat = (node: WorkflowNodeRegistry) => {
   set(node, 'formMeta.formatOnInit', (value, context: NodeContext) => {
     const formated = formatOnInit ? formatOnInit(value, context) : value;
 
-    // 空值直接返回
+    // Null value returned directly
     if (!formated) {
       return formated;
     }

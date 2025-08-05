@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 保留的查询参数 */
+
+/** reserved query parameters */
 const PRESERVED_SEARCH_PARAMS = ['commit_version'];
 
 /**
- * 给指定 url 添加特定的 search params
- * @param url 当前 url
+ * Add specific search params to the specified URL
+ * @param url current url
  * @returns
  */
 export function addPreservedSearchParams(url: string) {

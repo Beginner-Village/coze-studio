@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { debounce } from 'lodash-es';
@@ -111,7 +111,7 @@ export default function useRelated({
 
   const isBot = relatedEntityValue?.type === IntelligenceType.Bot;
 
-  // 由于分页限制 选中的 botId 可能找不到对应的 option 需要额外添加
+  // Due to paging restrictions, the selected botId may not find the corresponding option and needs to be added
   const extraBotOption = useExtraBotOption(
     baseRelatedEntities,
     relatedEntityValue?.id,

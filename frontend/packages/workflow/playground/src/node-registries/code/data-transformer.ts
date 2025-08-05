@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type NodeContext } from '@flowgram-adapter/free-layout-editor';
 import { type NodeDataDTO } from '@coze-workflow/base';
 
@@ -23,7 +23,7 @@ import { type FormData } from './types';
 import { DEFAULT_INPUTS, DEFAULT_OUTPUTS } from './constants';
 
 /**
- * 节点后端数据 -> 前端表单数据
+ * Node Backend Data - > Frontend Form Data
  */
 export const transformOnInit = (
   value: NodeDataDTO | undefined,
@@ -32,7 +32,7 @@ export const transformOnInit = (
   const { globalState } = context.playgroundContext;
   const { isBindDouyin } = globalState;
   const defaultCodeParams = getDefaultValue({ isBindDouyin });
-  // 初始值设置
+  // initial value setting
   const initValue = value || {
     inputs: {
       inputParameters: DEFAULT_INPUTS,
@@ -54,7 +54,7 @@ export const transformOnInit = (
 };
 
 /**
- * 前端表单数据 -> 节点后端数据
+ * Front-end form data - > node back-end data
  * @param value
  * @returns
  */

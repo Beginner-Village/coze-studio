@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, useEffect, useMemo, useState } from 'react';
 
 import classNames from 'classnames';
@@ -90,7 +90,7 @@ const TraceTree: FC<TraceTreeProps> = props => {
       newWindow: true,
     });
   };
-  // 初始化flamethreadData
+  // Initialize flamethreadData
   useEffect(() => {
     if (dataType === DataSourceTypeEnum.SpanData && spanData) {
       if (spanData?.length === 0 && treeData === undefined) {

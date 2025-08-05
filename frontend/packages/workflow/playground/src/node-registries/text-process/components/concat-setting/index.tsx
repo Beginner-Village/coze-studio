@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import {
@@ -55,10 +55,10 @@ const ExpressionEditorField = withField<
 });
 
 interface Props {
-  /** 字符串拼接符号字段名 */
+  /** String Splice symbol field name */
   concatCharFieldName: string;
 
-  /** 字符串拼接结果字段名 */
+  /** String Splicing result field name */
   concatResultFieldName: string;
 }
 

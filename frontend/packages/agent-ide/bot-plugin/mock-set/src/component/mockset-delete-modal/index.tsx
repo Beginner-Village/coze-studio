@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useState } from 'react';
 
 import { useRequest } from 'ahooks';
@@ -71,7 +71,7 @@ export const MockSetDeleteModal = ({
   } = mockSetInfo || {};
   const [mockSetRefCount, setMockSetRefCount] = useState(-1);
 
-  // space信息
+  // Space information
   const spaceType = useSpaceStore(s => s.space.space_type);
   const isPersonal = spaceType === SpaceType.Personal;
 

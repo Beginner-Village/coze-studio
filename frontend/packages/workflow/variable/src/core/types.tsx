@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type BaseVariableField } from '@flowgram-adapter/free-layout-editor';
 import { type FlowNodeEntity } from '@flowgram-adapter/free-layout-editor';
 import { type ViewVariableMeta } from '@coze-workflow/base/types';
@@ -34,14 +34,14 @@ export interface RenameInfo {
   prevKeyPath: string[];
   nextKeyPath: string[];
 
-  // rename 的位置，及对应的 key 值
+  // The location of the rename, and the corresponding key value
   modifyIndex: number;
   modifyKey: string;
 }
 
 export interface GetKeyPathCtx {
-  // 当前所在的节点
+  // The current node
   node?: FlowNodeEntity;
-  // 验证变量是否在作用域内
+  // Verify that the variable is in scope
   checkScope?: boolean;
 }

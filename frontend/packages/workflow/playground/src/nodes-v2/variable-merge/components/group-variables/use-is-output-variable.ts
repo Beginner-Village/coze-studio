@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCurrentEntity } from '@flowgram-adapter/free-layout-editor';
 
 import { useExecStateEntity } from '@/hooks';
@@ -21,7 +21,7 @@ import { useExecStateEntity } from '@/hooks';
 import { isOutputVariable } from '../../utils/is-output-variable';
 
 /**
- * 判断变量是否是输出变量
+ * Determine whether a variable is an output variable
  */
 export function useIsOutputVariable(groupIndex: number, variableIndex: number) {
   const execEntity = useExecStateEntity();

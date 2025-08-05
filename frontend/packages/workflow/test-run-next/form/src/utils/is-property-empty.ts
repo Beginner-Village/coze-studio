@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { isObject } from 'lodash-es';
 
 /**
- * 是否是空的 properties
+ * Is it an empty property?
  */
 export const isFormSchemaPropertyEmpty = (properties: unknown) =>
   isObject(properties) ? !Object.keys(properties).length : true;

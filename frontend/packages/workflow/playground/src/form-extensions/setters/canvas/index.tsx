@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { Suspense, lazy } from 'react';
 
 import { type SetterExtension } from '@flowgram-adapter/free-layout-editor';
@@ -29,9 +29,9 @@ const CanvasLazy = lazy(async () => {
 
 const Canvas = props => {
   /**
-   * useInputVariables 内部使用了 useContext
-   * lazyLoad 会导致 监听不到 context 的变化
-   * 所以提前获取 variables
+   * useInputVariables internally uses useContext
+   * lazyLoad will cause context changes that cannot be monitored
+   * Get the variables in advance
    */
   const variables = useInputVariables({
     needNullType: true,
@@ -46,7 +46,7 @@ const Canvas = props => {
 };
 
 /**
- *  imageflow 的画布编辑节点，基于 fabric 实现
+ *  Imageflow's canvas editing node, implemented based on fabric
  */
 export const canvas: SetterExtension = {
   key: 'canvas',

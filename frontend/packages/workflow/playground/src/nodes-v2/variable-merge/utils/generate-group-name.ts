@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type MergeGroup } from '../types';
 import { GROUP_NAME_PREFIX } from '../constants';
 
 /**
- * 生成变量分组名称
+ * Generate variable group name
  */
 export function generateGroupName(mergeGroups: MergeGroup[] | undefined) {
   const groups: MergeGroup[] = mergeGroups || [];

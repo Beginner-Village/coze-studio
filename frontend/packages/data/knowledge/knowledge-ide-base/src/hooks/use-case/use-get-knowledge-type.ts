@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
-import { useKnowledgeParams, useKnowledgeStore } from '@coze-data/knowledge-stores';
+import {
+  useKnowledgeParams,
+  useKnowledgeStore,
+} from '@coze-data/knowledge-stores';
 
 import { useDataSetDetailReq } from '@/service/dataset';
 export const useGetKnowledgeType = () => {
   const { datasetID = '' } = useKnowledgeParams();
-  // 知识库详情
+  // Knowledge Base Details
   const { data: dataSetDetail, run: fetchDataSetDetail } =
     useDataSetDetailReq();
   const { setDataSetDetail, dataSetDetail: storeDataSetDetail } =

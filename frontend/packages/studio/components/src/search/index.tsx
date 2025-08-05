@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, useState } from 'react';
 
 import { useUpdateEffect } from 'ahooks';
@@ -24,7 +24,7 @@ import styles from './index.module.less';
 
 export interface SearchProps {
   defaultValue?: string;
-  /** 当此值变化时，更新内部的搜索内容 */
+  /** When this value changes, update the internal search content */
   refreshValue?: string;
   onSearch?: (value?: string) => void;
   placeholder?: string;

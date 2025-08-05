@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { inject, injectable } from 'inversify';
 import {
   FreeOperationType,
@@ -39,7 +39,7 @@ import { safeFn } from '../../utils';
 import { getFollowNode } from './get-follow-node';
 
 /**
- * 自动布局快捷键
+ * Auto layout shortcuts
  */
 @injectable()
 export class WorkflowLayoutShortcutsContribution
@@ -52,7 +52,7 @@ export class WorkflowLayoutShortcutsContribution
   private globalState: WorkflowGlobalStateEntity;
   @inject(AutoLayoutService) private autoLayoutService: AutoLayoutService;
   @inject(HistoryService) private historyService: HistoryService;
-  /** 注册快捷键 */
+  /** Registration shortcut */
   public registerShortcuts(registry: WorkflowShortcutsRegistry): void {
     registry.addHandlers({
       commandId: WorkflowLayoutShortcutsContribution.type,

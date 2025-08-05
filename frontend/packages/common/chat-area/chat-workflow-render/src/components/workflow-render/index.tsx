@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ContentBoxType } from '@coze-common/chat-uikit-shared';
 import {
   ContentBox,
@@ -69,7 +69,7 @@ export const WorkflowRender: ComponentTypesMap['contentBox'] = props => {
       multimodalTextContentAddonTop={
         <>
           {customTextMessageInnerTopSlotList.map(
-            // eslint-disable-next-line @typescript-eslint/naming-convention -- 符合预期的命名
+            // eslint-disable-next-line @typescript-eslint/naming-convention -- matches the expected naming
             ({ pluginName, Component }, index) => (
               <PluginScopeContextProvider
                 pluginName={pluginName}

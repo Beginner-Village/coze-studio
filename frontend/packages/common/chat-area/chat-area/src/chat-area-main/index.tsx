@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type RefObject,
   forwardRef,
@@ -166,7 +166,7 @@ const ChatAreaMain: FC<ChatAreaMainProps> = ({
                     >
                       <div className={styles['header-node']}>{headerNode}</div>
                       {customMessageListFloatSlotList.map(
-                        // eslint-disable-next-line @typescript-eslint/naming-convention -- 符合预期
+                        // eslint-disable-next-line @typescript-eslint/naming-convention -- as expected
                         ({ pluginName, Component }) => (
                           <PluginScopeContextProvider
                             pluginName={pluginName}
@@ -197,7 +197,7 @@ const ChatAreaMain: FC<ChatAreaMainProps> = ({
                       <DragUploadArea />
                     </div>
                     {customComponentList.map(
-                      // eslint-disable-next-line @typescript-eslint/naming-convention -- 符合预期
+                      // eslint-disable-next-line @typescript-eslint/naming-convention -- as expected
                       ({ pluginName, Component }, index) => (
                         <PluginScopeContextProvider pluginName={pluginName}>
                           <Component key={`${index}ScrollViewBottom`} />

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type RefObject } from 'react';
 
 import {
@@ -34,7 +34,7 @@ export const useNameValidators = ({
   return [
     {
       validator(_, value) {
-        // 过滤掉当前资源
+        // Filter out current resources
         const otherResource = currentResourceRef?.current
           ? workflowResource.filter(
               r => r.res_id !== currentResourceRef?.current?.res_id,

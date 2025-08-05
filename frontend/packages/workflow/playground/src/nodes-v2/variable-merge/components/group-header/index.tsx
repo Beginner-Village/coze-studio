@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { type FC } from 'react';
 
 import {
@@ -42,7 +42,7 @@ interface Props {
 }
 
 /**
- * 分组header
+ * Packet header
  * @param param0
  * @returns
  */

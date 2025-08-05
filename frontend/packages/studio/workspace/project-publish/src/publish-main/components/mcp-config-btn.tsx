@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type PublishConnectorInfo,
   ConnectorConfigStatus,
@@ -23,7 +23,7 @@ import { Button } from '@coze-arch/coze-design';
 
 import { UseMcpConfigModal } from '@/hooks/use-mcp-config-modal';
 
-/** MCP配置按钮+弹窗 */
+/** MCP configuration button + pop-up window */
 export const McpConfigBtn = ({ record }: { record: PublishConnectorInfo }) => {
   const { node, open } = UseMcpConfigModal({ record });
   return (

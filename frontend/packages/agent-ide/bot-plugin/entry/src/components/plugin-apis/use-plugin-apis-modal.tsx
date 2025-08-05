@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState } from 'react';
 
 import { isNumber } from 'lodash-es';
@@ -36,7 +36,7 @@ export const usePluginApisModal = (props?: PluginModalModeProps) => {
     const _initQuery = isNumber(params) ? undefined : params?.initQuery;
     setVisible(true);
     setInitQuery(_initQuery);
-    // 0 也有效
+    // 0 is also valid
     if (isNumber(openType)) {
       setType(openType);
     }

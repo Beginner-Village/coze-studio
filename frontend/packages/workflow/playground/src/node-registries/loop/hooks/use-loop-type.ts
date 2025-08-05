@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCurrentEntity } from '@flowgram-adapter/free-layout-editor';
 import {
   FlowNodeFormData,
@@ -30,12 +30,12 @@ export const useLoopType = () => {
   const getLoopType = () =>
     formModel.getValueIn<LoopType>(LoopPath.LoopType) ?? LoopType.Array;
 
-  // 同步表单值初始化
+  // Synchronized form value initialization
   useLayoutEffect(() => {
     setLoopType(getLoopType());
   }, [formModel]);
 
-  // 同步表单外部值变化：undo/redo/协同
+  // Synchronize form external value changes: undo/redo/synergy
   useEffect(() => {
     const disposer = formModel.onFormValuesChange(({ name }) => {
       if (name !== LoopPath.LoopType) {

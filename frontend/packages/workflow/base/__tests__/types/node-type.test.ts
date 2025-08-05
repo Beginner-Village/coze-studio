@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, it, expect } from 'vitest';
 
 import {
@@ -25,7 +25,7 @@ import {
 describe('node-type', () => {
   describe('StandardNodeType', () => {
     it('应该包含所有预定义的节点类型', () => {
-      // 测试一些关键的节点类型
+      // Test some key node types
       expect(StandardNodeType.Start).toBe('1');
       expect(StandardNodeType.End).toBe('2');
       expect(StandardNodeType.LLM).toBe('3');

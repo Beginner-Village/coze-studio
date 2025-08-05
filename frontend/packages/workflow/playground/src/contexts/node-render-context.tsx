@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { createContext } from 'react';
 
 export type NodeRenderScene =
@@ -23,5 +23,5 @@ export type NodeRenderScene =
   | 'side-expand-modal'
   | undefined;
 
-/** 用来判断node-render前端在什么场景下使用 */
+/** Used to determine under what scenarios the node-render front end is used */
 export const NodeRenderSceneContext = createContext<NodeRenderScene>(undefined);

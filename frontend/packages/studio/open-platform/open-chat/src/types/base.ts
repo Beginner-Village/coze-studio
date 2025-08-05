@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReactNode } from 'react';
 
 export enum Layout {
@@ -22,9 +22,9 @@ export enum Layout {
 }
 
 export interface HeaderConfig {
-  isShow?: boolean; //是否显示header， 默认是true
-  isNeedClose?: boolean; //是否需要关闭按钮， 默认是true
-  extra?: ReactNode | false; // 用于站位的，默认无
+  isShow?: boolean; //Whether to display headers, the default is true
+  isNeedClose?: boolean; //Whether you need the close button, the default is true.
+  extra?: ReactNode | false; // For standing, default none
 }
 
 export interface DebugProps {

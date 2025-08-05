@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import cx from 'classnames';
 import { useWorkflowNode } from '@coze-workflow/base';
 import { ErrorBoundary, logger } from '@coze-arch/logger';
@@ -51,7 +51,7 @@ export function NodeRenderNew(props: WorkflowNodeRenderProps) {
 
   const handleNodeClick = e => {
     selectNode(e);
-    // 处于执行中的流程禁止切换面板
+    // The process in progress prohibits switching panels
     if (globalState.viewStatus !== WorkflowExecStatus.EXECUTING && !isError) {
       testFormState.closeCommonSheet();
       openNodeSideSheet();

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useRequest } from 'ahooks';
 import { withSlardarIdButton } from '@coze-studio/bot-utils';
 import { logger } from '@coze-arch/logger';
@@ -123,7 +123,7 @@ export function useSaveMockData({
       }
 
       if (successRes.length === 0) {
-        // 仅全部失败时认为失败，此时需要 toast 提示
+        // Only if all fail, it is considered a failure, and a toast prompt is required at this time.
         Toast.error({
           content: withSlardarIdButton(
             failRes[0]?.error?.message || I18n.t('error'),

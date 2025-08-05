@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint import/prefer-default-export: off */
 import * as path from 'path';
 import * as fs from 'fs';
@@ -686,7 +686,7 @@ function convertFieldDefinition(
   if (!isProto3) {
     requiredness = optional ? 'optional' : 'required';
   } else if (rule === 'required') {
-    // TODO: 处理 optional 的情况，需要修改 proto-parser
+    // TODO: Handle optional cases, need to modify proto-parser
     requiredness = 'required';
   }
 

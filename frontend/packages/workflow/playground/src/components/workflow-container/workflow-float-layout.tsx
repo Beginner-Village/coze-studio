@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useMemo, useEffect } from 'react';
 
 import { useMemoizedFn } from 'ahooks';
@@ -68,7 +68,7 @@ const useCloseNodeFormWhenBlur = () => {
 };
 
 /**
- * 关闭节点和试运行面板后尝试取消试运行
+ * Try canceling practice run after closing the node and practice run panel
  */
 const useCancelTestRunWhenClosePanel = () => {
   const floatLayoutService = useFloatLayoutService();

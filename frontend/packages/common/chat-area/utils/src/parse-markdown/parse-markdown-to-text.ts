@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Text, type Link, type Parent, type Image } from 'mdast';
 import { isObject, isUndefined } from 'lodash-es';
 /**
- * 将markdown转为纯文本
- * @param markdown Markdown文本
- * @returns string 纯文本
+ * Convert markdown to plain text
+ * @param markdown Markdown text
+ * @Returns string plain text
  */
 export const getTextFromAst = (ast: unknown): string => {
   if (isParent(ast)) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { SpaceType } from '@coze-arch/bot-api/playground_api';
 import { PlaygroundApi } from '@coze-arch/bot-api';
 
@@ -27,7 +27,7 @@ vi.mock('@coze-arch/bot-error', () => ({
   CustomError: vi.fn(),
 }));
 
-// FIXME  改为按需 mock
+// FIXME changed to mock on demand
 vi.mock('@coze-arch/bot-api', () => ({
   DeveloperApi: {
     GetUserAuthList: vi
@@ -50,7 +50,7 @@ vi.mock('@coze-arch/bot-api', () => ({
       // .mockResolvedValueOnce({ code: 1 })
       // .mockResolvedValueOnce({ code: 0 })
       // .mockResolvedValueOnce({ code: 0 })
-      // mock 缺失 personal store && 轮询失败
+      // Mock missing personal store & & poll failed
       .mockResolvedValueOnce({ code: 0 })
       .mockResolvedValueOnce({ code: 0 })
       .mockResolvedValueOnce({ code: 0 })

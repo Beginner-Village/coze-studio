@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export {
   totalConditionValueMap,
   ConditionRightType,
@@ -21,7 +21,7 @@ export {
 } from './condition';
 
 /**
- * test form 相关常量
+ * Test form correlation constants
  */
 export { FieldName } from './form';
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { sliceArrayByIndexRange } from '../array';
 import { type Message } from '../../store/types';
 
@@ -42,9 +42,9 @@ export const getIsFunctionCalling = (
 };
 
 /**
- * - message id 是 uuid
- * - 一旦进入 finished function call 状态,不可能再移出
- * - 无需清理
+ * - message id is uuid
+ * - Once in the finished function call state, it is impossible to move out
+ * - No need to clean up
  */
 const finishedFunctionCallMessageMap = new Map<
   string,
@@ -69,7 +69,7 @@ const getIsFinishedFunctionCallCached = (
   return !!finishedFunctionCallMessageMap.get(message_id)?.isFinish;
 };
 
-/** @deprecated 仅通过 cached 访问 */
+/** @deprecated only via cached access */
 const updateFinishFunctionCallMessageMap = (
   message: Message,
   index: number,
@@ -88,7 +88,7 @@ const updateFinishFunctionCallMessageMap = (
       (item.extra_info?.call_id === message.extra_info?.call_id ||
         item.index === targetIndex) &&
       item.type === 'tool_response';
-    // TODO: 暂时都按照普通插件展示loading
+    // TODO: Temporarily display loading according to ordinary plugins.
     if (isTargetResponse) {
       finishedFunctionCallMessageMap.set(message.message_id, {
         isFinish: true,

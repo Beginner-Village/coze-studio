@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ViewVariableType } from '@coze-workflow/base';
 
 import { type IFormSchema } from '../form-engine';
@@ -32,7 +32,7 @@ interface GenerateFieldOptions {
 }
 
 /**
- * 表单 Field Schema 计算
+ * Form Field Schema Calculation
  */
 export const generateField = (options: GenerateFieldOptions): IFormSchema => {
   const {
@@ -57,9 +57,9 @@ export const generateField = (options: GenerateFieldOptions): IFormSchema => {
     },
     ['x-origin-type']: type as unknown as string,
     ...generateFieldValidator(options),
-    // 渲染组件相关
+    // rendering component related
     ...generateFieldComponent({ type, validateJsonSchema }),
-    // component 也自带默认值，入参的默认值优先级更高
+    // Component also comes with default values, and the default values of imported parameters have higher priority
     defaultValue,
     ...extra,
   };

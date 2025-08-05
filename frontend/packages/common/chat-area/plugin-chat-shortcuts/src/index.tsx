@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-// !Notice 禁止直接导出 shortcut-tool，会导致下游依赖不需要的 knowledge-upload
+
+// ! Notice prohibits direct export of shortcut-tool, causing downstream dependencies on unwanted knowledge-uploads
 // export { ShortcutToolConfig } from './shortcut-tool';
 export { ShortcutBar } from './shortcut-bar';
 

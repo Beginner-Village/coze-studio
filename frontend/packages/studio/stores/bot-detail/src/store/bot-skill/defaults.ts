@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 import { BotTableRWMode } from '@coze-arch/bot-api/memory';
 import {
@@ -85,7 +85,7 @@ export const DEFAULT_TTS_CONFIG = (): TTSInfo => ({
 
 export const DEFAULT_TIME_CAPSULE_CONFIG = (): TimeCapsuleConfig => ({
   time_capsule_mode: 0,
-  disable_prompt_calling: 0, // 默认支持在prompt调用
+  disable_prompt_calling: 0, // Default support for prompt calls
   time_capsule_time_to_live: '0',
 });
 

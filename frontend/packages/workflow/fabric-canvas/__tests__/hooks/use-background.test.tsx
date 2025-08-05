@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -88,11 +88,11 @@ describe('useBackground', () => {
       },
     );
 
-    // 更新 schema
+    // Update schema
     const newSchema = createMockSchema('#000000');
     rerender({ currentSchema: newSchema });
 
-    // 等待 debounce
+    // Waiting to debounce
     await vi.runAllTimers();
 
     expect(result.current.backgroundColor).toBe('#000000');

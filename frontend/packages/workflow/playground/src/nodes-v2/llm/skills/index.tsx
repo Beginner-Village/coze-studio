@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable complexity */
 import { type FC } from 'react';
 
@@ -106,7 +106,7 @@ export const Skills: FC<SkillsProps> = props => {
       });
     }
 
-    // 表单的onChange 值传递是异步，所以这里延迟下
+    // The onChange value passing of the form is asynchronous, so there is a delay here
     setTimeout(() => {
       refetch();
     }, 10);

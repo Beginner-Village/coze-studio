@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FlowNodeMeta } from '@flowgram-adapter/fixed-layout-editor';
 
 export interface TreeNode {
   id: string;
   type: string;
   meta?: FlowNodeMeta;
-  // collapsed、depth 放在 data 中
+  // Collapsed, depth in data
   data: Record<string, any>;
   parent: TreeNode[];
   children?: TreeNode[];

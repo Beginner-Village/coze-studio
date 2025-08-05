@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 意图识别节点，选项组件渲染
+ * Intent to identify nodes, option component rendering
  */
 
 import { INTENT_NODE_MODE } from '@coze-workflow/nodes';

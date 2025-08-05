@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** Text 组件，超出自动 ... 并且展示 tooltip */
+
+/** Text component, beyond automatic... and show tooltip */
 import { type FC } from 'react';
 
 import { Typography } from '@coze-arch/coze-design';

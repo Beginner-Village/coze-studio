@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useShallow } from 'zustand/react/shallow';
 
 import { type IRegisteredToolKeyConfig } from '../../store/tool-area';
 import { useAbilityAreaContext } from '../../context/ability-area-context';
 
 /**
- * 用于内部注册Tool使用
+ * For Internal Registration Tool Use
  */
 export const useRegisterToolKey = () => {
   const {

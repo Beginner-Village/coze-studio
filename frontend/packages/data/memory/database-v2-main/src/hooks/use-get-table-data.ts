@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useRef } from 'react';
 
 import { type TableData } from '../components/database-table-data/type';
 
 export const useGetTableInstantaneousData = (tableData: TableData) => {
-  // 缓存 Data 数据，用于在事件中获取数据
+  // Cache data for fetching data in events
   const dataRef = useRef<TableData>(tableData);
   dataRef.current = tableData;
 

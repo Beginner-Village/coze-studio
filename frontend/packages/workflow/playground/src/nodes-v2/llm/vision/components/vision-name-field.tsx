@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo, type FC } from 'react';
 
 import classNames from 'classnames';
@@ -40,7 +40,7 @@ interface VisionNameFieldProps {
 }
 
 /**
- * 输入名称字段
+ * Enter name field
  */
 export const VisionNameField: FC<VisionNameFieldProps> = ({
   inputField,

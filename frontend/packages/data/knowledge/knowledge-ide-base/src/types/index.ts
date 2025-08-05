@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type DocumentStatus } from '@coze-arch/bot-api/knowledge';
 
 export interface ProgressItem {
@@ -29,15 +29,15 @@ export enum ActionType {
 
 export enum FilterPhotoType {
   /**
-   * 全部
+   * all
    */
   All = 'All',
   /**
-   * 已标注
+   * marked
    */
   HasCaption = 'HasCaption',
   /**
-   * 未标注
+   * unmarked
    */
   NoCaption = 'NoCaption',
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { StandardNodeType } from '@coze-workflow/base';
 
 import {
@@ -25,7 +25,7 @@ export class SubWorkflowSelfRefValidator extends BaseNodeValidator {
   protected validate(context: NodeValidationContext): boolean | null {
     const { node, globalState } = context;
 
-    // 不允许工作流引用自己作为子工作流
+    // Do not allow a workflow to reference itself as a child workflow
     if (
       node.type === StandardNodeType.SubWorkflow &&
       node.data?.inputs?.workflowId === globalState.workflowId

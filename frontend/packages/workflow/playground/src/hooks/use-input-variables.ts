@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState } from 'react';
 
 import { useThrottleEffect } from 'ahooks';
@@ -43,7 +43,7 @@ const useInputs = (): {
     }[]
   ).map(i => ({
     ...i,
-    keyPath: [...(i.input?.content?.keyPath || [])], // 深拷贝一份
+    keyPath: [...(i.input?.content?.keyPath || [])], // Deep copy
   }));
   return inputs;
 };

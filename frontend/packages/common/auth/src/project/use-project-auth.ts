@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useSpace } from '@coze-arch/foundation-sdk';
 
 import { useSpaceRole } from '../space/use-space-role';
@@ -26,7 +26,7 @@ export function useProjectAuth(
   projectId: string,
   spaceId: string,
 ) {
-  // 获取space类型信息
+  // Get space type information
   const space = useSpace(spaceId);
 
   if (!space?.space_type) {
@@ -35,13 +35,13 @@ export function useProjectAuth(
     );
   }
 
-  // 获取space role信息
+  // Get space role information
   const spaceRoles = useSpaceRole(spaceId);
 
-  // 获取project role信息
+  // Get project role information
   const projectRoles = useProjectRole(projectId);
 
-  // 计算权限点
+  // Calculate permission spot
   return calcPermission(key, {
     projectRoles,
     spaceRoles,

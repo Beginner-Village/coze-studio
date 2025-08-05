@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/naming-convention */
 
-/** 每一级树缩进宽度 */
+/** Indent width of each level of tree */
 export const TreeIndentWidth = 15;
-/** 树节点展开收起按钮宽度 */
+/** Tree Node Expand Collapse Button Width */
 export const TreeCollapseWidth = 10;

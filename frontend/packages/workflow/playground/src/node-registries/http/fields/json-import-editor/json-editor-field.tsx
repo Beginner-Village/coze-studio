@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { EditorProvider } from '@coze-editor/editor/react';
 import { I18n } from '@coze-arch/i18n';
 
@@ -42,7 +42,7 @@ export const JsonExtensionEditorField = withField(() => {
           placeholder={I18n.t('node_http_json_input')}
           value={value as string}
           minHeight={78}
-          // 表单内禁止编辑
+          // Forbid editing in the form
           readonly={true}
           borderRadius={8}
           isDarkTheme={isDarkTheme}

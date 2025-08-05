@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function -- ChatInput */
 import {
   forwardRef,
@@ -101,7 +101,7 @@ type OverrideProps = Omit<
 
 export interface ChatInputProps<T extends OverrideProps> {
   /**
-   * 传递给 Component 的 props，类型为 T。
+   * Props passed to Component of type T.
    */
   componentProps?: T;
   getChatInputController?: (controller: {
@@ -204,7 +204,7 @@ export const ChatInput: <T extends OverrideProps>(
     sendTextMessage(payload, 'inputAndSend');
   };
 
-  // TODO: 再封装一个 hook @gaoyuanhan
+  // TODO: encapsulate another hook @gaoyuanhan
   const handleSendMultimodalMessage = (inputPayload: SendMessagePayload) => {
     const fileDataList = useBatchFileUploadStore.getState().getFileDataList();
     const strategy = getSendMultimodalMessageStrategy(
@@ -351,7 +351,7 @@ export const ChatInput: <T extends OverrideProps>(
             {!!InputAddonTop && <InputAddonTop />}
             {enableMultimodalUpload ? <BatchUploadFileList /> : null}
             {customInputAddonTopList.map(
-              /* eslint-disable-next-line @typescript-eslint/naming-convention -- 符合预期的命名 */
+              /* eslint-disable-next-line @typescript-eslint/naming-convention -- matches the expected naming */
               ({ pluginName, Component }, index) => (
                 <PluginScopeContextProvider
                   pluginName={pluginName}

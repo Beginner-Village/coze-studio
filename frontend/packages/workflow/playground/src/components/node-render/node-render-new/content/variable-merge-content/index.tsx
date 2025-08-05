@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { VariableMergeItem } from './variable-merge-item';
 import { useVariableMergeVariableTags } from './use-variable-merge-variable-tags';
 
 /**
- * 合并变量节点内容
+ * Merge variable node content
  */
 export function VariableMergeContent() {
   const mergeGroups = useVariableMergeVariableTags();

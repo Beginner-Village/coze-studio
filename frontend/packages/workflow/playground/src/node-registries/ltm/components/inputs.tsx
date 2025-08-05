@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { type PropsWithChildren } from 'react';
 
 import {
@@ -62,7 +62,7 @@ export const Inputs = withFieldArray(
         tooltip={I18n.t('ltm_240826_01')}
         testId={getNodeSetterId(fieldName)}
         actions={[
-          // 即将支持，敬请期待
+          // Support soon, so stay tuned.
           isChatflow && FLAGS['bot.automation.ltm_enhance'] ? (
             <HistorySwitchField name="inputs.historySetting.enableChatHistory" />
           ) : null,

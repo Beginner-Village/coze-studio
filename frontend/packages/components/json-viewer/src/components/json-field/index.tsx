@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useMemo } from 'react';
 
 import { last } from 'lodash-es';
@@ -29,7 +29,7 @@ import { LogObjSpecialKey, LogValueStyleType } from '../../constants';
 
 import styles from './json-field.module.less';
 
-/* JSON 类型数据渲染 */
+/* JSON type data rendering */
 const FieldValue: React.FC<{
   value: Field['value'];
 }> = ({ value }) => {

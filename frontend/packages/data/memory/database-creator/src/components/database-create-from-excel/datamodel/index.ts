@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable */
 /* tslint:disable */
 // @ts-nocheck
@@ -62,7 +62,7 @@ export default class DatamodelService<T> {
    *
    * [jump to BAM]()
    *
-   * 【Table Import】导入文件数据预检查
+   * [Table Import] Import file data pre-check
    */
   PreviewTableFile(
     req: table_import.PreviewTableFileRequest,
@@ -84,7 +84,7 @@ export default class DatamodelService<T> {
    *
    * [jump to BAM]()
    *
-   * 【Table Import】导入文件数据任务信息查询
+   * [Table Import] Import file data task information query
    */
   QueryTableFileTaskStatus(
     req: table_import.QueryTableFileTaskStatusRequest,
@@ -107,7 +107,7 @@ export default class DatamodelService<T> {
    *
    * [jump to BAM]()
    *
-   * 【Table Import】导入文件添加table
+   * [Table Import] Import file Add table
    */
   AddTable(
     req: table_import.AddTableRequest,

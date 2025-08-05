@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState, type PropsWithChildren, type FC } from 'react';
 
 import classNames from 'classnames';
@@ -83,7 +83,7 @@ const ProcessContent: FC<PropsWithChildren> = ({ children }) => (
   <div className={s['process-content']}>{children}</div>
 );
 
-/** stringify 缩进 */
+/** Stringify indent */
 const INDENTATION_SPACES = 2;
 const LLMAndAPIContent: FC<{
   toolMessageUnit: CheckParamsProps;

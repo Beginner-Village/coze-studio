@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { BotPageFromEnum } from '@coze-arch/bot-typings/common';
 import { SkillsPane } from '@coze-agent-ide/skills-pane-adapter';
 import { MemoryToolPane } from '@coze-agent-ide/memory-tool-pane-adapter';
@@ -37,10 +37,10 @@ export const SingleModeToolPaneList: React.FC<SingleModeToolPaneListProps> = ({
   }
   return (
     <DebugToolList showBackground={showBackground}>
-      {/* 任务-调试入口 */}
+      {/* Task - Debugging Entry */}
       <SkillsPane />
 
-      {/* memory查看数据入口 */}
+      {/* Memory view data entry */}
       <MemoryToolPane />
     </DebugToolList>
   );

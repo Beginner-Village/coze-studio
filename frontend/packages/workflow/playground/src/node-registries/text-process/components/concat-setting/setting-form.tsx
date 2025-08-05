@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { debounce } from 'lodash-es';
@@ -48,7 +48,7 @@ export const SettingForm = ({
 }: Props) => {
   const debouncedChange = debounce(onChange, DELAY_TIME);
 
-  // 防止触发节点选中
+  // Prevent trigger node selection
   return (
     <div className={s['setting-form']} onClick={e => e.stopPropagation()}>
       {Boolean(settingInfo?.formTitle) && (

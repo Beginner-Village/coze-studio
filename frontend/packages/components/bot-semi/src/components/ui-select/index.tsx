@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/naming-convention */
 
 import React, {
@@ -156,7 +156,7 @@ export const UISelect: ForwardRefExoticComponent<
   Omit<FilterProps & Omit<SelectProps, 'clickToHide'>, 'ref'> &
     RefAttributes<SemiSelectActions>
 > & {
-  // follow Semi 组件命名
+  // Name the following Semi components
 
   OptGroup: typeof Select.OptGroup;
 

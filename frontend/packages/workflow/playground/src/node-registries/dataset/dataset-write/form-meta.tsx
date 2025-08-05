@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { get } from 'lodash-es';
 import { I18n } from '@coze-arch/i18n';
 import {
@@ -68,9 +68,9 @@ export const DATASET_WRITE_FORM_META: FormMetaV2<FormData> = {
     outputs: provideNodeOutputVariablesEffect,
   },
 
-  // 节点后端数据 -> 前端表单数据
+  // Node Backend Data - > Frontend Form Data
   formatOnInit: transformOnInit,
 
-  // 前端表单数据 -> 节点后端数据
+  // Front-end form data - > node back-end data
   formatOnSubmit: transformOnSubmit,
 };

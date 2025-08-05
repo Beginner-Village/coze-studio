@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { logger } from '@coze-arch/logger';
@@ -31,7 +31,7 @@ const loggerWithScope = logger.createLoggerWith({
 export const useRouteErrorCatch = (error: unknown) => {
   useEffect(() => {
     if (error) {
-      // 处理不是error实例的情况
+      // Handling cases that are not instances of error
       const realError =
         error instanceof Error
           ? error
@@ -39,7 +39,7 @@ export const useRouteErrorCatch = (error: unknown) => {
               ReportEventNames.GlobalErrorBoundary,
               `global error route catch error infos:${String(error)}`,
             );
-      // 过滤 其他error
+      // Filtering, other errors
       sendCertainError(realError, () => {
         loggerWithScope.persist.error({
           eventName: ReportEventNames.GlobalErrorBoundary,

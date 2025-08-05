@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type WorkflowNodeEntity } from '@flowgram-adapter/free-layout-editor';
 import {
   type WorkflowVariableService,
@@ -22,7 +22,7 @@ import {
 } from '@coze-workflow/variable';
 
 /**
- * 获取变量类型
+ * Get variable type
  */
 export function getVariableViewType(
   variable: ValueExpression | undefined,

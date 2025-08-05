@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 import { FlowNodeFormData } from '@flowgram-adapter/free-layout-editor';
 
@@ -44,7 +44,7 @@ export const test: NodeTestMeta = {
           {
             name: 'loopCount',
             title: I18n.t('workflow_loop_count'),
-            /** 循环次数是必填项 */
+            /** Cycle count is required */
             required: true,
             input: data.loopCount,
           },
@@ -61,11 +61,11 @@ export const test: NodeTestMeta = {
     const parameters = formData?.inputs?.inputParameters;
     const variable = formData?.inputs?.variableParameters;
     const properties = {
-      // 指定次数循环时的输入
+      // Input when specifying the number of cycles
       ...(formData?.inputs?.loopType === LoopType.Array
         ? generateParametersToProperties(parameters, { node })
         : {}),
-      /** 中间变量 */
+      /** intermediate variable */
       ...generateParametersToProperties(variable, { node }),
     };
     return properties;

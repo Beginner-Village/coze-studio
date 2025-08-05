@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import { ContentBox as UIKitContentBox } from '@coze-common/chat-uikit';
@@ -88,7 +88,7 @@ export const BuildInContentBox: FC<ContentBoxProps> = props => {
     return (
       <>
         {
-          // eslint-disable-next-line @typescript-eslint/naming-convention -- 符合预期的命名
+          // eslint-disable-next-line @typescript-eslint/naming-convention -- matches the expected naming
           customContentBoxList.map(({ pluginName, Component }) => (
             <PluginScopeContextProvider pluginName={pluginName}>
               <Component
@@ -126,7 +126,7 @@ export const BuildInContentBox: FC<ContentBoxProps> = props => {
       multimodalTextContentAddonTop={
         <>
           {customTextMessageInnerTopSlotList.map(
-            // eslint-disable-next-line @typescript-eslint/naming-convention -- 符合预期的命名
+            // eslint-disable-next-line @typescript-eslint/naming-convention -- matches the expected naming
             ({ pluginName, Component }, index) => (
               <PluginScopeContextProvider
                 pluginName={pluginName}

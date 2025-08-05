@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ModelParamType } from '@coze-arch/bot-api/developer_api';
 
 import { primitiveExhaustiveCheck } from '../exhaustive-check';
@@ -41,7 +41,7 @@ export function convertModelValueType(
     return Number(value);
   }
 
-  // 理论上不走这里
+  // Theoretically not going here
   primitiveExhaustiveCheck(type);
   return value;
 }

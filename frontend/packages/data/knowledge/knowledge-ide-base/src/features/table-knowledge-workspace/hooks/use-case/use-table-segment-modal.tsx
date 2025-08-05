@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useKnowledgeStore } from '@coze-data/knowledge-stores';
 import {
   ModalActionType,
@@ -33,7 +33,7 @@ export const useTableSegmentModal = () => {
   const { mutateSliceListData } = useTableActions();
   const curDoc = documentList?.[0];
 
-  // 表格分段弹窗
+  // table segmentation pop-up
   const {
     node: tableSegmentModalNode,
     edit: openTableSegmentModal,

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { cloneDeep, merge } from 'lodash-es';
 import { usePageRuntimeStore } from '@coze-studio/bot-detail-store/page-runtime';
 import { useMultiAgentStore } from '@coze-studio/bot-detail-store/multi-agent';
@@ -74,7 +74,7 @@ export const sendTeaEventOnBeforeSendMessage = (params: {
     message_id: message.extra_info.local_message_id,
     bot_id: botId,
   };
-  // 原本逻辑就只在这三个场景 sendTea
+  // The original logic is only in these three scenes sendTea
   if (from === 'inputAndSend') {
     sendTeaEvent(EVENT_NAMES.click_send_message, {
       from: 'type',
@@ -179,7 +179,7 @@ export const updateAgentBeforeSendMessage: (
 
   const regeneratedMessageBotState = getBotState(message.extra_info.bot_state);
 
-  // regenerate 消息时 把 currentAgentId 设置为对应 userMessage 的 agentId
+  // When regenerating the message, set the currentAgentId to the agentId corresponding to the userMessage.
   const fixedAgentId =
     currentAgentID === useManuallySwitchAgentStore.getState().agentId
       ? currentAgentID

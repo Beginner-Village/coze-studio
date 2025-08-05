@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 import { type Dataset } from '@coze-arch/idl/knowledge';
@@ -24,7 +24,7 @@ interface DatasetStore {
 }
 
 /**
- * 只适用于 bot 单 agent 模式
+ * Only works in bot single agent mode
  */
 export const useDatasetStore = create<DatasetStore>()(
   devtools(

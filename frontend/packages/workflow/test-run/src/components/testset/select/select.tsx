@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, {
   useCallback,
   useEffect,
@@ -68,7 +68,7 @@ export interface TestsetSelectAPI {
 
 const DEBOUNCE_DELAY = 200;
 
-/** option key, 更新 name、incompatible、input时都要重新渲染 */
+/** Option key, re-render when updating name, incompatible, input */
 function getOptionKey({ caseBase, schemaIncompatible }: CaseDataDetail) {
   return `${caseBase?.caseID}_${caseBase?.name}_${caseBase?.input}_${
     schemaIncompatible ? 0 : 1
@@ -139,7 +139,7 @@ export const TestsetSelect = forwardRef<TestsetSelectAPI, TestsetSelectProps>(
         }
 
         const selectedTestset = optionsCacheRef.current.get(val);
-        // 不兼容的不可选中
+        // Incompatible unselectable
         if (!selectedTestset || selectedTestset.schemaIncompatible) {
           return;
         }
@@ -220,7 +220,7 @@ export const TestsetSelect = forwardRef<TestsetSelectAPI, TestsetSelectProps>(
         onSearch={handleSearch}
         emptyContent={I18n.t('workflow_testset_search_empty')}
         renderSelectedItem={() =>
-          testset ? (testset.caseBase?.name ?? '-') : null
+          testset ? testset.caseBase?.name ?? '-' : null
         }
         disabled={disabled}
         outerBottomSlot={

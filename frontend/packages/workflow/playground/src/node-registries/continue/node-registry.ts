@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { DEFAULT_NODE_META_PATH } from '@coze-workflow/nodes';
 import {
   StandardNodeType,
@@ -33,5 +33,5 @@ export const CONTINUE_NODE_REGISTRY: WorkflowNodeRegistry = {
     nodeMetaPath: DEFAULT_NODE_META_PATH,
   },
   formMeta: CONTINUE_FORM_META,
-  getOutputPoints: () => [], // Continue 节点没有输出
+  getOutputPoints: () => [], // Continue node has no output
 };

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { FlowNodeBaseType } from '@flowgram-adapter/free-layout-editor';
 import { StandardNodeType } from '@coze-workflow/base';
 
@@ -31,7 +31,7 @@ export class NestedLoopBatchValidator extends BaseNodeValidator {
       return null;
     }
 
-    // Loop / Batch 不允许嵌套
+    // Loop/Batch do not allow nesting
     if ([StandardNodeType.Loop, StandardNodeType.Batch].includes(nodeType)) {
       return parent.flowNodeType !== FlowNodeBaseType.SUB_CANVAS;
     }

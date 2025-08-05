@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { CSSProperties, ReactNode } from 'react';
 
 import copy from 'copy-to-clipboard';
@@ -45,7 +45,7 @@ export const Actions = ({ message }: { message: Message }) => {
       },
     },
   ];
-  // TODO: 加Trigger类型适配
+  // TODO: Trigger type adaptation
   return (
     <div className={styles.actions}>
       {menuConfigs.map((prop, idx) => (

@@ -13,6 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-// 快捷指令在IDE中的配置tool
+
+// Quick instructions in the IDE configuration tool
 export { ShortcutToolConfig } from './shortcut-config';

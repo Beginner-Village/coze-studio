@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ExpressionEditorTreeHelper } from '@coze-workflow/components';
 import {
   type InputValueVO,
@@ -29,7 +29,7 @@ export function convertInputs(
         name: i.name ?? '',
         keyPath: [
           ...((i.input?.content as RefExpressionContent)?.keyPath || []),
-        ], // 深拷贝一份
+        ], // Deep copy
       };
 
       if (i?.children?.length) {

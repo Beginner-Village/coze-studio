@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -93,6 +93,6 @@ describe('useParametersInSettingModalController', () => {
       result.current.doUpdateParams();
     });
 
-    expect(result.current.isUpdateLoading).toBe(false); // 假设更新完成后isUpdateLoading为false
+    expect(result.current.isUpdateLoading).toBe(false); // Assuming isUpdateLoading is false after the update is complete
   });
 });

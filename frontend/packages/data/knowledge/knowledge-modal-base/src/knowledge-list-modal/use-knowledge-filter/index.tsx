@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable max-lines-per-function */
-/* eslint-disable max-lines -- 待拆分 */
+/* eslint-disable max-lines -- to be split */
 /* eslint-disable @coze-arch/max-line-per-function */
 import {
   type FC,
@@ -311,7 +311,7 @@ const useKnowledgeFilter = ({
   };
 
   const renderContent = () => {
-    /** 有数据则展示列表 */
+    /** Show the list if you have data */
     if (data?.total) {
       return (
         <>
@@ -335,7 +335,7 @@ const useKnowledgeFilter = ({
         </>
       );
     }
-    /** 无数据且未在加载则展示空状态 */
+    /** Show empty state if no data and not loading */
     if (!loading) {
       return (
         <EmptyToCreate
@@ -348,101 +348,104 @@ const useKnowledgeFilter = ({
         />
       );
     }
-    /** 无数据且加载中则不展示 */
+    /** No data and no display while loading */
     return null;
   };
 
   const renderSearch = useMemo(
-    () => () => (
-      <Input
-        autoFocus
-        key="query-input"
-        placeholder={I18n.t('db2_014')}
-        onChange={debounce(handleQueryChange, 500)}
-      />
-    ),
+    () => () =>
+      (
+        <Input
+          autoFocus
+          key="query-input"
+          placeholder={I18n.t('db2_014')}
+          onChange={debounce(handleQueryChange, 500)}
+        />
+      ),
     [],
   );
 
   const renderCreateBtn = useMemo(
-    () => () => (
-      <UIButton
-        theme="solid"
-        onClick={handleAdd}
-        data-testid={BotE2e.BotKnowledgeSelectListModalCreateBtn}
-      >
-        {I18n.t('datasets_create_btn')}
-      </UIButton>
-    ),
+    () => () =>
+      (
+        <UIButton
+          theme="solid"
+          onClick={handleAdd}
+          data-testid={BotE2e.BotKnowledgeSelectListModalCreateBtn}
+        >
+          {I18n.t('datasets_create_btn')}
+        </UIButton>
+      ),
     [handleAdd],
   );
 
   const renderFilters = useMemo(
-    () => () => (
-      <>
-        <div className={styles['file-type-tab']}>
-          {uniqKnowledgeTypeConfigList.reduce<ReactNode[]>(
-            (
-              accumulator: ReactNode[],
-              currentValue: FilterKnowledgeType,
-              currentIndex: number,
-            ) => {
-              const reactNode = renderKnowledgeTypeConfigNode(currentValue);
-              if (currentIndex !== 0) {
-                return accumulator.concat([
-                  <Divider layout="vertical" margin="12px" />,
-                  reactNode,
-                ]);
-              }
-              return accumulator.concat([reactNode]);
-            },
-            [],
-          )}
-        </div>
+    () => () =>
+      (
+        <>
+          <div className={styles['file-type-tab']}>
+            {uniqKnowledgeTypeConfigList.reduce<ReactNode[]>(
+              (
+                accumulator: ReactNode[],
+                currentValue: FilterKnowledgeType,
+                currentIndex: number,
+              ) => {
+                const reactNode = renderKnowledgeTypeConfigNode(currentValue);
+                if (currentIndex !== 0) {
+                  return accumulator.concat([
+                    <Divider layout="vertical" margin="12px" />,
+                    reactNode,
+                  ]);
+                }
+                return accumulator.concat([reactNode]);
+              },
+              [],
+            )}
+          </div>
 
-        <div className={'flex'}>
-          {uniq(showFilters).map((filterType: DatasetFilterType) => {
-            if (filterType === 'scope-type') {
-              return !isPersonal ? (
-                <UISelect
-                  label={I18n.t('Creator')}
-                  showClear={false}
-                  value={scopeType}
-                  optionList={scopeOptions}
-                  onChange={v => {
-                    setScopeType(v as DatasetScopeType);
-                  }}
-                />
-              ) : null;
-            } else if (filterType === 'search-type') {
-              return (
-                <UISelect
-                  data-testid={
-                    BotE2e.BotKnowledgeSelectListModalCreateDateSelect
-                  }
-                  label={I18n.t('Sort')}
-                  showClear={false}
-                  value={searchType}
-                  optionList={[
-                    {
-                      label: I18n.t('Create_time'),
-                      value: OrderField.CreateTime,
-                    },
-                    {
-                      label: I18n.t('Update_time'),
-                      value: OrderField.UpdateTime,
-                    },
-                  ]}
-                  onChange={v => {
-                    handleSearchTypeChange(v as OrderField);
-                  }}
-                />
-              );
-            }
-          })}
-        </div>
-      </>
-    ),
+          <div className={'flex'}>
+            {uniq(showFilters).map((filterType: DatasetFilterType) => {
+              if (filterType === 'scope-type') {
+                return !isPersonal ? (
+                  <UISelect
+                    label={I18n.t('Creator')}
+                    showClear={false}
+                    value={scopeType}
+                    optionList={scopeOptions}
+                    onChange={v => {
+                      setScopeType(v as DatasetScopeType);
+                    }}
+                  />
+                ) : null;
+              } else if (filterType === 'search-type') {
+                return (
+                  <UISelect
+                    data-testid={
+                      BotE2e.BotKnowledgeSelectListModalCreateDateSelect
+                    }
+                    label={I18n.t('Sort')}
+                    showClear={false}
+                    value={searchType}
+                    optionList={[
+                      {
+                        label: I18n.t('Create_time'),
+                        value: OrderField.CreateTime,
+                      },
+                      {
+                        label: I18n.t('Update_time'),
+                        value: OrderField.UpdateTime,
+                      },
+                    ]}
+                    onChange={v => {
+                      handleSearchTypeChange(v as OrderField);
+                    }}
+                  />
+                );
+              }
+            })}
+          </div>
+        </>
+      ),
     [
       headerClassName,
       handleSearchTypeChange,

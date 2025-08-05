@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { get } from 'lodash-es';
 import { I18n } from '@coze-arch/i18n';
 import { type Validate } from '@flowgram-adapter/free-layout-editor';
@@ -31,7 +31,7 @@ export const groupNameValidator: Validate = ({ value, formValues }) => {
 };
 
 export function validateGroupName(name: string, names: string[]) {
-  /** 命名规则校验 */
+  /** naming rule validation */
   if (!nameValidationRule.test(name)) {
     return I18n.t('workflow_detail_node_error_format');
   }
@@ -40,7 +40,7 @@ export function validateGroupName(name: string, names: string[]) {
     return I18n.t('workflow_var_merge_name_lengthmax');
   }
 
-  // 重复名字校验
+  // duplicate name verification
   if (names.filter(item => item === name).length > 1) {
     return I18n.t('workflow_var_merge_output_namedul');
   }

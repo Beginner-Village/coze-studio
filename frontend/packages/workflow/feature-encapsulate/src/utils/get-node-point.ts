@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { PositionData } from '@flowgram-adapter/free-layout-editor';
 import {
   type WorkflowNodeJSON,
@@ -22,7 +22,7 @@ import {
 import { type IPoint } from '@flowgram-adapter/common';
 
 /**
- * 获取节点坐标
+ * Get node coordinates
  * @param node
  * @returns
  */

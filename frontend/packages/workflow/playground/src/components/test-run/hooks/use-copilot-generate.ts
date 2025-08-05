@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { workflowApi, CopilotType } from '@coze-workflow/base';
@@ -30,7 +30,7 @@ interface Props {
 }
 
 /**
- * copilot生成
+ * Copilot generation
  * @param param0
  * @returns
  */

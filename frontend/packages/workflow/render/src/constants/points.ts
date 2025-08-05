@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-// 连接点半径
+
+// Connection point radius
 
 export const STROKE_WIDTH_SLECTED = 3;
 

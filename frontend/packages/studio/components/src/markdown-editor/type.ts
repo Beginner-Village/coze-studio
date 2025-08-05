@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export interface InsertImageAction {
   type: 'image';
   sync: false;
@@ -50,13 +50,13 @@ export interface UploadState {
   fileName: string;
 }
 
-// 自定义上传方法入参
+// Custom upload method imported parameters
 export interface CustomUploadParams {
   onUploadAllSuccess: (param: { url: string; fileName: string }) => void;
 }
-// 自定义上传方法出参
+// Custom upload method exported parameter
 export interface CustomUploadRes {
   uploadFileList: (fileList: File[]) => void;
-  //null表示已完成
+  //Null means completed
   uploadState: UploadState | null;
 }

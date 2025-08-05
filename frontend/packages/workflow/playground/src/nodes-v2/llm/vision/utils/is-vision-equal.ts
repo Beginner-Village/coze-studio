@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type InputValueVO } from '@coze-workflow/base';
 
 import { isVisionInput } from './is-vision-input';
 
 /**
- * 判断是否是相同的输入类型
+ * Determine if they are the same input type
  * @param value1
  * @param value2
  * @returns

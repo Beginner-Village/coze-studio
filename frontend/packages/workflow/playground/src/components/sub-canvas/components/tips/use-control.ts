@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -53,7 +53,7 @@ export const useControlTips = () => {
   }, [close, globalStore]);
 
   useEffect(() => {
-    // 监听移入
+    // monitor move in
     const inDisposer = nodeIntoContainerService.on(e => {
       if (e.type !== NodeIntoContainerType.In) {
         return;
@@ -62,7 +62,7 @@ export const useControlTips = () => {
         show();
       }
     });
-    // 监听移出事件
+    // listen for move-out events
     const outDisposer = nodeIntoContainerService.on(e => {
       if (e.type !== NodeIntoContainerType.Out) {
         return;

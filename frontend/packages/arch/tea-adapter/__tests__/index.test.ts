@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import type {
   EVENT_NAMES,
@@ -27,7 +27,7 @@ describe('Tea Adapter', () => {
   let teaInstance: Tea;
 
   beforeEach(() => {
-    // 先初始化 Tea 实例
+    // Initialize the Tea instance first
     (proxy as Tea).init({
       autoStart: true,
     });
@@ -102,7 +102,7 @@ describe('Tea Adapter', () => {
   it('should handle config with params', () => {
     expect(teaInstance).toBeDefined();
     const config: IConfigParam = {
-      // 添加必要的配置参数
+      // Add the necessary configuration parameters
     };
     expect(() => teaInstance.config(config)).not.toThrow();
   });

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useState } from 'react';
 
 import cs from 'classnames';
@@ -56,7 +56,7 @@ export default function ParamDescription({
         )}
         value={data.description}
         ellipsis={true}
-        // 好像不生效
+        // It doesn't seem to work.
         disabled={disabled}
         handleBlur={() => {
           setInputFocus(false);

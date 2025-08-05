@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-// @file 开源版暂不支持商店渠道绑定，用于未来拓展
+
+// @File open source version does not support store channel binding for future expansion
 import { type MouseEventHandler } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';

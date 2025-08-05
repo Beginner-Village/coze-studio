@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 interface DebugUrlParams {
   spaceId: string;
   workflowId: string;
@@ -23,7 +23,7 @@ interface DebugUrlParams {
 }
 
 /**
- * 计算 DebugUrl
+ * Calculate DebugUrl
  */
 const getDebugUrl = (params: DebugUrlParams) => {
   const { spaceId, workflowId, executeId, subExecuteId, nodeId } = params;

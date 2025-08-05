@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState } from 'react';
 
 import { REPORT_EVENTS } from '@coze-arch/report-events';
@@ -74,7 +74,7 @@ export const useImagePreview = ({
       return;
     }
     try {
-      // 业务
+      // business
       const { name, fileInstance, url } = file;
       setUploading(true);
       if (fileInstance) {

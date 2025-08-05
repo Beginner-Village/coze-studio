@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useConfigEntity } from '@flowgram-adapter/free-layout-editor';
 
 import { WorkflowGlobalStateEntity } from '../entities';
 
-/** 获取全局状态 */
+/** Get global state */
 export const useGlobalState = (
   listenChange = true,
 ): WorkflowGlobalStateEntity => {

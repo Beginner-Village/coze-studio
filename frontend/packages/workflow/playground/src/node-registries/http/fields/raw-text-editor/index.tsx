@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { EditorProvider } from '@coze-editor/editor/react';
 
 import { useReadonly } from '@/nodes-v2/hooks/use-readonly';
@@ -49,7 +49,7 @@ export const RawTextEditorField = withField(
             value={value as string}
             onChange={onChange}
             minHeight={minHeight}
-            // 表单内禁止编辑
+            // Forbid editing in the form
             readonly={readonly}
           />
         </EditorProvider>

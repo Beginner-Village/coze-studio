@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 批处理的分页器
+ * Batch pager
  */
 import React, { useMemo } from 'react';
 

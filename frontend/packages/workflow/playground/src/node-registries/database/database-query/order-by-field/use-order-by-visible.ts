@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useQueryFieldIDs } from './use-query-field-ids';
 
-// 当前如果查询字段为空 则排序字段不显示
+// Currently, if the query field is empty, the sorting field is not displayed
 export function useOrderByVisible() {
   const queryFieldIDs = useQueryFieldIDs();
 

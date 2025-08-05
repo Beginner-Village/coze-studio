@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type NodeResult } from '@coze-workflow/base';
 import { logger } from '@coze-arch/logger';
 
@@ -22,7 +22,7 @@ interface Extra {
 }
 
 /**
- * 根据执行结果判断是不是输出的变量
+ * Determine whether it is an output variable according to the execution result
  * @param ref
  * @param result
  * @returns

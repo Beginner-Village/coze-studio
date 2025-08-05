@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type AgentSkillKey } from '@coze-agent-ide/tool-config';
 
 import { useAbilityAreaContext } from '../../context/ability-area-context';
 
 /**
- * 用于内部注册AgentSkill使用
+ * For internal registration AgentSkill use
  */
 export const useRegisterAgentSkillKey = () => {
   const {

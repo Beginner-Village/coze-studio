@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { CSSProperties } from 'react';
 
 import type { SetterComponentProps } from '@flowgram-adapter/free-layout-editor';
@@ -33,18 +33,18 @@ export type NodeInputNameProps = SetterComponentProps & {
   initValidate?: boolean;
   isPureText?: boolean;
   style?: CSSProperties;
-  /** 同一层的变量表达式 */
+  /** Variable expressions at the same level */
   input?: RefExpression;
-  /** 当前输入列表中所有输入项 */
+  /** All input items in the current input list */
   inputParameters?: Array<{
     name: string;
     input: RefExpression;
   }>;
-  /** 前缀 */
+  /** prefix */
   prefix?: string;
-  /** 后缀 */
+  /** suffix */
   suffix?: string;
-  /** 名称自定义格式化 */
+  /** Name custom formatting */
   format?: NodeInputNameFormat;
   tooltip?: string;
 };

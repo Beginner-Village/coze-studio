@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 
 import { type TestFormField } from '../types';
@@ -54,7 +54,7 @@ export const generateUpdateTriggerFields = (formData, context) => {
 
   const payloadFields = generateObjectInputParameters(payload, context).map(
     i => {
-      // 绑定的工作流入参在表单的形式为 `${variable.type},${variable.key ?? variable.name}`
+      // The bound work flows into the argument in the form ${variable.type}, ${variable.key?? variable.name}
       const parameterKey = i.name?.split(',')[1] || i.name;
       return {
         ...i,

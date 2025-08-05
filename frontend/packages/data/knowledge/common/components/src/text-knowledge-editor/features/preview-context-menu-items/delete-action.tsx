@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import classNames from 'classnames';
@@ -27,7 +27,7 @@ import { eventBus } from '@/text-knowledge-editor/event';
 import { type PreviewContextMenuItemProps } from './module';
 
 /**
- * 删除特定分片的菜单项组件
+ * Remove a specific sharding menu item component
  */
 export const DeleteAction: React.FC<PreviewContextMenuItemProps> = ({
   chunk,
@@ -44,7 +44,7 @@ export const DeleteAction: React.FC<PreviewContextMenuItemProps> = ({
       'cursor-not-allowed': isDisabled,
     });
 
-  // 删除特定分片
+  // Remove specific shardings
   const { deleteChunk } = useDeleteAction({
     chunks,
     onChunksChange: ({ chunks: newChunks }) => {

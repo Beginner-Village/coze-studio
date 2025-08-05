@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 
 import { useEffect, type FC, useRef } from 'react';
@@ -27,12 +27,7 @@ import {
 } from '@coze-workflow/base';
 import { I18n } from '@coze-arch/i18n';
 import { IconCozFocus } from '@coze-arch/coze-design/icons';
-import {
-  EmptyState,
-  Spin,
-  Timeline,
-  Typography,
-} from '@coze-arch/coze-design';
+import { EmptyState, Spin, Timeline, Typography } from '@coze-arch/coze-design';
 
 import { useVersionHistory } from './use-version-history';
 import { type WorkflowCommitListProps } from './type';
@@ -76,11 +71,11 @@ const WorkflowCommitListComp: FC<WorkflowCommitListProps> = withQueryClient(
       enabled: true,
     });
 
-    /** scroll的container */
+    /** Scroll container */
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-    /** 监听触底的observer */
+    /** Monitor the bottom observer */
     const intersectionObserverDom = useRef<HTMLDivElement>(null);
-    // 是否触底
+    // Is it bottoming out?
     const [inViewPort] = useInViewport(intersectionObserverDom, {
       root: () => scrollContainerRef.current,
       threshold: 0.8,
@@ -90,9 +85,9 @@ const WorkflowCommitListComp: FC<WorkflowCommitListProps> = withQueryClient(
       updatePageParam({ type });
     }, [type, updatePageParam]);
 
-    // 首次effect不执行，这个是切换状态的effect
+    // The first effect is not executed, this is the effect of switching the state
     useUpdateEffect(() => {
-      // 当筛选项改变时，回到顶部
+      // When the filter item changes, return to the top
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTo({
           top: 0,
@@ -100,7 +95,7 @@ const WorkflowCommitListComp: FC<WorkflowCommitListProps> = withQueryClient(
       }
     }, [queryParams]);
 
-    // 获取下一页逻辑
+    // Get next page logic
     useEffect(() => {
       if (!inViewPort) {
         return;
@@ -142,12 +137,12 @@ const WorkflowCommitListComp: FC<WorkflowCommitListProps> = withQueryClient(
     }
 
     const timelineType = (data: VersionMetaInfo, index) => {
-      // PPE 历史, 在线激活
+      // PPE history, online activation
       if (type === OperateType.PubPPEOperate) {
         return !data.offline ? 'ongoing' : 'default';
       }
 
-      // 提交历史和发布历史, 最新的激活
+      // Submission history and release history, latest activations
       return index === 0 ? 'ongoing' : 'default';
     };
 

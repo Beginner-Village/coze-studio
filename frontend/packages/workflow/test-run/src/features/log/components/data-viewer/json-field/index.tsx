@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useEffect, useMemo } from 'react';
 
 import { isString, last } from 'lodash-es';
@@ -32,10 +32,10 @@ import styles from './json-field.module.less';
 
 const SPACE_WIDTH = 14;
 
-/* JSON 类型数据渲染 */
+/* JSON type data rendering */
 const FieldValue: React.FC<{
   value: Field['value'];
-  /** 是否是 markdown 格式 */
+  /** Is it in markdown format? */
   isMarkdown?: boolean;
   onMarkdownPreview?: () => void;
 }> = ({ value, isMarkdown, onMarkdownPreview }) => {
@@ -52,7 +52,7 @@ const FieldValue: React.FC<{
       >
         {current}
       </span>
-      {/* 预览 */}
+      {/* preview */}
       {isMarkdown ? (
         <Button
           className={styles['value-button']}

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCallback, useEffect, useRef, useState, type FC } from 'react';
 
 import { IconCrossStroked } from '@douyinfe/semi-icons';
@@ -112,7 +112,7 @@ export const JSONEditor: FC<JSONEditorProps> = props => {
     }
   };
 
-  // 同步 value 和 schema
+  // Synchronizing values and schemas
   useEffect(() => {
     const handler = async () => {
       const _schema = await convert(value);

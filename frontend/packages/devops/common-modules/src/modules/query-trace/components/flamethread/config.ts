@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type GlobalStyle,
   type RectStyle,
@@ -64,7 +64,7 @@ export const defaultLabelStyle: LabelStyle = {
 export const defaultLabelText: LabelText = (datum, element, params) =>
   `${datum.start}-${datum.end}`;
 
-// xScale的padding(解决hover后rect边框被截断问题)
+// padding of xScale (solve the problem of rect border being truncated after hover)
 export const scrollbarMargin = 10;
 export const datazoomHeight = 20;
 export const datazoomDecimals = 0;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/use-error-in-catch */
 import { get } from 'lodash-es';
 import { inject, injectable } from 'inversify';
@@ -83,7 +83,7 @@ export class EncapsulateApiServiceImpl implements EncapsulateApiService {
 
   async getWorkflow(spaceId: string, workflowId: string, version?: string) {
     let json;
-    // 有历史版本的场景获取历史版本的数据
+    // Scenes with historical versions get historical versions of data
     if (version) {
       const res = await workflowApi.GetHistorySchema({
         space_id: spaceId,

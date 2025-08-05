@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { TreeNodeData } from '@coze-arch/bot-semi/Tree';
 
 import { type ViewVariableType as VariableType } from '../variable-types';
@@ -43,7 +43,7 @@ export interface Variable {
   type: VariableType;
   name: string;
   children?: Variable[];
-  // 用户自定义节点名展示
+  // user-defined node name display
   label?: string;
 }
 

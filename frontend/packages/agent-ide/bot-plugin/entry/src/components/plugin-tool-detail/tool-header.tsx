@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo, type FC } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -69,7 +69,7 @@ const ToolHeader: FC<ToolHeaderProps> = ({
     unlockPlugin();
   };
 
-  // 管理模拟集
+  // management simulation set
   const handleManageMockset = () => {
     resourceNavigate.mocksetList?.(tool_id);
   };
@@ -119,7 +119,7 @@ const ToolHeader: FC<ToolHeaderProps> = ({
         />
         <span className={s.title}>{I18n.t('plugin_edit_tool_title')}</span>
         <OauthButtonAction />
-        {/* 即将支持，敬请期待 */}
+        {/* Support soon, so stay tuned. */}
         {FLAGS['bot.devops.plugin_mockset'] ? (
           <Tooltip
             style={{ display: mocksetDisabled ? 'block' : 'none' }}

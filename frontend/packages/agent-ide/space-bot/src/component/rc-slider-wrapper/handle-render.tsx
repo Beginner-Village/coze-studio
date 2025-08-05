@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { type SliderProps } from 'rc-slider';
@@ -37,7 +37,7 @@ export const HandleTooltip: React.FC<HandleTooltipProps> = props => {
 
   const rafRef = React.useRef<number | null>(null);
 
-  // 用来更新 Tooltip 的位置
+  // To update the location of Tooltip
   const [refreshKey, setRefreshKey] = React.useState('1');
 
   function cancelKeepAlign() {

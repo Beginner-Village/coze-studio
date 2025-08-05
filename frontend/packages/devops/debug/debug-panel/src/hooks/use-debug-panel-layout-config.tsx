@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useRef } from 'react';
 
 import { produce } from 'immer';
@@ -31,7 +31,7 @@ export type UseDebugPanelLayoutConfig = () => [
 ];
 
 /**
- * 获取和修改存储在localStorage中的调试台布局数据
+ * Get and modify debug bench layout data stored in localStorage
  * @returns UseDebugPanelLayoutConfig
  */
 export const useDebugPanelLayoutConfig: UseDebugPanelLayoutConfig = () => {

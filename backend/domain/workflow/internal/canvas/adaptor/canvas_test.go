@@ -263,7 +263,7 @@ func TestDatabaseCURD(t *testing.T) {
 }
 
 func TestHttpRequester(t *testing.T) {
-	listener, err := net.Listen("tcp", "127.0.0.1:8080") // 指定IP和端口
+	listener, err := net.Listen("tcp", "127.0.0.1:8080") // Specify IP and port
 	assert.NoError(t, err)
 	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/http_error" {
@@ -655,11 +655,10 @@ func TestKnowledgeNodes(t *testing.T) {
 		mockKnowledgeOperator.EXPECT().Retrieve(gomock.Any(), gomock.Any()).Return(rResponse, nil)
 		mockGlobalAppVarStore := mockvar.NewMockStore(ctrl)
 		mockGlobalAppVarStore.EXPECT().Get(gomock.Any(), gomock.Any()).Return("v1", nil).AnyTimes()
-		mockGlobalAppVarStore.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-		variable.SetVariableHandler(&variable.Handler{
-			AppVarStore: mockGlobalAppVarStore,
-		})
+		variable.SetVariableHandler(&variable.Handler{AppVarStore: mockGlobalAppVarStore})
+
+		mockey.Mock(execute.GetAppVarStore).Return(&execute.AppVariables{Vars: map[string]any{}}).Build()
 
 		ctx := t.Context()
 		ctx = ctxcache.Init(ctx)

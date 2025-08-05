@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { LegacyRef, forwardRef } from 'react';
 
 import cs from 'classnames';
@@ -25,12 +25,12 @@ import s from './index.module.less';
 export interface UIIconButtonProps extends ButtonProps {
   wrapperClass?: string;
   /**
-   * iconSize: 带hover大小，small:18、default:24、large:32
+   * iconSize: with hover size, small: 18, default: 24, large: 32
    */
   iconSize?: 'small' | 'default' | 'large';
 }
 
-//图标按钮组件
+//icon button component
 export const UIIconButton = forwardRef(
   (
     {

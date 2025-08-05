@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type ExpressionEditorTreeNode,
   ExpressionEditorTreeHelper,
@@ -30,7 +30,7 @@ export const useVariableTree = ({
 }): ExpressionEditorTreeNode[] => {
   const availableVariables: ExpressionEditorTreeHelper.AvailableVariable[] =
     variables.map((variable: WorkflowVariableFacade) => ({
-      // 流程变量特化逻辑，因为 block-output 不是一个合法的变量名
+      // Process variable specialization logic because block-output is not a valid variable name
       name: variable.globalVariableKey
         ? variable.expressionPath?.source
         : TRANS_WORKFLOW_VARIABLE_SOURCE +

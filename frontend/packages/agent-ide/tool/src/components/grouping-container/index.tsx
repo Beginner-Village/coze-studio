@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, type ReactNode } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -33,8 +33,8 @@ import { usePreference } from '../../context/preference-context';
 import styles from './index.module.less';
 
 /**
- * 分组容器
- * @see 
+ * Packet container
+ * @see
  */
 
 interface IProps {
@@ -47,7 +47,7 @@ interface IProps {
 
 export const GroupingContainer: FC<IProps> = props => {
   const { children, title, toolGroupKey, actionNodes, className } = props;
-  // 容器在页面中的展示位置，不同位置样式有区别
+  // The placement of the container on the page is different in different position styles
   const { placement } = useLayoutContext();
 
   const { isReadonly } = usePreference();

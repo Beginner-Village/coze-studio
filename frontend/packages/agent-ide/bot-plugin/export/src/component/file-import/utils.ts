@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { parse as yamlParse, stringify as yamlStringify } from 'yaml';
 import { isObject } from 'lodash-es';
 import axios from 'axios';
@@ -120,7 +120,7 @@ export async function getContent(file: Blob, onProgress): Promise<string> {
 }
 
 export function isValidURL(str?: string): boolean {
-  // 缩略版
+  // abbreviated version
   try {
     const objExp = new RegExp(
       '^(https?:\\/\\/)?' + // protocol
@@ -137,7 +137,7 @@ export function isValidURL(str?: string): boolean {
 }
 
 export async function customService(url: string) {
-  // 这里需要自定义请求，需要引入axios
+  // Custom requests are required here, and axios needs to be introduced.
   const axiosInstance = axios.create({ responseType: 'text' });
 
   const response = await axiosInstance.get(url);

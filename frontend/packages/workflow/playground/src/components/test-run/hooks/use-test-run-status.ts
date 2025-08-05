@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo, useState } from 'react';
 
 import { WorkflowExecStatus } from '@coze-workflow/base';
@@ -44,7 +44,7 @@ const useTestRunStatus = (nodeId: string) => {
     [loading, frozen, saving],
   );
 
-  /** 是否是本节点触发的锁 */
+  /** Is it a lock triggered by this node? */
   const isMineRunning = useMemo(
     () => frozen && frozen === nodeId,
     [frozen, nodeId],

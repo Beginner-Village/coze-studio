@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /// <reference types='@coze-arch/bot-typings' />
 
 interface Window {
   /**
-   * tea 实例
+   * Tea example
    */
   Tea?: any;
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ConditionLogic } from '@coze-workflow/base';
 
 import { useCurrentDatabaseQuery } from '@/hooks';
@@ -24,7 +24,7 @@ export function useResetCondition(conditionFieldName: string) {
   const { data: currentDatabase } = useCurrentDatabaseQuery();
 
   return () => {
-    // 当前有选中的数据库 需要有一个空条件
+    // There is currently a selected database, and an empty condition is required.
     if (currentDatabase) {
       form.setFieldValue(conditionFieldName, {
         conditionList: [

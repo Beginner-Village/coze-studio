@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type SettingOnErrorValue,
   useTimeoutConfig,
 } from '@coze-workflow/nodes';
 
 /**
- * 是否展开
+ * Whether to expand
  * @param settingOnError
  * @returns
  */

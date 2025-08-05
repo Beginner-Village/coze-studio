@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   forwardRef,
   type MouseEventHandler,
@@ -38,7 +38,7 @@ import { Button, Image } from '@coze-arch/coze-design';
 import styles from './card.module.less';
 
 export interface ProjectTemplateCardContentProps {
-  /** 埋点参数 页面来源 */
+  /** Event tracking parameters, page source */
   viewSource: ParamsTypeDefine[EVENT_NAMES.template_action_front]['source'];
   product: ProductInfo;
   onCopyTemplate?: (param: { name: string; id: string }) => void;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useWorkflowNode } from '@coze-workflow/base';
 import { I18n } from '@coze-arch/i18n';
 
@@ -26,7 +26,7 @@ interface OutputsProps {
 }
 
 /**
- * 节点输出
+ * Node output
  */
 export function Outputs({
   label = I18n.t('workflow_detail_node_output'),

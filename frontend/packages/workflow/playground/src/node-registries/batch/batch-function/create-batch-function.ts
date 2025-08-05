@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type {
   WorkflowDocument,
   WorkflowNodeEntity,
@@ -26,7 +26,7 @@ import { createBatchFunctionTemplateData } from './create-batch-function-templat
 import { createBatchFunctionLines } from './create-batch-function-lines';
 import { createBatchFunctionJSON } from './create-batch-function-json';
 
-/** 创建 Batch 循环体节点 */
+/** Create Batch loop body node */
 export const createBatchFunction = async (
   batchNode: WorkflowNodeEntity,
   batchJson: WorkflowNodeJSON,
@@ -46,8 +46,9 @@ export const createBatchFunction = async (
     y: batchPosition.y + offset.y,
   };
   const batchFunctionJSON = createBatchFunctionJSON(id, position);
-  const batchFunctionNode =
-    await document.createWorkflowNode(batchFunctionJSON);
+  const batchFunctionNode = await document.createWorkflowNode(
+    batchFunctionJSON,
+  );
   createBatchFunctionTemplateData(batchNode, batchFunctionNode);
   createBatchFunctionLines({
     document,

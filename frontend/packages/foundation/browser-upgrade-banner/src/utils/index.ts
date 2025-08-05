@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { detect, type Browser } from 'detect-browser';
 
 import { compareVersion } from './compare-version';
@@ -68,7 +68,7 @@ const INTERNATIONAL_BROWSER_DOWNLOAD_CONFIG: DownloadConfig = {
 };
 
 /**
- * 目前看起来 移动端 / PC 版本一致无需区分，后期如果区分，在这里通过条件区分
+ * At present, it seems that the mobile end/PC version is the same without distinction. If it is distinguished later, it will be distinguished by conditions here.
  */
 export const testLowVersionBrowse = () => testPCVersion();
 
@@ -81,7 +81,7 @@ const testPCVersion = () => {
 
   const { name, version } = browserInfo;
 
-  // 显示的判断，用 includes 类型推断不正确
+  // The displayed judgment, incorrectly inferred with the includes type
   if (name === 'bot' || name === 'react-native' || name === 'node') {
     return null;
   }
@@ -98,8 +98,7 @@ const testPCVersion = () => {
 
   return {
     downloadUrl: IS_OVERSEA
-      ? (INTERNATIONAL_BROWSER_DOWNLOAD_CONFIG[name] ??
-        INTERNATIONAL_CHROME_URL)
-      : (CN_BROWSER_DOWNLOAD_CONFIG[name] ?? CN_CHROME_URL),
+      ? INTERNATIONAL_BROWSER_DOWNLOAD_CONFIG[name] ?? INTERNATIONAL_CHROME_URL
+      : CN_BROWSER_DOWNLOAD_CONFIG[name] ?? CN_CHROME_URL,
   };
 };

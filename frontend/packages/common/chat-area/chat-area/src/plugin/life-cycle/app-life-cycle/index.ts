@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { createPluginBenchmark } from '../create-plugin-benchmark';
 import {
   type OnRefreshMessageListError,
@@ -30,7 +30,7 @@ type Expect<T extends true> = T;
 type TestClassIncludeAppLifeCycleKeys =
   AppLifeCycle extends keyof SystemAppLifeCycleService ? true : false;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unused-vars -- 检测类型使用
+// eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unused-vars -- detect type usage
 type _ = Expect<TestClassIncludeAppLifeCycleKeys>;
 
 export class SystemAppLifeCycleService {

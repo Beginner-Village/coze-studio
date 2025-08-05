@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 import { type SetterExtension } from '@flowgram-adapter/free-layout-editor';
 
@@ -29,7 +29,7 @@ export const nodeOutputName: SetterExtension = {
   validator: ({ value, context }) => {
     const { node } = context;
 
-    /** 命名校验 */
+    /** name check */
     if (!nameValidationRule.test(value)) {
       return I18n.t('workflow_detail_node_error_format');
     }

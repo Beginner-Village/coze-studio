@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { FormSchema } from '../shared';
 import { ObjectField } from './object-field';
 import { GeneralField } from './general-field';
@@ -27,7 +27,7 @@ const computePath = (path?: string[], name?: string) =>
   [...(path || []), name].filter((i): i is string => Boolean(i));
 
 /**
- * 递归 Field
+ * Recursive Field
  */
 const RecursionField: React.FC<RecursionFieldProps> = ({ name, schema }) => {
   const renderProperties = () => {

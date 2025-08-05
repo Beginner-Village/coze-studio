@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type WorkflowNodeJSON } from '@flowgram-adapter/free-layout-editor';
 import { type IPoint } from '@flowgram-adapter/common';
 
 import { type Rect } from '../types';
 
 /**
- * 设置节点坐标
+ * Set node coordinates
  * @param node
  * @returns
  */
@@ -36,7 +36,7 @@ export function setNodePosition(
 }
 
 /**
- * 根据矩形设置节点坐标
+ * Set node coordinates according to the rectangle
  * @param node
  * @param rect
  */

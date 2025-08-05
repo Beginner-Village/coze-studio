@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { LoadDirection } from '@coze-common/chat-core';
 import { safeAsyncThrow } from '@coze-common/chat-area-utils';
 import { reporter } from '@coze-arch/logger';
@@ -180,7 +180,7 @@ export class LoadByScrollNext extends LoadCommand {
           state.loadLock[action] = null;
         });
       };
-      // 本来想用 requestAnimationFrame 的，但是不太行，凑活一下吧
+      // I wanted to use requestAnimationFrame, but it didn't work. Let's make a living
       setTimeout(unlockLoadScroll, LOAD_NEXT_LOCK_DELAY);
     });
   }

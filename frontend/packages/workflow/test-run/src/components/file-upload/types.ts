@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { FileItemStatus } from '../file-icon';
 
 export interface FileItem extends File {
-  // 唯一标识
+  // unique identifier
   uid?: string;
-  // 文件地址
+  // File address
   url?: string;
-  // 上传进度
+  // upload progress
   percent?: number;
-  // 校验信息
+  // verification information
   validateMessage?: string;
   status?: FileItemStatus;
   [key: string]: any;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 
@@ -31,7 +31,7 @@ interface RiskAction {
 const initialStore: RiskStore = {
   pluginRiskIsRead: true,
   toolHiddenModeNewbieGuideIsRead: true,
-  // 支持扩展其它风险提示...
+  // Support for expanding other risk alerts...
 };
 
 export const useRiskWarningStore = create<RiskStore & RiskAction>()(

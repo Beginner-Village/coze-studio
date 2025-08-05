@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type { CSSProperties } from 'react';
 
 import type { WorkflowNodeEntity } from '@flowgram-adapter/free-layout-editor';
@@ -32,15 +32,15 @@ export interface NodeInputNameProps {
   initValidate?: boolean;
   isPureText?: boolean;
   style?: CSSProperties;
-  /** 同一层的变量表达式 */
+  /** Variable expressions at the same level */
   input: ValueExpression;
-  /** 当前输入列表中所有输入项 */
+  /** All input items in the current input list */
   inputParameters: Array<InputValueVO>;
-  /** 前缀 */
+  /** prefix */
   prefix?: string;
-  /** 后缀 */
+  /** suffix */
   suffix?: string;
-  /** 名称自定义格式化 */
+  /** Name custom formatting */
   format?: NodeInputNameFormat;
   tooltip?: string;
   isError?: boolean;

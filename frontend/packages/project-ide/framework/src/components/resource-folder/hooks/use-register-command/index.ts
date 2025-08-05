@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useRef } from 'react';
 
 import { CommandRegistry, useIDEService } from '@coze-project-ide/client';
@@ -77,7 +77,7 @@ const useRegisterCommand = ({
           });
         }
       } else if (command.execute) {
-        // 如果有自定义的 execute 函数才会需要重新注册
+        // If there is a custom execute function, it will only need to be re-registered.
         if (commandRegistry.getCommand(command.id)) {
           commandRegistry.unregisterCommand(command.id);
         }

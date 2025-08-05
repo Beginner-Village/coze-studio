@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 
 import { isUndefined } from 'lodash-es';
@@ -28,17 +28,17 @@ import s from './custom-selector.module.less';
 
 interface Props {
   /**
-   * 运行结果数组
+   * Run result array
    */
   items: (NodeResult | null)[];
 
-  /** 当前选择索引 */
+  /** current selection index */
   value: number | undefined;
 
   /** placeholder */
   placeholder: string;
 
-  /** 选择索引变更事件 */
+  /** Select index change event */
   onChange: (p: number) => void;
 }
 
@@ -92,7 +92,7 @@ export const CustomSelector: React.FC<Props> = ({
 
           const currentIndex = v?.index ?? 0;
 
-          /** 面板中的数字从 11 开始 */
+          /** The numbers in the panel start at 11 */
           const START_INDEX = 11;
           if (!v) {
             return (

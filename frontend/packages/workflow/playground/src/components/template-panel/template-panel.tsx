@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import classNames from 'classnames';
@@ -60,7 +60,7 @@ export const TemplatePanel = () => {
       let newScrollLeft = 0;
       if (direction === 'left') {
         newScrollLeft = Math.max(currentScrollLeft - scrollAmount, 0);
-        // 设置左滑按钮禁用态
+        // Set the left swipe button disabled state
       } else if (direction === 'right') {
         newScrollLeft = Math.min(
           currentScrollLeft + scrollAmount,
@@ -78,7 +78,7 @@ export const TemplatePanel = () => {
     [setLeftSlidable, setRightSlidable],
   );
 
-  // 检查是否可以滚动
+  // Check if it can be scrolled.
   const checkScrollability = () => {
     const scrollElement = scrollRef.current;
     if (!scrollElement) {
@@ -98,13 +98,13 @@ export const TemplatePanel = () => {
       return;
     }
 
-    // 监听宽度变化
+    // Monitor width change
     const resizeObserver = new ResizeObserver(() => {
       checkScrollability();
     });
     resizeObserver.observe(scrollElement);
 
-    // 监听滚动事件
+    // listen for scrolling events
     scrollElement.addEventListener('scroll', checkScrollability);
 
     return () => {

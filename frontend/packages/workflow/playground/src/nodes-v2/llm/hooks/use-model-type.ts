@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useForm } from '@flowgram-adapter/free-layout-editor';
 
 /**
- * 获取模型type
+ * Get model type
  */
 export function useModelType() {
   const form = useForm();

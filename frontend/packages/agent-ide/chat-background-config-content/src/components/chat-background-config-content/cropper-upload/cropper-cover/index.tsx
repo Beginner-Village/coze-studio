@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo } from 'react';
 
 import classNames from 'classnames';
@@ -107,7 +107,7 @@ export const CropperCover: React.FC<CropperCoverProps> = ({
           <Tag
             color="primary"
             prefixIcon={null}
-            // 这里适配背景图色 颜色固定不改变
+            // The background cover color is suitable here, and the color is fixed and does not change.
             className="!text-white !bg-[rgba(0,0,0,0.28)]"
           >
             {mode === 'pc'

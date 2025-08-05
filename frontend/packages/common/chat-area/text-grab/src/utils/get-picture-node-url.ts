@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 获取图片 Node 中的 Url
- * @param node Node 任意Node
+ * Get URLs in image Node
+ * @param node Node
  * @returns string
  */
 export const getPictureNodeUrl = (node: Node) => {

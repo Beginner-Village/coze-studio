@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -54,12 +54,12 @@ export const useContentBaseMore = ({
   editVersion,
   onSuccess,
 }: UseContentBaseInfoProps) => {
-  // 是否显示安全检查失败信息
+  // Is the security check failure message displayed?
   const [showSecurityCheckFailedMsg, setShowSecurityCheckFailedMsg] =
     useState(false);
   const [isBaseMoreDisabled, setIsBaseMoreDisabled] = useState(true);
 
-  // 基本信息
+  // Basic information
   const { baseInfoNode, submitBaseInfo } = useBaseMore({
     pluginId: plugin_id || '',
     pluginMeta: pluginInfo?.meta_info || {},
@@ -101,7 +101,7 @@ export const useContentBaseMore = ({
             onClick={async e => {
               e.stopPropagation();
               const status = await submitBaseInfo();
-              // 更新成功后进入下一步
+              // After the update is successful, proceed to the next step
               if (status) {
                 handleInit();
               }

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -217,7 +218,7 @@ func (p *PluginApplicationService) toPluginInfoForPlayground(ctx context.Context
 		UpdateTime:     strconv.FormatInt(pl.UpdatedAt/1000, 10),
 		ProjectID:      strconv.FormatInt(pl.GetAPPID(), 10),
 		VersionName:    pl.GetVersion(),
-		VersionTs:      pl.GetVersion(), // 兼容前端逻辑，理论上应该使用 VersionName
+		VersionTs:      pl.GetVersion(), // Compatible with front-end logic, in theory VersionName should be used
 		PluginApis:     pluginAPIs,
 	}
 
@@ -851,7 +852,7 @@ func (p *PluginApplicationService) UpdateAPI(ctx context.Context, req *pluginAPI
 		method = &m
 	}
 
-	updateReq := &service.UpdateToolDraftRequest{
+	updateReq := &service.UpdateDraftToolRequest{
 		PluginID:     req.PluginID,
 		ToolID:       req.APIID,
 		Name:         req.Name,
@@ -1267,7 +1268,7 @@ func (p *PluginApplicationService) PublicGetProductList(ctx context.Context, req
 	resp = &productAPI.GetProductListResponse{
 		Data: &productAPI.GetProductListData{
 			Products: products,
-			HasMore:  false, // 一次性拉完
+			HasMore:  false, // Finish at one time
 			Total:    int32(res.Total),
 		},
 	}
@@ -1727,7 +1728,12 @@ func (p *PluginApplicationService) OauthAuthorizationCode(ctx context.Context, r
 		return nil, errorx.WrapByCode(err, errno.ErrPluginOAuthFailed, errorx.KV(errno.PluginMsgKey, "invalid state"))
 	}
 
-	stateBytes, err := utils.DecryptByAES(stateStr, utils.StateSecretKey)
+	secret := os.Getenv(utils.StateSecretEnv)
+	if secret == "" {
+		secret = utils.DefaultStateSecret
+	}
+
+	stateBytes, err := utils.DecryptByAES(stateStr, secret)
 	if err != nil {
 		return nil, errorx.WrapByCode(err, errno.ErrPluginOAuthFailed, errorx.KV(errno.PluginMsgKey, "invalid state"))
 	}

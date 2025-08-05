@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { inject, injectable } from 'inversify';
 import { PlaygroundConfigEntity } from '@flowgram-adapter/free-layout-editor';
 import {
@@ -30,7 +30,7 @@ import { EncapsulateCommands } from './types';
 import { EncapsulateRenderService } from './encapsulate-render-service';
 
 /**
- * 封装 快捷键
+ * Package shortcut
  */
 @injectable()
 export class EncapsulateShortcutsContribution
@@ -51,7 +51,7 @@ export class EncapsulateShortcutsContribution
   registerShortcuts(registry: WorkflowShortcutsRegistry): void {
     registry.addHandlers(
       /**
-       * 封装
+       * package
        */
       {
         commandId: EncapsulateCommands.ENCAPSULATE,
@@ -82,7 +82,7 @@ export class EncapsulateShortcutsContribution
         },
       },
       /**
-       * 解封
+       * unblock
        */
       {
         commandId: EncapsulateCommands.DECAPSULATE,

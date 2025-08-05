@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import { type URI, useCurrentWidget } from '@coze-project-ide/client';
@@ -45,7 +45,7 @@ const useCurrentWidgetActivate = (cb: ActivateCallback) => {
 };
 
 /**
- * 获取当前 widget 的 location
+ * Get the location of the current widget
  */
 export const useIDELocation = () => {
   const currentWidget = useCurrentWidget() as ProjectIDEWidget;
@@ -70,7 +70,7 @@ export const useIDELocation = () => {
 };
 
 /**
- * 获取当前 widget 的 query 参数
+ * Get the query parameters of the current widget
  */
 export const useIDEParams = () => {
   const currentWidget = useCurrentWidget() as ProjectIDEWidget;

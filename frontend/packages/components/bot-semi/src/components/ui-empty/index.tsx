@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { ReactElement } from 'react';
 
 import classNames from 'classnames';
@@ -120,7 +120,7 @@ export function UIEmpty({
   );
 }
 
-// 无图场景下的原生用法
+// Native usage in non-graphic scenarios
 UIEmpty.Semi = Empty;
 
 export default UIEmpty;

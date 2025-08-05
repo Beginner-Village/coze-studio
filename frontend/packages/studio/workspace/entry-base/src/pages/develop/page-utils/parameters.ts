@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { IntelligenceType } from '@coze-arch/idl/intelligence_api';
 
 import { DevelopCustomPublishStatus, DevelopCustomTypeStatus } from '../type';
@@ -31,8 +31,8 @@ export const getPublishRequestParam = (
 };
 
 /**
- * 项目类型请求前后端参数映射，将DevelopCustomTypeStatus映射为IntelligenceType[]
- * 需要根据是否可以展示抖音分身来决定是否处理 DouyinAvatarBot
+ * Project Type Request Front and Back End Parameter Mapping, Mapping DevelopCustomTypeStatus to Intelligence Type []
+ * You need to decide whether to deal with DouyinAvatarBot according to whether the Douyin doppelganger can be displayed.
  * @param type
  * @returns
  */

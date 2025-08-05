@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { type Canvas, type FabricObject } from 'fabric';
 import { renderHook, act } from '@testing-library/react';
@@ -58,7 +58,7 @@ describe('useAlign', () => {
       act(() => {
         result.current.alignLeft();
       });
-      // 由于没有 canvas，不应该有任何操作发生
+      // Since there is no canvas, no operation should occur
     });
 
     it('应该在选中对象少于 2 个时不执行任何操作', () => {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, type PropsWithChildren, Children, useEffect } from 'react';
 
 import classNames from 'classnames';
@@ -56,7 +56,7 @@ export const AgentSkillView: FC<PropsWithChildren<IProps>> = ({
 
   useSubscribeToolStore(AbilityScope.AGENT_SKILL, agentId);
 
-  // 前置注册
+  // pre-registration
   useEffect(() => {
     Children.map(children, child => {
       if (!hasValidAgentSkillKey(child)) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, {
   useCallback,
   useEffect,
@@ -121,7 +121,7 @@ export const BaseJsonEditor = React.forwardRef(
       apiRef.current?.updateASTDecorations();
     }, [isDarkTheme]);
 
-    // 值受控;
+    // Value controlled;
     useEffect(() => {
       const editor = apiRef.current;
 

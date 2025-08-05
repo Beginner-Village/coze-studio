@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import classnames from 'classnames';
@@ -28,7 +28,7 @@ import s from './index.module.less';
 
 export interface FormItemErrorProps extends WithCustomStyle {
   errors?: FieldState['errors'];
-  // coze 暂无warnings
+  // Coze has no warnings
   // warnings?: FieldState['warnings'];
 }
 

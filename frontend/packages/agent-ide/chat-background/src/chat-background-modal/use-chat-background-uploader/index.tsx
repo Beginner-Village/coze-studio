@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { type ReactNode, useState } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -55,11 +55,11 @@ export const useChatBackgroundUploader = (
     );
 
   const cancel = () => {
-    // 需要标记消息已读的标记
+    // A token that needs to mark the message as read
     markRead();
     // close Modal
     setShow(false);
-    // 存在正在生图的，扭转Badge状态
+    // There is a Reverse Badge state in production
     if (gifLoading || imageLoading) {
       setGenerateBackgroundModalByImmer(state => {
         if (gifLoading) {

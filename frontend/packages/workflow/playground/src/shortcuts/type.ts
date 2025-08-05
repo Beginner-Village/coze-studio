@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type {
   WorkflowEdgeJSON,
   WorkflowNodeJSON,
@@ -63,6 +63,6 @@ export interface WorkflowClipboardNodeTemporary {
 
 export interface WorkflowClipboardNodeJSON extends WorkflowNodeJSON {
   blocks?: WorkflowClipboardNodeJSON[];
-  // eslint-disable-next-line @typescript-eslint/naming-convention -- _temp 是内部字段，不对外暴露
+  // eslint-disable-next-line @typescript-eslint/naming-convention -- _temp are internal fields, not exposed
   _temp: WorkflowClipboardNodeTemporary;
 }

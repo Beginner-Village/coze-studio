@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { type FC, useEffect, useRef } from 'react';
 
 import { isObject, isString, omit } from 'lodash-es';
@@ -48,7 +48,7 @@ const isCocoLink = (link: string) => {
   return parsedLink.protocol === 'coco:';
 };
 
-/** 被链接元素替换成的组件 */
+/** Components replaced by linked elements */
 export const CozeLink: FC<
   MdBoxLinkProps & {
     onLinkElementEnter?: (params: {

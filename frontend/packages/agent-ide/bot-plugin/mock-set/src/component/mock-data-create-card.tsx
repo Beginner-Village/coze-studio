@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 import { useParams } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
@@ -55,18 +55,18 @@ import { useSaveMockData } from '../hook/use-save-mock-data';
 import s from './index.module.less';
 
 export enum CreationMode {
-  /** 弹窗形式 */
+  /** pop-up window */
   MODAL = 'modal',
-  /** 嵌入页面 */
+  /** embed page */
   CARD = 'card',
 }
 
 interface MockDataCreateCardProps {
   mode: CreationMode;
   mockInfo?: MockDataInfo;
-  // mode 为 modal 时生效
+  // Effective when modal mode
   visible?: boolean;
-  // mode 为 modal 时生效
+  // Effective when modal mode
   onCancel?: () => void;
   onSuccess: (data?: mockset.MockRule[]) => void;
   bizCtx: infra.BizCtx;
@@ -76,7 +76,7 @@ interface MockDataCreateCardProps {
   };
 }
 
-/** 创建or编辑 mock data -  */
+/** Create or edit mock data -  */
 export function MockDataCreateCard({
   mode,
   mockInfo,
@@ -96,7 +96,7 @@ export function MockDataCreateCard({
     useTransSchema(schema);
   const { mock_set_id, tool_id } = useParams<DynamicParams>();
 
-  // space信息
+  // Space information
   const spaceType = useSpaceStore(store => store.space.space_type);
   const isPersonal = spaceType === SpaceType.Personal;
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import {
@@ -31,7 +31,7 @@ export function useRefreshOnVariableChange(node: FlowNodeEntity) {
 
   useEffect(() => {
     const disposable = outputVariablesData.onAnyVariablesChange(() => {
-      // 变量类型变化后刷新
+      // Refresh after variable type changes
       refresh();
     });
 

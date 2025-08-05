@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type TreeProps } from '../tree';
 import { type DataSource } from '../../typings/graph';
 import { type SpanTypeConfigMap } from '../../typings/config';
@@ -38,8 +38,8 @@ export type TraceTreeProps = {
 
 export interface SpanDetail {
   isCozeWorkflowNode: boolean;
-  workflowLevel: number; // workflow 层级
-  workflowVersion?: string; // 父节点透传给子节点
+  workflowLevel: number; // Workflow Hierarchy
+  workflowVersion?: string; // Parent node passes through to sub-node
 }
 
 export interface WorkflowJumpParams {

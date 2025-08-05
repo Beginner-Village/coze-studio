@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { mergeWith } from 'lodash';
 import { inject, injectable, named } from 'inversify';
 import { ContributionProvider } from '@flowgram-adapter/common';
@@ -33,7 +33,7 @@ export class ViewManager {
   @named(ViewContribution)
   viewContributions: ContributionProvider<ViewContribution>;
 
-  // 通过 widgetManager 进行注入
+  // Injection via widgetManager
   @inject(WidgetManager) widgetManager: WidgetManager;
 
   @inject(ViewOptions) options: ViewOptions;
@@ -69,7 +69,7 @@ export class ViewManager {
     viewOptions.defaultLayoutData?.defaultWidgets?.forEach(uri => {
       this.openerService.open(uri);
     });
-    // activityBar 由内部自定义，比较特殊
+    // activityBar is customized internally and is special.
     const activityBar = this.shell.activityBarWidget;
     this.viewRenderer.addReactPortal(activityBar);
     activityBar?.initView?.(

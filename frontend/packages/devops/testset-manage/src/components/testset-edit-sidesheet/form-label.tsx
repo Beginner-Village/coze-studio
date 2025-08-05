@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type CSSProperties } from 'react';
 
 import cls from 'classnames';
@@ -28,7 +28,7 @@ interface FormLabelProps {
   style?: CSSProperties;
 }
 
-// 内置的FormLabel样式不支持 typeLabel，所以简单自定义
+// The built-in FormLabel style does not support typeLabel, so it is easy to customize
 export function FormLabel({
   label,
   typeLabel,

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { forwardRef, useState } from 'react';
 
 import classNames from 'classnames';
@@ -167,7 +167,7 @@ export const FileUpload = ({ onUpload, disabled }: FileUploadProps) => {
       onChange={({ fileList: list }) => {
         setFileList(list);
         if (!list.length) {
-          // 清空content
+          // Clear content
           onUpload();
         }
       }}

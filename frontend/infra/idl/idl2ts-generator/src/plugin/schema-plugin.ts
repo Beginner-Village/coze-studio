@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type IPlugin,
   type Program,
@@ -223,7 +223,7 @@ export class SchemaPlugin implements IPlugin {
       };
       return schema;
     } else if (isSetType(fieldType)) {
-      // set 处理成array校验
+      // Set to array validation
       const { valueType } = fieldType;
       const schema: ListType = {
         type: 'array',
@@ -231,7 +231,7 @@ export class SchemaPlugin implements IPlugin {
       };
       return schema;
     } else if (isIdentifier(fieldType)) {
-      // 引用类型
+      // reference type
       const { refName, namespace } = parseIdFiledType(fieldType);
       if (!namespace) {
         const schema: RefType = { $ref: `#/definitions/${refName}` };
@@ -249,7 +249,7 @@ export class SchemaPlugin implements IPlugin {
     throw new Error(`can not process fieldType : ${fieldType.type}`);
   }
   private processConst(constVal: ConstValue) {
-    // 暂时统一处理成0
+    // Temporarily unified processing to 0
     const schema = {} as ConstType;
     if (isStringLiteral(constVal)) {
       schema.const = constVal.value;

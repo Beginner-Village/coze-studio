@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Canvas, type FabricObject } from 'fabric';
 
 import { canvasXYToScreen } from '../fabric-utils';
@@ -53,7 +53,7 @@ const getLineHtml = (startXY: Snap.Point, endXY: Snap.Point) => {
     "
     ></div>`;
   } else {
-    // 横线
+    // horizontal line
     innerHTML += `<div
     class="absolute bg-[#00B2B2]"
     style="

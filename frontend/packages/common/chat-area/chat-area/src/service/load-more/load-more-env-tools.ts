@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Reporter } from '@coze-arch/logger';
 import { type GetConversationParticipantsReadIndexResponse } from '@coze-arch/bot-api/developer_api';
 import { type ScrollViewController } from '@coze-common/scroll-view';
@@ -35,7 +35,7 @@ import { LoadLockErrorHelper } from './helper/load-lock-error-helper';
 export type LoadMoreEnvValues = {
   enableTwoWayLoad: boolean;
   enableMarkRead: boolean;
-  /** 正在发送或接收回复中 */
+  /** Sending or receiving a reply */
   isProcessingChat: boolean;
 } & MessageIndexState;
 
@@ -87,7 +87,7 @@ export class LoadMoreEnvTools {
     >
   >;
   public readEnvValues: () => LoadMoreEnvValues;
-  /** 仅在更大值出现时执行更新，随便调 */
+  /** Update only when a larger value appears, call it casually */
   public updateIndex: MessageIndexAction['updateIndex'];
   public insertMessages: (
     param: GetHistoryMessageResponse,

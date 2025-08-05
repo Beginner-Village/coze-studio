@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { isArray, isObject, get } from 'lodash-es';
 import {
   FooterBtnStatus,
@@ -30,7 +30,7 @@ interface UploadFooterProps {
   controls: FooterControlsProps;
 }
 
-/** 类型断言 入参是不是 按钮数组 */
+/** Type assertion imported parameter yes no, button array */
 function isBtnArray(controls: unknown): controls is FooterBtnProps[] {
   return !!controls && isArray(controls);
 }

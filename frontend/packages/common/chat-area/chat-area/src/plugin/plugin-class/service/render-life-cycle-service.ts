@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type OnTextContentRenderingContext,
   type OnMessageBoxRenderContext,
@@ -24,9 +24,9 @@ import {
 } from './life-cycle-service';
 
 /**
- * ! 希望你注意到生命周期的上下文信息都放在ctx中
- * ! 如果判断只是上下文，请你注意收敛到ctx中，请勿增加新的参数
- * ! CodeReview的时候辛苦也注重一下这里
+ * ! Hope you noticed that the context information for the lifecycle is placed in ctx
+ * ! If the judgment is just context, please pay attention to the convergence into ctx and do not add new parameters
+ * ! Please pay attention here when CodeReview.
  */
 export abstract class ReadonlyRenderLifeCycleService<
   T = unknown,

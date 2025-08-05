@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useCurrentEntity } from '@flowgram-adapter/free-layout-editor';
 import { type InputValueVO, type RefExpression } from '@coze-workflow/base';
 
@@ -41,13 +41,13 @@ export function useSetTags(
       if (!variable) {
         const pathLabel = left?.content?.keyPath[1];
         if (pathLabel) {
-          // 有值但找不到变量
+          // Value but no variable found
           return {
             label: pathLabel,
             invalid: true,
           };
         } else {
-          // 没有值
+          // No value
           return;
         }
       }

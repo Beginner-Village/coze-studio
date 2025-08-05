@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useMemo } from 'react';
 
 import { useWorkflowNode } from '@coze-workflow/base';
@@ -114,7 +114,7 @@ export function QuestionPairs() {
                   label={convertNumberToLetters(index)}
                   content={option?.name}
                 />
-                {/* 对应 questionNodeRegistry 中 options 表单项 */}
+                {/* Corresponding questionNodeRegistry options table entry */}
                 <Port id={`branch_${index}`} type="output" />
               </Field>
             ))

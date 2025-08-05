@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FieldError } from '@flowgram-adapter/free-layout-editor';
 
 /**
- * 转成Filed错误
+ * Convert to Filed Error
  * @param name
  * @param message
  * @returns

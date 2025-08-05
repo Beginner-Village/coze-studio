@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { isNil } from 'lodash-es';
 import { useRequest } from 'ahooks';
 import { type CaseDataDetail } from '@coze-arch/bot-api/debugger_api';
@@ -46,7 +46,7 @@ export const useEditFormSchemas = (testset?: CaseDataDetail | null) => {
         []) as NodeFormSchema[];
 
       if (localSchemas.length) {
-        // 编辑模式：比对本地和远程schema并尝试赋值
+        // Edit schema: compare local and remote schemas and try to assign values
         const localSchemaMap: Record<string, FormItemSchema | undefined> = {};
         traverseTestsetNodeFormSchemas(
           localSchemas,
@@ -66,7 +66,7 @@ export const useEditFormSchemas = (testset?: CaseDataDetail | null) => {
           }
         });
       } else {
-        // 创建模式：赋默认值
+        // Creation mode: assigns default values
         traverseTestsetNodeFormSchemas(remoteSchemas, (schema, ipt) => {
           assignTestsetFormDefaultValue(ipt);
         });

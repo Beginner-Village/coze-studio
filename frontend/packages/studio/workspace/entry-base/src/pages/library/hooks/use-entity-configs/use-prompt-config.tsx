@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useNavigate } from 'react-router-dom';
 import { useRef } from 'react';
 
@@ -75,7 +75,7 @@ export const usePromptConfig: UseEntityConfigHook = ({
     usePromptConfiguratorModal({
       spaceId,
       source: 'resource_library',
-      // 即将支持，敬请期待
+      // Support soon, so stay tuned.
       enableDiff: FLAGS['bot.studio.prompt_diff'],
       onUpdateSuccess: reloadList,
       onDiff: ({ libraryId }) => {
@@ -86,7 +86,7 @@ export const usePromptConfig: UseEntityConfigHook = ({
       },
     });
 
-  // 删除
+  // delete
   const { run: delPrompt } = useRequest(
     (promptId: string) =>
       PlaygroundApi.DeletePromptResource({

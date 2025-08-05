@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { createPortal } from 'react-dom';
 import { type CSSProperties } from 'react';
 
 import { useNodeRenderData } from '../../hooks';
 
 /**
- * 自定义端口组件， 支持展开/收起；
- * 节点收起时 端口 dom 代理到 node-render这一层，避免被display:none影响。
+ * Custom port components, support expand/retract;
+ * When a node is stowed, the port dom is proxied to the node-render layer to avoid being affected by display: none.
  */
 export const CustomPort = ({
   portId,

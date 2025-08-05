@@ -16,7 +16,7 @@
     "moduleResolution": "node",
     "module": "CommonJS",
     "noFallthroughCasesInSwitch": true,
-    // 这个普遍反馈会让代码变得啰嗦，暂定遵循原本 bot 的设置，关闭
+    // This general feedback will make the code verbose, tentatively follow the original bot's settings, close
     "noImplicitReturns": false,
     "removeComments": false,
     "resolveJsonModule": true,
@@ -24,26 +24,32 @@
     "sourceMap": true,
     "strict": true,
     "disableReferencedProjectLoad": true,
-    // "disableSolutionSearching": true,
-    // "disableSourceOfProjectReferenceRedirect": true,
+    "disableSolutionSearching": true,
+    "disableSourceOfProjectReferenceRedirect": true,
     "target": "es2018"
   },
   "watchOptions": {
-    "fallbackPolling": "dynamicpriority",
+    "fallbackPolling": "dynamicPriorityPolling",
     "synchronousWatchDirectory": false,
-    "watchDirectory": "fixedChunkSizePolling",
+    "watchDirectory": "useFsEvents",
     "watchFile": "useFsEventsOnParentDirectory",
     "excludeDirectories": [
       "../../**/__tests__/",
       "../../**/__coverage__/",
       "../../**/__mocks__/",
-      "/**/node_modules/**"
+      "/**/node_modules/**",
+      "/**/dist/**",
+      "/**/lib/**",
+      "**/temp/**"
     ],
     "excludeFiles": [
-      "../../**/__tests__",
-      "../../**/__coverage__",
-      "../../**/__mocks__",
-      "/**/node_modules/**"
+      "../../**/__tests__/**",
+      "../../**/__coverage__/**",
+      "../../**/__mocks__/**",
+      "/**/node_modules/**",
+      "/**/dist/**",
+      "/**/lib/**",
+      "**/temp/**"
     ]
   }
 }

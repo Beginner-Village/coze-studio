@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import qs from 'qs';
 import { pick } from 'lodash-es';
 import { type PluginNavType } from '@coze-studio/bot-plugin-store/src/context';
 
 /**
- * 比较两个对象是否相等，只比较指定的 key，通过 JSON.stringify 实现
- * @param obj1 对象1
- * @param obj2 对象2
- * @param keys 需要比较的 key
- * @returns 是否相等
+ * Compares two objects for equality, comparing only the specified key, implemented by JSON.stringify
+ * @param obj1
+ * @param obj2
+ * @Param keys The key to compare
+ * @Returns is equal
  */
 export function compareObjects<T>(
   obj1: T,
@@ -53,13 +53,17 @@ export function resourceNavigate(
       ),
     mocksetList: (toolID, query, opts) =>
       navigate(
-        `${navBase}/plugin/${pluginID}/tool/${toolID}/plugin-mock-set?${qs.stringify(query)}`,
+        `${navBase}/plugin/${pluginID}/tool/${toolID}/plugin-mock-set?${qs.stringify(
+          query,
+        )}`,
         opts,
       ),
     // eslint-disable-next-line max-params
     mocksetDetail: (toolID, mocksetID, query, opts) =>
       navigate(
-        `${navBase}/plugin/${pluginID}/tool/${toolID}/plugin-mock-set/${mocksetID}?${qs.stringify(query)}`,
+        `${navBase}/plugin/${pluginID}/tool/${toolID}/plugin-mock-set/${mocksetID}?${qs.stringify(
+          query,
+        )}`,
         opts,
       ),
     cloudIDE: (query, opts) =>

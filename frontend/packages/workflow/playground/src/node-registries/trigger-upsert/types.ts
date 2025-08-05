@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/naming-convention */
 import {
@@ -51,7 +51,7 @@ export namespace TriggerForm {
 
   export type FormMeta = _FormMeta;
 
-  // 表单值
+  // form value
 }
 
 export enum CronJobType {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type MutableRefObject } from 'react';
 
 import styles from '../style.module.less';
@@ -43,7 +43,7 @@ const getOptionInfoFromDOM = (
 
   const optionElements = [...foundNodes];
 
-  // 找到当前高亮的选项
+  // Find the currently highlighted option
   const selectedIndex = optionElements.findIndex(element =>
     element.classList.contains(SELECTED_OPTION_CLASSNAME),
   );

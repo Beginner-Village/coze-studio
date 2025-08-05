@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useShallow } from 'zustand/react/shallow';
 import { useRequest } from 'ahooks';
 import { REPORT_EVENTS as ReportEventNames } from '@coze-arch/report-events';
@@ -100,7 +100,7 @@ export const useDataSetDetailReq = (
       }
     },
     {
-      // 不自动请求
+      // No automatic request
       manual: true,
       onError: error => {
         Toast.error({
@@ -156,7 +156,7 @@ export const usePollingDatasetProcess = () => {
       }
     },
     {
-      // 不自动请求
+      // No automatic request
       manual: true,
       pollingInterval: POLLING_TIME,
       onError: error => {

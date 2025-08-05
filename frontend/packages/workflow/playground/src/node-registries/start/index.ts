@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 节点开发规范：
+ * Node development specification:
  */
 export { START_NODE_REGISTRY } from './node-registry';
 export { StartContent } from './node-content';

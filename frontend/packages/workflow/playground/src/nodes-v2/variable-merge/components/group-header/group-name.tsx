@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, useState, useRef } from 'react';
 
 import { Input, type InputProps } from '@coze-arch/coze-design';
@@ -29,7 +29,7 @@ interface Props {
 }
 
 /**
- * 分组名,支持双击编辑
+ * Group name, support double-click editing
  * @param props
  * @returns
  */

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type FC,
   type PropsWithChildren,
@@ -25,11 +25,11 @@ import { merge } from 'lodash-es';
 
 export interface IPreferenceContext {
   /**
-   * 是否开启Tool隐藏模式
+   * Whether to enable Tool Hide Mode
    */
   enableToolHiddenMode: boolean;
   /**
-   * 是否只读状态
+   * Read-only status
    */
   isReadonly: boolean;
 }

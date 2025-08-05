@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState, useRef, useLayoutEffect } from 'react';
 
 // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- x
@@ -32,7 +32,7 @@ export const useImperativeLayoutEffect = <Params extends unknown[]>(
     if (!effectValue) {
       return;
     }
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- 体操不动, 凑活用吧
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- gymnastics don't move, let's make a living
     // @ts-expect-error
     const params = paramRef.current || ([] as Params);
     return effectRef.current(...params);

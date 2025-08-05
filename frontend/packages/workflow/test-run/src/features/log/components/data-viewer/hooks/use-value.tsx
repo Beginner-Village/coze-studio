@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo } from 'react';
 
 import { isBoolean, isNil, isNumber, isObject, isString } from 'lodash-es';
@@ -30,7 +30,7 @@ export const useValue = (value: Field['value']) => {
         type: LogValueStyleType.Default,
       };
     } else if (isObject(value)) {
-      // 大数字返回数字类型，值用字符串
+      // Large number Returns the numeric type, and the value is a string.
       if (isBigNumber(value)) {
         return {
           value: bigNumberToString(value),

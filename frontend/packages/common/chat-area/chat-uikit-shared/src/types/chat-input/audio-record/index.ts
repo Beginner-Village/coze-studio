@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export interface AudioRecordProps {
   isPointerMoveOut?: boolean;
   isRecording?: boolean;
@@ -33,7 +33,7 @@ export interface AudioRecordEvents {
 
 export interface AudioRecordOptions {
   getIsShortcutKeyDisabled?: () => boolean;
-  /** 参考 ahooks useKeypress 入参 */
+  /** Reference ahooks useKeypress imported parameters */
   shortcutKey?: string | number;
   enabled?: boolean;
   getActiveZoneTarget?: () => HTMLElement | null;

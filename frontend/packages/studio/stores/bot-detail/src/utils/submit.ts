@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 import { UIToast } from '@coze-arch/bot-semi';
 
@@ -21,7 +21,7 @@ export const hasBraces = (str: string) => {
   const pattern = /{{/g;
   return pattern.test(str);
 };
-// 判断是所有环境还是 只是release 环境限制{{}} 并弹出toast提示
+// Determine whether it is all environments or just release the environment restriction {{}} and pop up the toast prompt
 export const verifyBracesAndToast = (str: string, isAll = false) => {
   if (isAll && hasBraces(str)) {
     UIToast.warning({

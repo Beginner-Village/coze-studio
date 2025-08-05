@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -85,7 +85,7 @@ const BotEditor: React.FC = () => {
   });
 
   /**
-   * 上报最近打开
+   * Report recently opened
    */
   useEffect(() => {
     PlaygroundApi.ReportUserBehavior({
@@ -106,7 +106,7 @@ const BotEditor: React.FC = () => {
         <SingleMode
           renderChatTitleNode={params => <SingleModeToolPaneList {...params} />}
           memoryToolSlot={
-            // 表格存储
+            // table storage
             <TableMemory />
           }
         />
@@ -117,7 +117,7 @@ const BotEditor: React.FC = () => {
             <WorkflowModeToolPaneList {...params} />
           )}
           memoryToolSlot={
-            // 表格存储
+            // table storage
             <TableMemory />
           }
         />

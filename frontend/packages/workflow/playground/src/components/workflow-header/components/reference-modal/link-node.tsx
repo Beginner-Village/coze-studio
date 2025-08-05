@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -34,8 +34,8 @@ export const LinkNode = ({
   spaceId: string;
   projectId?: string;
 }) => {
-  // 新标签页打开
-  // 业务侧的 navigate 跳转逻辑
+  // New tab opens
+  // Business side navigating jumping logic
   const isStorePlugin =
     extraInfo.type === NodeType.PLUGIN &&
     extraInfo.from === DependencyOrigin.SHOP;

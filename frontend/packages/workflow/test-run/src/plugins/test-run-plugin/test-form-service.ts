@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { injectable } from 'inversify';
 import { useService } from '@flowgram-adapter/free-layout-editor';
 
@@ -22,7 +22,7 @@ export type FormDataType = any;
 export const TestFormService = Symbol('TestFormService');
 
 export interface TestFormService {
-  /** 表单缓存值 */
+  /** form cache value */
   cacheValues: Map<string, FormDataType>;
 
   getCacheValues: (id: string) => null | FormDataType;

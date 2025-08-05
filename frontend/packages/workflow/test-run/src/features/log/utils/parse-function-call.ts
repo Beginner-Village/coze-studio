@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { get, isString, omit } from 'lodash-es';
 import JSONBig from 'json-bigint';
 import { type FlowNodeEntity } from '@flowgram-adapter/free-layout-editor';
@@ -194,7 +194,7 @@ export function parseFunctionCall(
         const type = get(output, 'msg_type');
         const skills = getNodeSkills(node);
 
-        // 知识库类型
+        // Knowledge base type
         if (type === 'knowledge_recall') {
           const data: FunctionCallKnowledgeOutput = JSON.parse(
             get(output, 'data', '{}') as string,
@@ -202,12 +202,12 @@ export function parseFunctionCall(
           return getDatasetLogItem(data, skills);
         }
 
-        // 插件类型
+        // plugin type
         if (input?.plugin_type === LLMNodeDataSkillType.Plugin) {
           return getPluginLogItem(input, output, skills);
         }
 
-        // Workflow类型
+        // Workflow Type
         if (input?.plugin_type === LLMNodeDataSkillType.Workflow) {
           return getWorkflowLogItem(input, output, skills);
         }

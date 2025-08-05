@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 修改消息节点 */
+
+/** Modify message node */
 
 export { UPDATE_MESSAGE_NODE_REGISTRY } from './node-registry';

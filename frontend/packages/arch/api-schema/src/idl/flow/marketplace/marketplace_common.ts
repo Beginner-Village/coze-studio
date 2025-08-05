@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import * as base from './../../base';
 export { base };
 export interface Price {
   /** 金额 */
-  amount: string,
+  amount: string;
   /** 币种，如USD、CNY */
-  currency: string,
+  currency: string;
   /** 小数位数 */
-  decimal_num: number,
+  decimal_num: number;
 }
 export enum FollowType {
   /** 无关系 */

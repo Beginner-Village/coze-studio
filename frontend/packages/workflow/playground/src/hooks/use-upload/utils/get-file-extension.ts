@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 获取文件名后缀 */
+
+/** Get filename suffix */
 export function getFileExtension(name?: string) {
   if (!name) {
     return '';

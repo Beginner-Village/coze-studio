@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, it, expect } from 'vitest';
 import {
   GenerationDiversity,
@@ -63,7 +63,7 @@ describe('llm-utils', () => {
       expect(params.modelType).toBe(mockModels[0].model_type);
       expect(params.modelName).toBe(mockModels[0].name);
       expect(params.generationDiversity).toBe(GenerationDiversity.Balance);
-      expect(params.temperature).toBe(0.8); // 来自mockModels[0]的balance默认值
+      expect(params.temperature).toBe(0.8); // Balance default from mockModels [0]
     });
   });
 

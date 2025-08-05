@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type NodeFormContext } from '@flowgram-adapter/free-layout-editor';
 import {
   variableUtils,
@@ -40,7 +40,7 @@ export const initialValue = {
 };
 
 /**
- * 节点后端数据 -> 前端表单数据
+ * Node Backend Data - > Frontend Form Data
  */
 export const transformOnInit = (
   value: NodeDataDTO,
@@ -76,7 +76,7 @@ export const transformOnInit = (
 };
 
 /**
- * 前端表单数据 -> 节点后端数据
+ * Front-end form data - > node back-end data
  * @param value
  * @returns
  */
@@ -102,7 +102,7 @@ export const transformOnSubmit = (
           },
         ),
         id,
-      }) as unknown as InputValueDTO;
+      } as unknown as InputValueDTO);
     value.inputs.inputParameters = value.inputs.inputParameters.map(d =>
       variableVOToDTO(
         d.name ?? '',

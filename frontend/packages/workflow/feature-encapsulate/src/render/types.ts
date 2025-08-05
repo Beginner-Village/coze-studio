@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 封装/解封命令
+ * Encapsulate/unencapsulate commands
  */
 export enum EncapsulateCommands {
   /**
-   * 封装
+   * package
    */
   ENCAPSULATE = 'ENCAPSULATE',
   /**
-   * 解封
+   * unblock
    */
   DECAPSULATE = 'DECAPSULATE',
 }

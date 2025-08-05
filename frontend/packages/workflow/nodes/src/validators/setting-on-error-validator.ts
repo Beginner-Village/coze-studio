@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { z } from 'zod';
 import { type ValidatorProps } from '@flowgram-adapter/free-layout-editor';
 import { I18n } from '@coze-arch/i18n';
@@ -52,7 +52,7 @@ export const settingOnErrorValidator = ({
     }
     return true;
   }
-  // json 合法性校验
+  // json legitimacy check
   const schemeParesd = SettingOnErrorSchema.refine(
     settingOnError => isJSONVerified(settingOnError),
     {

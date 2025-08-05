@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 解析运行结果的组件
+ * Components that parse run results
  */
 export { LogDetail } from './log-detail';

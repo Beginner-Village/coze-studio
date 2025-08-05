@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo, type FC } from 'react';
 
 import { SettingOnErrorProcessType } from '@coze-workflow/nodes';
@@ -40,7 +40,7 @@ type Props = Pick<
 };
 
 /**
- * 返回内容
+ * Return to content
  */
 export const Json: FC<Props> = ({
   isOpen,

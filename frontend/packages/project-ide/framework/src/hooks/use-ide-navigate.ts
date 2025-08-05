@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useNavigate, type NavigateOptions } from 'react-router-dom';
 import { useCallback } from 'react';
 
@@ -41,10 +41,10 @@ export const useIDENavigate = () => {
       const uri = new URI(`${URI_SCHEME}://${value}`);
       const isUIBuilder = uri.displayName === UI_BUILDER_URI.displayName;
       if (value && value !== '/' && !isUIBuilder) {
-        // 调用 openService
+        // Call openService
         view.open(uri);
       } else {
-        // 如果没有要打开的 widget，就只打开主面板
+        // If there is no widget to open, just open the main panel
         view.openPanel(isUIBuilder ? 'ui-builder' : 'dev');
       }
       navigate(addPreservedSearchParams(url), options);

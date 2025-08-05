@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { isWriteablePlugin } from '../../utils/is-writeable-plugin';
 import {
   type OnTextContentRenderingContext,
@@ -28,7 +28,7 @@ type Expect<T extends true> = T;
 type TestClassIncludeRenderLifeCycleKeys =
   RenderLifeCycle extends keyof SystemRenderLifeCycleService ? true : false;
 
-// eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unused-vars -- 检测类型使用
+// eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unused-vars -- detect type usage
 type _ = Expect<TestClassIncludeRenderLifeCycleKeys>;
 
 export class SystemRenderLifeCycleService {

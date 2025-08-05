@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useRef, useState } from 'react';
 
 import { useInViewport } from 'ahooks';
@@ -109,7 +109,7 @@ export const VoiceDataSelect: React.FC<VoiceDataSelectProps> = ({
           />
         }
         innerBottomSlot={
-          // Select 选项滚动到底部时，若当前未处于加载状态，则触发加载更多
+          // When the Select option scrolls to the bottom, if it is not currently loaded, it triggers Load More
           <LoadMoreTrigger
             onLoadMore={() => {
               if (!loading && !loadingMore) {

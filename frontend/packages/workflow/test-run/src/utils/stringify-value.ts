@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { isBoolean, isNumber } from 'lodash-es';
 
-// 将表单值转换为testrun接口协议格式
+// Convert form values to testrun interface protocol format
 export const stringifyValue = (
   values: any,
   stringifyKeys?: string[],

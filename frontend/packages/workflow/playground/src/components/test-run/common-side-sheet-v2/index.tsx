@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useMemo } from 'react';
 
 import { SideSheet } from '@coze-arch/coze-design';
@@ -24,7 +24,7 @@ import { WORKFLOW_PLAYGROUND_CONTENT_ID } from '@/constants';
 import { SheetKeys } from './sheet-keys';
 
 interface CommonSideSheetV2Props {
-  /** 唯一 key */
+  /** Unique key */
   sheetKey: SheetKeys;
   width?: number;
 }

@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /**
- * 寻找某节点最后一个子节点
+ * Find the last sub-node of a node
  * @param node Node
  * @returns Node
  */

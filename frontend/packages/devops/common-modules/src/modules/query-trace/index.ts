@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export { default as TraceFlamethread } from './components/trace-flamethread';
 export { default as TraceTree } from './components/trace-tree';
 export { default as TopologyFlow } from './components/topology-flow';
@@ -23,13 +23,13 @@ export {
 } from './components/flamethread';
 export { default as Tree, type MouseEventParams } from './components/tree';
 export { useSpanTransform } from './hooks/use-span-transform';
-// Tree和Flamethread的参数类型
+// Parameter types for Tree and FlamethRead
 export { DataSourceTypeEnum } from './typings/graph';
 
 export {
-  // useSpanTransform相关类型
+  // useSpanTransform related types
   type SpanCategoryMeta,
-  // useSpanTransform 生成的定制span
+  // useSpanTransform generated custom spans
   type CSpan,
   type CTrace,
   type CSpanSingle,

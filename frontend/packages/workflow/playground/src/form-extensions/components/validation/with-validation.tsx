@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { type SetterComponentProps } from '@flowgram-adapter/free-layout-editor';
@@ -40,7 +40,7 @@ export function withValidation<T extends ValidationProps>(
     const { value, onChange, context } = props;
 
     useEffect(() => {
-      // 初始化的时候触发一次校验 防止组件 onBlur 拿不到校验信息
+      // Trigger a verification during initialization to prevent the component onBlur from not getting the verification information.
       onChange && onChange(value);
     }, []);
 

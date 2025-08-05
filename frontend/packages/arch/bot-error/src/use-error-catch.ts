@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect } from 'react';
 
 import { logger, type SlardarInstance } from '@coze-arch/logger';
@@ -61,7 +61,7 @@ export const useErrorCatch = (slardarInstance: SlardarInstance) => {
     };
   }, []);
 
-  // 3. 拦截 slardar 上报
+  // 3. Interception of slardar reports
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const beforeSlardarSend = (e: any) => {

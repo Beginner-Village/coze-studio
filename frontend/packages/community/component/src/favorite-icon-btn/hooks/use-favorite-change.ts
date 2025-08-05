@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState, useCallback, useRef, type MouseEvent } from 'react';
 
 import { useMemoizedFn, useUpdateEffect } from 'ahooks';
@@ -51,7 +51,7 @@ export const useFavoriteChange = ({
   });
   const refIsChange = useRef(false);
 
-  // 改变状态前，先做前置请求，判断是否需要放弃本次状态变更，如果 onClickBefore 返回 false，则不进行变更。
+  // Before changing the state, make a pre-request to determine whether the state change needs to be abandoned. If onClickBefore returns false, no change will be made.
   const onClickBeforeHandle = useMemoizedFn(
     async (
       action: ClickAction,
@@ -70,7 +70,7 @@ export const useFavoriteChange = ({
   const onClick = useCallback(
     async (event?: MouseEvent<HTMLDivElement, globalThis.MouseEvent>) => {
       if (refIsChange.current) {
-        // 进行中，直接返回，不做处理
+        // In progress, return directly, no processing
         event?.stopPropagation?.();
         event?.preventDefault?.();
         return;

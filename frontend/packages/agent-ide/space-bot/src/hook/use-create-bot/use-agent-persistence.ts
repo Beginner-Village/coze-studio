@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable complexity */
 
 import { useState } from 'react';
@@ -230,7 +230,7 @@ export const useAgentPersistence = ({
         content: I18n.t('bot_created_toast'),
         showClose: false,
       });
-      // 兼容 onSuccess 回调为同步函数的场景
+      // Scenarios that are compatible with onSuccess callbacks as synchronization functions
       await onSuccess?.(resp.data?.bot_id, paramsSpaceId, {
         botName: values?.name,
         botDesc: values?.target,
@@ -259,7 +259,7 @@ export const useAgentPersistence = ({
         });
       }
       onError?.();
-      // 阻止弹窗关闭
+      // Prevent pop-ups from closing
       throw e;
     } finally {
       setLoading(false);

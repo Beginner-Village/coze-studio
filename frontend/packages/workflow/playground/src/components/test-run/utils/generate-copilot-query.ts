@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ValueExpressionType } from '@coze-workflow/base';
 import {
   type WorkflowDocument,
@@ -28,7 +28,7 @@ interface CopilotGenerateItem {
 }
 
 /**
- * 生成copilot的query
+ * Generate copilot queries
  * @param node
  * @returns
  */

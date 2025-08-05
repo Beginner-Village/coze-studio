@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useRef } from 'react';
 
 import { EVENT_NAMES, sendTeaEvent } from '@coze-arch/bot-tea';
@@ -29,7 +29,7 @@ export const useCreateBotAction = ({
   urlSearch?: string;
   currentSpaceId?: string;
 }) => {
-  // 创建 bot 功能
+  // Create bot function
   const newWindowRef = useRef<Window | null>(null);
   const openWindow = () => {
     newWindowRef.current = window.open();

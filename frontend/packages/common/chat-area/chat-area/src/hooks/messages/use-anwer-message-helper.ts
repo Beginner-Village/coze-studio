@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useChatAreaStoreSet } from '../context/use-chat-area-context';
 import {
   isAnswerFinishVerboseMessage,
@@ -63,7 +63,7 @@ export const useIsGroupAnswerFinish = ({ memberSet }: MessageGroup) => {
   });
 };
 
-// 非真实运行中止的消息
+// Message of non-real operation abort
 export const useIsGroupFakeInterruptAnswer = ({ memberSet }: MessageGroup) => {
   const { useMessagesStore } = useChatAreaStoreSet();
 

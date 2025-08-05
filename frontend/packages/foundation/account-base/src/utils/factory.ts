@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { setUserInfoContext } from '@coze-arch/logger';
 
 import { type UserInfo } from '../types';
 import { useUserStore } from '../store/user';
 
 /**
- * 主动触发刷新用户信息
- * @param checkLogin 登录检查函数
+ * Actively trigger to refresh user information
+ * @param checkLogin check function
  */
 export const refreshUserInfoBase = async (
   checkLogin: () => Promise<UserInfo>,

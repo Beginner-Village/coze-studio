@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export interface FormItemMeta {
   name: string;
   label: string;
@@ -29,8 +29,8 @@ export interface FormItemMeta {
 export type FormMeta = FormItemMeta[];
 
 export interface DynamicComponentProps<T> {
-  value?: T; // 字段值
-  readonly?: boolean; // 是否只读
-  disabled?: boolean; // 是否禁用
+  value?: T; // field value
+  readonly?: boolean; // Is it read-only?
+  disabled?: boolean; // Whether to disable
   onChange: (newValue?: T) => void;
 }

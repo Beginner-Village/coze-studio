@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/naming-convention */
 import {
   ViewVariableType,
   type ViewVariableTreeNode,
 } from '@coze-workflow/base';
 
-// 需要转化的类型映射
+// Type mapping to be converted
 const ViewVariableType2JsonSchema = {
   [ViewVariableType.ArrayObject]: {
     type: 'array',
@@ -115,7 +115,7 @@ const generate = (meta: ViewVariableTreeNode) => {
   return jsonSchema;
 };
 
-// 根据 meta 生成默认 json schema
+// Generate default JSON schema from meta
 export const generateJSONSchema = (
   outputs: ViewVariableTreeNode[] | undefined,
 ) => ({

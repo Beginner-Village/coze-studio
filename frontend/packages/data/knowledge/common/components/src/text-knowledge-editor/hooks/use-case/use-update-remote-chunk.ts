@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { Toast } from '@coze-arch/coze-design';
 
 import { type Chunk } from '@/text-knowledge-editor/types/chunk';
@@ -35,7 +35,7 @@ export const useUpdateRemoteChunk = ({
   const { updateSlice } = useUpdateChunk();
 
   /**
-   * 处理远程分片的更新操作
+   * Handling updates for remote sharding
    */
   const updateRemoteChunk = async (chunk: Chunk) => {
     if (!chunk.slice_id) {

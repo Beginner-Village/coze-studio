@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { type FC } from 'react';
 
 import classnames from 'classnames';
@@ -27,7 +27,7 @@ interface VariableMergeItemProps {
 }
 
 /**
- * 变量合并项
+ * variable merge
  */
 export const VariableMergeItem: FC<VariableMergeItemProps> = ({
   mergeGroup,

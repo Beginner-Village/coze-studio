@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { DataNamespace, dataReporter } from '@coze-data/reporter';
 import { UploadStatus } from '@coze-data/knowledge-resource-processor-core';
 import { REPORT_EVENTS } from '@coze-arch/report-events';
@@ -28,7 +28,7 @@ export const customRequest: UploadProps['customRequest'] = async options => {
   const { onSuccess, onError, onProgress, file } = options;
 
   try {
-    // 业务
+    // business
     const { name, fileInstance } = file;
 
     if (fileInstance) {
@@ -47,7 +47,7 @@ export const customRequest: UploadProps['customRequest'] = async options => {
           onUploadProgress: e => {
             const status = file?.status;
             const response = file?.response;
-            // 成功或失败、检验失败后，或者有返回接口数据，不再更新进度条
+            // Success or failure, after the inspection fails, or if the interface data is returned, the progress bar will not be updated.
             if (
               status === UploadStatus.SUCCESS ||
               status === UploadStatus.UPLOAD_FAIL ||

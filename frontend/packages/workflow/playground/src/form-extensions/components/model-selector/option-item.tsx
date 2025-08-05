@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { Button, Tag } from '@coze-arch/coze-design';
 import { Avatar, Popover } from '@coze-arch/bot-semi';
 import { IconInfo } from '@coze-arch/bot-icons';
@@ -65,7 +65,7 @@ export const OptionItem: React.FC<OptionItemProps> = ({
     {descriptionGroupList?.length ? (
       <Popover
         trigger="hover"
-        // 加个 delay ，防止误触
+        // Add a delay to prevent accidental touch
         mouseEnterDelay={1000 * 0.3}
         className={'max-w-[224px] px-[12px] py-[8px]'}
         content={

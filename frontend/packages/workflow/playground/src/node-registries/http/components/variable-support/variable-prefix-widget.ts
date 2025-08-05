@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { WidgetType } from '@codemirror/view';
 
 import { getIconSvgString } from './utils';
@@ -39,7 +39,7 @@ export class VariablePrefixWidget extends WidgetType {
     super();
   }
 
-  // 插入 editor 中的变量块 dom
+  // Insert variable block dom in editor
   toDOM() {
     const { range, varaibleInfo, nodeName, isDarkTheme, languageId } =
       this.variableContext;

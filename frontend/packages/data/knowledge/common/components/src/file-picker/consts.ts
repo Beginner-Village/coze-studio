@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-// 缩进相关数据
+
+// Indent related data
 export const DEFAULT_FILENODE_LEVEL_INDENT = 24;
 
-// 虚拟化配置相关数据
+// Virtualization configuration related data
 export const DEFAULT_VIRTUAL_CONTAINER_HEIGHT = 540;
 export const DEFAULT_VIRTUAL_ITEM_HEIGHT = 28;

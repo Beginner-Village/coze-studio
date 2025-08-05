@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReactNode } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -165,7 +165,7 @@ const getFieldInput = (span: CSpan): FieldItem => ({
 
 const getStreamOutput = (span: CSpan): FieldItem => {
   const value = getSpanProp(span, 'streaming_output') as StreamingOutputStatus;
-  // key 为 starling key
+  // Key to starling key
   return {
     key: I18n.t('query_stream_output'),
     value: streamingOutputStatusConfigMap[value]?.label,

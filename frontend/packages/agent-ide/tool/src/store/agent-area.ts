@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 import { produce } from 'immer';
@@ -21,7 +21,7 @@ import { type AgentSkillKey } from '@coze-agent-ide/tool-config';
 
 export interface IAgentAreaState {
   /**
-   * @deprecated 过渡期使用，用户手动搞的key list
+   * @deprecated transition period use, user manually engaged key list
    */
   manualAgentSkillKeyList: AgentSkillKey[];
   hasAgentSkillKeyList: AgentSkillKey[];
@@ -31,7 +31,7 @@ export interface IAgentAreaState {
 
 export interface IAgentAreaAction {
   /**
-   * @deprecated 过渡期使用，后续删除
+   * @deprecated transitional use, subsequent deletion
    */
   appendManualAgentSkillKeyList: (skillKey: AgentSkillKey) => void;
   setHasAgentSkillKey: (skillKey: AgentSkillKey, hasSkill: boolean) => void;

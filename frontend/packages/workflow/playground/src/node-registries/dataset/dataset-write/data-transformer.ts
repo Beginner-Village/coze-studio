@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { nanoid } from 'nanoid';
 import { set } from 'lodash-es';
 import { ViewVariableType } from '@coze-workflow/base';
@@ -25,7 +25,7 @@ const TEST_RUN_FILE_NAME_KEY = 'x-wf-file_name';
 export function transformOnInit(
   value: DatasetNodeActualData,
 ): DatasetNodeFormData {
-  // 新拖入节点初始化
+  // New drag-in node initialization
   if (!value) {
     return {
       nodeMeta: undefined,

@@ -13,19 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useRef, useState } from 'react';
 
 import { useInfiniteScroll } from 'ahooks';
 import { logger } from '@coze-arch/logger';
 import { I18n } from '@coze-arch/i18n';
-import {
-  Empty,
-  UIButton,
-  Spin,
-  SideSheet,
-  UIToast,
-} from '@coze-arch/bot-semi';
+import { Empty, UIButton, Spin, SideSheet, UIToast } from '@coze-arch/bot-semi';
 import { debuggerApi } from '@coze-arch/bot-api';
 import {
   IllustrationNoContent,
@@ -52,7 +46,7 @@ export interface TestsetSideSheetProps {
   visible: boolean;
   editable?: boolean;
   onClose: () => void;
-  /** 是否为多人协作模式 */
+  /** Is it a multiplayer collaboration mode? */
   isExpertMode?: boolean;
 }
 
@@ -89,19 +83,19 @@ interface TestsetQueryResult {
 const DEFAULT_PAGE_SIZE = 30;
 
 /**
- * Testset管理侧边面板
- * 需配合`TestsetManageProvider`一起使用
+ * Testset Management Side Panel
+ * Should be used with TestsetManageProvider
  *
  * @example
  * ``` tsx
  * <TestsetManageProvider
- *   // 一些必填参数 bizCtx bizComponentSubject editable formRenders
+ *   //Some required parameters bizCtx bizComponentSubject editable formRendersitable formRenders
  * >
  *   <TestsetSideSheet visible={visible} onClose={() => setVisible(false)} />
  * </TestsetManageProvider>
  * ```
  */
-// eslint-disable-next-line @coze-arch/max-line-per-function -- 大组件>150行，只超了不到5行哈
+// eslint-disable-next-line @coze-arch/max-line-per-function -- large components > 150 lines, only less than 5 lines
 export function TestsetSideSheet({
   visible,
   onClose,
@@ -142,7 +136,7 @@ export function TestsetSideSheet({
     if (visible) {
       patchTestsetResp({ list: [] });
       reloadTestsetList();
-      // 检查schema
+      // Check schema
       checkSchema();
     }
   }, [visible]);
@@ -240,7 +234,7 @@ export function TestsetSideSheet({
 
   return (
     <>
-      {/* Testset管理侧边面板 */}
+      {/* Testset Management Side Panel */}
       <SideSheet
         className={s.sidesheet}
         title={
@@ -267,7 +261,7 @@ export function TestsetSideSheet({
           <AutoLoadMore noMore={noMore} loadingMore={loadingMore} />
         </div>
       </SideSheet>
-      {/* Testset创建/编辑侧边面板 */}
+      {/* Testset Create/Edit Side Panel */}
       <TestsetEditSideSheet
         {...testsetEditState}
         mask={false}

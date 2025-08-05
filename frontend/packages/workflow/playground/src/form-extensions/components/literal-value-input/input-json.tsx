@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
@@ -81,7 +81,7 @@ export const InputJson: FC<LiteralValueInputProps> = ({
     onChange?.(e.value);
   };
 
-  // 值受控;
+  // Value controlled;
   // useEffect(() => {
   // const editor = apiRef.current;
   // if (!editor) {

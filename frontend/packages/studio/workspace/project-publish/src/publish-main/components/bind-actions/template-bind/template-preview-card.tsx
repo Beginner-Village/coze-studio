@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { AvatarName } from '@coze-studio/components';
 import { type UserInfo } from '@coze-arch/idl/product_api';
 import { I18n } from '@coze-arch/i18n';
@@ -27,7 +27,7 @@ export interface TemplatePreviewCardProps {
   description?: string;
 }
 
-// 基本是复制的 packages/studio/template/pages/src/components/template-list-card/index.tsx
+// Basically copied packages/studio/template/pages/src/components/template-list-card/index.tsx
 export function TemplatePreviewCard({
   userInfo,
   cover,

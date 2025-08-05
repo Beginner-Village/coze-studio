@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import bigInt, { max, min } from 'big-integer';
 
 export const sortInt64CompareFn = (a: string, b: string) =>
   bigInt(a).compare(b);
 
-/** O(1) 遍历 */
+/** O (1) Traversal */
 export const getMinMax = (...nums: string[]) => {
   const num = nums.at(0);
   if (num === undefined) {

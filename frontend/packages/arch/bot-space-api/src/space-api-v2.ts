@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type AxiosRequestConfig } from 'axios';
 import { REPORT_EVENTS } from '@coze-arch/report-events';
 import { useSpaceStore } from '@coze-arch/bot-studio-store';
@@ -60,7 +60,7 @@ type ExportSpaceService = {
 
 const getSpaceId = () => useSpaceStore.getState().getSpaceId();
 
-// 需要注入store space id的api
+// API that needs to store space id
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const SpaceApiV2 = new Proxy(Object.create(null), {
   get(_, funcName: ApiType) {

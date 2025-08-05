@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type IFormSchema } from '@coze-workflow/test-run-next';
 import { useTestFormService } from '@coze-workflow/test-run';
 
@@ -32,7 +32,7 @@ export const useFormDefaultValues = () => {
     const nodeId = schema['x-node-id'] || '';
     const nodeType = schema['x-node-type'] || '';
 
-    // 最高优：用户上次填写的值
+    // Highest merit: The last value the user filled in
     const cacheData = testFormService.getCacheValues(nodeId);
     if (cacheData) {
       reporter.formGenDataOrigin({ gen_data_origin: 'cache' });

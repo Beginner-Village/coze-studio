@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   ProductDraftStatus,
   SchemaType,
@@ -45,7 +45,7 @@ export const parseWorkflowResourceBizExtend = (
   };
 };
 /**
- * 转换 ResourceInfo 为编辑 workflow 所需的 WorkflowInfoLocal 结构
+ * Convert ResourceInfo to WorkflowInfoLocal structure required to edit workflow
  * @param resource
  */
 export const transformResourceToWorkflowEditInfo = (

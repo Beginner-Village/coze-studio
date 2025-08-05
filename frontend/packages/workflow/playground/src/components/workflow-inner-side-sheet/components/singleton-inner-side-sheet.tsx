@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, type PropsWithChildren } from 'react';
 
@@ -25,7 +25,7 @@ import {
 } from '../hooks/use-inner-side-sheet-store';
 import { getWorkflowInnerSideSheetHolder } from '../../../utils/get-workflow-inner-side-sheet-holder';
 
-/* 单例 InnerSideSheet 弹窗， 打开一个时关闭其他的 */
+/* Singleton InnerSideSheet pop-up window, open one and close the other */
 export const SingletonInnerSideSheet = (
   props: PropsWithChildren<
     SingletonSideSheetProps & {

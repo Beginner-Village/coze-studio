@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 import { produce } from 'immer';
 
 export interface FreeGrabModalHierarchyState {
-  // modal 的 key list
+  // Modal key list
   modalHierarchyList: string[];
 }
 
@@ -31,7 +31,7 @@ export interface FreeGrabModalHierarchyAction {
 }
 
 /**
- * 可自由拖拽的弹窗之间的层级关系
+ * Hierarchical relationship between pop-ups that can be dragged and dropped freely
  */
 export const createFreeGrabModalHierarchyStore = () =>
   create<FreeGrabModalHierarchyState & FreeGrabModalHierarchyAction>()(

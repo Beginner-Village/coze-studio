@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC } from 'react';
 
 import classNames from 'classnames';
@@ -44,7 +44,7 @@ export interface ContentBoxEvents {
 }
 
 export interface BaseContentBoxProps {
-  /** 是否在浏览器视窗内，true：在，false：不在，undefined：未检测 */
+  /** Whether in the browser window, true: in, false: not, undefined: not detected */
   inView?: boolean;
   contentBoxEvents?: ContentBoxEvents;
 }

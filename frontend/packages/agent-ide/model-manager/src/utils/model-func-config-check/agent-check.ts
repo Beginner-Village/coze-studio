@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type Agent } from '@coze-studio/bot-detail-store';
 import { type Dataset, FormatType } from '@coze-arch/bot-api/knowledge';
 import {
@@ -24,7 +24,7 @@ import {
 } from '@coze-arch/bot-api/developer_api';
 
 interface AgentModelFuncConfigCheckContext {
-  // agent 中的 dataset 可能缺少元信息，需要获取完整数据的方法
+  // The dataset in the agent may lack meta information and require a way to obtain the complete data
   getDatasetById: (id: string) => Dataset | undefined;
   config: Model['func_config'];
 }

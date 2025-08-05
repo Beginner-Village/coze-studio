@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState } from 'react';
 
 import { I18n } from '@coze-arch/i18n';
@@ -98,7 +98,7 @@ export const GuidingPopover = (
   const [visible, setVisible] = useState(() => needShowGuidingPopover());
   const onButtonClick = () => setVisible(false);
 
-  // gotIt 方法先不暴露到上层了，后续需要使用再暴露出来
+  // The gotIt method is not exposed to the upper layer first, and it needs to be used later before being exposed.
   const handleGotIt = () => {
     hideGuidingPopover();
     setVisible(false);

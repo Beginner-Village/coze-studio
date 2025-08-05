@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useService } from '@flowgram-adapter/free-layout-editor';
 import { ViewVariableType } from '@coze-workflow/base';
 
@@ -22,7 +22,7 @@ import { WorkflowModelsService } from '@/services';
 import { useModelType } from '../../hooks/use-model-type';
 
 /**
- * 模型支持的数据类型
+ * Data types supported by the model
  */
 export function useModelEnabledTypes() {
   const modelType = useModelType();

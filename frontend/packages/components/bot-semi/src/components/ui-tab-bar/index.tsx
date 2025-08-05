@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { PropsWithChildren } from 'react';
 
 import cs from 'classnames';
@@ -45,7 +45,7 @@ export const UITabBar: React.FC<PropsWithChildren<UITabBarProps>> = ({
         <div className={cs(s.header, containerClass)}>
           <Node {...innerProps} />
 
-          {/* 右侧工具栏，没有可不传children */}
+          {/* Right toolbar, no children can be passed on. */}
           <div className={s['tool-bar']}>{children}</div>
         </div>
       )}

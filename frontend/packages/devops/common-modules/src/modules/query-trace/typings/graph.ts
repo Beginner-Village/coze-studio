@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type CSpan } from './cspan';
 
 export enum DataSourceTypeEnum {
@@ -22,8 +22,8 @@ export enum DataSourceTypeEnum {
 }
 
 export interface DataSource {
-  // 取值为traceId时，组件会根据traceId查询SpanData
+  // When the value is traceId, the component queries SpanData based on traceId.
   type: DataSourceTypeEnum;
-  spanData?: CSpan[]; // type为spanData时，特有字段
-  traceId?: string; // type为traceId时，特有字段
+  spanData?: CSpan[]; // When type is spanData, unique fields
+  traceId?: string; // When type is traceId, unique field
 }

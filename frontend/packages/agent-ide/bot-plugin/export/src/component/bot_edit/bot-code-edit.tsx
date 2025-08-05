@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useState, useEffect, type ReactNode } from 'react';
 
 import classNames from 'classnames';
@@ -61,9 +61,9 @@ export const CreateCodePluginModal: React.FC<CreatePluginProps> = props => {
   const [openApi, setOpenApi] = useState<string | undefined>();
 
   useEffect(() => {
-    /** 每次打开重置弹窗数据 */
+    /** Reset pop-up data every time you open it */
     if (visible) {
-      //格式化json
+      //Format json
       const desc = JSON.stringify(
         safeJSONParse(editInfo?.code_info?.plugin_desc),
         null,

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { ViewVariableType } from '@coze-workflow/base';
 
 export const GROUP_NAME_PREFIX = 'Group';
@@ -23,14 +23,14 @@ export const MATCHED_VARIABLE_TYPES: ViewVariableType[][] = [
 ];
 
 /**
- * 分组名最大数量
+ * Maximum number of group names
  */
 export const MAX_GROUP_NAME_COUNT = 20;
 /**
- * 分组最大数量
+ * Maximum number of groups
  */
 export const MAX_GROUP_COUNT = 50;
 /**
- * 分组变量最大数量
+ * Maximum number of grouped variables
  */
 export const MAX_GROUP_VARIABLE_COUNT = 50;

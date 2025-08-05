@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type SyncAction } from '../type';
 import { primitiveExhaustiveCheck } from '../../../utils/exhaustive-check';
 import { getMarkdownLink } from './get-markdown-link';
@@ -29,7 +29,7 @@ export const getSyncInsertText = (action: SyncAction): string => {
   }
 
   /**
-   * 不应该走到这里
+   * Shouldn't have come here
    */
   primitiveExhaustiveCheck(type);
   return '';

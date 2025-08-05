@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { parseMarkdownToGrabNode } from '@coze-common/text-grab';
 import {
   ContentType,
@@ -27,7 +27,7 @@ import { QuoteTopUI } from './quote-top-ui';
 export const RemoteQuoteInnerTopSlot: CustomTextMessageInnerTopSlot = ({
   message,
 }) => {
-  // 本地没有用服务端下发的
+  // It was not sent locally with server level.
   const refer = getReferFromMessage(message);
 
   if (!refer) {
@@ -42,7 +42,7 @@ export const RemoteQuoteInnerTopSlot: CustomTextMessageInnerTopSlot = ({
     );
   }
 
-  // 尝试解析ast
+  // Try to parse ast.
   const nodeList = parseMarkdownToGrabNode(refer.text);
 
   return (

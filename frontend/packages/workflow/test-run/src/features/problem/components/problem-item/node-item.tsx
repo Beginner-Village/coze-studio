@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useState } from 'react';
 
 import { isEqual } from 'lodash-es';
@@ -34,7 +34,7 @@ interface NodeItemProps {
   onClick: (p: ProblemItem) => void;
 }
 
-// 避免节点删除后丢失icon、title信息
+// Avoid losing icon and title information after node deletion
 const useMetaMemo = (nodeId: string) => {
   const [nodeMeta, setNodeMeta] = useState<CommonNodeData>();
   const playground = usePlayground();

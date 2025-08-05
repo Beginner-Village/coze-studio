@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, expect, it } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -129,7 +129,7 @@ describe('MultiTable', () => {
       />,
     );
 
-    // 第二个数据库应该被激活
+    // The second database should be activated
     const tab = screen.getByText('Database 2').closest('div');
     expect(tab).toHaveClass(s['tab-bar-item']);
   });
@@ -137,10 +137,10 @@ describe('MultiTable', () => {
   it('should handle database switching', () => {
     render(<MultiTable botID="test-bot" databaseList={mockDatabaseList} />);
 
-    // 点击第二个数据库标签
+    // Click on the second database tab
     fireEvent.click(screen.getByText('Database 2'));
 
-    // 验证切换是否成功
+    // Verify that the switch was successful
     const tab = screen.getByText('Database 2').closest('div');
     expect(tab).toHaveClass(s['tab-bar-item']);
   });

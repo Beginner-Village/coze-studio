@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   createWithEqualityFn,
   type UseBoundStoreWithEqualityFn,
@@ -22,7 +22,7 @@ import { shallow } from 'zustand/shallow';
 import { type StoreApi } from 'zustand';
 
 export interface DataViewerState {
-  // 折叠展开的状态
+  // Folded and unfolded state
   expand: Record<string, boolean> | null;
   setExpand: (key: string, v: boolean) => void;
 }

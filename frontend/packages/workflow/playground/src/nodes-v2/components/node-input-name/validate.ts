@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 import { type Validate } from '@flowgram-adapter/free-layout-editor';
 
@@ -50,12 +50,12 @@ export const createNodeInputNameValidate =
       validatorConfig?.errorMessage ??
       I18n.t('workflow_detail_node_error_format');
 
-    /** 命名校验 */
+    /** name check */
     if (!validatorRule.test(value)) {
       return validatorErrorMessage;
     }
 
-    /** 非法值校验 */
+    /** Illegal value verification */
     if (invalidValues?.[value]) {
       return invalidValues[value];
     }

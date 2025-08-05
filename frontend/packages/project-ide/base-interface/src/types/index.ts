@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import type {
   MessageOperateType,
   MessageBizType,
@@ -23,7 +23,7 @@ export interface WsMessageProps {
   resId: string;
   extra: any;
   /**
-   * 其他窗口执行保存传入的版本号
+   * Other window execution saves the incoming version number
    */
   saveVersion?: string;
   operateType: MessageOperateType;

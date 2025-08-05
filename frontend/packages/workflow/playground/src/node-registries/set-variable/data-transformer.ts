@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { variableUtils } from '@coze-workflow/variable';
 import {
@@ -25,7 +25,7 @@ import {
 } from '@coze-workflow/base';
 
 /**
- * 节点后端数据 -> 前端表单数据
+ * Node Backend Data - > Frontend Form Data
  */
 export const transformOnInit = (formData: any, ctx: any) => {
   const inputParameterDTOs: {
@@ -88,7 +88,7 @@ export const transformOnInit = (formData: any, ctx: any) => {
 };
 
 /**
- * 前端表单数据 -> 节点后端数据
+ * Front-end form data - > node back-end data
  * @param value
  * @returns
  */

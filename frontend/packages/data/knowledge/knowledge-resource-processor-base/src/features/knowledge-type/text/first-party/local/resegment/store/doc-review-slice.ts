@@ -13,38 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type StateCreator } from 'zustand';
 import { type Review } from '@coze-arch/idl/knowledge';
 
 export interface IDocReviewState {
   /**
-   * 当前 active 的 doc review 的 id
+   * The id of the currently active doc review
    */
   currentReviewID?: string;
   /**
-   * 当前选中的分段的 id
+   * The ID of the currently selected segment
    */
   selectionIDs?: string[];
   /**
-   * docReview 的列表
+   * List of docReview
    */
   docReviewList: Review[];
 }
 
 export interface IDocReviewAction {
   /**
-   * 设置当前 active 的 doc review 的 id
+   * Set the id of the currently active doc review
    * @param id
    */
   setCurrentReviewID: (id: string) => void;
   /**
-   * 设置当前选中的分段的 id
+   * Sets the ID of the currently selected segment.
    * @param ids
    */
   setSelectionIDs: (ids: string[]) => void;
   /**
-   * 设置 docReview 的列表
+   * Set up a list of docReviews
    * @param list
    */
   setDocReviewList: (list: Review[]) => void;

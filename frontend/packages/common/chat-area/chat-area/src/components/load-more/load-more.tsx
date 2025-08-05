@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   type PropsWithChildren,
   useDeferredValue,
@@ -53,7 +53,7 @@ export const LoadMore = ({
   const spinRef = useRef<HTMLSpanElement>(null);
   const [inViewport] = useInViewport(() => spinRef.current);
 
-  // 防止连续触发两次请求（loading 变化早于 IconSpin 组件显隐变化）
+  // Prevent two consecutive requests from being triggered (loading changes earlier than explicit changes in the IconSpin component)
   const deferredLoading = useDeferredValue(loading);
 
   useEffect(() => {

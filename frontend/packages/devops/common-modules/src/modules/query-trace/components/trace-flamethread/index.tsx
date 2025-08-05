@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, type FC, useMemo, useState, useCallback } from 'react';
 
 import { type IElement } from '@visactor/vgrammar';
@@ -56,7 +56,7 @@ const TraceFlamethread: FC<TraceFlamethreadProps> = props => {
     onClick,
   } = props;
 
-  // 初始化flamethreadData
+  // Initialize flamethreadData
   useEffect(() => {
     if (dataType === DataSourceTypeEnum.SpanData && spanData) {
       if (spanData?.length === 0 && flamethreadData.length === 0) {

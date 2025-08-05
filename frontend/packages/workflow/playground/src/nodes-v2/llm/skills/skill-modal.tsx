@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, useRef, useState } from 'react';
 
 import classNames from 'classnames';
@@ -71,7 +71,7 @@ export const SkillModal: FC<SkillModalProps> = props => {
     SkillKnowledgeSiderCategory.Library,
   );
 
-  // plugin 添加弹窗
+  // Plugin Add pop-up window
   const pluginModalFrom = projectId
     ? From.ProjectWorkflow
     : From.WorkflowAddNode;

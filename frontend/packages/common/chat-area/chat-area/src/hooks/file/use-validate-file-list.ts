@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { I18n } from '@coze-arch/i18n';
 import { Toast } from '@coze-arch/bot-semi';
 import { MAX_FILE_MBYTE } from '@coze-common/chat-uikit-shared';
@@ -37,7 +37,7 @@ export const useValidateFileList = () => {
     const hasExceedSizeFile = !fileList.every(isFileSizeNotExceed);
     const hasEmptyFile = !fileList.every(isNotEmptyFile);
 
-    // TODO: 遇到了 file.size 错误的 case 需要再检查
+    // TODO: The case of file.size error needs to be checked again.
     if (hasExceedSizeFile) {
       Toast.warning({
         content: getFileSizeReachLimitI18n({

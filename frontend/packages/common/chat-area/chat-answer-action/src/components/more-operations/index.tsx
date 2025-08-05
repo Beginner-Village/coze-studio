@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import classNames from 'classnames';
 import {
   useDeleteMessageGroup,
@@ -43,7 +43,7 @@ export const MoreOperations: React.FC<MoreOperationsProps> = ({
             disabled={isDeleteMessageLock}
             icon={<IconCozTrashCan className="coz-fg-hglt-red" />}
             onClick={() => {
-              // 通过 groupId 索引即可
+              // Just index through groupId.
               deleteMessageGroup(groupId);
             }}
             type="danger"

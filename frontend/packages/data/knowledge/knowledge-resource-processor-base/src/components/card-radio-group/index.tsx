@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type PropsWithChildren } from 'react';
 
 import classNames from 'classnames';
@@ -28,7 +28,7 @@ export type CardRadioGroupProps<T = unknown> = PropsWithChildren<
 };
 
 /**
- * 始终使用卡片风格，并符合 UI 设计样式的 {@link RadioGroup}
+ * Always use the card style and conform to the UI design style {@link RadioGroup}
  */
 export function CardRadioGroup<T = unknown>({
   value,

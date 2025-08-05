@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ReactNode } from 'react';
 
 import { type TooltipProps } from '@coze-arch/coze-design';
@@ -33,12 +33,12 @@ export type TraceTreeProps = {
   onCollapseChange?: (id: string) => void;
   defaultDisplayMode?: DisplayMode;
   /**
-   * 隐藏模式选择器
+   * hidden mode selector
    */
   hideModeSelect?: boolean;
-  /** 宿主用户信息 */
+  /** Host user information */
   hostUser?: {
-    /** 用户邮箱 */
+    /** user email */
     email?: string;
     /** user id */
     id?: string;

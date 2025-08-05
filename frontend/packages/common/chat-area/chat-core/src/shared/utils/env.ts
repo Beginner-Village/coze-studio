@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ENV, type DeployVersion } from '../const';
 
 /**
- * 获取 slardar 上报环境
- * 不同环境之间数据隔离
+ * Get slardar report environment
+ * Data isolation between different environments
  * @returns
  */
 export const getSlardarEnv = ({

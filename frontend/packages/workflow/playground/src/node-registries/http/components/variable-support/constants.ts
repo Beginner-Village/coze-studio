@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export enum MenuType {
   Nodes = 'nodes',
   Variables = 'variables',
@@ -21,11 +21,11 @@ export enum MenuType {
 
 export enum DropdownType {
   /**
-   * 用户输入唤起
+   * user input evocation
    */
   Input = 'Input',
   /**
-   * 点击变量唤起
+   * click variable arousal
    */
   Update = 'Update',
 }

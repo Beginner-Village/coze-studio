@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { describe, it, expect } from 'vitest';
 import { WorkflowMode } from '@coze-arch/bot-api/workflow_api';
 
@@ -29,7 +29,7 @@ describe('is-general-workflow', () => {
   });
 
   it('应该在 flowMode 为其他值时返回 false', () => {
-    // 测试其他可能的 WorkflowMode 值
+    // Test other possible WorkflowMode values
     expect(isGeneralWorkflow(WorkflowMode.Imageflow)).toBe(false);
   });
 });

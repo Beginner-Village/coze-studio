@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   useEffect,
   type RefObject,
@@ -72,7 +72,7 @@ export const Index = (
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLibraryId, setSelectedLibraryId] = useState<string>('');
 
-  // 切换tab，默认选中第一个
+  // Switch tabs, the first one is selected by default
   useEffect(() => {
     if (!dataList.length || isLoading) {
       return;

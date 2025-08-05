@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type NodeResult } from '@coze-workflow/base/api';
 
 function getPromptExecuteValue(
@@ -26,7 +26,7 @@ function getPromptExecuteValue(
     prompt?.replace(
       regex,
       (match, variable) =>
-        // 检查 value 中是否有对应的变量值，如果有则替换，否则保持原样
+        // Check whether there is a corresponding variable value in value, and replace it if so, otherwise keep it as it is.
         variables[variable.trim()] || match,
     ) ?? '';
 

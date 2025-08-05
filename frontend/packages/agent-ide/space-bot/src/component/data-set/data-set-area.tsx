@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 import { useNavigate, useParams } from 'react-router-dom';
 import React, { type FC, useEffect, useRef, useState, useMemo } from 'react';
@@ -89,7 +89,7 @@ export const Setting: React.FC<{ modelId: string }> = ({ modelId }) => {
           dataSetInfo={knowledge.dataSetInfo}
           onDataSetInfoChange={async newVal => {
             const { auto } = newVal;
-            // 修改调用模式时做前置检查
+            // Pre-check when modifying the invocation mode
             if (auto !== knowledge.dataSetInfo.auto) {
               try {
                 setLocked(true);
@@ -191,7 +191,9 @@ export const DataSetAreaItem: FC<IDataSetAreaProps> = ({
     };
 
     navigate(
-      `/space/${params.space_id}/knowledge/${datasetID}?${new URLSearchParams(queryParams).toString()}`,
+      `/space/${params.space_id}/knowledge/${datasetID}?${new URLSearchParams(
+        queryParams,
+      ).toString()}`,
     );
   };
   const jumpToAdd = (datasetID: string, type: UnitType) => {
@@ -203,7 +205,11 @@ export const DataSetAreaItem: FC<IDataSetAreaProps> = ({
       page_mode: 'modal',
     };
     navigate(
-      `/space/${params.space_id}/knowledge/${datasetID}/upload?${new URLSearchParams(queryParams).toString()}`,
+      `/space/${
+        params.space_id
+      }/knowledge/${datasetID}/upload?${new URLSearchParams(
+        queryParams,
+      ).toString()}`,
     );
   };
   const { node: addModal, open: openAddModal } = useKnowledgeListModal({
@@ -218,8 +224,8 @@ export const DataSetAreaItem: FC<IDataSetAreaProps> = ({
   });
 
   useEffect(() => {
-    // 排除首次初始化和删除更新，原因：
-    // 因为删除会快速操作，useEffect 追踪到数据可能是最终结果，无法保证每次删除都能监听到
+    // Exclude first initialization and deletion of updates for:
+    // Because deletion is quick, useEffect traces that the data may be the final result, and there is no guarantee that every deletion will be monitored
     if (initRef.current && removedIds.length === 0) {
       updateSkillKnowledgeDatasetList(
         dataSetList.map(d => ({
@@ -409,7 +415,7 @@ export const useDataSetArea = () => {
       const validDatasetList = (resp?.dataset_list ?? []).filter(item =>
         knowledge.dataSetList.some(i => i.dataset_id === item.dataset_id),
       );
-      // 方便数据复用
+      // Easy data reuse
       useDraftBotDataSetStore.getState().batchUpdate(validDatasetList);
       setDataSetList(validDatasetList);
     }

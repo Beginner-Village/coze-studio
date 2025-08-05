@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { userStoreService } from '@coze-studio/user-store';
 
 /**
- * 判断当前用户是否处于登陆状态
+ * Determine whether the current user is logged in
  */
 export const useLoggedIn = () => userStoreService.useIsLogined();

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { nanoid } from 'nanoid';
 import { ValueExpressionType, ViewVariableType } from '@coze-workflow/variable';
 import { type InputValueVO, VariableTypeDTO } from '@coze-workflow/base';
@@ -35,10 +35,10 @@ export const FIELD_CONFIG = {
     required: true,
     type: VariableTypeDTO.string,
 
-    // 选项默认值
+    // option default
     defaultValue: 'user',
 
-    // 选项列表
+    // list of options
     optionsList: [
       { label: 'user', value: 'user' },
       { label: 'assistant', value: 'assistant' },
@@ -56,7 +56,7 @@ export const FIELD_CONFIG = {
 export const DEFAULT_CONVERSATION_VALUE: InputValueVO[] = Object.keys(
   FIELD_CONFIG,
 ).map(fieldName => {
-  // 针对 role 字段，需要设置字面量默认值
+  // For the role field, you need to set the literal default
   if (fieldName === 'role') {
     return {
       name: fieldName,

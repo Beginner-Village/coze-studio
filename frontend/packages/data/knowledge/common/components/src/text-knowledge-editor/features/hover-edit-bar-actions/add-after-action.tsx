@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React from 'react';
 
 import { KnowledgeE2e } from '@coze-data/e2e';
@@ -31,7 +31,7 @@ export const AddAfterAction: React.FC<HoverEditBarActionProps> = ({
   chunks,
   disabled,
 }) => {
-  // 在特定分片后添加新分片
+  // Add new shardings after specific shardings
   const { addEmptyChunkAfter } = useAddEmptyChunkAction({
     chunks: chunks || [],
     onChunksChange: ({ newChunk, chunks: newChunks }) => {

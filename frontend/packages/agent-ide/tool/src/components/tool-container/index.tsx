@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FC, type PropsWithChildren } from 'react';
 
 import classNames from 'classnames';
@@ -75,7 +75,7 @@ export const ToolContainer: FC<PropsWithChildren<IProps>> = ({
   const handleOnMouseEnter = (key: string) => {
     const siblingClassList = document.querySelector(`.collapse-panel-${key}`)
       ?.previousElementSibling?.classList;
-    // 如果找到兄弟节点则隐藏下划线
+    // Hide the underscore if a sibling is found
     if (siblingClassList?.contains('collapse-panel')) {
       siblingClassList.add('collapse-panel-hide-underline');
     }

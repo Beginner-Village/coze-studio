@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 import { type DocumentInfo, type Dataset } from '@coze-arch/bot-api/knowledge';
@@ -26,15 +26,15 @@ import {
 
 export enum FilterPhotoType {
   /**
-   * 全部
+   * all
    */
   All = 'All',
   /**
-   * 已标注
+   * marked
    */
   HasCaption = 'HasCaption',
   /**
-   * 未标注
+   * unmarked
    */
   NoCaption = 'NoCaption',
 }
@@ -46,7 +46,7 @@ export interface KnowledgePreviewState {
   searchValue: string;
   curDocId: string;
   /**
-   * 图片类型是否已标注
+   * Is the image type marked?
    */
   photoFilterValue: FilterPhotoType;
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   search,
   IntelligenceStatus,
@@ -50,7 +50,7 @@ export const intelligenceSearchService = {
       },
     });
     const intelligenceList = resp?.data?.intelligences ?? [];
-    // 只保留single mode bot
+    // Keep only single mode bots
     const singleModeBotList = intelligenceList.filter(
       intelligence => intelligence.other_info?.bot_mode === BotMode.SingleMode,
     );

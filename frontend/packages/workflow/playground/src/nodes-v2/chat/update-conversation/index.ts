@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 更新会话节点 */
+
+/** Update session node */
 
 export { UPDATE_CONVERSATION_NODE_REGISTRY } from './node-registry';

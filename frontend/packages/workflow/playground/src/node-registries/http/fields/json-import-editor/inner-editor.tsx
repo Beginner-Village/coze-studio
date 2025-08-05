@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useState } from 'react';
 
 import classNames from 'classnames';
@@ -68,7 +68,7 @@ interface InnerEditorProps {
 }
 
 /**
- * 全局变量提示逻辑层
+ * Global variable hint logic layer
  */
 export const InnerEditor = React.forwardRef(
   (props: InnerEditorProps, editorRef) => {
@@ -94,7 +94,7 @@ export const InnerEditor = React.forwardRef(
       allVariables,
       getNodeInfoInVariableMeta,
     );
-    /** 默认兜底的可选择变量数据 */
+    /** Selectable variable data with default backstop */
     const defaultVariableDataSource = useFormatVariableDataSource({
       disabledTypes: [],
     });
@@ -103,7 +103,7 @@ export const InnerEditor = React.forwardRef(
       defaultVariableDataSource,
     );
 
-    // 处理 DataSource 数据，添加部分字段 / 渲染
+    // Process DataSource data, add partial fields/renders
     const variableDataSource = processDataSourceLabelRender({
       dataSource: dataSourceWithGlobal,
       icon: node =>

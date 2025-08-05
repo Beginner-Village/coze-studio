@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import React, { useEffect, useMemo, useState } from 'react';
 
 import semver from 'semver';
@@ -35,11 +35,11 @@ import { BaseVersionInfo, OutDatedVersionInfo } from './base-version';
 
 interface VersionInfoProps {
   node: FlowNodeEntity;
-  /** 外显的版本号 */
+  /** explicit version number */
   versionName?: string;
   latestVersionName?: string;
   latestVersionTs?: string;
-  /** 是否已经落后 */
+  /** Is it already behind? */
   isOutdated: boolean;
 }
 const VersionInfo: React.FC<VersionInfoProps> = ({

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useShallow } from 'zustand/react/shallow';
 import { useKnowledgeStore } from '@coze-data/knowledge-stores';
 import { DocumentStatus } from '@coze-arch/bot-api/knowledge';
@@ -21,7 +21,7 @@ import { DocumentStatus } from '@coze-arch/bot-api/knowledge';
 import { type ProgressMap } from '@/types';
 
 /**
- * 处理文档基本信息的 hook
+ * Hooks that handle basic information about documents
  */
 export const useDocumentInfo = (progressMap: ProgressMap) => {
   const { documentList, dataSetDetail, curDocId } = useKnowledgeStore(
@@ -32,16 +32,16 @@ export const useDocumentInfo = (progressMap: ProgressMap) => {
     })),
   );
 
-  // 当前文档
+  // current document
   const curDoc = documentList?.find(i => i.document_id === curDocId);
 
-  // 处理状态
+  // processing state
   const isProcessing = curDoc?.status === DocumentStatus.Processing;
   const processFinished = curDocId
     ? progressMap[curDocId]?.status === DocumentStatus.Enable
     : false;
 
-  // 数据集ID
+  // Dataset ID
   const datasetId = dataSetDetail?.dataset_id ?? '';
 
   return {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { withSlardarIdButton } from '@coze-studio/bot-utils';
 import { I18n } from '@coze-arch/i18n';
 import { Toast } from '@coze-arch/bot-semi';
@@ -52,7 +52,7 @@ export const findTargetAgent = (agents: Agent[], agentId?: string) => {
   return agents.find(item => item.id === agentId);
 };
 
-/** 寻找某个agent，其中该agent的intent的next_agent_id是当前的agent id */
+/** Find an agent whose intent next_agent_id the current agent id. */
 export const findAgentByNextIntentID = (
   agents: Agent[],
   nextAgentID?: string,
@@ -73,7 +73,7 @@ export const findTargetAgentIndex = (agents: Agent[], agentId?: string) => {
 };
 
 /**
- * start 节点指向的节点 id
+ * The node id pointed to by the start node
  */
 export const findFirstAgentId = ({
   agents,

@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { uniq } from 'lodash-es';
 /**
- * 以 class id 首次出现的顺序进行排序
+ * Sort in the order in which the class id first appears
  */
 export const getModelClassSortList = (classIdList: string[]) =>
   uniq(classIdList);

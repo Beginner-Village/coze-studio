@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const proxyCache = new WeakMap<object, any>();
 
 const proxyIdentifier = Symbol('proxy-freeze-identifier');
 
-/** 拦截直接对对象（含数组）的修改；没处理 class */
+/** Intercepts direct modifications to objects (including arrays); does not handle classes */
 export function proxyFreeze<T extends object>(target: T, path = 'obj') {
   if (
     !IS_DEV_MODE ||

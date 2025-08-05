@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useRef } from 'react';
 
 const useSelectedChange = ({
@@ -37,7 +37,7 @@ const useSelectedChange = ({
 
     updateContext({ currentSelectedId: selected });
 
-    // 将聚焦的 path 上的文件夹都展开
+    // Expand folders on the focused path
     const path = resourceMap.current[selected]?.path || [];
     path.forEach(pathKey => {
       delete collapsedMapRef.current[pathKey];

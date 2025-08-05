@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useRef, useState } from 'react';
 
 import classNames from 'classnames';
@@ -21,12 +21,7 @@ import { useEditor } from '@coze-editor/editor/react';
 import { type EditorAPI } from '@coze-editor/editor/preset-prompt';
 import { I18n } from '@coze-arch/i18n';
 import { IconCozPlus } from '@coze-arch/coze-design/icons';
-import {
-  Modal,
-  type ModalProps,
-  Search,
-  Button,
-} from '@coze-arch/coze-design';
+import { Modal, type ModalProps, Search, Button } from '@coze-arch/coze-design';
 import { EVENT_NAMES, sendTeaEvent } from '@coze-arch/bot-tea';
 import { PlaygroundApi } from '@coze-arch/bot-api';
 import { LibraryBlockWidget } from '@coze-common/editor-plugins/library-insert';
@@ -75,13 +70,13 @@ interface PromptLibraryProps extends ModalProps {
   importPromptWhenEmpty?: string;
   defaultActiveTab?: 'Recommended' | 'Team';
   tabs?: ('Recommended' | 'Team')[];
-  /** 用于埋点: 页面来源 */
+  /** For event tracking: page source */
   source: string;
-  /** 用于埋点: bot_id */
+  /** For event tracking: bot_id */
   botId?: string;
-  /** 用于埋点: project_id */
+  /** For event tracking: project_id */
   projectId?: string;
-  /** 用于埋点: workflow_id */
+  /** For event tracking: workflow_id */
   workflowId?: string;
   onInsertPrompt?: (prompt: string, selectedLibrary: ActionExtraInfo) => void;
   onUpdateSuccess?: (
@@ -195,7 +190,7 @@ export const PromptLibrary = ({
     });
   }, [selectedLibraryId, dataList, isLoading]);
 
-  // 切换tab、无选中提示词，重置搜索词
+  // Switch tab, no selected prompt word, reset search term
   useEffect(() => {
     setSelectedLibraryId('');
     setPrompt('');

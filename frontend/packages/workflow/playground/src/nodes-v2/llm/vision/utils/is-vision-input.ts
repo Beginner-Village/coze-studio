@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type InputValueVO } from '@coze-workflow/base';
 
 /**
- * 是不是视觉理解的输入
+ * Is it visually comprehensible input?
  */
 export const isVisionInput = (value: InputValueVO): boolean =>
   !!value?.input?.rawMeta?.isVision;

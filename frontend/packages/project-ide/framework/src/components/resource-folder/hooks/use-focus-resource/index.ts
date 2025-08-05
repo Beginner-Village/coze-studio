@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useRef } from 'react';
 
 import { calcOffsetTopByCollapsedMap } from '../../utils';
@@ -57,7 +57,7 @@ const useFocusResource = ({
       itemHeight: config?.itemHeight || ITEM_HEIGHT,
     });
 
-    // 如果在视图内， 则不滚
+    // If in view, do not roll
     if (
       scrollTop > scrollWrapper.current.scrollTop &&
       scrollTop <

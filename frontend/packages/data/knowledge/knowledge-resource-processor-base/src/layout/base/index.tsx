@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useMemo } from 'react';
 
 import classNames from 'classnames';
-import { useDataCallbacks, useKnowledgeParams } from '@coze-data/knowledge-stores';
+import {
+  useDataCallbacks,
+  useKnowledgeParams,
+} from '@coze-data/knowledge-stores';
 import {
   DataErrorBoundary,
   DataNamespace,
@@ -59,7 +62,7 @@ export const KnowledgeResourceProcessorLayout = ({
 
   const { datasetID, opt, docID, biz } = useKnowledgeParams();
 
-  // 获取知识库详情
+  // Get Knowledge Base Details
   const { data: dataSetInfo, loading } = useGetKnowledgeListInfo({
     datasetID: datasetID || '',
   });
@@ -90,7 +93,7 @@ export const KnowledgeResourceProcessorLayout = ({
     onStatusChange?.('normal');
   }, [headerTiTle]);
 
-  // TODO:hzf 分化拆分到scenes
+  // TODO: hzf differentiation split into scenes
   const fromProject = biz === 'project';
 
   return (

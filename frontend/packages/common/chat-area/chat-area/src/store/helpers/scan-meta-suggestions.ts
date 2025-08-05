@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type MessageGroup } from '../types';
 
 /**
- * 必须在处理完 showContextDivider 后才可以调用
+ * You must process showContextDivider before you can call it
  */
 export const scanAndMarkShowSuggestions = (
   messageGroupList: MessageGroup[],

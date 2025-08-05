@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { get } from 'lodash-es';
 import { useWorkflowNode } from '@coze-workflow/base';
 import { I18n, type I18nKeysNoOptionsType } from '@coze-arch/i18n';
@@ -42,7 +42,7 @@ const thumbnails = [
 
 export function Model() {
   const { data } = useWorkflowNode();
-  // 组件化表单字段name支持点语法 新版一般从inputs开始 这里需要兼容老版
+  // Component form field name supports point syntax. The new version generally starts from inputs. It needs to be compatible with the old version.
   const model =
     get(data, 'modelSetting.model') || get(data, 'inputs.modelSetting.model');
 

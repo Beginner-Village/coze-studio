@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-const ASCII_TO_A_INDEX = 65; // 字母A对应的ASCII序号
+
+const ASCII_TO_A_INDEX = 65; // The ASCII serial number corresponding to the letter A
 
 export function convertNumberToLetters(n) {
   let result = '';

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable @coze-arch/max-line-per-function */
 /* eslint-disable max-lines-per-function */
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -89,7 +89,7 @@ const useMockSetInSettingModalController = ({
     () => ({
       ...bizSceneCtx,
       connectorUID: uid,
-      connectorID: CONNECTOR_ID, // 业务线为Coze
+      connectorID: CONNECTOR_ID, // Business line for Coze
     }),
     [bizSceneCtx, uid, CONNECTOR_ID],
   );

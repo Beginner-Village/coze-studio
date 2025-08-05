@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import {
   useEffect,
   useState,
@@ -109,14 +109,14 @@ export const EncapsulateTooltip: FC<PropsWithChildren<Props>> = ({
               )}
             </div>
 
-            {/* 没有错误来源的 */}
+            {/* No wrong sources */}
             {(groupErrors.withoutSource || []).map((error, index) => (
               <div key={index} className="flex mt-3 gap-4 items-start">
                 <ErrorMessage error={error} />
               </div>
             ))}
 
-            {/* 有错误来源的 */}
+            {/* There is a wrong source */}
             {(groupErrors.withSource || []).length ? (
               <div className={styles.errors}>
                 {(groupErrors.withSource || []).map(error => (

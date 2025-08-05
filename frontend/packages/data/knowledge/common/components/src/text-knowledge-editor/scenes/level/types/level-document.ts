@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type ILevelSegment } from '@coze-data/knowledge-stores';
 
 import { type Chunk } from '@coze-data/knowledge-common-components/text-knowledge-editor';
@@ -24,7 +24,7 @@ export type LevelDocumentTreeNode = Omit<ILevelSegment, 'children' | 'parent'> &
   Chunk & {
     parent?: string;
     children?: LevelDocumentTreeNode[];
-    renderLevel?: string; // 用于唯一标识chunk的渲染路径
+    renderLevel?: string; // Rendering path used to uniquely identify chunks
   };
 
 export type LevelDocumentTree = LevelDocumentTreeNode[];

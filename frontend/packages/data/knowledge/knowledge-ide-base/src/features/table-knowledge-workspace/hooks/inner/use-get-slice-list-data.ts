@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { DataNamespace, dataReporter } from '@coze-data/reporter';
 import { useKnowledgeStore } from '@coze-data/knowledge-stores';
 import { REPORT_EVENTS as ReportEventNames } from '@coze-arch/report-events';
@@ -25,7 +25,7 @@ import { useScrollListSliceReq } from '@/service';
 export const useGetSliceListData = () => {
   const documentList = useKnowledgeStore(state => state.documentList);
   const curDocId = documentList?.[0]?.document_id;
-  // 加载数据
+  // load data
   const {
     data: sliceListData,
     mutate: mutateSliceListData,

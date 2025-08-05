@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable complexity */
 import { useEffect, useRef, useState, type FC } from 'react';
 
@@ -66,8 +66,8 @@ export const PopInScreen: FC<IProps> = props => {
   }
 
   /**
-   * ahooks useSize 初次执行会返回 undefined，导致组件位置计算错误
-   * 这里监听 childrenSize ，如果为 undefined 则延迟 100ms 再渲染，以修正组件位置
+   * ahooks useSize returns undefined on first execution, resulting in an error in component location evaluation
+   * This listens to childrenSize. If it is undefined, delay rendering by 100ms to correct the component position.
    */
   const [id, setId] = useState('');
   const timer = useRef<NodeJS.Timeout>();
@@ -100,7 +100,7 @@ export const PopInScreen: FC<IProps> = props => {
         top: getNumberBetween({
           value: top,
           max: (limitRect?.height ?? Infinity) - (childrenSize?.height ?? 0),
-          min: position === 'top-center' ? (childrenSize?.height ?? 0) : 0,
+          min: position === 'top-center' ? childrenSize?.height ?? 0 : 0,
         }),
 
         zIndex,
@@ -109,7 +109,7 @@ export const PopInScreen: FC<IProps> = props => {
         transform,
       }}
     >
-      {/* 为了触发二次渲染 */}
+      {/* To trigger secondary rendering */}
       <div className="hidden" id={id} />
       {children}
     </div>

@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { type FreeGrabModalHierarchyAction } from '@coze-agent-ide/bot-editor-context-store';
 
 import { type ModalHierarchyServiceConstructor } from './type';
 
 export class FreeGrabModalHierarchyService {
-  /** Tip: semi modal zIndex 为 1000 */
+  /** Tip: semi modal zIndex is 1000 */
   private baseZIndex = 1000;
   public registerModal: FreeGrabModalHierarchyAction['registerModal'];
   public removeModal: FreeGrabModalHierarchyAction['removeModal'];

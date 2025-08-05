@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { TOOL_KEY_TO_API_STATUS_KEY_MAP } from '@coze-agent-ide/tool-config';
 import { usePageRuntimeStore } from '@coze-studio/bot-detail-store/page-runtime';
 import { TabStatus } from '@coze-arch/bot-api/developer_api';
@@ -59,8 +59,8 @@ export const useToolValidData = () => {
     });
 
     /**
-     * 异常场景兜底，视图和服务端数据无法匹配，需要触发更新服务端数据
-     * 有数据但是隐藏状态
+     * Abnormal scene cover, view and server level data cannot match, need to trigger update server level data
+     * There is data but hidden state
      */
     if (toolStatus === TabStatus.Hide && hasValidData) {
       setBotSkillBlockCollapsibleState(

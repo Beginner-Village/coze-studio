@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 import { useEffect, useState } from 'react';
 
 import { useService } from '@flowgram-adapter/free-layout-editor';
 import { WorkflowSelectService } from '@flowgram-adapter/free-layout-editor';
 
 /**
- * 选中节点
+ * selected node
  */
 export function useSelectedNodes() {
   const selectService = useService<WorkflowSelectService>(

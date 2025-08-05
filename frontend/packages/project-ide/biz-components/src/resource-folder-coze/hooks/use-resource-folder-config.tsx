@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 /* eslint-disable complexity */
 import React, { useCallback, useMemo } from 'react';
 
@@ -79,7 +79,7 @@ export type UseResourceFolderConfigProps = {
   ) => void;
   createResourceConfig?: ResourceFolderCozeProps['createResourceConfig'];
   /**
-   * 隐藏更多菜单按钮
+   * Hide more menu button
    */
   hideMoreBtn?: boolean;
 } & Pick<ResourceFolderProps, 'validateConfig'>;
@@ -117,7 +117,7 @@ export const useResourceFolderConfig = ({
           return [];
         }
         if (resource.id === ROOT_KEY) {
-          // 新建文件夹，新建文件，引入资源库
+          // New folder, new file, import resource library
           const createHandlers = createResourceConfig
             ? createResourceConfig.map(({ label, subType }) => ({
                 id: `${BizResourceContextMenuBtnType.CreateResource}-${subType}`,

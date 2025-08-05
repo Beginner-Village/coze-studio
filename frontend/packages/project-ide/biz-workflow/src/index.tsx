@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 export {
   ResourceRefTooltip,
   usePluginDetail,
@@ -23,7 +23,7 @@ export {
 
 export { WorkflowWidgetRegistry } from './registry';
 /**
- * 会话管理 registry
+ * Session management registry
  */
 export { ConversationRegistry } from './conversation/registry';
 export { useWorkflowResource } from './hooks/use-workflow-resource';
