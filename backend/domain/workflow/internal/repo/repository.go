@@ -748,11 +748,9 @@ func (r *RepositoryImpl) GetVersion(ctx context.Context, id int64, version strin
 }
 
 func (r *RepositoryImpl) GetVersionListByConnectorAndWorkflowID(ctx context.Context, connectorID, workflowID int64, limit int) (_ []string, err error) {
-	defer func() {
-		if err != nil {
-			err = vo.WrapIfNeeded(errno.ErrDatabaseError, err)
-		}
-	}()
+	if limit <= 0 {
+		return nil, vo.WrapError(errno.ErrInvalidParameter, errors.New("limit must be greater than 0"))
+	}
 
 	connectorWorkflowVersion := r.query.ConnectorWorkflowVersion
 	vl, err := connectorWorkflowVersion.WithContext(ctx).
