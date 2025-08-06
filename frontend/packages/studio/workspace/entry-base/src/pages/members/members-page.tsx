@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-export enum SpaceSubModuleEnum {
-  DEVELOP = 'develop',
-  LIBRARY = 'library',
-  MEMBERS = 'members',
-}
+import { type FC } from 'react';
+
+import { MembersManagement } from './components/members-management';
+
+export const MembersPage: FC<{ spaceId: string }> = ({ spaceId }) => {
+  return <MembersManagement spaceId={spaceId} />;
+};

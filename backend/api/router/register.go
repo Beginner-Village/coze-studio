@@ -89,4 +89,15 @@ func manualRegisterImportExport(r *server.Hertz) {
 	workflowAPI.POST("/export", cozeHandler.ExportWorkflow)
 	workflowAPI.POST("/import", cozeHandler.ImportWorkflow)
 	workflowAPI.POST("/validate_import", cozeHandler.ValidateImport)
+	
+	// Manually register space member management routes
+	playgroundAPI := api.Group("/playground_api")
+	spaceAPI := playgroundAPI.Group("/space")
+	memberAPI := spaceAPI.Group("/member")
+	
+	memberAPI.POST("/detail", cozeHandler.SpaceMemberDetailV2)
+	memberAPI.POST("/add", cozeHandler.AddBotSpaceMemberV2)
+	memberAPI.POST("/remove", cozeHandler.RemoveSpaceMemberV2)
+	memberAPI.POST("/update", cozeHandler.UpdateSpaceMemberV2)
+	memberAPI.POST("/search", cozeHandler.SearchMemberV2)
 }

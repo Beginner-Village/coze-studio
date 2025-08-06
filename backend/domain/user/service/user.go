@@ -87,4 +87,12 @@ type User interface {
 	ValidateSession(ctx context.Context, sessionKey string) (session *entity.Session, exist bool, err error)
 	GetUserSpaceList(ctx context.Context, userID int64) (spaces []*entity.Space, err error)
 	CreateUserSpace(ctx context.Context, req *CreateUserSpaceRequest) (space *entity.Space, err error)
+	
+	// Space member management
+	GetUserSpaceRole(ctx context.Context, userID, spaceID int64) (roleType int32, err error)
+	GetSpaceMembers(ctx context.Context, spaceID int64, searchWord string, roleType int64, page, size int) (members []*entity.SpaceUser, total int, err error)
+	AddSpaceMember(ctx context.Context, spaceID, userID int64, roleType int32) (err error)
+	RemoveSpaceMember(ctx context.Context, spaceID, userID int64) (err error)
+	UpdateSpaceMemberRole(ctx context.Context, spaceID, userID int64, roleType int32) (err error)
+	SearchUsers(ctx context.Context, searchList []string) (users []*entity.User, err error)
 }

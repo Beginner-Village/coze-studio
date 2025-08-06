@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-export enum SpaceSubModuleEnum {
-  DEVELOP = 'develop',
-  LIBRARY = 'library',
-  MEMBERS = 'members',
-}
+import { useParams } from 'react-router-dom';
+
+import { MembersPage } from '@coze-studio/workspace-adapter/members';
+
+const Page = () => {
+  const { space_id } = useParams();
+  return space_id ? <MembersPage spaceId={space_id} /> : null;
+};
+
+export default Page;

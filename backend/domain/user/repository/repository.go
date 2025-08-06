@@ -46,6 +46,14 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *model.User) error
 	GetUserBySessionKey(ctx context.Context, sessionKey string) (*model.User, bool, error)
 	GetUsersByIDs(ctx context.Context, userIDs []int64) ([]*model.User, error)
+	
+	// Space member management
+	GetSpaceUser(ctx context.Context, spaceID, userID int64) (*model.SpaceUser, bool, error)
+	GetSpaceMembers(ctx context.Context, spaceID int64, searchWord string, roleType int32, offset, limit int) ([]*model.SpaceUser, int64, error)
+	CreateSpaceUser(ctx context.Context, spaceUser *model.SpaceUser) error
+	DeleteSpaceUser(ctx context.Context, spaceID, userID int64) error
+	UpdateSpaceUserRole(ctx context.Context, spaceID, userID int64, roleType int32) error
+	SearchUsers(ctx context.Context, searchList []string) ([]*model.User, error)
 }
 
 type SpaceRepository interface {

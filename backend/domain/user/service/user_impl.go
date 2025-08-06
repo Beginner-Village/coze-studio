@@ -720,3 +720,127 @@ func (u *userImpl) CreateUserSpace(ctx context.Context, req *CreateUserSpaceRequ
 
 	return spacePo2Do(spaceModel, iconURL, 1), nil  // 创建者是owner，role_type=1
 }
+
+// GetUserSpaceRole gets a user's role in a space
+func (u *userImpl) GetUserSpaceRole(ctx context.Context, userID, spaceID int64) (roleType int32, err error) {
+	spaceUser, exist, err := u.UserRepo.GetSpaceUser(ctx, spaceID, userID)
+	if err != nil {
+		return 0, err
+	}
+	if !exist {
+		return 0, errorx.New(errno.ErrUserResourceNotFound, 
+			errorx.KV("type", "space_user"),
+			errorx.KV("id", fmt.Sprintf("space:%d,user:%d", spaceID, userID)))
+	}
+	return spaceUser.RoleType, nil
+}
+
+// GetSpaceMembers gets members of a space with pagination and filtering
+func (u *userImpl) GetSpaceMembers(ctx context.Context, spaceID int64, searchWord string, roleType int64, page, size int) (members []*userEntity.SpaceUser, total int, err error) {
+	// Convert page to offset
+	offset := (page - 1) * size
+	if offset < 0 {
+		offset = 0
+	}
+
+	// Get members from repository
+	spaceUsers, totalCount, err := u.UserRepo.GetSpaceMembers(ctx, spaceID, searchWord, int32(roleType), offset, size)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Convert to entity
+	members = slices.Transform(spaceUsers, func(su *model.SpaceUser) *userEntity.SpaceUser {
+		return &userEntity.SpaceUser{
+			ID:        su.ID,
+			SpaceID:   su.SpaceID,
+			UserID:    su.UserID,
+			RoleType:  su.RoleType,
+			CreatedAt: su.CreatedAt,
+			UpdatedAt: su.UpdatedAt,
+		}
+	})
+
+	return members, int(totalCount), nil
+}
+
+// AddSpaceMember adds a member to a space
+func (u *userImpl) AddSpaceMember(ctx context.Context, spaceID, userID int64, roleType int32) (err error) {
+	// Check if user already in space
+	_, exist, err := u.UserRepo.GetSpaceUser(ctx, spaceID, userID)
+	if err != nil {
+		return err
+	}
+	if exist {
+		return errorx.New(errno.ErrUserEmailAlreadyExistCode, errorx.KV("msg", "user already in space"))
+	}
+
+	// Add member
+	return u.UserRepo.CreateSpaceUser(ctx, &model.SpaceUser{
+		SpaceID:   spaceID,
+		UserID:    userID,
+		RoleType:  roleType,
+		CreatedAt: time.Now().UnixMilli(),
+		UpdatedAt: time.Now().UnixMilli(),
+	})
+}
+
+// RemoveSpaceMember removes a member from a space
+func (u *userImpl) RemoveSpaceMember(ctx context.Context, spaceID, userID int64) (err error) {
+	// Check if user is in space
+	spaceUser, exist, err := u.UserRepo.GetSpaceUser(ctx, spaceID, userID)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return errorx.New(errno.ErrUserResourceNotFound, errorx.KV("msg", "user not in space"))
+	}
+
+	// Cannot remove owner
+	if spaceUser.RoleType == 1 {
+		return errorx.New(errno.ErrUserPermissionCode, errorx.KV("msg", "cannot remove owner"))
+	}
+
+	// Remove member
+	return u.UserRepo.DeleteSpaceUser(ctx, spaceID, userID)
+}
+
+// UpdateSpaceMemberRole updates a member's role in a space
+func (u *userImpl) UpdateSpaceMemberRole(ctx context.Context, spaceID, userID int64, roleType int32) (err error) {
+	// Check if user is in space
+	spaceUser, exist, err := u.UserRepo.GetSpaceUser(ctx, spaceID, userID)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return errorx.New(errno.ErrUserResourceNotFound, errorx.KV("msg", "user not in space"))
+	}
+
+	// Cannot change owner role
+	if spaceUser.RoleType == 1 {
+		return errorx.New(errno.ErrUserPermissionCode, errorx.KV("msg", "cannot change owner role"))
+	}
+
+	// Update role
+	return u.UserRepo.UpdateSpaceUserRole(ctx, spaceID, userID, roleType)
+}
+
+// SearchUsers searches for users by name or email
+func (u *userImpl) SearchUsers(ctx context.Context, searchList []string) (users []*userEntity.User, err error) {
+	if len(searchList) == 0 {
+		return []*userEntity.User{}, nil
+	}
+
+	// Search users
+	userModels, err := u.UserRepo.SearchUsers(ctx, searchList)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to entity
+	users = slices.Transform(userModels, func(um *model.User) *userEntity.User {
+		return userPo2Do(um, "")
+	})
+
+	return users, nil
+}

@@ -160,3 +160,99 @@ func (dao *UserDAO) GetUsersByIDs(ctx context.Context, userIDs []int64) ([]*mode
 		dao.query.User.ID.In(userIDs...),
 	).Find()
 }
+
+// GetSpaceUser gets a space user by space ID and user ID
+func (dao *UserDAO) GetSpaceUser(ctx context.Context, spaceID, userID int64) (*model.SpaceUser, bool, error) {
+	spaceUser, err := dao.query.SpaceUser.WithContext(ctx).Where(
+		dao.query.SpaceUser.SpaceID.Eq(spaceID),
+		dao.query.SpaceUser.UserID.Eq(userID),
+	).First()
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	return spaceUser, true, nil
+}
+
+// GetSpaceMembers gets space members with pagination and filtering
+func (dao *UserDAO) GetSpaceMembers(ctx context.Context, spaceID int64, searchWord string, roleType int32, offset, limit int) ([]*model.SpaceUser, int64, error) {
+	q := dao.query.SpaceUser.WithContext(ctx).Where(dao.query.SpaceUser.SpaceID.Eq(spaceID))
+	
+	// Add role filter if specified
+	if roleType > 0 {
+		q = q.Where(dao.query.SpaceUser.RoleType.Eq(roleType))
+	}
+	
+	// Add search filter if specified
+	if searchWord != "" {
+		// Join with user table to search by name
+		var userIDs []int64
+		err := dao.query.User.WithContext(ctx).
+			Where(dao.query.User.Name.Like("%" + searchWord + "%")).
+			Pluck(dao.query.User.ID, &userIDs)
+		if err != nil {
+			return nil, 0, err
+		}
+		if len(userIDs) > 0 {
+			q = q.Where(dao.query.SpaceUser.UserID.In(userIDs...))
+		} else {
+			// No matching users, return empty result
+			return []*model.SpaceUser{}, 0, nil
+		}
+	}
+	
+	// Get total count
+	count, err := q.Count()
+	if err != nil {
+		return nil, 0, err
+	}
+	
+	// Get paginated results
+	members, err := q.Offset(offset).Limit(limit).Find()
+	if err != nil {
+		return nil, 0, err
+	}
+	
+	return members, count, nil
+}
+
+// CreateSpaceUser creates a new space user
+func (dao *UserDAO) CreateSpaceUser(ctx context.Context, spaceUser *model.SpaceUser) error {
+	return dao.query.SpaceUser.WithContext(ctx).Create(spaceUser)
+}
+
+// DeleteSpaceUser deletes a space user
+func (dao *UserDAO) DeleteSpaceUser(ctx context.Context, spaceID, userID int64) error {
+	_, err := dao.query.SpaceUser.WithContext(ctx).Where(
+		dao.query.SpaceUser.SpaceID.Eq(spaceID),
+		dao.query.SpaceUser.UserID.Eq(userID),
+	).Delete()
+	return err
+}
+
+// UpdateSpaceUserRole updates a space user's role
+func (dao *UserDAO) UpdateSpaceUserRole(ctx context.Context, spaceID, userID int64, roleType int32) error {
+	_, err := dao.query.SpaceUser.WithContext(ctx).Where(
+		dao.query.SpaceUser.SpaceID.Eq(spaceID),
+		dao.query.SpaceUser.UserID.Eq(userID),
+	).Update(dao.query.SpaceUser.RoleType, roleType)
+	return err
+}
+
+// SearchUsers searches for users by name or email
+func (dao *UserDAO) SearchUsers(ctx context.Context, searchList []string) ([]*model.User, error) {
+	if len(searchList) == 0 {
+		return []*model.User{}, nil
+	}
+	
+	// For now, just search by name with the first search term
+	// This is a simplified implementation
+	searchPattern := "%" + searchList[0] + "%"
+	
+	// Search in name field only for now
+	return dao.query.User.WithContext(ctx).Where(
+		dao.query.User.Name.Like(searchPattern),
+	).Find()
+}

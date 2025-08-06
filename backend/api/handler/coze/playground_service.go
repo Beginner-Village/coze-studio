@@ -436,3 +436,143 @@ func GetBotOnlineInfo(ctx context.Context, c *app.RequestContext) {
 	}
 	c.JSON(consts.StatusOK, resp)
 }
+
+// SpaceMemberDetailV2 .
+// @router /api/playground_api/space/member/detail [POST]
+func SpaceMemberDetailV2(ctx context.Context, c *app.RequestContext) {
+	var err error
+	var req playground.SpaceMemberDetailV2Request
+	err = c.BindAndValidate(&req)
+	if err != nil {
+		invalidParamRequestResponse(c, err.Error())
+		return
+	}
+
+	if req.SpaceID == "" {
+		invalidParamRequestResponse(c, "space id is invalid")
+		return
+	}
+
+	resp, err := user.UserApplicationSVC.GetSpaceMemberDetail(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
+
+	c.JSON(consts.StatusOK, resp)
+}
+
+// AddBotSpaceMemberV2 .
+// @router /api/playground_api/space/member/add [POST]
+func AddBotSpaceMemberV2(ctx context.Context, c *app.RequestContext) {
+	var err error
+	var req playground.AddBotSpaceMemberV2Request
+	err = c.BindAndValidate(&req)
+	if err != nil {
+		invalidParamRequestResponse(c, err.Error())
+		return
+	}
+
+	if req.SpaceID == "" {
+		invalidParamRequestResponse(c, "space id is invalid")
+		return
+	}
+
+	if len(req.MemberInfoList) == 0 {
+		invalidParamRequestResponse(c, "member info list is empty")
+		return
+	}
+
+	resp, err := user.UserApplicationSVC.AddSpaceMembers(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
+
+	c.JSON(consts.StatusOK, resp)
+}
+
+// RemoveSpaceMemberV2 .
+// @router /api/playground_api/space/member/remove [POST]
+func RemoveSpaceMemberV2(ctx context.Context, c *app.RequestContext) {
+	var err error
+	var req playground.RemoveSpaceMemberV2Request
+	err = c.BindAndValidate(&req)
+	if err != nil {
+		invalidParamRequestResponse(c, err.Error())
+		return
+	}
+
+	if req.SpaceID == "" {
+		invalidParamRequestResponse(c, "space id is invalid")
+		return
+	}
+
+	if req.RemoveUserID == "" {
+		invalidParamRequestResponse(c, "remove user id is empty")
+		return
+	}
+
+	resp, err := user.UserApplicationSVC.RemoveSpaceMember(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
+
+	c.JSON(consts.StatusOK, resp)
+}
+
+// UpdateSpaceMemberV2 .
+// @router /api/playground_api/space/member/update [POST]
+func UpdateSpaceMemberV2(ctx context.Context, c *app.RequestContext) {
+	var err error
+	var req playground.UpdateSpaceMemberV2Request
+	err = c.BindAndValidate(&req)
+	if err != nil {
+		invalidParamRequestResponse(c, err.Error())
+		return
+	}
+
+	if req.SpaceID == "" {
+		invalidParamRequestResponse(c, "space id is invalid")
+		return
+	}
+
+	if req.UserID == "" {
+		invalidParamRequestResponse(c, "user id is empty")
+		return
+	}
+
+	resp, err := user.UserApplicationSVC.UpdateSpaceMember(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
+
+	c.JSON(consts.StatusOK, resp)
+}
+
+// SearchMemberV2 .
+// @router /api/playground_api/space/member/search [POST]
+func SearchMemberV2(ctx context.Context, c *app.RequestContext) {
+	var err error
+	var req playground.SearchMemberV2Request
+	err = c.BindAndValidate(&req)
+	if err != nil {
+		invalidParamRequestResponse(c, err.Error())
+		return
+	}
+
+	if len(req.SearchList) == 0 {
+		invalidParamRequestResponse(c, "search list is empty")
+		return
+	}
+
+	resp, err := user.UserApplicationSVC.SearchMembers(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
+
+	c.JSON(consts.StatusOK, resp)
+}

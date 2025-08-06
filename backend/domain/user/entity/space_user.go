@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-export enum SpaceSubModuleEnum {
-  DEVELOP = 'develop',
-  LIBRARY = 'library',
-  MEMBERS = 'members',
+package entity
+
+// SpaceUser represents a user's membership in a space
+type SpaceUser struct {
+	ID        int64 `json:"id"`
+	SpaceID   int64 `json:"space_id"`
+	UserID    int64 `json:"user_id"`
+	RoleType  int32 `json:"role_type"` // 1: owner, 2: admin, 3: member
+	CreatedAt int64 `json:"created_at"`
+	UpdatedAt int64 `json:"updated_at"`
 }

@@ -14,8 +14,5 @@
  * limitations under the License.
  */
 
-export enum SpaceSubModuleEnum {
-  DEVELOP = 'develop',
-  LIBRARY = 'library',
-  MEMBERS = 'members',
-}
+export { MembersManagement } from './components/members-management';
+export { MembersPage } from './members-page';

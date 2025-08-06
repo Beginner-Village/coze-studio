@@ -23,6 +23,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/coze-dev/coze-studio/backend/api/model/ocean/cloud/developer_api"
 	"github.com/coze-dev/coze-studio/backend/api/model/ocean/cloud/playground"
@@ -371,4 +372,203 @@ func userDo2PlaygroundTo(userDo *entity.User) *playground.UserBasicInfo {
 		UserAvatar:     userDo.IconURL,
 		CreateTime:     ptr.Of(userDo.CreatedAt / 1000),
 	}
+}
+
+// GetSpaceMemberDetail retrieves detailed member information for a space
+func (u *UserApplicationService) GetSpaceMemberDetail(ctx context.Context, req *playground.SpaceMemberDetailV2Request) (
+	resp *playground.SpaceMemberDetailV2Response, err error,
+) {
+	uid := ctxutil.MustGetUIDFromCtx(ctx)
+	
+	// Convert string SpaceID to int64
+	spaceID, err := strconv.ParseInt(req.SpaceID, 10, 64)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrUserInvalidParamCode, errorx.KV("msg", "invalid space id format"))
+	}
+
+	// Get the current user's role in the space
+	currentUserRole, err := u.DomainSVC.GetUserSpaceRole(ctx, uid, spaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get space members with pagination and filtering
+	members, total, err := u.DomainSVC.GetSpaceMembers(ctx, spaceID, req.SearchWord, int64(req.SpaceRoleType), req.Page, req.Size)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to API response format
+	memberInfoList := langSlices.Transform(members, func(member *entity.SpaceUser) playground.MemberInfo {
+		userInfo, _ := u.DomainSVC.GetUserInfo(ctx, member.UserID)
+		return playground.MemberInfo{
+			UserID:        strconv.FormatInt(member.UserID, 10),
+			Name:          userInfo.Name,
+			UserName:      userInfo.UniqueName,
+			IconURL:       userInfo.IconURL,
+			SpaceRoleType: playground.SpaceRoleType(member.RoleType),
+			JoinDate:      formatTimestamp(member.CreatedAt),
+		}
+	})
+
+	return &playground.SpaceMemberDetailV2Response{
+		Code: 0,
+		Data: &playground.SpaceMemberDetailData{
+			MemberInfoList: memberInfoList,
+			Total:          total,
+			SpaceRoleType:  playground.SpaceRoleType(currentUserRole),
+		},
+	}, nil
+}
+
+// AddSpaceMembers adds new members to a space
+func (u *UserApplicationService) AddSpaceMembers(ctx context.Context, req *playground.AddBotSpaceMemberV2Request) (
+	resp *playground.AddBotSpaceMemberV2Response, err error,
+) {
+	uid := ctxutil.MustGetUIDFromCtx(ctx)
+	
+	// Convert string SpaceID to int64
+	spaceID, err := strconv.ParseInt(req.SpaceID, 10, 64)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrUserInvalidParamCode, errorx.KV("msg", "invalid space id format"))
+	}
+
+	// Check if current user is owner
+	currentUserRole, err := u.DomainSVC.GetUserSpaceRole(ctx, uid, spaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	if currentUserRole != int32(playground.SpaceRoleType_Owner) {
+		return nil, errorx.New(errno.ErrUserPermissionCode, errorx.KV("msg", "Only owners can add members"))
+	}
+
+	// Add members
+	for _, member := range req.MemberInfoList {
+		userID, err := strconv.ParseInt(member.UserID, 10, 64)
+		if err != nil {
+			return nil, errorx.WrapByCode(err, errno.ErrUserInvalidParamCode, errorx.KV("msg", "invalid user id"))
+		}
+
+		err = u.DomainSVC.AddSpaceMember(ctx, spaceID, userID, int32(member.SpaceRoleType))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &playground.AddBotSpaceMemberV2Response{
+		Code: 0,
+	}, nil
+}
+
+// RemoveSpaceMember removes a member from a space
+func (u *UserApplicationService) RemoveSpaceMember(ctx context.Context, req *playground.RemoveSpaceMemberV2Request) (
+	resp *playground.RemoveSpaceMemberV2Response, err error,
+) {
+	uid := ctxutil.MustGetUIDFromCtx(ctx)
+	
+	// Convert string SpaceID to int64
+	spaceID, err := strconv.ParseInt(req.SpaceID, 10, 64)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrUserInvalidParamCode, errorx.KV("msg", "invalid space id format"))
+	}
+
+	// Check if current user is owner
+	currentUserRole, err := u.DomainSVC.GetUserSpaceRole(ctx, uid, spaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	if currentUserRole != int32(playground.SpaceRoleType_Owner) {
+		return nil, errorx.New(errno.ErrUserPermissionCode, errorx.KV("msg", "Only owners can remove members"))
+	}
+
+	// Parse user ID
+	removeUserID, err := strconv.ParseInt(req.RemoveUserID, 10, 64)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrUserInvalidParamCode, errorx.KV("msg", "invalid user id"))
+	}
+
+	// Remove member
+	err = u.DomainSVC.RemoveSpaceMember(ctx, spaceID, removeUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &playground.RemoveSpaceMemberV2Response{
+		Code: 0,
+	}, nil
+}
+
+// UpdateSpaceMember updates a member's role in a space
+func (u *UserApplicationService) UpdateSpaceMember(ctx context.Context, req *playground.UpdateSpaceMemberV2Request) (
+	resp *playground.UpdateSpaceMemberV2Response, err error,
+) {
+	uid := ctxutil.MustGetUIDFromCtx(ctx)
+	
+	// Convert string SpaceID to int64
+	spaceID, err := strconv.ParseInt(req.SpaceID, 10, 64)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrUserInvalidParamCode, errorx.KV("msg", "invalid space id format"))
+	}
+
+	// Check if current user is owner
+	currentUserRole, err := u.DomainSVC.GetUserSpaceRole(ctx, uid, spaceID)
+	if err != nil {
+		return nil, err
+	}
+
+	if currentUserRole != int32(playground.SpaceRoleType_Owner) {
+		return nil, errorx.New(errno.ErrUserPermissionCode, errorx.KV("msg", "Only owners can update member roles"))
+	}
+
+	// Parse user ID
+	updateUserID, err := strconv.ParseInt(req.UserID, 10, 64)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrUserInvalidParamCode, errorx.KV("msg", "invalid user id"))
+	}
+
+	// Update member role
+	err = u.DomainSVC.UpdateSpaceMemberRole(ctx, spaceID, updateUserID, int32(req.SpaceRoleType))
+	if err != nil {
+		return nil, err
+	}
+
+	return &playground.UpdateSpaceMemberV2Response{
+		Code: 0,
+	}, nil
+}
+
+// SearchMembers searches for users to add as members
+func (u *UserApplicationService) SearchMembers(ctx context.Context, req *playground.SearchMemberV2Request) (
+	resp *playground.SearchMemberV2Response, err error,
+) {
+	// Search for users
+	users, err := u.DomainSVC.SearchUsers(ctx, req.SearchList)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to API response format
+	memberInfoList := langSlices.Transform(users, func(user *entity.User) playground.MemberInfo {
+		return playground.MemberInfo{
+			UserID:   strconv.FormatInt(user.UserID, 10),
+			Name:     user.Name,
+			UserName: user.UniqueName,
+			IconURL:  user.IconURL,
+		}
+	})
+
+	return &playground.SearchMemberV2Response{
+		MemberInfoList: memberInfoList,
+		Code:           0,
+	}, nil
+}
+
+func formatTimestamp(ts int64) string {
+	if ts == 0 {
+		return ""
+	}
+	t := time.Unix(ts/1000, 0)
+	return t.Format("2006-01-02 15:04:05")
 }

@@ -5,6 +5,11 @@
 *.so
 *.dylib
 
+# Build artifacts
+backend/backend
+backend/build
+backend/opencoze
+
 # .env
 .env.debug
 
