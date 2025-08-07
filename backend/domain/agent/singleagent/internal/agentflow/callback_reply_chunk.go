@@ -284,7 +284,6 @@ func (r *replyChunkCallback) concatToolsNodeOutput(ctx context.Context, output *
 	}()
 	var streamInitialized bool
 	returnDirectToolsMap := make(map[int]bool)
-	isReturnDirectToolsFirstCheck := true
 	isToolsMsgChunksInit := false
 
 	for {
@@ -313,14 +312,12 @@ func (r *replyChunkCallback) concatToolsNodeOutput(ctx context.Context, output *
 				continue
 			}
 			if len(r.returnDirectlyTools) > 0 {
-				if isReturnDirectToolsFirstCheck {
-					isReturnDirectToolsFirstCheck = false
-					if _, ok := r.returnDirectlyTools[msg.ToolName]; ok {
+				// Check if this specific message's tool should return directly
+				if _, ok := r.returnDirectlyTools[msg.ToolName]; ok {
+					if !returnDirectToolsMap[mIndex] {
 						returnDirectToolsMap[mIndex] = true
 					}
-				}
-
-				if _, ok := returnDirectToolsMap[mIndex]; ok {
+					
 					if !streamInitialized {
 						sr, sw = schema.Pipe[*schema.Message](5)
 						r.sw.Send(&entity.AgentEvent{

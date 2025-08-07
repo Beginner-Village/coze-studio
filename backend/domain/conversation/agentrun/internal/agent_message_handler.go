@@ -126,7 +126,7 @@ func TransMessageToSchemaMessage(ctx context.Context, msgs []*message.Message, i
 					}
 					
 					// Add intermediate assistant content, skip duplicates only
-					for i, intMsg := range intermediateAssistantMsgs {
+					for _, intMsg := range intermediateAssistantMsgs {
 						content := strings.TrimSpace(intMsg.Content)
 						if content != "" && !contentSet[content] {
 							// Keep all content including complex JSON templates

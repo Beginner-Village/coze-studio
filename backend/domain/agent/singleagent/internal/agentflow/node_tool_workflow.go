@@ -47,9 +47,9 @@ func newWorkflowTools(ctx context.Context, conf *workflowConfig) ([]workflow.Too
 
 	if len(workflowTools) > 0 {
 		for _, workflowTool := range workflowTools {
-			// Only mark as "return directly" if it uses answer content AND doesn't contain OutputEmitter
-			// OutputEmitter is for intermediate output and shouldn't cause the agent to terminate
-			if workflowTool.TerminatePlan() == vo.UseAnswerContent && !hasOutputEmitter(&workflowTool) {
+			// Mark as "return directly" if it uses answer content AND contains OutputEmitter
+			// OutputEmitter provides formatted output that should be returned directly to user
+			if workflowTool.TerminatePlan() == vo.UseAnswerContent && hasOutputEmitter(&workflowTool) {
 				toolInfo, err := workflowTool.Info(ctx)
 				if err != nil {
 					return nil, nil, err
