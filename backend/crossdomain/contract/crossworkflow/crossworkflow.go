@@ -40,7 +40,6 @@ type Workflow interface {
 	SyncExecuteWorkflow(ctx context.Context, config vo.ExecuteConfig, input map[string]any) (*workflowEntity.WorkflowExecution, vo.TerminatePlan, error)
 	StreamExecute(ctx context.Context, config vo.ExecuteConfig, input map[string]any) (*schema.StreamReader[*workflowEntity.Message], error)
 	WithExecuteConfig(cfg vo.ExecuteConfig) einoCompose.Option
-	StreamExecute(ctx context.Context, config vo.ExecuteConfig, input map[string]any) (*schema.StreamReader[*workflowEntity.Message], error)
 	InitApplicationDefaultConversationTemplate(ctx context.Context, spaceID int64, appID int64, userID int64) error
 	WithMessagePipe() (einoCompose.Option, *schema.StreamReader[*workflowEntity.Message])
 }
@@ -48,7 +47,6 @@ type Workflow interface {
 type ExecuteConfig = vo.ExecuteConfig
 type WorkflowMessage = workflowEntity.Message
 type ExecuteMode = vo.ExecuteMode
-type WorkflowMessage = workflowEntity.Message
 
 const (
 	ExecuteModeDebug     ExecuteMode = "debug"
