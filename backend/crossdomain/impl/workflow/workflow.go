@@ -75,10 +75,6 @@ func (i *impl) WithExecuteConfig(cfg vo.ExecuteConfig) einoCompose.Option {
 	return i.DomainSVC.WithExecuteConfig(cfg)
 }
 
-func (i *impl) StreamExecute(ctx context.Context, config vo.ExecuteConfig, input map[string]any) (*schema.StreamReader[*workflowEntity.Message], error) {
-	return i.DomainSVC.StreamExecute(ctx, config, input)
-}
-
 func (i *impl) InitApplicationDefaultConversationTemplate(ctx context.Context, spaceID int64, appID int64, userID int64) error {
 	return i.DomainSVC.InitApplicationDefaultConversationTemplate(ctx, spaceID, appID, userID)
 }
