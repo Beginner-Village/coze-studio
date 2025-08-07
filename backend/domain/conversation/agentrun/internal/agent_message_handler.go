@@ -19,7 +19,6 @@ package internal
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/cloudwego/eino/schema"
@@ -97,34 +96,23 @@ func TransMessageToSchemaMessage(ctx context.Context, msgs []*message.Message, i
 			var toolResponseMsg *message.Message
 			intermediateAssistantMsgs := make([]*message.Message, 0)
 			
-			// Debug: log all messages in this run
-			for i, runMsg := range runMsgs {
-				isOutputEmitter := runMsg.Ext != nil && runMsg.Ext["output_emitter"] == "true"
-				fmt.Printf("[DEBUG MERGE] Run message %d: ID=%d, Type=%s, Role=%s, OutputEmitter=%v, Content='%.50s...'\n", 
-					i, runMsg.ID, runMsg.MessageType, runMsg.Role, isOutputEmitter, runMsg.Content)
-			}
 			
 			// Find tool_response and intermediate assistant messages in this run
 			for _, runMsg := range runMsgs {
 				if runMsg.MessageType == message.MessageTypeToolResponse && runMsg.ModelContent != "" {
 					toolResponseMsg = runMsg
-					fmt.Printf("[DEBUG MERGE] Found tool_response: ID=%d, Content='%.50s...'\n", runMsg.ID, runMsg.Content)
 				} else if runMsg.MessageType == message.MessageTypeAnswer && runMsg.ModelContent != "" && runMsg.ID != msgOne.ID {
 					var testSm *schema.Message
 					if json.Unmarshal([]byte(runMsg.ModelContent), &testSm) == nil && 
 						testSm.Role == schema.Assistant && 
 						(testSm.ToolCalls == nil || len(testSm.ToolCalls) == 0) {
 						intermediateAssistantMsgs = append(intermediateAssistantMsgs, runMsg)
-						isOutputEmitter := runMsg.Ext != nil && runMsg.Ext["output_emitter"] == "true"
-						fmt.Printf("[DEBUG MERGE] Found intermediate assistant: ID=%d, OutputEmitter=%v, Content='%.50s...'\n", 
-							runMsg.ID, isOutputEmitter, runMsg.Content)
 					}
 				}
 			}
 			
 			// Merge intermediate content into tool_response
 			if toolResponseMsg != nil {
-				fmt.Printf("[DEBUG MERGE] Processing tool_response merge with %d intermediate messages\n", len(intermediateAssistantMsgs))
 				var toolSm *schema.Message
 				if json.Unmarshal([]byte(toolResponseMsg.ModelContent), &toolSm) == nil {
 					// Collect all intermediate content and remove duplicates
@@ -135,7 +123,6 @@ func TransMessageToSchemaMessage(ctx context.Context, msgs []*message.Message, i
 					if toolSm.Content != "" && !contentSet[toolSm.Content] {
 						allContent = append(allContent, toolSm.Content)
 						contentSet[toolSm.Content] = true
-						fmt.Printf("[DEBUG MERGE] Added original tool content: '%.50s...'\n", toolSm.Content)
 					}
 					
 					// Add intermediate assistant content, skip duplicates only
@@ -145,19 +132,14 @@ func TransMessageToSchemaMessage(ctx context.Context, msgs []*message.Message, i
 							// Keep all content including complex JSON templates
 							allContent = append(allContent, content)
 							contentSet[content] = true
-							fmt.Printf("[DEBUG MERGE] Added intermediate content %d: '%.50s...'\n", i, content)
-						} else if contentSet[content] {
-							fmt.Printf("[DEBUG MERGE] Skipped duplicate content %d: '%.50s...'\n", i, content)
 						}
 					}
 					
 					// Merge all unique content
 					if len(allContent) > 1 {
 						toolSm.Content = strings.Join(allContent, "\n\n")
-						fmt.Printf("[DEBUG MERGE] Final merged content: '%.100s...'\n", toolSm.Content)
 					} else if len(allContent) == 1 {
 						toolSm.Content = allContent[0]
-						fmt.Printf("[DEBUG MERGE] Single content kept: '%.100s...'\n", toolSm.Content)
 					}
 					
 					schemaMessage = append(schemaMessage, parseMessageURI(ctx, toolSm, imagexClient))
@@ -167,11 +149,7 @@ func TransMessageToSchemaMessage(ctx context.Context, msgs []*message.Message, i
 					for _, intMsg := range intermediateAssistantMsgs {
 						processed[intMsg.ID] = true
 					}
-				} else {
-					fmt.Printf("[DEBUG MERGE] Failed to parse tool_response ModelContent\n")
 				}
-			} else {
-				fmt.Printf("[DEBUG MERGE] No tool_response found for function_call\n")
 			}
 			continue
 		}

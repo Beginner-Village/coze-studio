@@ -25,7 +25,6 @@ import (
 	"io"
 	"runtime/debug"
 	"strconv"
-	// "strings"
 	"sync"
 	"time"
 
@@ -415,44 +414,22 @@ func (c *runImpl) handlerHistory(ctx context.Context, rtDependence *runtimeDepen
 	}
 
 	if len(runRecordList) == 0 {
-		logs.CtxInfof(ctx, "[DEBUG HISTORY] No run records found for conversation %d", rtDependence.runMeta.ConversationID)
 		return nil, nil
 	}
 
 	runIDS := c.getRunID(runRecordList)
-	logs.CtxInfof(ctx, "[DEBUG HISTORY] Found %d run records with IDs: %v", len(runRecordList), runIDS)
 
 	history, err := crossmessage.DefaultSVC().GetByRunIDs(ctx, rtDependence.runMeta.ConversationID, runIDS)
 	if err != nil {
 		return nil, err
 	}
 
-	logs.CtxInfof(ctx, "[DEBUG HISTORY] Retrieved %d messages from database before merging", len(history))
-	for i, msg := range history {
-		isOutputEmitter := msg.Ext != nil && msg.Ext["output_emitter"] == "true"
-		contentPreview := msg.Content
-		if len(contentPreview) > 50 {
-			contentPreview = contentPreview[:50] + "..."
-		}
-		logs.CtxInfof(ctx, "[DEBUG HISTORY] Message %d: ID=%d, RunID=%d, Role=%s, Type=%s, Content='%s', OutputEmitter=%v",
-			i, msg.ID, msg.RunID, msg.Role, msg.MessageType, contentPreview, isOutputEmitter)
-	}
 
 	// Special handling for multiple assistant messages from OutputEmitter
 	// When there are multiple assistant messages with the same reply_id in a single turn,
 	// we need to merge them or only keep the last one for the LLM context
 	history = c.mergeOutputEmitterMessages(ctx, history)
 
-	logs.CtxInfof(ctx, "[DEBUG HISTORY] After merging: %d messages for LLM context", len(history))
-	for i, msg := range history {
-		isOutputEmitter := msg.Ext != nil && msg.Ext["output_emitter"] == "true"
-		contentPreview := msg.Content
-		if len(contentPreview) > 50 {
-			contentPreview = contentPreview[:50] + "..."
-		}
-		logs.CtxInfof(ctx, "[DEBUG HISTORY] Final Message %d: ID=%d, RunID=%d, Role=%s, Type=%s, Content='%s', OutputEmitter=%v",
-			i, msg.ID, msg.RunID, msg.Role, msg.MessageType, contentPreview, isOutputEmitter)
-	}
 
 	return history, nil
 }
@@ -1080,7 +1057,6 @@ func (c *runImpl) buildSendMsg(_ context.Context, msg *msgEntity.Message, isFini
 }
 
 func (c *runImpl) handlerOutputEmitter(ctx context.Context, outputMsg *schema.Message, sw *schema.StreamWriter[*entity.AgentRunResponse], rtDependence *runtimeDependence) error {
-	logs.CtxInfof(ctx, "handlerOutputEmitter called with content: %s", outputMsg.Content)
 
 	// Create a new message for OutputEmitter with its own ID
 	outputEmitterMsg, err := c.PreCreateFinalAnswer(ctx, rtDependence)
@@ -1097,7 +1073,6 @@ func (c *runImpl) handlerOutputEmitter(ctx context.Context, outputMsg *schema.Me
 	}
 	outputEmitterMsg.Ext["output_emitter"] = "true"
 
-	logs.CtxInfof(ctx, "[DEBUG] handlerOutputEmitter: Set output_emitter=true for display, will be handled specially in history processing")
 
 	// Send the OutputEmitter content as answer type message for frontend display
 	sendMsg := c.buildSendMsg(ctx, outputEmitterMsg, true, rtDependence)
@@ -1142,7 +1117,6 @@ func (c *runImpl) mergeOutputEmitterMessages(ctx context.Context, history []*msg
 		return history
 	}
 
-	logs.CtxInfof(ctx, "[DEBUG MERGE] Starting merge with %d messages", len(history))
 
 	// Group messages by RunID to identify turns
 	turnMessages := make(map[int64][]*msgEntity.Message)
@@ -1172,7 +1146,6 @@ func (c *runImpl) mergeOutputEmitterMessages(ctx context.Context, history []*msg
 			}
 
 			if len(assistantMsgs) > 1 {
-				logs.CtxInfof(ctx, "[DEBUG MERGE] Found %d assistant messages in turn %d", len(assistantMsgs), msg.RunID)
 
 				// Check if any are OutputEmitter messages
 				hasOutputEmitter := false
@@ -1184,7 +1157,6 @@ func (c *runImpl) mergeOutputEmitterMessages(ctx context.Context, history []*msg
 					if isOutputEmitter {
 						hasOutputEmitter = true
 						outputEmitterMsgs = append(outputEmitterMsgs, aMsg)
-						logs.CtxInfof(ctx, "[DEBUG MERGE] Found OutputEmitter message: ID=%d, Content='%.30s...'", aMsg.ID, aMsg.Content)
 					} else {
 						if regularMsg == nil || aMsg.ID > regularMsg.ID { // Keep the latest regular message
 							regularMsg = aMsg
@@ -1198,14 +1170,12 @@ func (c *runImpl) mergeOutputEmitterMessages(ctx context.Context, history []*msg
 					for _, oeMsg := range outputEmitterMsgs {
 						result = append(result, oeMsg)
 						processed[oeMsg.ID] = true
-						logs.CtxInfof(ctx, "[DEBUG MERGE] Added OutputEmitter message for later processing: ID=%d", oeMsg.ID)
 					}
 
 					// Add the regular message if it exists
 					if regularMsg != nil {
 						result = append(result, regularMsg)
 						processed[regularMsg.ID] = true
-						logs.CtxInfof(ctx, "[DEBUG MERGE] Added regular message: ID=%d", regularMsg.ID)
 					}
 
 					// Mark all assistant messages in this turn as processed
@@ -1217,7 +1187,6 @@ func (c *runImpl) mergeOutputEmitterMessages(ctx context.Context, history []*msg
 					if regularMsg != nil {
 						result = append(result, regularMsg)
 						processed[regularMsg.ID] = true
-						logs.CtxInfof(ctx, "[DEBUG MERGE] Added latest regular message: ID=%d", regularMsg.ID)
 
 						// Mark all assistant messages in this turn as processed
 						for _, aMsg := range assistantMsgs {
@@ -1229,17 +1198,14 @@ func (c *runImpl) mergeOutputEmitterMessages(ctx context.Context, history []*msg
 				// Single assistant message, keep it
 				result = append(result, msg)
 				processed[msg.ID] = true
-				logs.CtxInfof(ctx, "[DEBUG MERGE] Added single assistant message: ID=%d", msg.ID)
-			}
+				}
 		} else {
 			// Non-assistant messages (user, tool, etc.), keep as-is
 			result = append(result, msg)
 			processed[msg.ID] = true
-			logs.CtxInfof(ctx, "[DEBUG MERGE] Added non-assistant message: ID=%d, Type=%s", msg.ID, msg.MessageType)
 		}
 	}
 
-	logs.CtxInfof(ctx, "[DEBUG MERGE] Completed merge: %d -> %d messages", len(history), len(result))
 	return result
 }
 
