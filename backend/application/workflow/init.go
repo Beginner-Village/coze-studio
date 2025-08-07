@@ -22,6 +22,7 @@ import (
 	"github.com/cloudwego/eino/compose"
 	"gorm.io/gorm"
 
+	"github.com/cloudwego/eino/callbacks"
 	"github.com/coze-dev/coze-studio/backend/application/internal"
 	wfconversation "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/conversation"
 	wfdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/database"
@@ -45,6 +46,7 @@ import (
 	crosssearch "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/search"
 	crossvariable "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/variable"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/service"
+	workflowservice "github.com/coze-dev/coze-studio/backend/domain/workflow/service"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/cache"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/coderunner"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
@@ -92,6 +94,7 @@ func InitService(ctx context.Context, components *ServiceComponents) (*Applicati
 	crosscode.SetCodeRunner(components.CodeRunner)
 	crosssearch.SetNotifier(wfsearch.NewNotify(components.DomainNotifier))
 	crossconversation.SetConversationManager(wfconversation.NewConversationRepository())
+	callbacks.AppendGlobalHandlers(workflowservice.GetTokenCallbackHandler())
 
 	SVC.DomainSVC = workflowDomainSVC
 	SVC.ImageX = components.ImageX

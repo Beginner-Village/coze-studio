@@ -25,7 +25,6 @@ import (
 	"io"
 	"runtime/debug"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -36,13 +35,15 @@ import (
 	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/agentrun"
 	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/message"
 	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/singleagent"
+	"github.com/coze-dev/coze-studio/backend/api/model/ocean/cloud/bot_common"
 	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossagent"
 	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossmessage"
+	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/crossworkflow"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/internal"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/internal/dal/model"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/repository"
 	msgEntity "github.com/coze-dev/coze-studio/backend/domain/conversation/message/entity"
+	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
 	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
@@ -70,6 +71,7 @@ type runtimeDependence struct {
 
 type Components struct {
 	RunRecordRepo repository.RunRecordRepo
+	ImagexSVC     imagex.ImageX
 }
 
 func NewService(c *Components) Run {
@@ -143,7 +145,11 @@ func (c *runImpl) run(ctx context.Context, sw *schema.StreamWriter[*entity.Agent
 
 	rtDependence.questionMsgID = input.ID
 
-	err = c.handlerStreamExecute(ctx, sw, history, input, rtDependence)
+	if rtDependence.agentInfo.BotMode == bot_common.BotMode_WorkflowMode {
+		err = c.handlerWfAsAgentStreamExecute(ctx, sw, rtDependence)
+	} else {
+		err = c.handlerAgentStreamExecute(ctx, sw, history, input, rtDependence)
+	}
 	return
 }
 
@@ -159,18 +165,51 @@ func (c *runImpl) handlerAgent(ctx context.Context, rtDependence *runtimeDepende
 	return agentInfo, nil
 }
 
-func (c *runImpl) handlerStreamExecute(ctx context.Context, sw *schema.StreamWriter[*entity.AgentRunResponse], historyMsg []*msgEntity.Message, input *msgEntity.Message, rtDependence *runtimeDependence) (err error) {
+func (c *runImpl) handlerWfAsAgentStreamExecute(ctx context.Context, sw *schema.StreamWriter[*entity.AgentRunResponse], rtDependence *runtimeDependence) (err error) {
+	wfID, _ := strconv.ParseInt(rtDependence.agentInfo.LayoutInfo.WorkflowId, 10, 64)
+	wfStreamer, err := crossworkflow.DefaultSVC().StreamExecute(ctx, crossworkflow.ExecuteConfig{
+		ID:           wfID,
+		ConnectorID:  rtDependence.runMeta.ConnectorID,
+		ConnectorUID: rtDependence.runMeta.UserID,
+		AgentID:      ptr.Of(rtDependence.runMeta.AgentID),
+		Mode:         crossworkflow.ExecuteModeRelease,
+		BizType:      crossworkflow.BizTypeAgent,
+		SyncPattern:  crossworkflow.SyncPatternStream,
+	}, map[string]any{
+		"input": "你有什么功能？",
+	})
 	mainChan := make(chan *entity.AgentRespEvent, 100)
 
-	ar := &singleagent.AgentRuntime{
+	var wg sync.WaitGroup
+	wg.Add(2)
+	safego.Go(ctx, func() {
+		defer wg.Done()
+		c.pullWfStream(ctx, mainChan, wfStreamer)
+	})
+	safego.Go(ctx, func() {
+		defer wg.Done()
+		c.push(ctx, mainChan, sw, rtDependence)
+	})
+	wg.Wait()
+	return err
+}
+
+func (c *runImpl) handlerAgentStreamExecute(ctx context.Context, sw *schema.StreamWriter[*entity.AgentRunResponse], historyMsg []*msgEntity.Message, input *msgEntity.Message, rtDependence *runtimeDependence) (err error) {
+	mainChan := make(chan *entity.AgentRespEvent, 100)
+
+	ar := &crossagent.AgentRuntime{
 		AgentVersion:     rtDependence.runMeta.Version,
 		SpaceID:          rtDependence.runMeta.SpaceID,
+		AgentID:          rtDependence.runMeta.AgentID,
 		IsDraft:          rtDependence.runMeta.IsDraft,
 		ConnectorID:      rtDependence.runMeta.ConnectorID,
 		PreRetrieveTools: rtDependence.runMeta.PreRetrieveTools,
+		Input:            internal.TransMessageToSchemaMessage(ctx, []*msgEntity.Message{input}, c.ImagexSVC)[0],
+		HistoryMsg:       internal.TransMessageToSchemaMessage(ctx, internal.HistoryPairs(historyMsg), c.ImagexSVC),
+		ResumeInfo:       internal.ParseResumeInfo(ctx, historyMsg),
 	}
 
-	streamer, err := crossagent.DefaultSVC().StreamExecute(ctx, historyMsg, input, ar)
+	streamer, err := crossagent.DefaultSVC().StreamExecute(ctx, ar)
 	if err != nil {
 		return errors.New(errorx.ErrorWithoutStack(err))
 	}
@@ -365,7 +404,11 @@ func (c *runImpl) handlerHistory(ctx context.Context, rtDependence *runtimeDepen
 		conversationTurns = ptr.From(rtDependence.agentInfo.ModelInfo.ShortMemoryPolicy.HistoryRound)
 	}
 
-	runRecordList, err := c.RunRecordRepo.List(ctx, rtDependence.runMeta.ConversationID, rtDependence.runMeta.SectionID, conversationTurns)
+	runRecordList, err := c.RunRecordRepo.List(ctx, &entity.ListRunRecordMeta{
+		ConversationID: rtDependence.runMeta.ConversationID,
+		SectionID:      rtDependence.runMeta.SectionID,
+		Limit:          conversationTurns,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -413,127 +456,7 @@ func (c *runImpl) handlerHistory(ctx context.Context, rtDependence *runtimeDepen
 	return history, nil
 }
 
-func (c *runImpl) mergeOutputEmitterMessages(ctx context.Context, history []*msgEntity.Message) []*msgEntity.Message {
-	if len(history) == 0 {
-		return history
-	}
-
-	// Group messages by RunID
-	runMessages := make(map[int64][]*msgEntity.Message)
-	var runOrder []int64
-	
-	for _, msg := range history {
-		if _, exists := runMessages[msg.RunID]; !exists {
-			runOrder = append(runOrder, msg.RunID)
-		}
-		runMessages[msg.RunID] = append(runMessages[msg.RunID], msg)
-	}
-	
-	// Process each run's messages
-	var result []*msgEntity.Message
-	for _, runID := range runOrder {
-		msgs := runMessages[runID]
-		
-		// Find all assistant messages in this run
-		var assistantMsgs []*msgEntity.Message
-		var otherMsgs []*msgEntity.Message
-		
-		for _, msg := range msgs {
-			if msg.Role == schema.Assistant && msg.MessageType == message.MessageTypeAnswer {
-				assistantMsgs = append(assistantMsgs, msg)
-			} else {
-				otherMsgs = append(otherMsgs, msg)
-			}
-		}
-		
-		// If there are multiple assistant messages (OutputEmitter + final answer),
-		// merge them into a single assistant message for proper LLM context
-		if len(assistantMsgs) > 1 {
-			logs.CtxInfof(ctx, "Found %d assistant messages in run %d, merging them into one", len(assistantMsgs), runID)
-			
-			// Separate OutputEmitter messages from final LLM answers
-			var outputEmitterContents []string
-			var finalAnswer *msgEntity.Message
-			
-			for _, msg := range assistantMsgs {
-				if msg.Ext != nil && msg.Ext["output_emitter"] == "true" {
-					// This is an OutputEmitter message, collect its content
-					if msg.Content != "" {
-						outputEmitterContents = append(outputEmitterContents, msg.Content)
-					}
-				} else {
-					// This is the final LLM answer, use the latest one
-					finalAnswer = msg
-				}
-			}
-			
-			// Add other messages (user, tool calls, tool responses, etc.)
-			result = append(result, otherMsgs...)
-			
-			// Create a merged assistant message
-			if len(outputEmitterContents) > 0 && finalAnswer != nil {
-				// Merge OutputEmitter content with final answer
-				mergedContent := strings.Join(outputEmitterContents, "\n\n")
-				if finalAnswer.Content != "" {
-					mergedContent = mergedContent + "\n\n" + finalAnswer.Content
-				}
-				finalAnswer.Content = mergedContent
-				
-				// Also update ModelContent to ensure LLM gets the merged content
-				buildModelContent := &schema.Message{
-					Role:    schema.Assistant,
-					Content: mergedContent,
-				}
-				mc, err := json.Marshal(buildModelContent)
-				if err == nil {
-					finalAnswer.ModelContent = string(mc)
-				}
-				
-				result = append(result, finalAnswer)
-			} else if len(outputEmitterContents) > 0 {
-				// Only OutputEmitter, no final answer
-				firstOutputEmitter := assistantMsgs[0] // Use first OutputEmitter as base
-				mergedContent := strings.Join(outputEmitterContents, "\n\n")
-				firstOutputEmitter.Content = mergedContent
-				
-				// Also update ModelContent
-				buildModelContent := &schema.Message{
-					Role:    schema.Assistant,
-					Content: mergedContent,
-				}
-				mc, err := json.Marshal(buildModelContent)
-				if err == nil {
-					firstOutputEmitter.ModelContent = string(mc)
-				}
-				
-				result = append(result, firstOutputEmitter)
-			} else if finalAnswer != nil {
-				// Only final answer, no OutputEmitter
-				result = append(result, finalAnswer)
-			}
-		} else {
-			// Normal case: 0 or 1 assistant message
-			result = append(result, msgs...)
-		}
-	}
-	
-	// Debug logging for history messages
-	logs.CtxInfof(ctx, "[DEBUG] Final history messages being sent to LLM:")
-	for i, msg := range result {
-		if msg.Role == schema.Assistant && msg.MessageType == message.MessageTypeAnswer {
-			logs.CtxInfof(ctx, "[DEBUG] Message %d - RunID: %d, Role: %s, Type: %s", i, msg.RunID, msg.Role, msg.MessageType)
-			logs.CtxInfof(ctx, "[DEBUG]   Content preview: %.100s...", msg.Content)
-			logs.CtxInfof(ctx, "[DEBUG]   ModelContent: %s", msg.ModelContent)
-			logs.CtxInfof(ctx, "[DEBUG]   Has ModelContent: %v", msg.ModelContent != "")
-		} else {
-			logs.CtxInfof(ctx, "[DEBUG] Message %d - RunID: %d, Role: %s, Type: %s", i, msg.RunID, msg.Role, msg.MessageType)
-		}
-	}
-	
-	return result
-}
-
-func (c *runImpl) getRunID(rr []*model.RunRecord) []int64 {
+func (c *runImpl) getRunID(rr []*entity.RunRecordMeta) []int64 {
 	ids := make([]int64, 0, len(rr))
 	for _, c := range rr {
 		ids = append(ids, c.ID)
@@ -576,7 +499,23 @@ func (c *runImpl) handlerInput(ctx context.Context, sw *schema.StreamWriter[*ent
 	}
 	return cm, nil
 }
+func (c *runImpl) pullWfStream(ctx context.Context, mainChan chan *entity.AgentRespEvent, events *schema.StreamReader[*crossworkflow.WorkflowMessage]) {
+	defer func() {
+		close(mainChan)
 
+	}()
+	for {
+		st, re := events.Recv()
+		logs.CtxInfof(ctx, "pullWfStream Recv:%v,err:%v", conv.DebugJsonToStr(st), re)
+		if re != nil {
+			errChunk := &entity.AgentRespEvent{
+				Err: re,
+			}
+			mainChan <- errChunk
+			return
+		}
+	}
+}
 func (c *runImpl) pull(_ context.Context, mainChan chan *entity.AgentRespEvent, events *schema.StreamReader[*crossagent.AgentEvent]) {
 	defer func() {
 		close(mainChan)
@@ -603,13 +542,13 @@ func (c *runImpl) pull(_ context.Context, mainChan chan *entity.AgentRespEvent, 
 		}
 
 		respChunk := &entity.AgentRespEvent{
-			EventType:    eventType,
-			ModelAnswer:  rm.ChatModelAnswer,
-			ToolsMessage: rm.ToolsMessage,
-			FuncCall:     rm.FuncCall,
-			Knowledge:    rm.Knowledge,
-			Suggest:      rm.Suggest,
-			Interrupt:    rm.Interrupt,
+			EventType:     eventType,
+			ModelAnswer:   rm.ChatModelAnswer,
+			ToolsMessage:  rm.ToolsMessage,
+			FuncCall:      rm.FuncCall,
+			Knowledge:     rm.Knowledge,
+			Suggest:       rm.Suggest,
+			Interrupt:     rm.Interrupt,
 			OutputEmitter: rm.OutputEmitter,
 		}
 
@@ -1038,77 +977,6 @@ func (c *runImpl) handlerSuggest(ctx context.Context, chunk *entity.AgentRespEve
 	return nil
 }
 
-func (c *runImpl) handlerOutputEmitter(ctx context.Context, outputMsg *schema.Message, sw *schema.StreamWriter[*entity.AgentRunResponse], rtDependence *runtimeDependence) error {
-	logs.CtxInfof(ctx, "handlerOutputEmitter called with content: %s", outputMsg.Content)
-	
-	// Create a new message for OutputEmitter with its own ID
-	outputEmitterMsg, err := c.PreCreateFinalAnswer(ctx, rtDependence)
-	if err != nil {
-		return err
-	}
-	
-	// Set the content BEFORE building the send message
-	// Add context prefix to make OutputEmitter content more explicit for LLM
-	outputEmitterMsg.Content = outputMsg.Content
-	
-	// Add a marker to identify this as an OutputEmitter message BEFORE building send message
-	if outputEmitterMsg.Ext == nil {
-		outputEmitterMsg.Ext = make(map[string]string)
-	}
-	outputEmitterMsg.Ext["output_emitter"] = "true"
-	
-	// Debug logging
-	logs.CtxInfof(ctx, "[DEBUG] handlerOutputEmitter: Set output_emitter=true in Ext map for message ID %d", outputEmitterMsg.ID)
-	logs.CtxInfof(ctx, "[DEBUG] handlerOutputEmitter: Full Ext map before buildSendMsg: %v", outputEmitterMsg.Ext)
-	logs.CtxInfof(ctx, "OutputEmitter message after setting content - ID: %d, Content: %s", outputEmitterMsg.ID, outputEmitterMsg.Content)
-	
-	// Send the OutputEmitter content as answer type message (directly as completed, no delta needed)
-	sendMsg := c.buildSendMsg(ctx, outputEmitterMsg, true, rtDependence)
-	
-	// Debug: Check if Ext is preserved in sendMsg
-	logs.CtxInfof(ctx, "[DEBUG] handlerOutputEmitter: sendMsg.Ext after buildSendMsg: %v", sendMsg.Ext)
-	logs.CtxInfof(ctx, "SendMsg built - ID: %d, Content: %s", sendMsg.ID, sendMsg.Content)
-	logs.CtxInfof(ctx, "Sending OutputEmitter message with ID: %d, content: %s", outputEmitterMsg.ID, sendMsg.Content)
-	
-	// OutputEmitter sends complete message directly (no need for delta + completed)
-	c.runEvent.SendMsgEvent(entity.RunEventMessageCompleted, sendMsg, sw)
-	
-	// Build ModelContent for the OutputEmitter message
-	modelContent := &schema.Message{
-		Role:    schema.Assistant,
-		Content: outputMsg.Content,
-	}
-	mc, err := json.Marshal(modelContent)
-	if err != nil {
-		logs.CtxErrorf(ctx, "Failed to marshal ModelContent for OutputEmitter: %v", err)
-		mc = []byte("{}")
-	}
-	logs.CtxInfof(ctx, "[DEBUG] OutputEmitter saving with ModelContent: %s", string(mc))
-	
-	msgMeta := &message.Message{
-		ID:             outputEmitterMsg.ID,
-		ConversationID: outputEmitterMsg.ConversationID,
-		RunID:          outputEmitterMsg.RunID,
-		AgentID:        outputEmitterMsg.AgentID,
-		SectionID:      outputEmitterMsg.SectionID,
-		UserID:         outputEmitterMsg.UserID,
-		Role:           schema.Assistant,
-		MessageType:    message.MessageTypeAnswer,
-		ContentType:    message.ContentTypeText,
-		Content:        outputMsg.Content,
-		ModelContent:   string(mc),
-		Ext:            outputEmitterMsg.Ext,
-	}
-	
-	_, err = crossmessage.DefaultSVC().Create(ctx, msgMeta)
-	if err != nil {
-		logs.CtxErrorf(ctx, "Failed to save OutputEmitter message: %v", err)
-		// Don't return error as message was already sent to client
-	}
-	
-	return nil
-}
-
 func (c *runImpl) handlerKnowledge(ctx context.Context, chunk *entity.AgentRespEvent, sw *schema.StreamWriter[*entity.AgentRunResponse], rtDependence *runtimeDependence) error {
 	cm := c.buildAgentMessage2Create(ctx, chunk, message.MessageTypeKnowledge, rtDependence)
 	cmData, err := crossmessage.DefaultSVC().Create(ctx, cm)
@@ -1208,6 +1076,182 @@ func (c *runImpl) buildSendMsg(_ context.Context, msg *msgEntity.Message, isFini
 		IsFinish:         isFinish,
 		ReasoningContent: ptr.Of(msg.ReasoningContent),
 	}
+}
+
+func (c *runImpl) handlerOutputEmitter(ctx context.Context, outputMsg *schema.Message, sw *schema.StreamWriter[*entity.AgentRunResponse], rtDependence *runtimeDependence) error {
+	logs.CtxInfof(ctx, "handlerOutputEmitter called with content: %s", outputMsg.Content)
+	
+	// Create a new message for OutputEmitter with its own ID
+	outputEmitterMsg, err := c.PreCreateFinalAnswer(ctx, rtDependence)
+	if err != nil {
+		return err
+	}
+	
+	// Set the content BEFORE building the send message
+	// Add context prefix to make OutputEmitter content more explicit for LLM
+	outputEmitterMsg.Content = outputMsg.Content
+	
+	// Add a marker to identify this as an OutputEmitter message BEFORE building send message
+	if outputEmitterMsg.Ext == nil {
+		outputEmitterMsg.Ext = make(map[string]string)
+	}
+	outputEmitterMsg.Ext["output_emitter"] = "true"
+	
+	// Debug logging
+	logs.CtxInfof(ctx, "[DEBUG] handlerOutputEmitter: Set output_emitter=true in Ext map for message ID %d", outputEmitterMsg.ID)
+	logs.CtxInfof(ctx, "[DEBUG] handlerOutputEmitter: Full Ext map before buildSendMsg: %v", outputEmitterMsg.Ext)
+	logs.CtxInfof(ctx, "OutputEmitter message after setting content - ID: %d, Content: %s", outputEmitterMsg.ID, outputEmitterMsg.Content)
+	
+	// Send the OutputEmitter content as answer type message (directly as completed, no delta needed)
+	sendMsg := c.buildSendMsg(ctx, outputEmitterMsg, true, rtDependence)
+	
+	// Debug: Check if Ext is preserved in sendMsg
+	logs.CtxInfof(ctx, "[DEBUG] handlerOutputEmitter: sendMsg.Ext after buildSendMsg: %v", sendMsg.Ext)
+	logs.CtxInfof(ctx, "SendMsg built - ID: %d, Content: %s", sendMsg.ID, sendMsg.Content)
+	logs.CtxInfof(ctx, "Sending OutputEmitter message with ID: %d, content: %s", outputEmitterMsg.ID, sendMsg.Content)
+	
+	// OutputEmitter sends complete message directly (no need for delta + completed)
+	c.runEvent.SendMsgEvent(entity.RunEventMessageCompleted, sendMsg, sw)
+	
+	// Build ModelContent for the OutputEmitter message
+	modelContent := &schema.Message{
+		Role:    schema.Assistant,
+		Content: outputMsg.Content,
+	}
+	mc, err := json.Marshal(modelContent)
+	if err != nil {
+		logs.CtxErrorf(ctx, "Failed to marshal ModelContent for OutputEmitter: %v", err)
+		mc = []byte("{}")
+	}
+	logs.CtxInfof(ctx, "[DEBUG] OutputEmitter saving with ModelContent: %s", string(mc))
+	
+	msgMeta := &message.Message{
+		ID:             outputEmitterMsg.ID,
+		ConversationID: outputEmitterMsg.ConversationID,
+		RunID:          outputEmitterMsg.RunID,
+		AgentID:        outputEmitterMsg.AgentID,
+		SectionID:      outputEmitterMsg.SectionID,
+		UserID:         outputEmitterMsg.UserID,
+		Role:           schema.Assistant,
+		MessageType:    message.MessageTypeAnswer,
+		ContentType:    message.ContentTypeText,
+		Content:        outputMsg.Content,
+		ModelContent:   string(mc),
+		Ext:            outputEmitterMsg.Ext,
+	}
+	
+	_, err = crossmessage.DefaultSVC().Create(ctx, msgMeta)
+	if err != nil {
+		logs.CtxErrorf(ctx, "Failed to save OutputEmitter message: %v", err)
+		// Don't return error as message was already sent to client
+	}
+	
+	return nil
+}
+
+func (c *runImpl) mergeOutputEmitterMessages(ctx context.Context, history []*msgEntity.Message) []*msgEntity.Message {
+	if len(history) <= 1 {
+		return history
+	}
+
+	logs.CtxInfof(ctx, "[DEBUG MERGE] Starting merge with %d messages", len(history))
+	
+	// Group messages by RunID to identify turns
+	turnMessages := make(map[int64][]*msgEntity.Message)
+	for _, msg := range history {
+		turnMessages[msg.RunID] = append(turnMessages[msg.RunID], msg)
+	}
+	
+	var result []*msgEntity.Message
+	processed := make(map[int64]bool)
+	
+	// Process messages in original order, but handle OutputEmitter merging per turn
+	for _, msg := range history {
+		if processed[msg.ID] {
+			continue
+		}
+		
+		// For assistant messages, check if there are multiple in this turn
+		if msg.Role == schema.Assistant && msg.MessageType == message.MessageTypeAnswer {
+			turnMsgs := turnMessages[msg.RunID]
+			assistantMsgs := make([]*msgEntity.Message, 0)
+			
+			// Collect all assistant answer messages from this turn
+			for _, turnMsg := range turnMsgs {
+				if turnMsg.Role == schema.Assistant && turnMsg.MessageType == message.MessageTypeAnswer {
+					assistantMsgs = append(assistantMsgs, turnMsg)
+				}
+			}
+			
+			if len(assistantMsgs) > 1 {
+				logs.CtxInfof(ctx, "[DEBUG MERGE] Found %d assistant messages in turn %d", len(assistantMsgs), msg.RunID)
+				
+				// Check if any are OutputEmitter messages
+				hasOutputEmitter := false
+				var regularMsg *msgEntity.Message
+				var outputEmitterMsgs []*msgEntity.Message
+				
+				for _, aMsg := range assistantMsgs {
+					isOutputEmitter := aMsg.Ext != nil && aMsg.Ext["output_emitter"] == "true"
+					if isOutputEmitter {
+						hasOutputEmitter = true
+						outputEmitterMsgs = append(outputEmitterMsgs, aMsg)
+						logs.CtxInfof(ctx, "[DEBUG MERGE] Found OutputEmitter message: ID=%d, Content='%.30s...'", aMsg.ID, aMsg.Content)
+					} else {
+						if regularMsg == nil || aMsg.ID > regularMsg.ID { // Keep the latest regular message
+							regularMsg = aMsg
+						}
+					}
+				}
+				
+				if hasOutputEmitter {
+					// Add all OutputEmitter messages (they have independent content)
+					for _, oeMsg := range outputEmitterMsgs {
+						result = append(result, oeMsg)
+						processed[oeMsg.ID] = true
+						logs.CtxInfof(ctx, "[DEBUG MERGE] Added OutputEmitter message: ID=%d", oeMsg.ID)
+					}
+					
+					// Add the regular message if it exists
+					if regularMsg != nil {
+						result = append(result, regularMsg)
+						processed[regularMsg.ID] = true
+						logs.CtxInfof(ctx, "[DEBUG MERGE] Added regular message: ID=%d", regularMsg.ID)
+					}
+					
+					// Mark all assistant messages in this turn as processed
+					for _, aMsg := range assistantMsgs {
+						processed[aMsg.ID] = true
+					}
+				} else {
+					// No OutputEmitter, just keep the latest message
+					if regularMsg != nil {
+						result = append(result, regularMsg)
+						processed[regularMsg.ID] = true
+						logs.CtxInfof(ctx, "[DEBUG MERGE] Added latest regular message: ID=%d", regularMsg.ID)
+						
+						// Mark all assistant messages in this turn as processed
+						for _, aMsg := range assistantMsgs {
+							processed[aMsg.ID] = true
+						}
+					}
+				}
+			} else {
+				// Single assistant message, keep it
+				result = append(result, msg)
+				processed[msg.ID] = true
+				logs.CtxInfof(ctx, "[DEBUG MERGE] Added single assistant message: ID=%d", msg.ID)
+			}
+		} else {
+			// Non-assistant messages (user, tool, etc.), keep as-is
+			result = append(result, msg)
+			processed[msg.ID] = true
+			logs.CtxInfof(ctx, "[DEBUG MERGE] Added non-assistant message: ID=%d, Type=%s", msg.ID, msg.MessageType)
+		}
+	}
+	
+	logs.CtxInfof(ctx, "[DEBUG MERGE] Completed merge: %d -> %d messages", len(history), len(result))
+	return result
 }
 
 func (c *runImpl) buildSendRunRecord(_ context.Context, runRecord *entity.RunRecordMeta, runStatus entity.RunStatus) *entity.ChunkRunItem {

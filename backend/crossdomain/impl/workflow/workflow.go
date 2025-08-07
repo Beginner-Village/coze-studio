@@ -68,7 +68,9 @@ func (i *impl) WithResumeToolWorkflow(resumingEvent *workflowEntity.ToolInterrup
 func (i *impl) SyncExecuteWorkflow(ctx context.Context, config vo.ExecuteConfig, input map[string]any) (*workflowEntity.WorkflowExecution, vo.TerminatePlan, error) {
 	return i.DomainSVC.SyncExecute(ctx, config, input)
 }
-
+func (i *impl) StreamExecute(ctx context.Context, config vo.ExecuteConfig, input map[string]any) (*schema.StreamReader[*workflowEntity.Message], error) {
+	return i.DomainSVC.StreamExecute(ctx, config, input)
+}
 func (i *impl) WithExecuteConfig(cfg vo.ExecuteConfig) einoCompose.Option {
 	return i.DomainSVC.WithExecuteConfig(cfg)
 }
