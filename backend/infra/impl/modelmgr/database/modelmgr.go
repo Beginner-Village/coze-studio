@@ -291,7 +291,6 @@ func (m *ModelMgr) convertToModel(entity *entity.ModelEntity, meta *entity.Model
 		IconURI: meta.IconURI,
 		IconURL: meta.IconURL,
 		Meta: modelmgr.ModelMeta{
-			Name:     meta.ModelName,
 			Protocol: chatmodel.Protocol(meta.Protocol),
 			Status:   modelmgr.ModelStatus(meta.Status),
 		},

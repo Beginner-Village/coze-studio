@@ -9,6 +9,7 @@
 backend/backend
 backend/build
 backend/opencoze
+backend/server
 
 # .env
 .env.debug
