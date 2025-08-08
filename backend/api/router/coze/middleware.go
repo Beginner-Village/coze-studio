@@ -1516,7 +1516,17 @@ func _cozewebappMw() []app.HandlerFunc {
 	return nil
 }
 
+func _modelMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
 func _impersonatecozeusrMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
+func _getspacemodellistMw() []app.HandlerFunc {
 	// your code...
 	return nil
 }

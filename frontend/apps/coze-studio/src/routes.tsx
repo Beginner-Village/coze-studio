@@ -113,6 +113,8 @@ const AgentPublishPage = lazy(() =>
 
 const DocsRedirect = lazy(() => import('./pages/docs'));
 
+const SpaceModelConfig = lazy(() => import('./pages/space-model-config'));
+
 export const router: ReturnType<typeof createBrowserRouter> =
   createBrowserRouter([
     {
@@ -201,6 +203,13 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   Component: Members,
                   loader: () => ({
                     subMenuKey: SpaceSubModuleEnum.MEMBERS,
+                  }),
+                },
+                {
+                  path: 'models',
+                  Component: SpaceModelConfig,
+                  loader: () => ({
+                    subMenuKey: SpaceSubModuleEnum.MODELS,
                   }),
                 },
                 {

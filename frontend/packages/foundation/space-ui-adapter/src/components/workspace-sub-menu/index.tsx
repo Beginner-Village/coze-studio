@@ -29,6 +29,8 @@ import {
   IconCozKnowledgeFill,
   IconCozPeople,
   IconCozPeopleFill,
+  IconCozSetting,
+  IconCozSettingFill,
 } from '@coze-arch/coze-design/icons';
 import { useRouteConfig } from '@coze-arch/bot-hooks';
 
@@ -75,6 +77,13 @@ export const WorkspaceSubMenu = () => {
       title: () => I18n.t('navigation_workspace_members', {}, 'Members'),
       path: SpaceSubModuleEnum.MEMBERS,
       dataTestId: 'navigation_workspace_members',
+    },
+    {
+      icon: <IconCozSetting />,
+      activeIcon: <IconCozSettingFill />,
+      title: () => '模型配置',
+      path: SpaceSubModuleEnum.MODELS,
+      dataTestId: 'navigation_workspace_models',
     },
   ];
 
