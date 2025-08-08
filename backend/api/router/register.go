@@ -108,8 +108,8 @@ func manualRegisterImportExport(r *server.Hertz) {
 	modelAPI.POST("/update", cozeHandler.UpdateModel)
 	modelAPI.POST("/delete", cozeHandler.DeleteModel)
 
-	// Register space model management routes
-	spaceAPI.POST("/model/list", cozeHandler.GetSpaceModelList)
+	// Note: /model/list route is already registered in generated code
+	// Register additional space model management routes not in IDL
 	spaceAPI.POST("/model/add", cozeHandler.AddModelToSpace)
 	spaceAPI.POST("/model/remove", cozeHandler.RemoveModelFromSpace)
 	spaceAPI.POST("/model/config/update", cozeHandler.UpdateSpaceModelConfig)
