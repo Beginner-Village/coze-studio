@@ -56,9 +56,9 @@ export const WorkspaceSubMenu = ({
             <div className="flex-none w-full">
               <WorkspaceList menus={menus} currentSubMenu={currentSubMenu} />
             </div>
-            <div className="flex-grow max-h-full overflow-y-auto w-full mt-[24px]">
+            {/* <div className="flex-grow max-h-full overflow-y-auto w-full mt-[24px]">
               <FavoritesList />
-            </div>
+            </div> */}
           </>
         ) : null}
       </Space>

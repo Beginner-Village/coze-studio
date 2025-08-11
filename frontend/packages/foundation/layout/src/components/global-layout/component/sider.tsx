@@ -29,7 +29,7 @@ import { GlobalLayoutActionBtn } from './action-btn';
 const siderStyle = classNames(
   'relative',
   'h-full',
-  'border-[1px] border-solid coz-stroke-primary rounded-[14px]',
+  'border-[1px] border-solid coz-stroke-primary',
   'coz-bg-max',
   'flex flex-row items-stretch',
 );
@@ -51,7 +51,7 @@ export const GlobalLayoutSider: FC<Omit<LayoutProps, 'hasSider'>> = ({
   const hasSubNav = Boolean(SubMenuComponent);
 
   return (
-    <div className="pl-8px py-8px h-full">
+    <div className="h-full">
       <div className={siderStyle}>
         {/* main navigation */}
         <div

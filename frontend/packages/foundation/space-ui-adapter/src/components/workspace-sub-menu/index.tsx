@@ -65,6 +65,11 @@ export const WorkspaceSubMenu = () => {
       dataTestId: 'navigation_workspace_develop',
     },
     {
+      type: 'title',
+      title: () =>
+        I18n.t('navigation_workspace_library_title', {}, 'Resource Library'),
+    },
+    {
       icon: <IconCozKnowledge />,
       activeIcon: <IconCozKnowledgeFill />,
       title: () => I18n.t('navigation_workspace_library', {}, 'Library'),
@@ -72,18 +77,22 @@ export const WorkspaceSubMenu = () => {
       dataTestId: 'navigation_workspace_library',
     },
     {
+      type: 'title',
+      title: () => I18n.t('navigation_workspace_manage_title', {}, 'Manage'),
+    },
+    {
+      icon: <IconCozSetting />,
+      activeIcon: <IconCozSettingFill />,
+      title: () => I18n.t('navigation_workspace_manage_models', {}, 'Models'),
+      path: SpaceSubModuleEnum.MODELS,
+      dataTestId: 'navigation_workspace_models',
+    },
+    {
       icon: <IconCozPeople />,
       activeIcon: <IconCozPeopleFill />,
       title: () => I18n.t('navigation_workspace_members', {}, 'Members'),
       path: SpaceSubModuleEnum.MEMBERS,
       dataTestId: 'navigation_workspace_members',
-    },
-    {
-      icon: <IconCozSetting />,
-      activeIcon: <IconCozSettingFill />,
-      title: () => '模型配置',
-      path: SpaceSubModuleEnum.MODELS,
-      dataTestId: 'navigation_workspace_models',
     },
   ];
 

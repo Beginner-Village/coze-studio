@@ -74,6 +74,13 @@ export const GlobalLayoutComposed: FC<PropsWithChildren> = ({ children }) => {
             path: '/explore',
             dataTestId: 'layout_explore-button',
           },
+          {
+            title: I18n.t('menu_title_template'),
+            icon: <IconCozCompass />,
+            activeIcon: <IconCozCompassFill />,
+            path: '/template/list',
+            dataTestId: 'layout_explore-template-button',
+          },
         ]}
         extras={[
           {

@@ -22,6 +22,7 @@ import { GlobalError } from '@coze-foundation/layout';
 import { BaseEnum } from '@coze-arch/web-context';
 
 import { exploreRouter } from './pages/explore';
+import { templateRouter } from './pages/template';
 import { Layout } from './layout';
 const subMenu = lazy(() =>
   import('@coze-foundation/space-ui-adapter').then(exps => ({
@@ -143,6 +144,7 @@ export const router: ReturnType<typeof createBrowserRouter> =
           element: <Navigate to="/space" replace />,
         },
         exploreRouter,
+        templateRouter,
         {
           path: 'sign',
           Component: LoginPage,

@@ -19,48 +19,32 @@ import { lazy } from 'react';
 
 import { BaseEnum } from '@coze-arch/web-context';
 
-const subMenu = lazy(() =>
+const TemplatePage = lazy(() =>
   import('@coze-community/explore').then(exps => ({
-    default: exps.ExploreSubMenu,
+    default: exps.TemplatePage,
   })),
 );
-// const TemplatePage = lazy(() =>
-//   import('@coze-community/explore').then(exps => ({
-//     default: exps.TemplatePage,
-//   })),
-// );
-const PluginPage = lazy(() =>
-  import('@coze-community/explore').then(exps => ({
-    default: exps.PluginPage,
-  })),
-);
-export const exploreRouter: RouteObject = {
-  path: 'explore',
+
+export const templateRouter: RouteObject = {
+  path: 'template',
   Component: null,
   loader: () => ({
     hasSider: true,
     requireAuth: true,
-    subMenu,
-    menuKey: BaseEnum.Explore,
+    subMenu: null,
+    menuKey: BaseEnum.Template,
   }),
   children: [
     {
       index: true,
-      element: <Navigate to="plugin" replace />,
+      element: <Navigate to="list" replace />,
     },
     {
-      path: 'plugin',
-      element: <PluginPage />,
+      path: 'list',
+      element: <TemplatePage />,
       loader: () => ({
-        type: 'plugin',
+        type: 'template',
       }),
     },
-    // {
-    //   path: 'template',
-    //   element: <TemplatePage />,
-    //   loader: () => ({
-    //     type: 'template',
-    //   }),
-    // },
   ],
 };

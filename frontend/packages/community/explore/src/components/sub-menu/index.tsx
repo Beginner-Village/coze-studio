@@ -37,14 +37,14 @@ const getMenuConfig = () => [
     isActive: true,
     path: '/explore/plugin',
   },
-  {
-    icon: <IconCozTemplate />,
-    activeIcon: <IconCozTemplateFill />,
-    title: I18n.t('template_name'),
-    isActive: true,
-    type: 'template',
-    path: '/explore/template',
-  },
+  // {
+  //   icon: <IconCozTemplate />,
+  //   activeIcon: <IconCozTemplateFill />,
+  //   title: I18n.t('template_name'),
+  //   isActive: true,
+  //   type: 'template',
+  //   path: '/explore/template',
+  // },
 ];
 
 export const ExploreSubMenu = () => {
@@ -55,6 +55,7 @@ export const ExploreSubMenu = () => {
     <Space spacing={4} vertical>
       {menuConfig.map(item => (
         <SubMenuItem
+          key={item.type}
           {...item}
           isActive={item.type === type}
           onClick={() => {
