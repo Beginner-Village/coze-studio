@@ -32,7 +32,12 @@ import {
   IconCozSetting,
   IconCozSettingFill,
 } from '@coze-arch/coze-design/icons';
+import {
+  IconBotDevelop,
+  IconBotDevelopActive,
+} from '../../../../../components/bot-icons';
 import { useRouteConfig } from '@coze-arch/bot-hooks';
+import { ResType } from '@coze-arch/idl/plugin_develop';
 
 import { SpaceSubModuleEnum } from '@/const';
 
@@ -58,8 +63,8 @@ export const WorkspaceSubMenu = () => {
 
   const subMenu = [
     {
-      icon: <IconCozBot />,
-      activeIcon: <IconCozBotFill />,
+      icon: <IconBotDevelop />,
+      activeIcon: <IconBotDevelopActive />,
       title: () => I18n.t('navigation_workspace_develop', {}, 'Develop'),
       path: SpaceSubModuleEnum.DEVELOP,
       dataTestId: 'navigation_workspace_develop',
@@ -69,12 +74,36 @@ export const WorkspaceSubMenu = () => {
       title: () =>
         I18n.t('navigation_workspace_library_title', {}, 'Resource Library'),
     },
+    // {
+    //   icon: <IconCozKnowledge />,
+    //   activeIcon: <IconCozKnowledgeFill />,
+    //   title: () => I18n.t('navigation_workspace_library', {}, 'Library'),
+    //   path: SpaceSubModuleEnum.LIBRARY,
+    //   dataTestId: 'navigation_workspace_library',
+    // },
     {
       icon: <IconCozKnowledge />,
       activeIcon: <IconCozKnowledgeFill />,
-      title: () => I18n.t('navigation_workspace_library', {}, 'Library'),
-      path: SpaceSubModuleEnum.LIBRARY,
-      dataTestId: 'navigation_workspace_library',
+      title: () =>
+        I18n.t('navigation_workspace_library_workflow', {}, 'Workflow'),
+      path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Workflow}`,
+      dataTestId: 'navigation_workspace_library_workflow',
+    },
+    {
+      icon: <IconCozKnowledge />,
+      activeIcon: <IconCozKnowledgeFill />,
+      title: () =>
+        I18n.t('navigation_workspace_library_plugins', {}, 'Plugins'),
+      path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Plugin}`,
+      dataTestId: 'navigation_workspace_library_plugins',
+    },
+    {
+      icon: <IconCozKnowledge />,
+      activeIcon: <IconCozKnowledgeFill />,
+      title: () =>
+        I18n.t('navigation_workspace_library_knowledge', {}, 'Knowledge'),
+      path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Knowledge}`,
+      dataTestId: 'navigation_workspace_library_knowledge',
     },
     {
       type: 'title',

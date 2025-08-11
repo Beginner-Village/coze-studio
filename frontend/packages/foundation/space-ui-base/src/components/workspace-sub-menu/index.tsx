@@ -22,7 +22,7 @@ import { useSpaceStore } from '@coze-foundation/space-store';
 
 import { type IWorkspaceListItem } from './components/workspace-list-item';
 import { WorkspaceList } from './components/workspace-list';
-import { FavoritesList } from './components/favorites-list';
+// import { FavoritesList } from './components/favorites-list';
 
 import './components/list.css';
 

@@ -10915,6 +10915,8 @@ export type I18nKeysNoOptionsType =
   | 'navigation_workspace_favourites'
   | 'navigation_workspace_favourites_cancle'
   | 'navigation_workspace_library_title'
+  | 'navigation_workspace_library_plugins'
+  | 'navigation_workspace_library_workflow'
   | 'navigation_workspace_manage_title'
   | 'navigation_workspace_manage_models'
   | 'navigation_workspace_library'

@@ -194,10 +194,12 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   }),
                 },
                 {
-                  path: 'library',
+                  path: 'library/:source_type',
                   Component: Library,
-                  loader: () => ({
-                    subMenuKey: SpaceSubModuleEnum.LIBRARY,
+                  loader: request => ({
+                    subMenuKey: `${SpaceSubModuleEnum.LIBRARY}/${
+                      request.params.source_type
+                    }`,
                   }),
                 },
                 {

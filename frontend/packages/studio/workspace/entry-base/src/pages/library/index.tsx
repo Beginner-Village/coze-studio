@@ -30,7 +30,8 @@ import {
 import { renderHtmlTitle } from '@coze-arch/bot-utils';
 import { EVENT_NAMES, sendTeaEvent } from '@coze-arch/bot-tea';
 import {
-  type ResType,
+  ResType,
+  // type ResType,
   type LibraryResourceListRequest,
   type ResourceInfo,
 } from '@coze-arch/bot-api/plugin_develop';
@@ -66,11 +67,15 @@ export const BaseLibraryPage = forwardRef<
   BaseLibraryPageProps
 >(
   // eslint-disable-next-line @coze-arch/max-line-per-function -- Complex library page component
-  ({ spaceId, isPersonalSpace = true, entityConfigs }, ref) => {
+  ({ spaceId, sourceType, isPersonalSpace = true, entityConfigs }, ref) => {
     const { params, setParams, resetParams, hasFilter, ready } =
       useCachedQueryParams({
         spaceId,
       });
+
+    const resType = Number(sourceType);
+    const restTypeFilter =
+      resType === ResType.Knowledge ? [resType, -1] : [resType];
 
     const listResp = useInfiniteScroll<ListData>(
       async prev => {
@@ -81,12 +86,17 @@ export const BaseLibraryPage = forwardRef<
             hasMore: false,
           };
         }
+        const typeFilter = Number(sourceType);
         // Allow business to customize request parameters
         const resp = await PluginDevelopApi.LibraryResourceList(
           entityConfigs.reduce<LibraryResourceListRequest>(
             (res, config) => config.parseParams?.(res) ?? res,
             {
               ...params,
+              res_type_filter:
+                typeFilter === ResType.Knowledge
+                  ? [typeFilter, -1]
+                  : [typeFilter],
               cursor: prev?.nextCursorId,
               space_id: spaceId,
               size: LIBRARY_PAGE_SIZE,
@@ -100,7 +110,7 @@ export const BaseLibraryPage = forwardRef<
         };
       },
       {
-        reloadDeps: [params, spaceId],
+        reloadDeps: [params, spaceId, sourceType],
       },
     );
 
@@ -135,17 +145,13 @@ export const BaseLibraryPage = forwardRef<
             />
             <div className="flex items-center justify-between">
               <Space>
-                <Cascader
+                {/* <Cascader
                   data-testid="workspace.library.filter.type"
                   className={s.cascader}
-                  style={
-                    params?.res_type_filter?.[0] !== -1
-                      ? highlightFilterStyle
-                      : {}
-                  }
+                  style={restTypeFilter?.[0] !== -1 ? highlightFilterStyle : {}}
                   dropdownClassName="[&_.semi-cascader-option-lists]:h-fit"
                   showClear={false}
-                  value={params.res_type_filter}
+                  value={restTypeFilter}
                   treeData={typeFilterData}
                   onChange={v => {
                     const typeFilter = typeFilterData.find(
@@ -160,13 +166,12 @@ export const BaseLibraryPage = forwardRef<
                       filter_type: 'types',
                       filter_name: typeFilter?.filterName ?? typeFilter?.label,
                     });
-
                     setParams(prev => ({
                       ...prev,
                       res_type_filter: v as Array<number>,
                     }));
                   }}
-                />
+                /> */}
                 {!isPersonalSpace ? (
                   <Select
                     data-testid="workspace.library.filter.user"

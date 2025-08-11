@@ -172,10 +172,12 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
 
               // resource library
               {
-                path: 'library',
+                path: 'library/:source_type',
                 Component: Library,
-                loader: () => ({
-                  subMenuKey: SpaceSubModuleEnum.LIBRARY,
+                loader: request => ({
+                  subMenuKey: `${SpaceSubModuleEnum.LIBRARY}/${
+                    request.params.source_type
+                  }`,
                 }),
               },
 
@@ -270,24 +272,16 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
               type: 'plugin',
             }),
           },
-          // {
-          //   path: 'template',
-          //   element: <ExploreTemplatePage />,
-          //   loader: () => ({
-          //     type: 'template',
-          //   }),
-          // },
         ],
       },
 
-      // template
+      // explore
       {
         path: 'template',
         Component: null,
         loader: () => ({
-          hasSider: true,
+          hasSider: false,
           requireAuth: true,
-          subMenu: null,
           menuKey: BaseEnum.Template,
         }),
         children: [
