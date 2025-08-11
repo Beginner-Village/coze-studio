@@ -323,6 +323,13 @@ import { ReactComponent as SvgIconMenuSocialMediaYoutube } from './assets/icons/
 import { ReactComponent as SvgIconMenuSocialMediaX } from './assets/icons/icon-menu-social-media-x.svg';
 import { ReactComponent as SvgIconBotMenuPlus } from './assets/icons/icon-menu-plus.svg';
 import { ReactComponent as SvgIconBotMenuLogo } from './assets/icons/icon-menu-logo.svg';
+import { ReactComponent as SvgIconBotDoc } from './assets/icons/coz-document.svg';
+import { ReactComponent as SvgIconBotShop } from './assets/icons/icon-shop.svg';
+import { ReactComponent as SvgIconBotShopFill } from './assets/icons/icon-shop-fill.svg';
+import { ReactComponent as SvgIconBotTemplate } from './assets/icons/icon-template-default.svg';
+import { ReactComponent as SvgIconBotTemplateFill } from './assets/icons/icon-template-fill.svg';
+import { ReactComponent as SvgIconBotWorkspace } from './assets/icons/icon-workspace.svg';
+import { ReactComponent as SvgIconBotWorkspaceFill } from './assets/icons/icon-workspace-fill.svg';
 import { ReactComponent as SvgIconBotMenuLogoText } from './assets/icons/icon-menu-logo-text.svg';
 import { ReactComponent as SvgIconBotMenuLogoTextCN } from './assets/icons/icon-menu-logo-text-cn.svg';
 import { ReactComponent as SvgIconMenuFeedback } from './assets/icons/icon-menu-feedback.svg';
@@ -728,6 +735,14 @@ export const IconMenuCommunityDiscord = IconFactory(
 );
 
 export const IconMenuLogo = IconFactory(<SvgIconBotMenuLogo />);
+export const IconBotDoc = IconFactory(<SvgIconBotDoc />);
+export const IconBotWorkspace = IconFactory(<SvgIconBotWorkspace />);
+export const IconBotWorkspaceFill = IconFactory(<SvgIconBotWorkspaceFill />);
+export const IconBotShop = IconFactory(<SvgIconBotShop />);
+export const IconBotShopFill = IconFactory(<SvgIconBotShopFill />);
+export const IconBotTemplate = IconFactory(<SvgIconBotTemplate />);
+export const IconBotTemplateFill = IconFactory(<SvgIconBotTemplateFill />);
+
 export const IconChatHashtag = IconFactory(<SvgChatHashtag />);
 export const IconMenuLogoText = IconFactory(<SvgIconBotMenuLogoText />);
 export const IconMenuLogoTextCN = IconFactory(<SvgIconBotMenuLogoTextCN />);

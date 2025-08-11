@@ -71,7 +71,7 @@ export const GlobalLayoutSider: FC<Omit<LayoutProps, 'hasSider'>> = ({
             ))}
           </div>
           <Divider className="my-12px w-[24px]" />
-          <Space spacing={4} vertical className="flex-1 overflow-auto">
+          <Space spacing={6} vertical className="flex-1 overflow-auto">
             {menus?.map((menu, index) => (
               <GLobalLayoutMenuItem {...menu} key={index} />
             ))}
