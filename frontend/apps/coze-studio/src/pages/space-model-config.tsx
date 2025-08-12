@@ -86,33 +86,40 @@ function ModelDropdownMenu({ modelId, isEnabled, onToggleEnabled }: { modelId: n
   );
 }
 
-function ModelCard({ model, isEnabled, isFavorite, isHovered, onHover, onToggleFavorite, onToggleEnabled }: ModelCardProps) {
+function ModelCard({
+  model,
+  isEnabled,
+  isFavorite,
+  isHovered,
+  onHover,
+  onToggleFavorite,
+  onToggleEnabled,
+}: ModelCardProps) {
   return (
-    <div 
-      key={model.id} 
+    <div
+      key={model.id}
       className="flex-grow h-[158px] min-w-[280px] rounded-[6px] border-solid border-[1px] relative overflow-hidden transition duration-150 ease-out hover:shadow-[0_6px_8px_0_rgba(28,31,35,6%)] coz-stroke-primary coz-mg-card"
     >
-      <div 
+      <div
         className="h-full w-full cursor-pointer flex flex-col gap-[12px] px-[16px] py-[16px]"
         onMouseEnter={() => onHover(model.id)}
-        onMouseLeave={() => onHover(null)}>
+        onMouseLeave={() => onHover(null)}
+      >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-[12px] flex-1 min-w-0">
-            <Avatar
-              shape="square"
-              style={{ width: 40, height: 40 }}
-            >
-              {(model.icon_url || model.icon_uri) ? (
-                <img 
-                  src={model.icon_url || model.icon_uri} 
+            <Avatar shape="square" style={{ width: 40, height: 40 }}>
+              {model.icon_url || model.icon_uri ? (
+                <img
+                  src={model.icon_url || model.icon_uri}
                   alt={model.name}
                   className="w-full h-full object-cover"
-                  onError={(e) => {
+                  onError={e => {
                     const target = e.currentTarget as HTMLImageElement;
                     target.style.display = 'none';
                     const parent = target.parentElement;
                     if (parent) {
-                      parent.innerHTML = '<span style="font-size: 20px;">🤖</span>';
+                      parent.innerHTML =
+                        '<span style="font-size: 20px;">🤖</span>';
                     }
                   }}
                 />
@@ -120,22 +127,28 @@ function ModelCard({ model, isEnabled, isFavorite, isHovered, onHover, onToggleF
                 <span style={{ fontSize: '20px' }}>🤖</span>
               )}
             </Avatar>
-            
+
             <div className="flex-1 min-w-0">
-              <h3 className="text-[14px] font-medium coz-fg-primary truncate" title={model.name}>
+              <h3
+                className="text-[14px] font-medium coz-fg-primary truncate"
+                title={model.name}
+              >
                 {model.name}
               </h3>
-              <p className="text-[12px] coz-fg-secondary line-clamp-2 mt-[2px]" title={model.description}>
+              <p
+                className="text-[12px] coz-fg-secondary line-clamp-2 mt-[2px]"
+                title={model.description}
+              >
                 {model.description || '暂无描述'}
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-center">
-            <span 
+            <span
               className={`px-2 py-1 rounded text-xs font-medium ${
-                isEnabled 
-                  ? 'bg-green-100 text-green-700' 
+                isEnabled
+                  ? 'bg-green-100 text-green-700'
                   : 'bg-gray-100 text-gray-500'
               }`}
             >
@@ -143,28 +156,33 @@ function ModelCard({ model, isEnabled, isFavorite, isHovered, onHover, onToggleF
             </span>
           </div>
         </div>
-        
+
         <div className="flex-1"></div>
-        
+
         <div className="flex items-center gap-[4px] text-[12px]">
           <span className="coz-fg-tertiary">上下文长度</span>
-          <span className="coz-fg-secondary">{model.context_length ? `${Math.floor(model.context_length / CONTEXT_LENGTH_DIVISOR)}K` : '未知'}</span>
+          <span className="coz-fg-secondary">
+            {model.context_length
+              ? `${Math.floor(model.context_length / CONTEXT_LENGTH_DIVISOR)}K`
+              : '未知'}
+          </span>
           <span className="coz-fg-tertiary ml-[8px]">厂商</span>
           <span className="coz-fg-secondary">{model.protocol}</span>
         </div>
-        
+
         {isHovered && (
           <>
             <div
               className="absolute bottom-[16px] right-[16px] w-[100px] h-[16px]"
               style={{
-                background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 21.38%)',
+                background:
+                  'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 21.38%)',
               }}
             />
-            
+
             <div
               className="absolute bottom-[16px] right-[16px] flex gap-[4px]"
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
               }}
             >
@@ -173,11 +191,17 @@ function ModelCard({ model, isEnabled, isFavorite, isHovered, onHover, onToggleF
                 onClick={() => onToggleFavorite(model.id)}
                 className={isFavorite ? 'coz-fg-hglt-yellow' : ''}
               />
-              
+
               <Dropdown
                 trigger="click"
                 position="bottomRight"
-                render={<ModelDropdownMenu modelId={model.id} isEnabled={isEnabled} onToggleEnabled={onToggleEnabled} />}
+                render={
+                  <ModelDropdownMenu
+                    modelId={model.id}
+                    isEnabled={isEnabled}
+                    onToggleEnabled={onToggleEnabled}
+                  />
+                }
               >
                 <IconButton icon={<IconCozMore />} />
               </Dropdown>
@@ -189,15 +213,22 @@ function ModelCard({ model, isEnabled, isFavorite, isHovered, onHover, onToggleF
   );
 }
 
-function ModelFilters({ typeFilter, providerFilter, searchValue, onTypeFilterChange, onProviderFilterChange, onSearchChange }: ModelFiltersProps) {
+function ModelFilters({
+  typeFilter,
+  providerFilter,
+  searchValue,
+  onTypeFilterChange,
+  onProviderFilterChange,
+  onSearchChange,
+}: ModelFiltersProps) {
   return (
     <div className="flex items-center justify-between px-[24px] pb-[12px] border-b coz-stroke-secondary">
       <div className="flex items-center gap-[8px]">
         <Select
           className="min-w-[128px]"
-          size="small"
+          // size="small"
           value={typeFilter}
-          onChange={(val) => onTypeFilterChange(val as string)}
+          onChange={val => onTypeFilterChange(val as string)}
         >
           <Select.Option value="all">全部</Select.Option>
           <Select.Option value="llm">LLM</Select.Option>
@@ -205,12 +236,12 @@ function ModelFilters({ typeFilter, providerFilter, searchValue, onTypeFilterCha
           <Select.Option value="rerank">RERANK</Select.Option>
           <Select.Option value="tts">TTS</Select.Option>
         </Select>
-        
+
         <Select
           className="min-w-[128px]"
-          size="small"
+          // size="small"
           value={providerFilter}
-          onChange={(val) => onProviderFilterChange(val as string)}
+          onChange={val => onProviderFilterChange(val as string)}
         >
           <Select.Option value="all">全部</Select.Option>
           <Select.Option value="openai">OPENAI</Select.Option>
@@ -219,13 +250,13 @@ function ModelFilters({ typeFilter, providerFilter, searchValue, onTypeFilterCha
           <Select.Option value="qwen">QWEN</Select.Option>
         </Select>
       </div>
-      
+
       <Search
         showClear={true}
         className="w-[200px]"
         placeholder="搜索模型"
         value={searchValue}
-        onChange={(val) => onSearchChange(val)}
+        onChange={val => onSearchChange(val)}
       />
     </div>
   );
@@ -290,11 +321,19 @@ interface FilterCriteria {
 
 function filterModels(models: SpaceModel[], filters: FilterCriteria) {
   return models.filter(model => {
-    if (filters.searchValue && !model.name.toLowerCase().includes(filters.searchValue.toLowerCase()) 
-        && !model.description.toLowerCase().includes(filters.searchValue.toLowerCase())) {
+    if (
+      filters.searchValue &&
+      !model.name.toLowerCase().includes(filters.searchValue.toLowerCase()) &&
+      !model.description
+        .toLowerCase()
+        .includes(filters.searchValue.toLowerCase())
+    ) {
       return false;
     }
-    if (filters.providerFilter !== 'all' && model.protocol.toLowerCase() !== filters.providerFilter.toLowerCase()) {
+    if (
+      filters.providerFilter !== 'all' &&
+      model.protocol.toLowerCase() !== filters.providerFilter.toLowerCase()
+    ) {
       return false;
     }
     return true;
@@ -304,8 +343,9 @@ function filterModels(models: SpaceModel[], filters: FilterCriteria) {
 export default function SpaceModelConfigPage() {
   const { space_id } = useParams<{ space_id: string }>();
   const spaceId = space_id || '0';
-  
-  const { models, loading, error, modelStates, setModelStates } = useModelData(spaceId);
+
+  const { models, loading, error, modelStates, setModelStates } =
+    useModelData(spaceId);
   const [hoveredModelId, setHoveredModelId] = useState<number | null>(null);
   const [favoriteModels, setFavoriteModels] = useState<Set<number>>(new Set());
   const [typeFilter, setTypeFilter] = useState('all');
@@ -331,15 +371,17 @@ export default function SpaceModelConfigPage() {
     }));
   };
 
-  const filteredModels = filterModels(models, { searchValue, typeFilter, providerFilter });
+  const filteredModels = filterModels(models, {
+    searchValue,
+    typeFilter,
+    providerFilter,
+  });
 
   return (
     <div className="flex flex-col h-full">
       <div>
         <div className="flex items-center justify-between px-[24px] py-[16px]">
-          <h1 className="text-[20px] font-medium coz-fg-primary">
-            模型配置
-          </h1>
+          <h1 className="text-[20px] font-medium coz-fg-primary">模型配置</h1>
           <Button
             type="primary"
             theme="solid"
@@ -351,7 +393,7 @@ export default function SpaceModelConfigPage() {
             添加模型
           </Button>
         </div>
-        
+
         <ModelFilters
           typeFilter={typeFilter}
           providerFilter={providerFilter}
@@ -361,7 +403,7 @@ export default function SpaceModelConfigPage() {
           onSearchChange={setSearchValue}
         />
       </div>
-      
+
       <div className="flex-1 overflow-y-auto px-[24px] py-[20px]">
         {loading && (
           <div className="flex items-center justify-center py-8">
@@ -381,13 +423,13 @@ export default function SpaceModelConfigPage() {
           <div>
             {filteredModels.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                {searchValue || typeFilter !== 'all' || providerFilter !== 'all' 
-                  ? '没有找到匹配的模型' 
+                {searchValue || typeFilter !== 'all' || providerFilter !== 'all'
+                  ? '没有找到匹配的模型'
                   : '当前空间暂无可用模型'}
               </div>
             ) : (
               <div className="grid grid-cols-3 auto-rows-min gap-[20px] [@media(min-width:1600px)]:grid-cols-4">
-                {filteredModels.map((model) => (
+                {filteredModels.map(model => (
                   <ModelCard
                     key={model.id}
                     model={model}

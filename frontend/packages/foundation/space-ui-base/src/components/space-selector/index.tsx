@@ -22,6 +22,7 @@ import { type BotSpace } from '@coze-arch/bot-api/developer_api';
 import { CreateSpaceModal } from '../create-space-modal';
 import cls from 'classnames';
 import styles from './index.module.less';
+import defaultWorkspace from './default-workspace.svg';
 
 // 常量定义
 const ROLE_TYPE = {
@@ -79,7 +80,7 @@ const SpaceItem = ({
     </div>
     <Avatar
       className="w-[24px] h-[24px] rounded-[6px] shrink-0 mr-3"
-      src={space.icon_url}
+      src={space.icon_url || defaultWorkspace}
     />
     <div className="flex-1">
       <Typography.Text className="text-[14px] block">
