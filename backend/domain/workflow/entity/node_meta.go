@@ -154,6 +154,7 @@ const (
 	NodeTypeJsonSerialization          NodeType = "JsonSerialization"
 	NodeTypeJsonDeserialization        NodeType = "JsonDeserialization"
 	NodeTypeComment                    NodeType = "Comment"
+	NodeTypeCardSelector               NodeType = "card_selector"
 )
 
 const (
@@ -815,6 +816,24 @@ var NodeTypeMetas = map[NodeType]*NodeTypeMeta{
 		Key:      NodeTypeLambda,
 		Name:     "Lambda",
 		EnUSName: "Comment",
+	},
+	NodeTypeCardSelector: {
+		ID:           1001,
+		Key:          NodeTypeCardSelector,
+		DisplayKey:   "CardSelector",
+		Name:         "卡片选择",
+		Category:     "utilities",
+		Desc:         "选择猎鹰卡片平台中要使用的卡片",
+		Color:        "#4A90E2",
+		IconURL:      "https://lf3-static.bytednsdoc.com/obj/eden-cn/dvsmryvd_avi_dvsm/ljhwZthlaukjlkulzlp/icon/icon-card-selector.png",
+		SupportBatch: false,
+		ExecutableMeta: ExecutableMeta{
+			DefaultTimeoutMS: 30 * 1000, // 30秒超时
+			PreFillZero:      true,
+			PostFillNil:      true,
+		},
+		EnUSName:        "Card Selector",
+		EnUSDescription: "Select cards to use from the Falcon card platform",
 	},
 }
 

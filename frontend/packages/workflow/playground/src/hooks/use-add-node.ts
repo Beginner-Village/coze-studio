@@ -47,9 +47,11 @@ export const useAddNode = () => {
     openPlugin,
     openWorkflow,
     openImageflow,
+    openCardSelector,
     pluginModal,
     workflowModal,
     imageFlowModal,
+    cardSelectorModal,
   } = useAddNodeModal(prevAddNodeRef);
 
   const editService = useService<WorkflowEditService>(WorkflowEditService);
@@ -142,6 +144,17 @@ export const useAddNode = () => {
       return handleAddSubWorkflow(item, coord, isDrag);
     }
 
+    if (nodeType === StandardNodeType.CardSelector) {
+      // Record the historical location and open the card selector popup
+      prevAddNodeRef.current = {
+        x: coord.x,
+        y: coord.y,
+        isDrag,
+      };
+      openCardSelector();
+      return;
+    }
+
     // Node add panel, drag and drop to add ordinary nodes
     editService.addNode(
       item.nodeType,
@@ -156,7 +169,8 @@ export const useAddNode = () => {
     openPlugin,
     openWorkflow,
     openImageflow,
+    openCardSelector,
     updateAddNodePosition,
-    modals: [workflowModal, pluginModal, imageFlowModal],
+    modals: [workflowModal, pluginModal, imageFlowModal, cardSelectorModal],
   };
 };

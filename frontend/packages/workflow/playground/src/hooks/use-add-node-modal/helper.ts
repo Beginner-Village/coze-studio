@@ -15,8 +15,8 @@
  */
 
 import semver from 'semver';
-import { type BotPluginWorkFlowItem } from '@coze-workflow/components';
 import { type ApiNodeDataDTO } from '@coze-workflow/nodes';
+import { type BotPluginWorkFlowItem } from '@coze-workflow/components';
 import { BlockInput } from '@coze-workflow/base';
 
 interface PluginApi {
@@ -91,4 +91,42 @@ export const createSubWorkflowNodeInfo = ({
   };
 
   return nodeJson;
+};
+
+interface CardItem {
+  id: string;
+  name: string;
+  description: string;
+  icon?: string;
+  category?: string;
+}
+
+export const createCardSelectorNodeInfo = (
+  selectedCards: CardItem[],
+  templateIcon?: string,
+) => {
+  const cardCount = selectedCards.length;
+  const cardNames = selectedCards.map(card => card.name).join(', ');
+
+  return {
+    data: {
+      nodeMeta: {
+        title: `卡片选择器 (${cardCount}个卡片)`,
+        icon: templateIcon,
+        subtitle: cardCount > 0 ? cardNames : '未选择卡片',
+        description: `已选择 ${cardCount} 个猎鹰卡片`,
+      },
+      inputs: {
+        cardSelector: [
+          BlockInput.create('selectedCards', JSON.stringify(selectedCards)),
+          BlockInput.create('cardCount', cardCount.toString()),
+          BlockInput.create(
+            'cardIds',
+            selectedCards.map(card => card.id).join(','),
+          ),
+          BlockInput.create('cardNames', cardNames),
+        ],
+      },
+    },
+  };
 };

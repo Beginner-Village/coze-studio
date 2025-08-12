@@ -141,7 +141,7 @@ export class PluginNodeService {
     this.state.clearError(identifier);
   }
 
-  async fetchData(identifier: ApiNodeIdentifier) {
+  fetchData(identifier: ApiNodeIdentifier) {
     const { spaceId, projectId } = this.globalState;
     return workflowQueryClient.fetchQuery({
       queryKey: [

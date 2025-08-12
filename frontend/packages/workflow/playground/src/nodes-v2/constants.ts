@@ -17,6 +17,7 @@
 import { VARIABLE_MERGE_NODE_REGISTRY } from '@/nodes-v2/variable-merge';
 import { VARIABLE_ASSIGN_NODE_REGISTRY } from '@/nodes-v2/variable-assign';
 import { LLM_NODE_REGISTRY } from '@/nodes-v2/llm';
+import { CARD_SELECTOR_NODE_REGISTRY } from '@/node-registries/card-selector';
 import {
   CODE_NODE_REGISTRY,
   COMMENT_NODE_REGISTRY,
@@ -117,5 +118,6 @@ export const NODES_V2 = [
   TEXT_PROCESS_NODE_REGISTRY,
   DATABASE_NODE_REGISTRY,
   VARIABLE_NODE_REGISTRY,
+  CARD_SELECTOR_NODE_REGISTRY,
 ];
 export const NODE_V2_TYPES = NODES_V2.map(r => r.type);

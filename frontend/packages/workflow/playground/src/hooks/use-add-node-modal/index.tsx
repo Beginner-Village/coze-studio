@@ -40,9 +40,14 @@ import { WorkflowPlaygroundContext } from '@/workflow-playground-context';
 import { WorkflowEditService } from '@/services';
 import { useSpaceId } from '@/hooks/use-space-id';
 import { useGlobalState } from '@/hooks/use-global-state';
+import { useCardSelectorModal } from '@/hooks/use-card-selector-modal';
 import { useNodeVersionService } from '@/hooks';
 
-import { createApiNodeInfo, createSubWorkflowNodeInfo } from './helper';
+import {
+  createApiNodeInfo,
+  createSubWorkflowNodeInfo,
+  createCardSelectorNodeInfo,
+} from './helper';
 
 const { Text } = Typography;
 
@@ -292,6 +297,45 @@ export const useAddNodeModal = (prevAddNodeRef: {
           }
         : undefined,
   });
+
+  // 卡片选择器弹框
+  const {
+    node: cardSelectorModal,
+    open: openCardSelector,
+    close: closeCardSelector,
+  } = useCardSelectorModal({
+    closeCallback: onCloseModal,
+    openModeCallback: selectedCards => {
+      const templateIcon = playgroundContext.getNodeTemplateInfoByType(
+        StandardNodeType.CardSelector,
+      )?.icon;
+
+      const nodeJSON = createCardSelectorNodeInfo(selectedCards, templateIcon);
+      const position = {
+        clientX: prevAddNodeRef.current.x,
+        clientY: prevAddNodeRef.current.y,
+      };
+      const { isDrag } = prevAddNodeRef.current;
+
+      if (addNodeCallbackRef.current) {
+        addNodeCallbackRef.current({
+          nodeType: StandardNodeType.CardSelector,
+          nodeJSON,
+        });
+      } else {
+        editService.addNode(
+          StandardNodeType.CardSelector,
+          nodeJSON,
+          position,
+          isDrag,
+        );
+      }
+
+      Toast.success(`已添加卡片选择器，包含 ${selectedCards.length} 个卡片`);
+      return Promise.resolve(true);
+    },
+  });
+
   const wrapOpenFunc = function <T>(
     openFunc: (modalProps?: T) => void,
     closeFunc?: () => void,
@@ -339,5 +383,8 @@ export const useAddNodeModal = (prevAddNodeRef: {
 
     pluginModal,
     openPlugin: wrapOpenFunc(openPlugin, closePlugin),
+
+    cardSelectorModal,
+    openCardSelector: wrapOpenFunc(openCardSelector, closeCardSelector),
   };
 };
