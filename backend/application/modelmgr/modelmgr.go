@@ -29,11 +29,13 @@ import (
 	"github.com/coze-dev/coze-studio/backend/domain/model/service"
 	inframodelmgr "github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
 	"github.com/coze-dev/coze-studio/backend/infra/impl/storage"
+	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
 	"github.com/coze-dev/coze-studio/backend/pkg/i18n"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/sets"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
 	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	"github.com/coze-dev/coze-studio/backend/types/errno"
 )
 
 type ModelmgrApplicationService struct {
@@ -45,16 +47,28 @@ type ModelmgrApplicationService struct {
 
 var ModelmgrApplicationSVC = &ModelmgrApplicationService{}
 
-func (m *ModelmgrApplicationService) GetModelList(ctx context.Context, _ *developer_api.GetTypeListRequest) (
+func (m *ModelmgrApplicationService) GetModelList(ctx context.Context, req *developer_api.GetTypeListRequest) (
 	resp *developer_api.GetTypeListResponse, err error,
 ) {
 	// It is generally not possible to configure so many models simultaneously
 	const modelMaxLimit = 300
 
-	modelResp, err := m.Mgr.ListModel(ctx, &inframodelmgr.ListModelRequest{
+	// 构建查询请求，支持按 space_id 过滤
+	listRequest := &inframodelmgr.ListModelRequest{
 		Limit:  modelMaxLimit,
 		Cursor: nil,
-	})
+	}
+
+	// 如果提供了 space_id，则按空间过滤模型
+	if req.SpaceID != nil && *req.SpaceID != "" {
+		spaceID, err := strconv.ParseUint(*req.SpaceID, 10, 64)
+		if err != nil {
+			return nil, errorx.New(errno.ErrModelMgrInvalidParamCode, errorx.KV("field", "space_id"), errorx.KV("value", *req.SpaceID))
+		}
+		listRequest.SpaceID = &spaceID
+	}
+
+	modelResp, err := m.Mgr.ListModel(ctx, listRequest)
 	if err != nil {
 		return nil, err
 	}

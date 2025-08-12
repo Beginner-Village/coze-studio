@@ -30,7 +30,7 @@ import {
   Select,
   Search,
 } from '@coze-arch/coze-design';
-import { listModels } from '@coze-arch/bot-space-api';
+import { listModels, type ModelDetailOutput } from '@coze-arch/bot-space-api';
 
 // 基于新的API定义的模型类型，但保持数字ID兼容现有组件逻辑
 interface SpaceModel {
@@ -293,22 +293,24 @@ function useModelData(spaceId: string) {
       try {
         setLoading(true);
         // 直接使用新的模型管理API
-        const modelsData = await listModels({});
+        const modelsData = await listModels({ space_id: spaceId });
 
         if (modelsData) {
           // 将ModelDetailOutput转换为SpaceModel
-          const convertedModels: SpaceModel[] = modelsData.map(model => ({
-            id: parseInt(model.id) || 0, // 将string id转换为number
-            name: model.name || '',
-            description:
-              (model.description || {}).zh ||
-              (model.description || {}).en ||
-              '',
-            context_length: model.meta?.capability?.max_tokens || 0,
-            protocol: model.meta?.protocol || '',
-            icon_uri: model.icon_uri,
-            icon_url: model.icon_url,
-          }));
+          const convertedModels: SpaceModel[] = modelsData.map(
+            (model: ModelDetailOutput) => ({
+              id: parseInt(model.id) || 0, // 将string id转换为number
+              name: model.name || '',
+              description:
+                (model.description || {}).zh ||
+                (model.description || {}).en ||
+                '',
+              context_length: model.meta?.capability?.max_tokens || 0,
+              protocol: model.meta?.protocol || '',
+              icon_uri: model.icon_uri,
+              icon_url: model.icon_url,
+            }),
+          );
 
           setModels(convertedModels);
 
