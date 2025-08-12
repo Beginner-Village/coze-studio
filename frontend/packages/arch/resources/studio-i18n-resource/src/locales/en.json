@@ -1916,6 +1916,8 @@
   "navigation_workspace_library_plugins": "Plugins",
   "navigation_workspace_library_workflow": "Workflow",
   "navigation_workspace_library_knowledge": "Knowledge",
+  "navigation_workspace_library_prompt": "Prompt",
+  "navigation_workspace_library_database": "Database",
   "navigation_workspace_manage_title": "Manage",
   "navigation_workspace_manage_models": "Models",
   "navigation_workspace_members": "Members",

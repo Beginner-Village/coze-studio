@@ -106,6 +106,21 @@ export const WorkspaceSubMenu = () => {
       dataTestId: 'navigation_workspace_library_knowledge',
     },
     {
+      icon: <IconCozKnowledge />,
+      activeIcon: <IconCozKnowledgeFill />,
+      title: () => I18n.t('navigation_workspace_library_prompt', {}, 'Prompt'),
+      path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Prompt}`,
+      dataTestId: 'navigation_workspace_library_prompt',
+    },
+    {
+      icon: <IconCozKnowledge />,
+      activeIcon: <IconCozKnowledgeFill />,
+      title: () =>
+        I18n.t('navigation_workspace_library_database', {}, 'Database'),
+      path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Database}`,
+      dataTestId: 'navigation_workspace_library_database',
+    },
+    {
       type: 'title',
       title: () => I18n.t('navigation_workspace_manage_title', {}, 'Manage'),
     },

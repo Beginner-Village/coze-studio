@@ -1943,6 +1943,8 @@
   "navigation_workspace_library_plugins": "插件",
   "navigation_workspace_library_workflow": "工作流",
   "navigation_workspace_library_knowledge": "知识库",
+  "navigation_workspace_library_prompt": "提示词",
+  "navigation_workspace_library_database": "数据库",
   "navigation_workspace_manage_title": "管理",
   "navigation_workspace_manage_models": "模型管理",
   "navigation_workspace_members": "成员管理",

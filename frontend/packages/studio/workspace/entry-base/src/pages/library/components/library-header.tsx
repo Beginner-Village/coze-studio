@@ -150,8 +150,15 @@ const processImportFile = async (
 export const LibraryHeader: React.FC<{
   entityConfigs: LibraryEntityConfig[];
   spaceId: string;
+  sourceType: number;
   onRefresh?: () => void;
-}> = ({ entityConfigs, spaceId, onRefresh }) => {
+}> = ({ entityConfigs, spaceId, sourceType, onRefresh }) => {
+  const currentEntityFilter = entityConfigs.find(
+    item => item.typeFilter?.value === sourceType,
+  ).typeFilter;
+  const currentEntityTitle =
+    currentEntityFilter.filterName || currentEntityFilter.label;
+
   const { importWorkflow, validateImportPackage } = useWorkflowImportExport({
     spaceId,
     onSuccess: () => {
@@ -179,9 +186,7 @@ export const LibraryHeader: React.FC<{
 
   return (
     <div className="flex items-center justify-between mb-[16px]">
-      <div className="font-[500] text-[20px]">
-        {I18n.t('navigation_workspace_library')}
-      </div>
+      <div className="font-[500] text-[20px]">{currentEntityTitle}</div>
       <div className="flex items-center gap-2">
         <Upload
           accept=".json"

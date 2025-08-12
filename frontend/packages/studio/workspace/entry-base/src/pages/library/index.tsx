@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 /*
  * Copyright 2025 coze-dev Authors
  *
@@ -74,8 +75,10 @@ export const BaseLibraryPage = forwardRef<
       });
 
     const resType = Number(sourceType);
-    const restTypeFilter =
-      resType === ResType.Knowledge ? [resType, -1] : [resType];
+    // const restTypeFilter =
+    //   resType === ResType.Knowledge
+    //     ? [resType, params.res_type_filter?.[1]]
+    //     : [resType];
 
     const listResp = useInfiniteScroll<ListData>(
       async prev => {
@@ -95,7 +98,7 @@ export const BaseLibraryPage = forwardRef<
               ...params,
               res_type_filter:
                 typeFilter === ResType.Knowledge
-                  ? [typeFilter, -1]
+                  ? [typeFilter, params.res_type_filter?.[1] ?? -1]
                   : [typeFilter],
               cursor: prev?.nextCursorId,
               space_id: spaceId,
@@ -124,10 +127,13 @@ export const BaseLibraryPage = forwardRef<
       isPersonalSpace,
     });
 
-    const typeFilterData = [
-      { label: I18n.t('library_filter_tags_all_types'), value: -1 },
-      ...entityConfigs.map(item => item.typeFilter).filter(filter => !!filter),
-    ];
+    // const typeFilterData = [
+    //   { label: I18n.t('library_filter_tags_all_types'), value: -1 },
+    //   ...entityConfigs.map(item => item.typeFilter).filter(filter => !!filter),
+    // ];
+    const knowledgeFilterData =
+      entityConfigs.find(item => item?.typeFilter?.value === ResType.Knowledge)
+        ?.typeFilter?.children || [];
     const scopeOptions = getScopeOptions();
     const statusOptions = getStatusOptions();
 
@@ -141,6 +147,7 @@ export const BaseLibraryPage = forwardRef<
             <LibraryHeader
               entityConfigs={entityConfigs}
               spaceId={spaceId}
+              sourceType={resType}
               onRefresh={listResp.reload}
             />
             <div className="flex items-center justify-between">
@@ -172,6 +179,20 @@ export const BaseLibraryPage = forwardRef<
                     }));
                   }}
                 /> */}
+                {resType === ResType.Knowledge && (
+                  <Select
+                    data-testid="workspace.library.filter.type"
+                    className={s.select}
+                    value={params.res_type_filter?.[1] ?? -1}
+                    optionList={knowledgeFilterData}
+                    onChange={v => {
+                      setParams(prev => ({
+                        ...prev,
+                        res_type_filter: [ResType.Knowledge, v],
+                      }));
+                    }}
+                  />
+                )}
                 {!isPersonalSpace ? (
                   <Select
                     data-testid="workspace.library.filter.user"
