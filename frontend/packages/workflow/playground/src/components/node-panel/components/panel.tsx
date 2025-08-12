@@ -101,7 +101,7 @@ export const NodePanel: FC<NodePanelRenderProps> = props => {
     openPlugin,
     openWorkflow,
     openImageflow,
-    openCardSelector,
+    // openCardSelector, // 不再使用，CardSelector现在直接添加
     updateAddNodePosition,
   } = useAddNodeModalContext();
 
@@ -172,7 +172,7 @@ export const NodePanel: FC<NodePanelRenderProps> = props => {
         StandardNodeType.Api,
         StandardNodeType.SubWorkflow,
         StandardNodeType.Imageflow,
-        StandardNodeType.CardSelector,
+        // StandardNodeType.CardSelector, // 已移除，现在CardSelector直接添加
       ].includes(nodeType as StandardNodeType)
     ) {
       updateAddNodePosition?.({ ...position, isDrag: false });
@@ -214,11 +214,12 @@ export const NodePanel: FC<NodePanelRenderProps> = props => {
           },
         });
       } else if (nodeType === StandardNodeType.CardSelector) {
-        openCardSelector?.({
-          onAdd,
-          onClose: onCloseModal,
-          closeOnAdd: !panelProps?.enableModalMultiAdd,
-        });
+        // CardSelector弹窗逻辑已删除，现在直接添加
+        // openCardSelector?.({
+        //   onAdd,
+        //   onClose: onCloseModal,
+        //   closeOnAdd: !panelProps?.enableModalMultiAdd,
+        // });
       } else {
         ({
           [StandardNodeType.Imageflow]: openImageflow,

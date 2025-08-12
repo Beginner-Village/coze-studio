@@ -144,16 +144,16 @@ export const useAddNode = () => {
       return handleAddSubWorkflow(item, coord, isDrag);
     }
 
-    if (nodeType === StandardNodeType.CardSelector) {
-      // Record the historical location and open the card selector popup
-      prevAddNodeRef.current = {
-        x: coord.x,
-        y: coord.y,
-        isDrag,
-      };
-      openCardSelector();
-      return;
-    }
+    // CardSelector 弹窗逻辑已删除，现在直接添加节点
+    // if (nodeType === StandardNodeType.CardSelector) {
+    //   prevAddNodeRef.current = {
+    //     x: coord.x,
+    //     y: coord.y,
+    //     isDrag,
+    //   };
+    //   openCardSelector();
+    //   return;
+    // }
 
     // Node add panel, drag and drop to add ordinary nodes
     editService.addNode(
