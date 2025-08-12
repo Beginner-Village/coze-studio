@@ -770,7 +770,7 @@ export const IconBotKnowledgeActive = IconFactory(
 );
 export const IconBotPrompt = IconFactory(<SvgIconBotPrompt />);
 export const IconBotPromptActive = IconFactory(<SvgIconBotPromptActive />);
-export const IconBotDatabase = IconFactory(<SvgIconBotDatabase />);
+export const IconBotDatabaseDefault = IconFactory(<SvgIconBotDatabase />);
 export const IconBotDatabaseActive = IconFactory(<SvgIconBotDatabaseActive />);
 export const IconBotModel = IconFactory(<SvgIconBotModel />);
 export const IconBotModelActive = IconFactory(<SvgIconBotModelActive />);

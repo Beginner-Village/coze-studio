@@ -22,16 +22,16 @@ import {
 } from '@coze-foundation/space-ui-base';
 import { useSpaceStore } from '@coze-foundation/space-store';
 import { I18n } from '@coze-arch/i18n';
-import {
-  // IconCozBot,
-  // IconCozBotFill,
-  // IconCozKnowledge,
-  // IconCozKnowledgeFill,
-  IconCozPeople,
-  IconCozPeopleFill,
-  // IconCozSetting,
-  // IconCozSettingFill,
-} from '@coze-arch/coze-design/icons';
+// import {
+//   IconCozBot,
+//   IconCozBotFill,
+//   IconCozKnowledge,
+//   IconCozKnowledgeFill,
+//   IconCozPeople,
+//   IconCozPeopleFill,
+//   IconCozSetting,
+//   IconCozSettingFill,
+// } from '@coze-arch/coze-design/icons';
 import {
   IconBotDevelop,
   IconBotDevelopActive,
@@ -41,12 +41,14 @@ import {
   IconBotKnowledgeActive,
   IconBotPrompt,
   IconBotPromptActive,
-  IconBotDatabase,
+  IconBotDatabaseDefault,
   IconBotDatabaseActive,
   IconBotModel,
   IconBotModelActive,
   IconBotWorkflow,
   IconBotWorkflowActive,
+  IconBotMember,
+  IconBotMemberActive,
 } from '../../../../../components/bot-icons';
 import { useRouteConfig } from '@coze-arch/bot-hooks';
 import { ResType } from '@coze-arch/idl/plugin_develop';
@@ -125,7 +127,7 @@ export const WorkspaceSubMenu = () => {
       dataTestId: 'navigation_workspace_library_prompt',
     },
     {
-      icon: <IconBotDatabase />,
+      icon: <IconBotDatabaseDefault />,
       activeIcon: <IconBotDatabaseActive />,
       title: () =>
         I18n.t('navigation_workspace_library_database', {}, 'Database'),
@@ -144,8 +146,8 @@ export const WorkspaceSubMenu = () => {
       dataTestId: 'navigation_workspace_models',
     },
     {
-      icon: <IconCozPeople />,
-      activeIcon: <IconCozPeopleFill />,
+      icon: <IconBotMember />,
+      activeIcon: <IconBotMemberActive />,
       title: () => I18n.t('navigation_workspace_members', {}, 'Members'),
       path: SpaceSubModuleEnum.MEMBERS,
       dataTestId: 'navigation_workspace_members',
