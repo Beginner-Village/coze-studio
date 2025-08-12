@@ -62,7 +62,7 @@ const lightModeVariables = {
   'coze-shadow-0': '0, 0, 0',
   'coze-brand-50': '102, 108, 255',
   'coze-brand-30': '163, 166, 255',
-  'coze-brand-7': '65, 43, 255',
+  'coze-brand-7': '14, 97, 212',
   'coze-brand-6': '14, 97, 212',
   'coze-brand-5': '53, 138, 255',
   'coze-brand-3': '150, 159, 255',

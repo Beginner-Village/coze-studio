@@ -18,8 +18,9 @@ import React from 'react';
 
 import { useWorkflowImportExport } from '@coze-workflow/components';
 import { I18n } from '@coze-arch/i18n';
+import { ResType } from '@coze-arch/idl/plugin_develop';
 import { IconCozPlus, IconCozImport } from '@coze-arch/coze-design/icons';
-import { Button, Menu, Upload, Toast } from '@coze-arch/coze-design';
+import { Button, Upload, Toast } from '@coze-arch/coze-design';
 
 import { type LibraryEntityConfig } from '../types';
 
@@ -156,7 +157,6 @@ export const LibraryHeader: React.FC<{
   const menuConfig = entityConfigs.find(
     item => item.typeFilter?.value === sourceType,
   );
-  console.log('🚀 ~ LibraryHeader ~ getBtnMenu:', menuConfig);
   const currentEntityFilter = entityConfigs.find(
     item => item.typeFilter?.value === sourceType,
   ).typeFilter;
@@ -250,6 +250,19 @@ export const LibraryHeader: React.FC<{
             (menuConfig?.typeFilter?.filterName ||
               menuConfig?.typeFilter?.label)}
         </Button>
+        {sourceType === ResType.Workflow && (
+          <Button
+            theme="solid"
+            type="primary"
+            icon={<IconCozPlus />}
+            data-testid="workspace.library.header.create"
+            onClick={() => {
+              menuConfig?.onCreate?.(true);
+            }}
+          >
+            {I18n.t('wf_chatflow_100') + I18n.t('wf_chatflow_76')}
+          </Button>
+        )}
         {/* <Menu
           position="bottomRight"
           className="w-120px mt-4px mb-4px"
