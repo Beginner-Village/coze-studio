@@ -11171,6 +11171,7 @@ export type I18nKeysNoOptionsType =
   | 'open_source_login_placeholder_email'
   | 'open_source_login_placeholder_password'
   | 'open_source_login_welcome'
+  | 'open_source_login_slogan'
   | 'open_source_terms_linkname'
   | 'openapi_(fill_in_yaml)_*'
   | 'openapi_auth_app_auth_required'
