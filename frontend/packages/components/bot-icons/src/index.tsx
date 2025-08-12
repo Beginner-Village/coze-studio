@@ -333,6 +333,20 @@ import { ReactComponent as SvgIconBotWorkspace } from './assets/icons/icon-works
 import { ReactComponent as SvgIconBotWorkspaceFill } from './assets/icons/icon-workspace-fill.svg';
 import { ReactComponent as SvgIconBotDevelop } from './assets/icons/icon-develop-default.svg';
 import { ReactComponent as SvgIconBotDevelopActive } from './assets/icons/icon-develop-active.svg';
+import { ReactComponent as SvgIconBotPlugin } from './assets/icons/icon-plugin-default.svg';
+import { ReactComponent as SvgIconBotPluginActive } from './assets/icons/icon-plugin-active.svg';
+import { ReactComponent as SvgIconBotKnowledge } from './assets/icons/icon-knowledge-default.svg';
+import { ReactComponent as SvgIconBotKnowledgeActive } from './assets/icons/icon-knowledge-active.svg';
+import { ReactComponent as SvgIconBotPrompt } from './assets/icons/icon-prompt-default.svg';
+import { ReactComponent as SvgIconBotPromptActive } from './assets/icons/icon-prompt-active.svg';
+import { ReactComponent as SvgIconBotDatabase } from './assets/icons/icon-database-default.svg';
+import { ReactComponent as SvgIconBotDatabaseActive } from './assets/icons/icon-database-active.svg';
+import { ReactComponent as SvgIconBotModel } from './assets/icons/icon-model-default.svg';
+import { ReactComponent as SvgIconBotModelActive } from './assets/icons/icon-model-active.svg';
+import { ReactComponent as SvgIconBotWorkflow } from './assets/icons/icon-workflow-default.svg';
+import { ReactComponent as SvgIconBotWorkflowActive } from './assets/icons/icon-workflow-active.svg';
+import { ReactComponent as SvgIconBotMember } from './assets/icons/icon-member-default.svg';
+import { ReactComponent as SvgIconBotMemberActive } from './assets/icons/icon-member-active.svg';
 
 import { ReactComponent as SvgIconBotMenuLogoText } from './assets/icons/icon-menu-logo-text.svg';
 import { ReactComponent as SvgIconBotMenuLogoTextCN } from './assets/icons/icon-menu-logo-text-cn.svg';
@@ -748,6 +762,22 @@ export const IconBotTemplate = IconFactory(<SvgIconBotTemplate />);
 export const IconBotTemplateFill = IconFactory(<SvgIconBotTemplateFill />);
 export const IconBotDevelop = IconFactory(<SvgIconBotDevelop />);
 export const IconBotDevelopActive = IconFactory(<SvgIconBotDevelopActive />);
+export const IconBotPlugin = IconFactory(<SvgIconBotPlugin />);
+export const IconBotPluginActive = IconFactory(<SvgIconBotPluginActive />);
+export const IconBotKnowledge = IconFactory(<SvgIconBotKnowledge />);
+export const IconBotKnowledgeActive = IconFactory(
+  <SvgIconBotKnowledgeActive />,
+);
+export const IconBotPrompt = IconFactory(<SvgIconBotPrompt />);
+export const IconBotPromptActive = IconFactory(<SvgIconBotPromptActive />);
+export const IconBotDatabase = IconFactory(<SvgIconBotDatabase />);
+export const IconBotDatabaseActive = IconFactory(<SvgIconBotDatabaseActive />);
+export const IconBotModel = IconFactory(<SvgIconBotModel />);
+export const IconBotModelActive = IconFactory(<SvgIconBotModelActive />);
+export const IconBotWorkflow = IconFactory(<SvgIconBotWorkflow />);
+export const IconBotWorkflowActive = IconFactory(<SvgIconBotWorkflowActive />);
+export const IconBotMember = IconFactory(<SvgIconBotMember />);
+export const IconBotMemberActive = IconFactory(<SvgIconBotMemberActive />);
 
 export const IconChatHashtag = IconFactory(<SvgChatHashtag />);
 export const IconMenuLogoText = IconFactory(<SvgIconBotMenuLogoText />);

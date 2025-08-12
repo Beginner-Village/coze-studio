@@ -20,6 +20,8 @@ import { Space, Avatar, Typography } from '@coze-arch/coze-design';
 import { type BotSpace } from '@coze-arch/bot-api/developer_api';
 
 import { CreateSpaceModal } from '../create-space-modal';
+import cls from 'classnames';
+import styles from './index.module.less';
 
 // 常量定义
 const ROLE_TYPE = {
@@ -209,7 +211,9 @@ const MainButton = ({ currentSpace, onClick }: MainButtonProps) => (
       >
         {currentSpace?.name || ''}
       </Typography.Text>
-      <span className="text-[12px] coz-fg-tertiary">▼</span>
+      <span
+        className={cls('text-[12px]', 'coz-fg-tertiary', styles.dropdown)}
+      ></span>
     </Space>
   </div>
 );

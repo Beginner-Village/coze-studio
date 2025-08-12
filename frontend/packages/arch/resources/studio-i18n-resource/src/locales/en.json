@@ -2946,6 +2946,7 @@
   "wf_chatflow_97": "Description",
   "wf_chatflow_98": "Help the LLM accurately understand the function of the parameter",
   "wf_chatflow_99": "Parameter default value, when this parameter is not passed, the default value will be used",
+  "wf_chatflow_100": "Create",
   "wf_history_rounds": "Rounds",
   "wf_node_add_wf_modal_tip_must_publish_to_add": "Add bot after publishing the workflow",
   "wf_node_add_wf_modal_toast_wf_added": "{workflowName} is added",

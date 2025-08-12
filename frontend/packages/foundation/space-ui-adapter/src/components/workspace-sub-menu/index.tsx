@@ -23,18 +23,30 @@ import {
 import { useSpaceStore } from '@coze-foundation/space-store';
 import { I18n } from '@coze-arch/i18n';
 import {
-  IconCozBot,
-  IconCozBotFill,
-  IconCozKnowledge,
-  IconCozKnowledgeFill,
+  // IconCozBot,
+  // IconCozBotFill,
+  // IconCozKnowledge,
+  // IconCozKnowledgeFill,
   IconCozPeople,
   IconCozPeopleFill,
-  IconCozSetting,
-  IconCozSettingFill,
+  // IconCozSetting,
+  // IconCozSettingFill,
 } from '@coze-arch/coze-design/icons';
 import {
   IconBotDevelop,
   IconBotDevelopActive,
+  IconBotPlugin,
+  IconBotPluginActive,
+  IconBotKnowledge,
+  IconBotKnowledgeActive,
+  IconBotPrompt,
+  IconBotPromptActive,
+  IconBotDatabase,
+  IconBotDatabaseActive,
+  IconBotModel,
+  IconBotModelActive,
+  IconBotWorkflow,
+  IconBotWorkflowActive,
 } from '../../../../../components/bot-icons';
 import { useRouteConfig } from '@coze-arch/bot-hooks';
 import { ResType } from '@coze-arch/idl/plugin_develop';
@@ -82,39 +94,39 @@ export const WorkspaceSubMenu = () => {
     //   dataTestId: 'navigation_workspace_library',
     // },
     {
-      icon: <IconCozKnowledge />,
-      activeIcon: <IconCozKnowledgeFill />,
+      icon: <IconBotWorkflow />,
+      activeIcon: <IconBotWorkflowActive />,
       title: () =>
         I18n.t('navigation_workspace_library_workflow', {}, 'Workflow'),
       path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Workflow}`,
       dataTestId: 'navigation_workspace_library_workflow',
     },
     {
-      icon: <IconCozKnowledge />,
-      activeIcon: <IconCozKnowledgeFill />,
+      icon: <IconBotPlugin />,
+      activeIcon: <IconBotPluginActive />,
       title: () =>
         I18n.t('navigation_workspace_library_plugins', {}, 'Plugins'),
       path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Plugin}`,
       dataTestId: 'navigation_workspace_library_plugins',
     },
     {
-      icon: <IconCozKnowledge />,
-      activeIcon: <IconCozKnowledgeFill />,
+      icon: <IconBotKnowledge />,
+      activeIcon: <IconBotKnowledgeActive />,
       title: () =>
         I18n.t('navigation_workspace_library_knowledge', {}, 'Knowledge'),
       path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Knowledge}`,
       dataTestId: 'navigation_workspace_library_knowledge',
     },
     {
-      icon: <IconCozKnowledge />,
-      activeIcon: <IconCozKnowledgeFill />,
+      icon: <IconBotPrompt />,
+      activeIcon: <IconBotPromptActive />,
       title: () => I18n.t('navigation_workspace_library_prompt', {}, 'Prompt'),
       path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Prompt}`,
       dataTestId: 'navigation_workspace_library_prompt',
     },
     {
-      icon: <IconCozKnowledge />,
-      activeIcon: <IconCozKnowledgeFill />,
+      icon: <IconBotDatabase />,
+      activeIcon: <IconBotDatabaseActive />,
       title: () =>
         I18n.t('navigation_workspace_library_database', {}, 'Database'),
       path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Database}`,
@@ -125,8 +137,8 @@ export const WorkspaceSubMenu = () => {
       title: () => I18n.t('navigation_workspace_manage_title', {}, 'Manage'),
     },
     {
-      icon: <IconCozSetting />,
-      activeIcon: <IconCozSettingFill />,
+      icon: <IconBotModel />,
+      activeIcon: <IconBotModelActive />,
       title: () => I18n.t('navigation_workspace_manage_models', {}, 'Models'),
       path: SpaceSubModuleEnum.MODELS,
       dataTestId: 'navigation_workspace_models',

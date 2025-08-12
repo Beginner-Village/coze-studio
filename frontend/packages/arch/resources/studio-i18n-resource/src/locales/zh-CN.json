@@ -2994,6 +2994,7 @@
   "wf_chatflow_97": "描述",
   "wf_chatflow_98": "帮助大模型准确了解参数的作用",
   "wf_chatflow_99": "参数默认值，在没有传入该参数时，将使用默认值",
+  "wf_chatflow_100": "创建",
   "wf_history_rounds": "会话轮数",
   "wf_node_add_wf_modal_tip_must_publish_to_add": "发布之后才能添加至工作流",
   "wf_node_add_wf_modal_toast_wf_added": "工作流 {workflowName} 已添加",

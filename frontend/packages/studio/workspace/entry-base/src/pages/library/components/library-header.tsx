@@ -153,6 +153,10 @@ export const LibraryHeader: React.FC<{
   sourceType: number;
   onRefresh?: () => void;
 }> = ({ entityConfigs, spaceId, sourceType, onRefresh }) => {
+  const menuConfig = entityConfigs.find(
+    item => item.typeFilter?.value === sourceType,
+  );
+  console.log('🚀 ~ LibraryHeader ~ getBtnMenu:', menuConfig);
   const currentEntityFilter = entityConfigs.find(
     item => item.typeFilter?.value === sourceType,
   ).typeFilter;
@@ -230,10 +234,23 @@ export const LibraryHeader: React.FC<{
             icon={<IconCozImport />}
             data-testid="workspace.library.header.import"
           >
-            Import
+            {I18n.t('import')}
           </Button>
         </Upload>
-        <Menu
+        <Button
+          theme="solid"
+          type="primary"
+          icon={<IconCozPlus />}
+          data-testid="workspace.library.header.create"
+          onClick={() => {
+            menuConfig?.onCreate?.();
+          }}
+        >
+          {I18n.t('wf_chatflow_100') +
+            (menuConfig?.typeFilter?.filterName ||
+              menuConfig?.typeFilter?.label)}
+        </Button>
+        {/* <Menu
           position="bottomRight"
           className="w-120px mt-4px mb-4px"
           render={
@@ -254,7 +271,7 @@ export const LibraryHeader: React.FC<{
           >
             {I18n.t('library_resource')}
           </Button>
-        </Menu>
+        </Menu> */}
       </div>
     </div>
   );
