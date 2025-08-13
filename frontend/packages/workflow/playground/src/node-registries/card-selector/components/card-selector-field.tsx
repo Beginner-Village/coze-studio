@@ -16,298 +16,275 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 
-import { useField, withField } from '@/form';
+import type { Parameter } from '@coze-workflow/base';
+import { workflow } from '@coze-studio/api-schema';
 
-import type { CardSelectorParams, FalconCard } from '../types';
+import { useField, withField, useForm } from '@/form';
+
+import type {
+  CardSelectorParams,
+  FalconCard,
+  CardDetail,
+  CardParam,
+} from '../types';
+import { INPUT_PATH } from '../constants';
+import { SelectedCardInfo } from './selected-card-info';
+import { CardSelector } from './card-selector';
 
 interface CardSelectorFieldProps {
   tooltip?: string;
 }
 
+// 将卡片参数类型转换为workflow参数类型
+const convertCardParamType = (cardParamType: string): string => {
+  switch (cardParamType.toLowerCase()) {
+    case 'string':
+      return 'str';
+    case 'number':
+    case 'int':
+    case 'integer':
+      return 'int';
+    case 'boolean':
+    case 'bool':
+      return 'bool';
+    case 'array':
+      return 'array';
+    case 'object':
+      return 'object';
+    default:
+      return 'str';
+  }
+};
+
+// 递归转换卡片参数为workflow输入参数
+const convertCardParamsToInputs = (cardParams: CardParam[]): Parameter[] => {
+  const convertParam = (param: CardParam): Parameter => {
+    const baseParam: Parameter = {
+      name: param.paramName,
+      type: convertCardParamType(param.paramType),
+      description: param.paramDesc,
+      required: param.isRequired === '1',
+    };
+
+    // 如果有子参数（对于array或object类型）
+    if (param.children && param.children.length > 0) {
+      if (param.paramType.toLowerCase() === 'array') {
+        // 对于数组类型，取第一个子参数作为数组元素的结构
+        const firstChild = param.children[0];
+        if (firstChild.children && firstChild.children.length > 0) {
+          // 如果数组元素是对象，生成对象结构描述
+          const childFields = firstChild.children.map(child => ({
+            name: child.paramName,
+            type: convertCardParamType(child.paramType),
+            description: child.paramDesc,
+            required: child.isRequired === '1',
+          }));
+          baseParam.schema = {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: childFields.reduce(
+                (props: Record<string, unknown>, field) => {
+                  props[field.name] = {
+                    type: field.type,
+                    description: field.description,
+                  };
+                  return props;
+                },
+                {},
+              ),
+              required: childFields.filter(f => f.required).map(f => f.name),
+            },
+          };
+        }
+      } else if (param.paramType.toLowerCase() === 'object') {
+        // 对于对象类型，递归处理子参数
+        const childParams = convertCardParamsToInputs(param.children);
+        baseParam.schema = {
+          type: 'object',
+          properties: childParams.reduce(
+            (props: Record<string, unknown>, child) => {
+              props[child.name] = {
+                type: child.type,
+                description: child.description,
+              };
+              return props;
+            },
+            {},
+          ),
+          required: childParams.filter(p => p.required).map(p => p.name),
+        };
+      }
+    }
+
+    return baseParam;
+  };
+
+  return cardParams.map(convertParam);
+};
+
 export const CardSelectorField = withField(
   ({ tooltip }: CardSelectorFieldProps) => {
     const { value, onChange, errors } = useField<CardSelectorParams>();
+    const form = useForm();
 
     const [cards, setCards] = useState<FalconCard[]>([]);
     const [loading, setLoading] = useState(false);
-    const [searchKeyword, setSearchKeyword] = useState(
-      value?.searchKeyword || '',
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [selectedCard, setSelectedCard] = useState<FalconCard | null>(null);
+    const [cardDetail, setCardDetail] = useState<CardDetail | null>(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
+
+    // Fetch cards from backend API
+    const fetchCards = useCallback(
+      async (searchValue = '') => {
+        setLoading(true);
+        try {
+          // 使用默认API地址
+          const apiEndpoint = 'http://10.10.10.208:8500/aop-web';
+
+          // 使用生成的API客户端调用后端卡片列表 API
+          const result = await workflow.GetCardList({
+            apiEndpoint,
+            searchKeyword: searchValue || '',
+            filters: {},
+          });
+
+          if (result.code === 0 && result.data) {
+            setCards(result.data.cardList || []);
+          } else {
+            throw new Error(result.message || 'Failed to fetch card list');
+          }
+        } catch (error) {
+          console.error('Failed to fetch card list:', error);
+          setCards([]);
+        } finally {
+          setLoading(false);
+        }
+      },
+      [],
     );
 
-    // Fetch cards from API
-    const fetchCards = useCallback((keyword = '') => {
-      setLoading(true);
-      try {
-        // Mock API call - replace with actual API endpoint
-        const mockCards: FalconCard[] = [
-          {
-            id: 'card_001',
-            name: '用户注册卡片',
-            description: '处理用户注册相关功能的卡片',
-            category: 'user_management',
-          },
-          {
-            id: 'card_002',
-            name: '数据分析卡片',
-            description: '提供数据分析和报表生成功能',
-            category: 'analytics',
-          },
-          {
-            id: 'card_003',
-            name: '消息通知卡片',
-            description: '发送各种类型的消息通知',
-            category: 'notification',
-          },
-          {
-            id: 'card_004',
-            name: '文件处理卡片',
-            description: '处理文件上传、下载和转换功能',
-            category: 'file_management',
-          },
-          {
-            id: 'card_005',
-            name: '支付处理卡片',
-            description: '集成支付网关，处理支付流程',
-            category: 'payment',
-          },
-        ];
+    // Fetch card details by ID from backend API
+    const fetchCardDetail = useCallback(
+      async (cardId: string) => {
+        setLoadingDetail(true);
+        try {
+          // 使用默认API地址
+          const apiEndpoint = 'http://10.10.10.208:8500/aop-web';
 
-        // Simple keyword filtering
-        let filteredCards = mockCards;
-        if (keyword.trim()) {
-          const lowerKeyword = keyword.toLowerCase();
-          filteredCards = mockCards.filter(
-            card =>
-              card.name.toLowerCase().includes(lowerKeyword) ||
-              card.description.toLowerCase().includes(lowerKeyword) ||
-              (card.category &&
-                card.category.toLowerCase().includes(lowerKeyword)),
-          );
+          // 使用生成的API客户端调用后端卡片详情 API
+          const result = await workflow.GetCardDetail({
+            apiEndpoint,
+            cardId,
+          });
+
+          if (result.code === 0 && result.data) {
+            setCardDetail(result.data);
+
+            // 自动更新输入参数配置
+            if (
+              result.data.paramList &&
+              result.data.paramList.length > 0
+            ) {
+              const convertedParams = convertCardParamsToInputs(
+                result.data.paramList,
+              );
+
+              // 更新表单中的输入参数
+              form.setFieldValue(INPUT_PATH, convertedParams);
+            }
+          } else {
+            throw new Error(result.message || 'Failed to fetch card detail');
+          }
+        } catch (error) {
+          console.error('Failed to fetch card detail:', error);
+          setCardDetail(null);
+        } finally {
+          setLoadingDetail(false);
         }
-
-        setCards(filteredCards);
-      } catch (error) {
-        console.error('Failed to fetch cards:', error);
-        setCards([]);
-      } finally {
-        setLoading(false);
-      }
-    }, []);
-
-    // Handle search keyword change
-    const handleSearchChange = useCallback(
-      (searchValue: string) => {
-        setSearchKeyword(searchValue);
-        onChange({
-          ...value,
-          searchKeyword: searchValue,
-        });
       },
-      [value, onChange],
+      [form],
     );
 
     // Handle card selection
     const handleCardSelect = useCallback(
-      (cardId: string) => {
+      async (card: FalconCard) => {
+        setSelectedCard(card);
+        setShowDropdown(false);
+        setSearchKeyword('');
+
         onChange({
           ...value,
-          selectedCardId: cardId,
-          searchKeyword,
+          selectedCardId: card.cardId,
         });
+
+        // Fetch card details by ID
+        await fetchCardDetail(card.cardId);
       },
-      [value, onChange, searchKeyword],
+      [value, onChange, fetchCardDetail],
     );
 
-    // Handle API configuration
-    const handleApiConfigChange = useCallback(
-      (field: keyof CardSelectorParams) => (fieldValue: string) => {
-        onChange({
-          ...value,
-          [field]: fieldValue,
-        });
+
+    // Handle toggle dropdown
+    const handleToggleDropdown = useCallback(() => {
+      setShowDropdown(!showDropdown);
+      if (!showDropdown) {
+        fetchCards();
+      }
+    }, [showDropdown, fetchCards]);
+
+    // Handle search in dropdown
+    const handleSearchInDropdown = useCallback(
+      (searchValue: string) => {
+        setSearchKeyword(searchValue);
+        fetchCards(searchValue);
       },
-      [value, onChange],
+      [fetchCards],
     );
 
-    // Initial load
+    // Initialize card if selectedCardId exists
     useEffect(() => {
-      fetchCards(searchKeyword);
-    }, [fetchCards, searchKeyword]);
+      if (value?.selectedCardId && !selectedCard) {
+        // Find the card in current cards list
+        const found = cards.find(c => c.cardId === value.selectedCardId);
+        if (found) {
+          setSelectedCard(found);
+        }
+      }
+    }, [value?.selectedCardId, selectedCard, cards]);
 
     const feedbackText = errors?.[0]?.message || '';
 
+    // Log form validation errors to console for debugging
+    if (feedbackText) {
+      console.warn('⚠️ CardSelector Form Validation Error:', {
+        error: feedbackText,
+        fieldValue: value,
+        selectedCard,
+        cardDetail,
+      });
+    }
+
     return (
       <div style={{ width: '100%' }}>
-        {/* API Configuration */}
-        <div style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              fontSize: '12px',
-              fontWeight: 600,
-              marginBottom: 8,
-              color: 'var(--semi-color-text-0)',
-            }}
-          >
-            API配置
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <input
-              placeholder="API端点 (可选)"
-              value={value?.apiEndpoint || ''}
-              onChange={e =>
-                handleApiConfigChange('apiEndpoint')(e.target.value)
-              }
-              style={{
-                padding: '8px 12px',
-                border: '1px solid var(--semi-color-border)',
-                borderRadius: '6px',
-                fontSize: '14px',
-              }}
-            />
-            <input
-              type="password"
-              placeholder="API Key (可选)"
-              value={value?.apiKey || ''}
-              onChange={e => handleApiConfigChange('apiKey')(e.target.value)}
-              style={{
-                padding: '8px 12px',
-                border: '1px solid var(--semi-color-border)',
-                borderRadius: '6px',
-                fontSize: '14px',
-              }}
-            />
-          </div>
-        </div>
+        <CardSelector
+          selectedCard={selectedCard}
+          showDropdown={showDropdown}
+          loading={loading}
+          cards={cards}
+          searchKeyword={searchKeyword}
+          onToggleDropdown={handleToggleDropdown}
+          onCardSelect={handleCardSelect}
+          onSearchChange={handleSearchInDropdown}
+        />
 
-        {/* Card Search */}
-        <div style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              fontSize: '12px',
-              fontWeight: 600,
-              marginBottom: 8,
-              color: 'var(--semi-color-text-0)',
-            }}
-          >
-            搜索卡片
-          </div>
-          <input
-            placeholder="输入关键词搜索卡片..."
-            value={searchKeyword}
-            onChange={e => handleSearchChange(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid var(--semi-color-border)',
-              borderRadius: '6px',
-              fontSize: '14px',
-            }}
-          />
-        </div>
-
-        {/* Card Selection */}
-        <div style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              fontSize: '12px',
-              fontWeight: 600,
-              marginBottom: 8,
-              color: 'var(--semi-color-text-0)',
-            }}
-          >
-            选择卡片
-          </div>
-
-          {loading ? (
-            <div
-              style={{
-                padding: '20px',
-                textAlign: 'center',
-                color: 'var(--semi-color-text-2)',
-                border: '1px solid var(--semi-color-border)',
-                borderRadius: '6px',
-              }}
-            >
-              加载中...
-            </div>
-          ) : (
-            <select
-              value={value?.selectedCardId || ''}
-              onChange={e => handleCardSelect(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '1px solid var(--semi-color-border)',
-                borderRadius: '6px',
-                fontSize: '14px',
-                background: 'var(--semi-color-bg-0)',
-              }}
-            >
-              <option value="">选择一个卡片...</option>
-              {cards.map(card => (
-                <option key={card.id} value={card.id}>
-                  {card.name} - {card.description}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* Selected Card Info */}
-        {value?.selectedCardId ? (
-          <div
-            style={{
-              padding: '12px',
-              background: 'var(--semi-color-fill-0)',
-              borderRadius: '6px',
-              border: '1px solid var(--semi-color-border)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '12px',
-                fontWeight: 600,
-                marginBottom: 8,
-                color: 'var(--semi-color-text-0)',
-              }}
-            >
-              已选择的卡片
-            </div>
-            {(() => {
-              const selectedCard = cards.find(
-                c => c.id === value.selectedCardId,
-              );
-              if (selectedCard) {
-                return (
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 600 }}>
-                      {selectedCard.name}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: '12px',
-                        color: 'var(--semi-color-text-2)',
-                        marginTop: 4,
-                      }}
-                    >
-                      ID: {selectedCard.id}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: '12px',
-                        color: 'var(--semi-color-text-1)',
-                        marginTop: 4,
-                      }}
-                    >
-                      {selectedCard.description}
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            })()}
-          </div>
-        ) : null}
+        <SelectedCardInfo
+          selectedCard={selectedCard}
+          cardDetail={cardDetail}
+          loadingDetail={loadingDetail}
+        />
 
         {/* Error display */}
         {feedbackText ? (

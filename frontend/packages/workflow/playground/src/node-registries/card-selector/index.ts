@@ -18,9 +18,4 @@ export { CARD_SELECTOR_NODE_REGISTRY } from './node-registry';
 export { CardSelectorContent } from './node-content';
 export { CardSelectorField } from './components/card-selector-field';
 export { CardSelectorParams, FalconCard } from './types';
-export {
-  DEFAULT_INPUTS,
-  DEFAULT_OUTPUTS,
-  CARD_SELECTOR_PATH,
-  OUTPUT_PATH,
-} from './constants';
+export { CARD_SELECTOR_PATH, OUTPUT_PATH } from './constants';

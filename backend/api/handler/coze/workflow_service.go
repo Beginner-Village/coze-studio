@@ -1128,3 +1128,4 @@ func GetExampleWorkFlowList(ctx context.Context, c *app.RequestContext) {
 
 	c.JSON(consts.StatusOK, resp)
 }
+

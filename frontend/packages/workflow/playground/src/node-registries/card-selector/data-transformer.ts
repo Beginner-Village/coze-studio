@@ -17,21 +17,20 @@
 import { type NodeData } from '@coze-workflow/base';
 
 import { type FormData } from './types';
-import { DEFAULT_INPUTS, DEFAULT_OUTPUTS } from './constants';
+// import { DEFAULT_INPUTS, DEFAULT_OUTPUTS } from './constants';
 
 /**
  * Convert canvas data to form data
  */
 export function transformOnInit(data: NodeData): FormData {
   return {
-    inputParameters: data?.inputParameters || DEFAULT_INPUTS,
+    inputParameters: data?.inputParameters || [],
     cardSelectorParams: {
       selectedCardId: data?.cardSelectorParams?.selectedCardId || '',
-      searchKeyword: data?.cardSelectorParams?.searchKeyword || '',
       apiEndpoint: data?.cardSelectorParams?.apiEndpoint || '',
       apiKey: data?.cardSelectorParams?.apiKey || '',
     },
-    outputs: data?.outputs || DEFAULT_OUTPUTS,
+    outputs: data?.outputs || [],
   };
 }
 
@@ -40,16 +39,12 @@ export function transformOnInit(data: NodeData): FormData {
  */
 export function transformOnSubmit(data: FormData): NodeData {
   return {
-    inputParameters: data.inputParameters,
+    inputParameters: data.inputParameters || [],
     cardSelectorParams: {
       selectedCardId: data.cardSelectorParams?.selectedCardId || '',
-      searchKeyword: data.cardSelectorParams?.searchKeyword || '',
       apiEndpoint: data.cardSelectorParams?.apiEndpoint || '',
       apiKey: data.cardSelectorParams?.apiKey || '',
     },
-    outputs:
-      !data.outputs || data.outputs.length === 0
-        ? DEFAULT_OUTPUTS
-        : data.outputs,
+    outputs: data.outputs || [],
   };
 }

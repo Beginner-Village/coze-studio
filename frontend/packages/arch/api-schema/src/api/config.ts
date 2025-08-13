@@ -27,7 +27,7 @@ export function createAPI<
   return apiFactory<T, K, O, B>(meta, cancelable, false, {
     config: {
       clientFactory: _meta => async (uri, init, options) =>
-        axiosInstance.request({
+        await axiosInstance.request({
           url: uri,
           method: init.method ?? 'GET',
           data: ['POST', 'PUT', 'PATCH'].includes(

@@ -1505,3 +1505,13 @@ func _upload1Mw() []app.HandlerFunc {
 	// your code...
 	return nil
 }
+
+func _getcardlistMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
+func _getcarddetailMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}

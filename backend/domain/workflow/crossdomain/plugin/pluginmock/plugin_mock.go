@@ -103,7 +103,6 @@ func (mr *MockServiceMockRecorder) GetPluginToolsInfo(ctx, req any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPluginToolsInfo", reflect.TypeOf((*MockService)(nil).GetPluginToolsInfo), ctx, req)
 }
 
-
 // MockInvokableTool is a mock of InvokableTool interface.
 type MockInvokableTool struct {
 	ctrl     *gomock.Controller

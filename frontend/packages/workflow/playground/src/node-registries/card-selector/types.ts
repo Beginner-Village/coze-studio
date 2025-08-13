@@ -17,19 +17,68 @@
 import type { OutputTreeMeta, Parameter } from '@coze-workflow/base';
 
 export interface FalconCard {
-  id: string;
-  name: string;
-  description: string;
-  category?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  cardId: string;
+  cardName: string;
+  code: string;
+  cardClassId?: string;
+  cardPicUrl?: string;
+  cardShelfStatus?: string;
+  cardShelfTime?: string;
+  createUserId?: string;
+  createUserName?: string;
+  picUrl?: string;
+  sassAppId?: string;
+  sassWorkspaceId?: string;
+  bizChannel?: string;
+}
+
+export interface CardListResponse {
+  header: {
+    errorCode: string;
+    errorMsg: string;
+  };
+  body: {
+    cardList: FalconCard[];
+    pageNo: string;
+    pageSize: string;
+    totalNums: string;
+    totalPages: string;
+  };
+}
+
+export interface CardParam {
+  paramId: string;
+  paramName: string;
+  paramType: string;
+  paramDesc: string;
+  isRequired: string;
+  bizChannel?: string;
+  sassAppId?: string;
+  sassWorkspaceId?: string;
+  children?: CardParam[];
+}
+
+export interface CardDetail {
+  cardId: string;
+  cardName: string;
+  cardPicUrl: string;
+  code: string;
+  mainUrl: string;
+  paramList: CardParam[];
+  skeletonScreen: string;
+  version: string;
+}
+
+export interface CardDetailResponse {
+  header: {
+    errorCode: string;
+    errorMsg: string;
+  };
+  body: CardDetail;
 }
 
 export interface CardSelectorParams {
   selectedCardId?: string;
-  searchKeyword?: string;
-  apiEndpoint?: string;
-  apiKey?: string;
 }
 
 export interface FormData {

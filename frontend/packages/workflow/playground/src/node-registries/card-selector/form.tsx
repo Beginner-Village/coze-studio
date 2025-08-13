@@ -27,18 +27,17 @@ import { CardSelectorField } from './components/card-selector-field';
 export function FormRender() {
   return (
     <NodeConfigForm>
-      <InputsParametersField
-        name={INPUT_PATH}
-        title={I18n.t('card_selector_inputs')}
-        tooltip={I18n.t('card_selector_inputs_desc')}
-        id="card-selector-node-inputs"
-      />
-
       <CardSelectorField
         name={CARD_SELECTOR_PATH}
         title={I18n.t('card_selector_config')}
         tooltip={I18n.t('card_selector_config_desc')}
         id="card-selector-node-config"
+      />
+
+      <InputsParametersField
+        name={INPUT_PATH}
+        title={I18n.t('workflow_detail_node_input')}
+        tooltip={I18n.t('card_selector_inputs_desc')}
       />
 
       <OutputsField

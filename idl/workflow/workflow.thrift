@@ -2191,3 +2191,59 @@ struct OpenAPIGetWorkflowInfoResponse{
 
     255: required base.BaseResp BaseResp
 }
+
+// Card Selector related structures
+struct GetCardListRequest{
+    1: string ApiEndpoint (go.tag = "json:\"apiEndpoint\"")
+    2: optional string SearchKeyword (go.tag = "json:\"searchKeyword,omitempty\"")
+    3: optional map<string, string> Filters (go.tag = "json:\"filters,omitempty\"")
+}
+
+struct CardListData{
+    1: list<string> CardList (go.tag = "json:\"cardList\"")
+}
+
+struct GetCardListResponse{
+    1: i64 Code (go.tag = "json:\"code\"")
+    2: string Message (go.tag = "json:\"message\"")
+    3: optional CardListData Data (go.tag = "json:\"data,omitempty\"")
+}
+
+struct CardParam{
+    1: string ParamId (go.tag = "json:\"paramId\"")
+    2: string ParamName (go.tag = "json:\"paramName\"")
+    3: string ParamType (go.tag = "json:\"paramType\"")
+    4: string ParamDesc (go.tag = "json:\"paramDesc\"")
+    5: string IsRequired (go.tag = "json:\"isRequired\"")
+    6: optional string BizChannel (go.tag = "json:\"bizChannel,omitempty\"")
+    7: optional string SassAppId (go.tag = "json:\"sassAppId,omitempty\"")
+    8: optional string SassWorkspaceId (go.tag = "json:\"sassWorkspaceId,omitempty\"")
+    9: optional list<CardParam> Children (go.tag = "json:\"children,omitempty\"")
+}
+
+struct CardDetail{
+    1: string CardId (go.tag = "json:\"cardId\"")
+    2: string CardName (go.tag = "json:\"cardName\"")
+    3: string CardPicUrl (go.tag = "json:\"cardPicUrl\"")
+    4: string Code (go.tag = "json:\"code\"")
+    5: string MainUrl (go.tag = "json:\"mainUrl\"")
+    6: list<CardParam> ParamList (go.tag = "json:\"paramList\"")
+    7: string SkeletonScreen (go.tag = "json:\"skeletonScreen\"")
+    8: string Version (go.tag = "json:\"version\"")
+}
+
+struct GetCardDetailRequest{
+    1: string ApiEndpoint (go.tag = "json:\"apiEndpoint\"")
+    2: string CardId (go.tag = "json:\"cardId\"")
+}
+
+struct GetCardDetailResponse{
+    1: i64 Code (go.tag = "json:\"code\"")
+    2: string Message (go.tag = "json:\"message\"")
+    3: optional CardDetail Data (go.tag = "json:\"data,omitempty\"")
+}
+
+service WorkflowService {
+    GetCardListResponse GetCardList(1: GetCardListRequest req) (api.post="/api/workflow_api/card_list")
+    GetCardDetailResponse GetCardDetail(1: GetCardDetailRequest req) (api.post="/api/workflow_api/card_detail")
+}

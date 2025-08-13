@@ -3616,6 +3616,78 @@ func (g *GetLLMNodeFCSettingDetailResponse) MarshalJSON() ([]byte, error) {
 	return sonic.Marshal(result)
 }
 
+// GetCardList 获取卡片列表
+// TODO: 需要完整的IDL-First流程迁移来修复类型定义问题
+/*
+func (w *ApplicationService) GetCardList(ctx context.Context, req *workflow.GetCardListRequest) (
+	_ *workflow.GetCardListResponse, err error,
+) {
+	defer func() {
+		if panicErr := recover(); panicErr != nil {
+			err = safego.NewPanicErr(panicErr, debug.Stack())
+		}
+
+		if err != nil {
+			err = vo.WrapIfNeeded(errno.ErrWorkflowOperationFail, err, errorx.KV("cause", vo.UnwrapRootErr(err).Error()))
+		}
+	}()
+
+	logs.CtxInfof(ctx, "ApplicationService.GetCardList called with apiEndpoint=%s, searchKeyword=%s", req.GetApiEndpoint(), req.GetSearchKeyword())
+
+	// 使用 CardSelectorService
+	cardSelectorService := NewCardSelectorService()
+
+	// 调用搜索方法
+	cardList, err := cardSelectorService.SearchCards(ctx, req.GetApiEndpoint(), req.GetSearchKeyword(), req.GetFilters())
+	if err != nil {
+		return nil, fmt.Errorf("failed to search cards: %w", err)
+	}
+
+	return &workflow.GetCardListResponse{
+		Code:    0,
+		Message: "success",
+		Data: &workflow.CardListData{
+			CardList: cardList,
+		},
+	}, nil
+}
+*/
+
+// GetCardDetail 获取卡片详情
+// TODO: 需要完整的IDL-First流程迁移来修复类型定义问题
+/*
+func (w *ApplicationService) GetCardDetail(ctx context.Context, req *workflow.GetCardDetailRequest) (
+	_ *workflow.GetCardDetailResponse, err error,
+) {
+	defer func() {
+		if panicErr := recover(); panicErr != nil {
+			err = safego.NewPanicErr(panicErr, debug.Stack())
+		}
+
+		if err != nil {
+			err = vo.WrapIfNeeded(errno.ErrWorkflowOperationFail, err, errorx.KV("cause", vo.UnwrapRootErr(err).Error()))
+		}
+	}()
+
+	logs.CtxInfof(ctx, "ApplicationService.GetCardDetail called with apiEndpoint=%s, cardId=%s", req.GetApiEndpoint(), req.GetCardId())
+
+	// 使用 CardSelectorService
+	cardSelectorService := NewCardSelectorService()
+
+	// 调用获取详情方法
+	cardDetail, err := cardSelectorService.GetCardDetail(ctx, req.GetApiEndpoint(), req.GetCardId())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get card detail: %w", err)
+	}
+
+	return &workflow.GetCardDetailResponse{
+		Code:    0,
+		Message: "success",
+		Data:    cardDetail,
+	}, nil
+}
+*/
+
 func checkUserSpace(ctx context.Context, uid int64, spaceID int64) error {
 	spaces, err := crossuser.DefaultSVC().GetUserSpaceList(ctx, uid)
 	if err != nil {

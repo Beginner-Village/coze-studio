@@ -134,7 +134,7 @@ export const useInitChatArea = ({
       if (useGlobalInitStore.getState().initStatus === 'initSuccess') {
         return;
       }
-      return requestToInit();
+      return await requestToInit();
     },
     {
       // Invalid refreshDeps when manual is specified; explicitly reinitializes externally based on requestToInit changes

@@ -34,14 +34,53 @@ import { CARD_SELECTOR_PATH, OUTPUT_PATH } from './constants';
 // Card selector validator
 const cardSelectorValidator = (value: unknown) => {
   if (!value) {
+    console.log('🔍 CardSelector Validator: No value provided');
     return;
   }
 
-  // Validate if a card is selected when required
-  if (!value.selectedCardId && !value.searchKeyword) {
+  const cardSelectorValue = value as {
+    selectedCardId?: string;
+    searchKeyword?: string;
+    apiEndpoint?: string;
+  };
+
+  console.log('🔍 CardSelector Validator:', {
+    selectedCardId: cardSelectorValue.selectedCardId,
+    searchKeyword: cardSelectorValue.searchKeyword,
+    apiEndpoint: cardSelectorValue.apiEndpoint,
+  });
+
+  // 如果已经选择了卡片，则验证通过
+  if (
+    cardSelectorValue.selectedCardId &&
+    cardSelectorValue.selectedCardId.trim() !== ''
+  ) {
+    console.log('✅ CardSelector Validation passed: Card selected');
+    return;
+  }
+
+  // 如果有有效的搜索关键词，也认为是有效的
+  if (
+    cardSelectorValue.searchKeyword &&
+    cardSelectorValue.searchKeyword.trim() !== ''
+  ) {
+    console.log('✅ CardSelector Validation passed: Search keyword provided');
+    return;
+  }
+
+  // 只有在用户已经配置了API端点但没有选择卡片也没有搜索关键词时，才显示必填错误
+  // 这样可以避免在初始状态就显示错误
+  if (
+    cardSelectorValue.apiEndpoint &&
+    cardSelectorValue.apiEndpoint.trim() !== ''
+  ) {
+    console.warn(
+      '❌ CardSelector Validation failed: API endpoint configured but no card selected',
+    );
     return 'card_selector_required';
   }
 
+  console.log('✅ CardSelector Validation passed: Initial state');
   return;
 };
 

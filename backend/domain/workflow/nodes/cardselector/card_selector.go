@@ -232,15 +232,15 @@ func (c *Config) Build(ctx context.Context, ns *schema.NodeSchema, opts ...schem
 	}
 
 	return &CardSelector{
-		apiEndpoint: c.APIEndpoint,
-		timeout:     timeout,
+		ApiEndpoint: c.APIEndpoint,
+		Timeout:     timeout,
 	}, nil
 }
 
 // CardSelector is the actual node implementation
 type CardSelector struct {
-	apiEndpoint string
-	timeout     int
+	ApiEndpoint string
+	Timeout     int
 }
 
 // Invoke implements InvokableNode interface
@@ -315,7 +315,7 @@ func (cs *CardSelector) Invoke(ctx context.Context, input map[string]any) (map[s
 
 // searchCardsFromAPI 调用猎鹰平台API搜索卡片
 func (cs *CardSelector) searchCardsFromAPI(ctx context.Context, searchKeyword string, filters map[string]any) ([]FalconCard, error) {
-	if cs.apiEndpoint == "" {
+	if cs.ApiEndpoint == "" {
 		// 如果没有配置API端点，返回模拟数据
 		return cs.getMockCards(searchKeyword), nil
 	}
@@ -397,7 +397,7 @@ func (cs *CardSelector) searchCardsFromAPI(ctx context.Context, searchKeyword st
 	}
 
 	// 自动拼接卡片列表接口路径
-	listAPIURL := cs.apiEndpoint
+	listAPIURL := cs.ApiEndpoint
 	if listAPIURL == "" {
 		listAPIURL = "http://10.10.10.208:8500/aop-web"
 	}
@@ -418,12 +418,20 @@ func (cs *CardSelector) searchCardsFromAPI(ctx context.Context, searchKeyword st
 
 	// 创建HTTP客户端并设置超时
 	client := &http.Client{
-		Timeout: time.Duration(cs.timeout) * time.Second,
+		Timeout: time.Duration(cs.Timeout) * time.Second,
 	}
 
 	// 发送请求
 	resp, err := client.Do(req)
 	if err != nil {
+		// 连接失败时优雅降级到mock数据
+		if strings.Contains(err.Error(), "connection refused") || 
+		   strings.Contains(err.Error(), "no such host") || 
+		   strings.Contains(err.Error(), "timeout") {
+			// 记录警告但不中断服务
+			fmt.Printf("⚠️ Falcon API connection failed (%s), falling back to mock data\n", err.Error())
+			return cs.getMockCards(searchKeyword), nil
+		}
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
@@ -449,7 +457,7 @@ func (cs *CardSelector) searchCardsFromAPI(ctx context.Context, searchKeyword st
 
 // fetchCardByID 根据ID获取特定卡片信息
 func (cs *CardSelector) fetchCardByID(ctx context.Context, cardID string) (*FalconCard, error) {
-	if cs.apiEndpoint == "" {
+	if cs.ApiEndpoint == "" {
 		// 如果没有配置API端点，返回模拟数据
 		mockCards := cs.getMockCards("")
 		for _, card := range mockCards {
@@ -495,7 +503,7 @@ func (cs *CardSelector) fetchCardByID(ctx context.Context, cardID string) (*Falc
 			RealGreyEndtime:     "",
 			ResourceType:        "",
 			SassAppID:           "",
-			SassWorkspaceID:     "7533521629687578624", // 写死spaceId
+			SassWorkspaceID:     "",
 			SchemaValue:         "",
 			SearchValue:         "",
 			ServiceModuleID:     "",
@@ -537,7 +545,7 @@ func (cs *CardSelector) fetchCardByID(ctx context.Context, cardID string) (*Falc
 	}
 
 	// 构建卡片详情API URL
-	detailAPIURL := cs.apiEndpoint
+	detailAPIURL := cs.ApiEndpoint
 	if detailAPIURL == "" {
 		detailAPIURL = "http://10.10.10.208:8500/aop-web"
 	}
@@ -558,12 +566,26 @@ func (cs *CardSelector) fetchCardByID(ctx context.Context, cardID string) (*Falc
 
 	// 创建HTTP客户端并设置超时
 	client := &http.Client{
-		Timeout: time.Duration(cs.timeout) * time.Second,
+		Timeout: time.Duration(cs.Timeout) * time.Second,
 	}
 
 	// 发送请求
 	resp, err := client.Do(req)
 	if err != nil {
+		// 连接失败时优雅降级到mock数据
+		if strings.Contains(err.Error(), "connection refused") || 
+		   strings.Contains(err.Error(), "no such host") || 
+		   strings.Contains(err.Error(), "timeout") {
+			// 记录警告但不中断服务
+			fmt.Printf("⚠️ Falcon API connection failed (%s), falling back to mock data\n", err.Error())
+			mockCards := cs.getMockCards("")
+			for _, card := range mockCards {
+				if card.CardID == cardID {
+					return &card, nil
+				}
+			}
+			return nil, fmt.Errorf("card not found in mock data: %s", cardID)
+		}
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
@@ -597,7 +619,7 @@ func (cs *CardSelector) fetchCardByID(ctx context.Context, cardID string) (*Falc
 
 // fetchCardDetailWithParams 获取卡片详情包括参数信息
 func (cs *CardSelector) fetchCardDetailWithParams(ctx context.Context, cardID string) (*CardDetailBody, error) {
-	if cs.apiEndpoint == "" {
+	if cs.ApiEndpoint == "" {
 		// 如果没有配置API端点，返回模拟数据
 		return &CardDetailBody{
 			CardID:   cardID,
@@ -618,11 +640,10 @@ func (cs *CardSelector) fetchCardDetailWithParams(ctx context.Context, cardID st
 	// 构建卡片详情API请求体
 	requestBody := FalconAPIRequest{
 		Body: FalconRequestBody{
-			CardID:          cardID,
-			CreatedBy:       true,
-			SassWorkspaceID: "7533521629687578624", // 写死spaceId
-			PageNo:          "",
-			PageSize:        "",
+			CardID:    cardID,
+			CreatedBy: true,
+			PageNo:    "",
+			PageSize:  "",
 			VariableValueList: []VariableValue{
 				{
 					BizChannel:           "",
@@ -644,7 +665,7 @@ func (cs *CardSelector) fetchCardDetailWithParams(ctx context.Context, cardID st
 	}
 
 	// 构建卡片详情API URL
-	detailAPIURL := cs.apiEndpoint
+	detailAPIURL := cs.ApiEndpoint
 	if detailAPIURL == "" {
 		detailAPIURL = "http://10.10.10.208:8500/aop-web"
 	}
@@ -665,12 +686,20 @@ func (cs *CardSelector) fetchCardDetailWithParams(ctx context.Context, cardID st
 
 	// 创建HTTP客户端并设置超时
 	client := &http.Client{
-		Timeout: time.Duration(cs.timeout) * time.Second,
+		Timeout: time.Duration(cs.Timeout) * time.Second,
 	}
 
 	// 发送请求
 	resp, err := client.Do(req)
 	if err != nil {
+		// 连接失败时优雅降级到mock数据
+		if strings.Contains(err.Error(), "connection refused") || 
+		   strings.Contains(err.Error(), "no such host") || 
+		   strings.Contains(err.Error(), "timeout") {
+			// 记录警告但不中断服务
+			fmt.Printf("⚠️ Falcon API connection failed (%s), falling back to mock data\n", err.Error())
+			return cs.getMockCardDetail(cardID), nil
+		}
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
@@ -770,4 +799,29 @@ func (cs *CardSelector) SearchCards(ctx context.Context, searchKeyword string, f
 // GetCardDetail 公开方法：获取卡片详情
 func (cs *CardSelector) GetCardDetail(ctx context.Context, cardID string) (*CardDetailBody, error) {
 	return cs.fetchCardDetailWithParams(ctx, cardID)
+}
+
+// getMockCardDetail 返回模拟卡片详情数据，用于开发和测试
+func (cs *CardSelector) getMockCardDetail(cardID string) *CardDetailBody {
+	return &CardDetailBody{
+		CardID:   cardID,
+		CardName: "模拟卡片详情",
+		Code:     "mock_card_detail",
+		ParamList: []CardParam{
+			{
+				ParamID:    "mock_param_1",
+				ParamName:  "输入文本",
+				ParamType:  "string",
+				ParamDesc:  "用户输入的文本内容",
+				IsRequired: "1",
+			},
+			{
+				ParamID:    "mock_param_2", 
+				ParamName:  "选项配置",
+				ParamType:  "object",
+				ParamDesc:  "配置选项对象",
+				IsRequired: "0",
+			},
+		},
+	}
 }
