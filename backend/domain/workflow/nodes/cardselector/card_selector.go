@@ -32,9 +32,11 @@ import (
 )
 
 const (
-	InputKeySearchKeyword  = "search_keyword"
-	InputKeyCardFilters    = "card_filters"
-	InputKeySelectedCardID = "selected_card_id"
+	InputKeySearchKeyword    = "search_keyword"
+	InputKeyCardFilters      = "card_filters"
+	InputKeySelectedCardID   = "selected_card_id"
+	InputKeySelectedCard     = "selected_card"
+	InputKeyInputParameters  = "input_parameters"
 
 	OutputKeySelectedCard = "selected_card"
 	OutputKeyCardID       = "card_id"
@@ -42,6 +44,8 @@ const (
 	OutputKeyCardDesc     = "card_description"
 	OutputKeyCards        = "cards"
 	OutputKeyCount        = "count"
+	// 新增的模板输出键
+	OutputKeyTemplateResponse = "template_response"
 )
 
 // FalconCard represents a card from the Falcon platform
@@ -245,12 +249,57 @@ type CardSelector struct {
 
 // Invoke implements InvokableNode interface
 func (cs *CardSelector) Invoke(ctx context.Context, input map[string]any) (map[string]any, error) {
-	// 检查是否有选定的卡片ID，如果有则直接返回该卡片信息
+	// 优先检查是否有前端传递的完整卡片信息
+	if selectedCardData, ok := input[InputKeySelectedCard]; ok {
+		if cardMap, ok := selectedCardData.(map[string]interface{}); ok {
+			// 从前端传递的卡片信息构建FalconCard
+			card := &FalconCard{}
+			if cardId, exists := cardMap["cardId"]; exists {
+				if id, ok := cardId.(string); ok {
+					card.CardID = id
+				}
+			}
+			if cardName, exists := cardMap["cardName"]; exists {
+				if name, ok := cardName.(string); ok {
+					card.CardName = name
+				}
+			}
+			if code, exists := cardMap["code"]; exists {
+				if c, ok := code.(string); ok {
+					card.Code = c
+				}
+			}
+
+			// 如果卡片信息完整，直接使用
+			if card.CardID != "" && card.CardName != "" && card.Code != "" {
+				// 生成模板输出结构
+				templateResponse := cs.generateTemplateResponse(card, input)
+
+				return map[string]any{
+					OutputKeySelectedCard: map[string]any{
+						"id":          card.CardID,
+						"name":        card.CardName,
+						"description": card.Code,
+						"category":    card.CardClassID,
+					},
+					OutputKeyCardID:           card.CardID,
+					OutputKeyCardName:         card.CardName,
+					OutputKeyCardDesc:         card.Code,
+					OutputKeyTemplateResponse: templateResponse,
+				}, nil
+			}
+		}
+	}
+
+	// 如果没有完整的卡片信息，检查是否有选定的卡片ID，通过API获取
 	if selectedCardID, ok := input[InputKeySelectedCardID].(string); ok && selectedCardID != "" {
 		card, err := cs.fetchCardByID(ctx, selectedCardID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch selected card: %w", err)
 		}
+
+		// 生成模板输出结构
+		templateResponse := cs.generateTemplateResponse(card, input)
 
 		return map[string]any{
 			OutputKeySelectedCard: map[string]any{
@@ -259,9 +308,10 @@ func (cs *CardSelector) Invoke(ctx context.Context, input map[string]any) (map[s
 				"description": card.Code,
 				"category":    card.CardClassID,
 			},
-			OutputKeyCardID:   card.CardID,
-			OutputKeyCardName: card.CardName,
-			OutputKeyCardDesc: card.Code,
+			OutputKeyCardID:           card.CardID,
+			OutputKeyCardName:         card.CardName,
+			OutputKeyCardDesc:         card.Code,
+			OutputKeyTemplateResponse: templateResponse,
 		}, nil
 	}
 
@@ -308,6 +358,10 @@ func (cs *CardSelector) Invoke(ctx context.Context, input map[string]any) (map[s
 		result[OutputKeyCardID] = card.CardID
 		result[OutputKeyCardName] = card.CardName
 		result[OutputKeyCardDesc] = card.Code
+		
+		// 生成模板输出结构
+		templateResponse := cs.generateTemplateResponse(&card, input)
+		result[OutputKeyTemplateResponse] = templateResponse
 	}
 
 	return result, nil
@@ -823,5 +877,42 @@ func (cs *CardSelector) getMockCardDetail(cardID string) *CardDetailBody {
 				IsRequired: "0",
 			},
 		},
+	}
+}
+
+// generateTemplateResponse 生成模板输出结构
+func (cs *CardSelector) generateTemplateResponse(card *FalconCard, input map[string]any) map[string]any {
+	// 生成dataResponse，根据输入参数自动适配
+	dataResponse := make(map[string]any)
+
+	// 提取输入参数列表
+	if inputParameters, ok := input[InputKeyInputParameters]; ok {
+		if paramList, ok := inputParameters.([]interface{}); ok {
+			for _, param := range paramList {
+				if paramMap, ok := param.(map[string]interface{}); ok {
+					if paramName, exists := paramMap["name"]; exists {
+						if name, ok := paramName.(string); ok && name != "" {
+							// 将输入参数名作为dataResponse的键，值使用变量占位符
+							dataResponse[name] = fmt.Sprintf("{%s}", name)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 如果没有输入参数，提供默认的payeeList
+	if len(dataResponse) == 0 {
+		dataResponse["payeeList"] = "{payeeList}"
+	}
+
+	// 构建模板输出结构
+	return map[string]any{
+		"displayResponseType": "TEMPLATE",
+		"rawContent":          map[string]any{},
+		"templateId":          card.Code,
+		"templateName":        card.CardName,
+		"kvMap":               map[string]any{},
+		"dataResponse":        dataResponse,
 	}
 }

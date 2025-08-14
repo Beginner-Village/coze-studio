@@ -67,6 +67,11 @@ export interface CardDetailResponse {
 
 export interface CardSelectorParams {
   selectedCardId?: string;
+  selectedCard?: {
+    cardId: string;
+    cardName: string;
+    code: string;
+  };
 }
 
 export interface FormData {

@@ -25,6 +25,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	workflow "github.com/coze-dev/coze-studio/backend/api/model/workflow"
 	appworkflow "github.com/coze-dev/coze-studio/backend/application/workflow"
+	"github.com/coze-dev/coze-studio/backend/domain/workflow/nodes/cardselector"
 	"github.com/coze-dev/coze-studio/backend/pkg/logs"
 	"github.com/coze-dev/coze-studio/backend/pkg/sonic"
 )
@@ -69,15 +70,26 @@ func GetCardList(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 转换结果为字符串数组
-	cardStrings := make([]string, len(cardList))
+	// 转换结果为FalconCard数组
+	falconCards := make([]*workflow.FalconCard, len(cardList))
 	for i, card := range cardList {
-		if cardStr, ok := card.(string); ok {
-			cardStrings[i] = cardStr
-		} else {
-			// 如果不是字符串，转换为JSON字符串
-			cardBytes, _ := sonic.Marshal(card)
-			cardStrings[i] = string(cardBytes)
+		if falconCard, ok := card.(cardselector.FalconCard); ok {
+			// 转换为workflow包中的FalconCard类型
+			falconCards[i] = &workflow.FalconCard{
+				CardId:          falconCard.CardID,
+				CardName:        falconCard.CardName,
+				Code:            falconCard.Code,
+				CardClassId:     &falconCard.CardClassID,
+				CardPicUrl:      &falconCard.CardPicURL,
+				CardShelfStatus: &falconCard.CardShelfStatus,
+				CardShelfTime:   &falconCard.CardShelfTime,
+				CreateUserId:    &falconCard.CreateUserID,
+				CreateUserName:  &falconCard.CreateUserName,
+				PicUrl:          &falconCard.PicURL,
+				SassAppId:       &falconCard.SassAppID,
+				SassWorkspaceId: &falconCard.SassWorkspaceID,
+				BizChannel:      &falconCard.BizChannel,
+			}
 		}
 	}
 
@@ -85,11 +97,11 @@ func GetCardList(ctx context.Context, c *app.RequestContext) {
 		Code:    0,
 		Message: "success",
 		Data: &workflow.CardListData{
-			CardList: cardStrings,
+			CardList: falconCards,
 		},
 	}
 
-	logs.CtxInfof(ctx, "GetCardList response: code=%d, cardCount=%d", resp.Code, len(cardStrings))
+	logs.CtxInfof(ctx, "GetCardList response: code=%d, cardCount=%d", resp.Code, len(falconCards))
 	c.JSON(consts.StatusOK, resp)
 }
 
@@ -183,15 +195,15 @@ func convertParamList(paramListInterface interface{}) []*workflow.CardParam {
 		for _, paramInterface := range paramList {
 			if paramMap, ok := paramInterface.(map[string]interface{}); ok {
 				param := &workflow.CardParam{
-					ParamId:          getString(paramMap, "paramId"),
-					ParamName:        getString(paramMap, "paramName"),
-					ParamType:        getString(paramMap, "paramType"),
-					ParamDesc:        getString(paramMap, "paramDesc"),
-					IsRequired:       getString(paramMap, "isRequired"),
-					BizChannel:       getOptionalString(paramMap, "bizChannel"),
-					SassAppId:        getOptionalString(paramMap, "sassAppId"),
-					SassWorkspaceId:  getOptionalString(paramMap, "sassWorkspaceId"),
-					Children:         convertParamList(paramMap["children"]),
+					ParamId:         getString(paramMap, "paramId"),
+					ParamName:       getString(paramMap, "paramName"),
+					ParamType:       getString(paramMap, "paramType"),
+					ParamDesc:       getString(paramMap, "paramDesc"),
+					IsRequired:      getString(paramMap, "isRequired"),
+					BizChannel:      getOptionalString(paramMap, "bizChannel"),
+					SassAppId:       getOptionalString(paramMap, "sassAppId"),
+					SassWorkspaceId: getOptionalString(paramMap, "sassWorkspaceId"),
+					Children:        convertParamList(paramMap["children"]),
 				}
 				params = append(params, param)
 			}

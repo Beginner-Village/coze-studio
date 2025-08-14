@@ -2193,6 +2193,22 @@ struct OpenAPIGetWorkflowInfoResponse{
 }
 
 // Card Selector related structures
+struct FalconCard{
+    1: string CardId (go.tag = "json:\"cardId\"")
+    2: string CardName (go.tag = "json:\"cardName\"")
+    3: string Code (go.tag = "json:\"code\"")
+    4: optional string CardClassId (go.tag = "json:\"cardClassId,omitempty\"")
+    5: optional string CardPicUrl (go.tag = "json:\"cardPicUrl,omitempty\"")
+    6: optional string CardShelfStatus (go.tag = "json:\"cardShelfStatus,omitempty\"")
+    7: optional string CardShelfTime (go.tag = "json:\"cardShelfTime,omitempty\"")
+    8: optional string CreateUserId (go.tag = "json:\"createUserId,omitempty\"")
+    9: optional string CreateUserName (go.tag = "json:\"createUserName,omitempty\"")
+    10: optional string PicUrl (go.tag = "json:\"picUrl,omitempty\"")
+    11: optional string SassAppId (go.tag = "json:\"sassAppId,omitempty\"")
+    12: optional string SassWorkspaceId (go.tag = "json:\"sassWorkspaceId,omitempty\"")
+    13: optional string BizChannel (go.tag = "json:\"bizChannel,omitempty\"")
+}
+
 struct GetCardListRequest{
     1: string ApiEndpoint (go.tag = "json:\"apiEndpoint\"")
     2: optional string SearchKeyword (go.tag = "json:\"searchKeyword,omitempty\"")
@@ -2200,7 +2216,7 @@ struct GetCardListRequest{
 }
 
 struct CardListData{
-    1: list<string> CardList (go.tag = "json:\"cardList\"")
+    1: list<FalconCard> CardList (go.tag = "json:\"cardList\"")
 }
 
 struct GetCardListResponse{

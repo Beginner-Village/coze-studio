@@ -2113,6 +2113,21 @@ export interface OpenAPIGetWorkflowInfoResponse {
   data?: WorkflowInfo,
 }
 /** Card Selector related structures */
+export interface FalconCard {
+  cardId: string,
+  cardName: string,
+  code: string,
+  cardClassId?: string,
+  cardPicUrl?: string,
+  cardShelfStatus?: string,
+  cardShelfTime?: string,
+  createUserId?: string,
+  createUserName?: string,
+  picUrl?: string,
+  sassAppId?: string,
+  sassWorkspaceId?: string,
+  bizChannel?: string,
+}
 export interface GetCardListRequest {
   apiEndpoint: string,
   searchKeyword?: string,
@@ -2121,7 +2136,7 @@ export interface GetCardListRequest {
   },
 }
 export interface CardListData {
-  cardList: string[]
+  cardList: FalconCard[]
 }
 export interface GetCardListResponse {
   code: number,

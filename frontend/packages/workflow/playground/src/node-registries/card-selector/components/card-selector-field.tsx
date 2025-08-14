@@ -189,6 +189,17 @@ export const CardSelectorField = withField(
                 code: result.data.code,
               };
               setSelectedCard(selectedCardData);
+              
+              // 同时更新表单数据中的selectedCard信息
+              onChange({
+                ...value,
+                selectedCardId: result.data.cardId,
+                selectedCard: {
+                  cardId: result.data.cardId,
+                  cardName: result.data.cardName,
+                  code: result.data.code,
+                },
+              });
             }
 
             // 🔧 标准做法：增量更新输入参数，保留用户已配置的值
@@ -239,10 +250,15 @@ export const CardSelectorField = withField(
         setSearchKeyword('');
         setHasAttemptedLoad(false); // Reset attempted load state for new card
 
-        // 🔧 标准做法：只保存核心业务数据
+        // 🔧 标准做法：保存完整的卡片信息
         onChange({
           ...value,
           selectedCardId: card.cardId,
+          selectedCard: {
+            cardId: card.cardId,
+            cardName: card.cardName,
+            code: card.code,
+          },
         });
 
         // Fetch card details by ID

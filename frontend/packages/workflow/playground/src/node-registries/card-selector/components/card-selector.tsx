@@ -16,7 +16,10 @@
 
 import React from 'react';
 
-import type { FalconCard } from '../types';
+import { type workflow } from '@coze-studio/api-schema';
+
+// ✅ 正确：使用从IDL生成的类型
+type FalconCard = workflow.FalconCard;
 
 interface CardSelectorProps {
   selectedCard: FalconCard | null;

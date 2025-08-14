@@ -21,8 +21,21 @@
 export const INPUT_PATH = 'inputParameters';
 export const CARD_SELECTOR_PATH = 'cardSelectorParams';
 export const OUTPUT_PATH = 'outputs';
+export const CARD_SELECTOR_OUTPUT_PATH = 'cardSelectorOutputs';
 
 // default value
 export const DEFAULT_OUTPUTS: Array<unknown> = [];
 
 export const DEFAULT_INPUTS: Array<{ name: string; type?: string }> = [];
+
+// 默认的卡片选择器输出结构
+export const DEFAULT_CARD_SELECTOR_OUTPUT = {
+  displayResponseType: 'TEMPLATE',
+  rawContent: {},
+  templateId: '{card_code}',
+  templateName: '{card_name}',
+  kvMap: {},
+  dataResponse: {
+    payeeList: '{payeeList}',
+  },
+};

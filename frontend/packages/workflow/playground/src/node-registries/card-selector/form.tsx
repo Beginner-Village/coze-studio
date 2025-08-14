@@ -23,6 +23,7 @@ import { NodeConfigForm } from '@/node-registries/common/components';
 import { InputsParametersField, OutputsField } from '../common/fields';
 import { INPUT_PATH, CARD_SELECTOR_PATH, OUTPUT_PATH } from './constants';
 import { CardSelectorField } from './components/card-selector-field';
+import { CardSelectorOutputField } from './components/card-selector-output-field';
 
 export function FormRender() {
   return (
@@ -38,6 +39,12 @@ export function FormRender() {
         name={INPUT_PATH}
         title={I18n.t('workflow_detail_node_input')}
         tooltip={I18n.t('card_selector_inputs_desc')}
+      />
+
+      <CardSelectorOutputField
+        title="模板输出预览"
+        tooltip="当用户选择卡片后，将按照此固定格式输出，其中dataResponse的变量根据输入参数自动适配"
+        id="card-selector-template-output"
       />
 
       <OutputsField
