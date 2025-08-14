@@ -103,6 +103,14 @@ type Data struct {
 	// Size configures the size of this node in frontend.
 	// Only used by NodeTypeComment.
 	Size any `json:"size,omitempty"`
+
+	// The following fields capture node-specific configs that are flattened directly under `data`
+	// for certain node types in the frontend schema. They are optional and safe to ignore for
+	// other node types.
+	// Card Selector exclusive configs
+	CardSelectorParams map[string]any `json:"cardSelectorParams,omitempty"`
+	SelectedCardID     string         `json:"selected_card_id,omitempty"`
+	SelectedCard       map[string]any `json:"selected_card,omitempty"`
 }
 
 type Inputs struct {
