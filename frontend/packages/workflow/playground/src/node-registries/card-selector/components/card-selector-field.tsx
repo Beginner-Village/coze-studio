@@ -19,14 +19,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { Parameter } from '@coze-workflow/base';
 import { workflow } from '@coze-studio/api-schema';
 
+// ✅ 正确：使用从IDL生成的类型
+type FalconCard = workflow.FalconCard;
+
 import { useField, withField, useForm } from '@/form';
 
-import type {
-  CardSelectorParams,
-  FalconCard,
-  CardDetail,
-  CardParam,
-} from '../types';
+import type { CardSelectorParams, CardDetail, CardParam } from '../types';
 import { INPUT_PATH } from '../constants';
 import { SelectedCardInfo } from './selected-card-info';
 import { CardSelector } from './card-selector';
@@ -135,41 +133,40 @@ export const CardSelectorField = withField(
     const [selectedCard, setSelectedCard] = useState<FalconCard | null>(null);
     const [cardDetail, setCardDetail] = useState<CardDetail | null>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
+    const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
     // Fetch cards from backend API
-    const fetchCards = useCallback(
-      async (searchValue = '') => {
-        setLoading(true);
-        try {
-          // 使用默认API地址
-          const apiEndpoint = 'http://10.10.10.208:8500/aop-web';
+    const fetchCards = useCallback(async (searchValue = '') => {
+      setLoading(true);
+      try {
+        // 使用默认API地址
+        const apiEndpoint = 'http://10.10.10.208:8500/aop-web';
 
-          // 使用生成的API客户端调用后端卡片列表 API
-          const result = await workflow.GetCardList({
-            apiEndpoint,
-            searchKeyword: searchValue || '',
-            filters: {},
-          });
+        // 使用生成的API客户端调用后端卡片列表 API
+        const result = await workflow.GetCardList({
+          apiEndpoint,
+          searchKeyword: searchValue || '',
+          filters: {},
+        });
 
-          if (result.code === 0 && result.data) {
-            setCards(result.data.cardList || []);
-          } else {
-            throw new Error(result.message || 'Failed to fetch card list');
-          }
-        } catch (error) {
-          console.error('Failed to fetch card list:', error);
-          setCards([]);
-        } finally {
-          setLoading(false);
+        if (result.code === 0 && result.data) {
+          setCards(result.data.cardList || []);
+        } else {
+          throw new Error(result.message || 'Failed to fetch card list');
         }
-      },
-      [],
-    );
+      } catch (error) {
+        console.error('Failed to fetch card list:', error);
+        setCards([]);
+      } finally {
+        setLoading(false);
+      }
+    }, []);
 
     // Fetch card details by ID from backend API
     const fetchCardDetail = useCallback(
       async (cardId: string) => {
         setLoadingDetail(true);
+        setHasAttemptedLoad(true);
         try {
           // 使用默认API地址
           const apiEndpoint = 'http://10.10.10.208:8500/aop-web';
@@ -184,10 +181,7 @@ export const CardSelectorField = withField(
             setCardDetail(result.data);
 
             // 自动更新输入参数配置
-            if (
-              result.data.paramList &&
-              result.data.paramList.length > 0
-            ) {
+            if (result.data.paramList && result.data.paramList.length > 0) {
               const convertedParams = convertCardParamsToInputs(
                 result.data.paramList,
               );
@@ -214,6 +208,7 @@ export const CardSelectorField = withField(
         setSelectedCard(card);
         setShowDropdown(false);
         setSearchKeyword('');
+        setHasAttemptedLoad(false); // Reset attempted load state for new card
 
         onChange({
           ...value,
@@ -225,7 +220,6 @@ export const CardSelectorField = withField(
       },
       [value, onChange, fetchCardDetail],
     );
-
 
     // Handle toggle dropdown
     const handleToggleDropdown = useCallback(() => {
@@ -284,6 +278,7 @@ export const CardSelectorField = withField(
           selectedCard={selectedCard}
           cardDetail={cardDetail}
           loadingDetail={loadingDetail}
+          hasAttemptedLoad={hasAttemptedLoad}
         />
 
         {/* Error display */}

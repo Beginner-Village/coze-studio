@@ -22,12 +22,14 @@ interface SelectedCardInfoProps {
   selectedCard: FalconCard | null;
   cardDetail: CardDetail | null;
   loadingDetail: boolean;
+  hasAttemptedLoad: boolean;
 }
 
 export function SelectedCardInfo({
   selectedCard,
   cardDetail,
   loadingDetail,
+  hasAttemptedLoad,
 }: SelectedCardInfoProps) {
   if (!selectedCard) {
     return null;
@@ -139,7 +141,7 @@ export function SelectedCardInfo({
               </div>
             ) : null}
           </div>
-        ) : (
+        ) : hasAttemptedLoad ? (
           <div
             style={{
               fontSize: '12px',
@@ -150,7 +152,7 @@ export function SelectedCardInfo({
           >
             无法加载卡片详情
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
