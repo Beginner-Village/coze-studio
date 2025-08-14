@@ -180,14 +180,43 @@ export const CardSelectorField = withField(
           if (result.code === 0 && result.data) {
             setCardDetail(result.data);
 
-            // 自动更新输入参数配置
+            // 🔧 标准做法：如果没有selectedCard，从详情数据创建UI状态
+            if (!selectedCard) {
+              console.log('🔄 从卡片详情恢复selectedCard状态:', result.data);
+              const selectedCardData: FalconCard = {
+                cardId: result.data.cardId,
+                cardName: result.data.cardName,
+                code: result.data.code,
+              };
+              setSelectedCard(selectedCardData);
+            }
+
+            // 🔧 标准做法：增量更新输入参数，保留用户已配置的值
             if (result.data.paramList && result.data.paramList.length > 0) {
-              const convertedParams = convertCardParamsToInputs(
+              const newParams = convertCardParamsToInputs(
                 result.data.paramList,
               );
+              
+              // 获取用户当前已配置的输入参数
+              const currentParams = form.getFieldValue(INPUT_PATH) || [];
+              
+              // 合并参数：保留已配置的，添加新的
+              const mergedParams = newParams.map(newParam => {
+                const existingParam = currentParams.find(
+                  (p: Parameter) => p.name === newParam.name,
+                );
+                
+                if (existingParam) {
+                  console.log('🔄 保留用户已配置的参数:', existingParam.name, existingParam);
+                  return existingParam;  // 保留用户配置
+                }
+                
+                console.log('🆕 添加新参数:', newParam.name);
+                return newParam;  // 使用新参数默认值
+              });
 
               // 更新表单中的输入参数
-              form.setFieldValue(INPUT_PATH, convertedParams);
+              form.setFieldValue(INPUT_PATH, mergedParams);
             }
           } else {
             throw new Error(result.message || 'Failed to fetch card detail');
@@ -199,7 +228,7 @@ export const CardSelectorField = withField(
           setLoadingDetail(false);
         }
       },
-      [form],
+      [form, selectedCard],
     );
 
     // Handle card selection
@@ -210,6 +239,7 @@ export const CardSelectorField = withField(
         setSearchKeyword('');
         setHasAttemptedLoad(false); // Reset attempted load state for new card
 
+        // 🔧 标准做法：只保存核心业务数据
         onChange({
           ...value,
           selectedCardId: card.cardId,
@@ -238,16 +268,25 @@ export const CardSelectorField = withField(
       [fetchCards],
     );
 
-    // Initialize card if selectedCardId exists
+    // 🔧 标准做法：基于业务数据进行状态恢复
     useEffect(() => {
       if (value?.selectedCardId && !selectedCard) {
-        // Find the card in current cards list
+        console.log('🔄 基于selectedCardId恢复UI状态:', value.selectedCardId);
+        
+        // 1. 首先尝试从当前cards列表中查找
         const found = cards.find(c => c.cardId === value.selectedCardId);
         if (found) {
+          console.log('✅ 从cards列表中找到卡片:', found);
           setSelectedCard(found);
+          // 同时获取详情以更新输入参数
+          fetchCardDetail(found.cardId);
+        } else {
+          // 2. 如果列表中没有，主动获取详情（这会同时恢复selectedCard和cardDetail）
+          console.log('🔍 从API获取卡片详情:', value.selectedCardId);
+          fetchCardDetail(value.selectedCardId);
         }
       }
-    }, [value?.selectedCardId, selectedCard, cards]);
+    }, [value?.selectedCardId, selectedCard, cards, fetchCardDetail]);
 
     const feedbackText = errors?.[0]?.message || '';
 

@@ -27,8 +27,6 @@ export function transformOnInit(data: NodeData): FormData {
     inputParameters: data?.inputParameters || [],
     cardSelectorParams: {
       selectedCardId: data?.cardSelectorParams?.selectedCardId || '',
-      apiEndpoint: data?.cardSelectorParams?.apiEndpoint || '',
-      apiKey: data?.cardSelectorParams?.apiKey || '',
     },
     outputs: data?.outputs || [],
   };
@@ -42,8 +40,6 @@ export function transformOnSubmit(data: FormData): NodeData {
     inputParameters: data.inputParameters || [],
     cardSelectorParams: {
       selectedCardId: data.cardSelectorParams?.selectedCardId || '',
-      apiEndpoint: data.cardSelectorParams?.apiEndpoint || '',
-      apiKey: data.cardSelectorParams?.apiKey || '',
     },
     outputs: data.outputs || [],
   };

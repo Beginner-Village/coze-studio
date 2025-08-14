@@ -15,22 +15,10 @@
  */
 
 import type { OutputTreeMeta, Parameter } from '@coze-workflow/base';
+import { type workflow } from '@coze-studio/api-schema';
 
-export interface FalconCard {
-  cardId: string;
-  cardName: string;
-  code: string;
-  cardClassId?: string;
-  cardPicUrl?: string;
-  cardShelfStatus?: string;
-  cardShelfTime?: string;
-  createUserId?: string;
-  createUserName?: string;
-  picUrl?: string;
-  sassAppId?: string;
-  sassWorkspaceId?: string;
-  bizChannel?: string;
-}
+// ✅ 正确：使用从IDL生成的类型
+type FalconCard = workflow.FalconCard;
 
 export interface CardListResponse {
   header: {
