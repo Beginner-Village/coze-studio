@@ -19,9 +19,15 @@ import { lazy } from 'react';
 
 import { BaseEnum } from '@coze-arch/web-context';
 
-const TemplatePage = lazy(() =>
+const subMenu = lazy(() =>
   import('@coze-community/explore').then(exps => ({
-    default: exps.TemplatePage,
+    default: exps.TemplateSubMenu,
+  })),
+);
+
+const TemplateProjectPage = lazy(() =>
+  import('@coze-community/explore').then(exps => ({
+    default: exps.TemplateProjectPage,
   })),
 );
 
@@ -31,19 +37,19 @@ export const templateRouter: RouteObject = {
   loader: () => ({
     hasSider: true,
     requireAuth: true,
-    subMenu: null,
+    subMenu,
     menuKey: BaseEnum.Template,
   }),
   children: [
     {
       index: true,
-      element: <Navigate to="list" replace />,
+      element: <Navigate to="project" replace />,
     },
     {
-      path: 'list',
-      element: <TemplatePage />,
+      path: 'project',
+      element: <TemplateProjectPage />,
       loader: () => ({
-        type: 'template',
+        type: 'project',
       }),
     },
   ],

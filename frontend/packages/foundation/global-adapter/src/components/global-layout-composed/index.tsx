@@ -87,7 +87,7 @@ export const GlobalLayoutComposed: FC<PropsWithChildren> = ({ children }) => {
             title: I18n.t('menu_title_template'),
             icon: <IconBotTemplate />,
             activeIcon: <IconBotTemplateFill />,
-            path: '/template/list',
+            path: '/template/project',
             dataTestId: 'layout_explore-template-button',
           },
         ]}

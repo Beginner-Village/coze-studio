@@ -24,7 +24,7 @@ import { I18n } from '@coze-arch/i18n';
 
 import { PageList } from '../../components/page-list';
 
-export const TemplatePage = () => (
+export const TemplateProjectPage = () => (
   <PageList
     title={I18n.t('template_name')}
     getDataList={() => getTemplateData()}

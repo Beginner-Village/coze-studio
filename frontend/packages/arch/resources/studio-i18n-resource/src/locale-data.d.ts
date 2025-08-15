@@ -2157,6 +2157,8 @@ export type I18nKeysNoOptionsType =
   | 'Project'
   | 'Project_latest'
   | 'Project_tools'
+  | 'Template_project'
+  | 'Template_card'
   | 'Popular'
   | 'Post_Details_be_the_first_to'
   | 'Post_Details_lets_swap_ideas'

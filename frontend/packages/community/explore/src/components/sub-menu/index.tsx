@@ -30,6 +30,8 @@ import {
   IconBotDevelopActive,
   IconBotPlugin,
   IconBotPluginActive,
+  IconBotCard,
+  IconBotCardActive,
 } from '../../../../../components/bot-icons';
 import { Space } from '@coze-arch/coze-design';
 
@@ -37,7 +39,7 @@ import { useExploreRoute } from '../../hooks/use-explore-route';
 import cls from 'classnames';
 import styles from './index.module.less';
 
-const getMenuConfig = () => [
+const getExploreMenuConfig = () => [
   {
     type: 'project',
     icon: <IconBotDevelop />,
@@ -78,12 +80,42 @@ const getMenuConfig = () => [
   // },
 ];
 
-export const ExploreSubMenu = () => {
+const getTemplateMenuConfig = () => [
+  {
+    type: 'project',
+    icon: <IconBotDevelop />,
+    activeIcon: <IconBotDevelop />,
+    title: I18n.t('Template_project'),
+    isActive: true,
+    path: '/template/project',
+  },
+  {
+    type: 'template-card',
+    icon: <IconBotCard />,
+    activeIcon: <IconBotCard />,
+    title: I18n.t('Template_card'),
+    children: [
+      {
+        type: 'latest',
+        title: I18n.t('Project_latest'),
+        isActive: true,
+        path: '/explore/project/latest',
+      },
+      {
+        type: 'tools',
+        title: I18n.t('Project_tools'),
+        isActive: true,
+        path: '/explore/project/tools',
+      },
+    ],
+  },
+];
+
+const CustomSubMenu = ({ menuConfig }) => {
   const navigate = useNavigate();
   const { type } = useExploreRoute();
   const { project_type } = useParams();
   const [active, setActive] = useState(true);
-  const menuConfig = getMenuConfig();
   return (
     <Space spacing={4} vertical>
       {menuConfig.map(item => [
@@ -120,3 +152,11 @@ export const ExploreSubMenu = () => {
     </Space>
   );
 };
+
+export const ExploreSubMenu = () => (
+  <CustomSubMenu menuConfig={getExploreMenuConfig()} />
+);
+
+export const TemplateSubMenu = () => (
+  <CustomSubMenu menuConfig={getTemplateMenuConfig()} />
+);
