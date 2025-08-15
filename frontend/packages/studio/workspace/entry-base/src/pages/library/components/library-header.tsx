@@ -19,7 +19,7 @@ import React from 'react';
 
 import { useWorkflowImportExport } from '@coze-workflow/components';
 import { I18n } from '@coze-arch/i18n';
-// import { ResType } from '@coze-arch/idl/plugin_develop';
+import { ResType } from '@coze-arch/idl/plugin_develop';
 import { IconCozPlus, IconCozImport } from '@coze-arch/coze-design/icons';
 import { Button, Upload, Toast, Menu, MenuItem } from '@coze-arch/coze-design';
 
@@ -238,42 +238,58 @@ export const LibraryHeader: React.FC<{
             {I18n.t('import')}
           </Button>
         </Upload>
-        <Menu
-          key="create"
-          position="bottomRight"
-          className="w-120px mt-4px mb-4px"
-          render={
-            <Menu.SubMenu mode="menu">
-              <MenuItem
-                onClick={e => {
-                  menuConfig?.onCreate?.();
-                  e?.stopPropagation();
-                }}
-              >
-                {I18n.t('wf_chatflow_100') +
-                  (menuConfig?.typeFilter?.filterName ||
-                    menuConfig?.typeFilter?.label)}
-              </MenuItem>
-              <MenuItem
-                onClick={e => {
-                  menuConfig?.onCreate?.(true);
-                  e?.stopPropagation();
-                }}
-              >
-                {I18n.t('wf_chatflow_100') + I18n.t('wf_chatflow_76')}
-              </MenuItem>
-            </Menu.SubMenu>
-          }
-        >
+        {sourceType === ResType.Workflow ? (
+          <Menu
+            key="create"
+            position="bottomRight"
+            className="w-120px mt-4px mb-4px"
+            render={
+              <Menu.SubMenu mode="menu">
+                <MenuItem
+                  onClick={e => {
+                    menuConfig?.onCreate?.();
+                    e?.stopPropagation();
+                  }}
+                >
+                  {I18n.t('wf_chatflow_100') +
+                    (menuConfig?.typeFilter?.filterName ||
+                      menuConfig?.typeFilter?.label)}
+                </MenuItem>
+                <MenuItem
+                  onClick={e => {
+                    menuConfig?.onCreate?.(true);
+                    e?.stopPropagation();
+                  }}
+                >
+                  {I18n.t('wf_chatflow_100') + I18n.t('wf_chatflow_76')}
+                </MenuItem>
+              </Menu.SubMenu>
+            }
+          >
+            <Button
+              theme="solid"
+              type="primary"
+              icon={<IconCozPlus />}
+              data-testid="workspace.library.header.create"
+            >
+              {I18n.t('wf_chatflow_100')}
+            </Button>
+          </Menu>
+        ) : (
           <Button
             theme="solid"
             type="primary"
             icon={<IconCozPlus />}
             data-testid="workspace.library.header.create"
+            onClick={() => {
+              menuConfig?.onCreate?.();
+            }}
           >
-            {I18n.t('wf_chatflow_100')}
+            {I18n.t('wf_chatflow_100') +
+              (menuConfig?.typeFilter?.filterName ||
+                menuConfig?.typeFilter?.label)}
           </Button>
-        </Menu>
+        )}
         {/* <Button
           theme="solid"
           type="primary"
