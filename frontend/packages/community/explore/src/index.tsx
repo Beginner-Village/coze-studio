@@ -15,6 +15,6 @@
  */
 
 export { ExploreSubMenu, TemplateSubMenu } from './components/sub-menu';
-export { TemplateProjectPage } from './pages/template';
+export { TemplateProjectPage, TemplateCardPage } from './pages/template';
 export { PluginPage } from './pages/plugin';
 export { ProjectPage } from './pages/project';

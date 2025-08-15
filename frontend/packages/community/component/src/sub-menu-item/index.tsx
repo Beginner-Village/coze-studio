@@ -26,6 +26,7 @@ export interface SubMenuItemProps {
   isActive: boolean;
   suffix?: ReactNode;
   onClick: () => void;
+  subNode?: Boolean;
 }
 
 export const SubMenuItem: FC<SubMenuItemProps> = ({
@@ -35,6 +36,7 @@ export const SubMenuItem: FC<SubMenuItemProps> = ({
   isActive,
   suffix,
   onClick,
+  subNode = false,
 }) => (
   <div
     onClick={onClick}
@@ -54,9 +56,12 @@ export const SubMenuItem: FC<SubMenuItemProps> = ({
     </div>
     <Typography.Text
       ellipsis={{ showTooltip: true, rows: 1 }}
-      fontSize="14px"
       weight={500}
-      className="flex-1 text-[14px] leading-[20px] font-[500]"
+      className={
+        subNode
+          ? 'flex-1 text-[14px] leading-[20px] font-[400] coz-fg-secondary'
+          : 'flex-1 text-[14px] leading-[20px] font-[500]'
+      }
     >
       {title}
     </Typography.Text>

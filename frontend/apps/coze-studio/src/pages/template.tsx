@@ -31,6 +31,12 @@ const TemplateProjectPage = lazy(() =>
   })),
 );
 
+const TemplateCardPage = lazy(() =>
+  import('@coze-community/explore').then(exps => ({
+    default: exps.TemplateCardPage,
+  })),
+);
+
 export const templateRouter: RouteObject = {
   path: 'template',
   Component: null,
@@ -50,6 +56,13 @@ export const templateRouter: RouteObject = {
       element: <TemplateProjectPage />,
       loader: () => ({
         type: 'project',
+      }),
+    },
+    {
+      path: 'card/:project_type',
+      element: <TemplateCardPage />,
+      loader: () => ({
+        type: 'card',
       }),
     },
   ],

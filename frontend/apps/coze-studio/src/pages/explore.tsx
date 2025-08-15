@@ -46,7 +46,7 @@ export const exploreRouter: RouteObject = {
   children: [
     {
       index: true,
-      element: <Navigate to="plugin" replace />,
+      element: <Navigate to="project/latest" replace />,
     },
     {
       path: 'plugin',

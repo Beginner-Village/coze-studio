@@ -15,7 +15,7 @@
  */
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { SubMenuItem, SubMenu } from '@coze-community/components';
 import { I18n } from '@coze-arch/i18n';
@@ -37,6 +37,7 @@ import { Space } from '@coze-arch/coze-design';
 
 import { useExploreRoute } from '../../hooks/use-explore-route';
 import cls from 'classnames';
+import { aopApi } from '@coze-arch/bot-api';
 import styles from './index.module.less';
 
 const getExploreMenuConfig = () => [
@@ -80,42 +81,26 @@ const getExploreMenuConfig = () => [
   // },
 ];
 
-const getTemplateMenuConfig = () => [
-  {
-    type: 'project',
-    icon: <IconBotDevelop />,
-    activeIcon: <IconBotDevelop />,
-    title: I18n.t('Template_project'),
-    isActive: true,
-    path: '/template/project',
-  },
-  {
-    type: 'template-card',
-    icon: <IconBotCard />,
-    activeIcon: <IconBotCard />,
-    title: I18n.t('Template_card'),
-    children: [
-      {
-        type: 'latest',
-        title: I18n.t('Project_latest'),
-        isActive: true,
-        path: '/explore/project/latest',
-      },
-      {
-        type: 'tools',
-        title: I18n.t('Project_tools'),
-        isActive: true,
-        path: '/explore/project/tools',
-      },
-    ],
-  },
-];
-
 const CustomSubMenu = ({ menuConfig }) => {
   const navigate = useNavigate();
   const { type } = useExploreRoute();
   const { project_type } = useParams();
-  const [active, setActive] = useState(true);
+  const firstParentNodeIndex = menuConfig.findIndex(item =>
+    Array.isArray(item.children),
+  );
+  const defaultType =
+    firstParentNodeIndex > -1 ? menuConfig[firstParentNodeIndex].type : '';
+
+  const [activeId, setActiveId] = useState(defaultType);
+
+  const toggleActive = id => {
+    if (activeId === id) {
+      setActiveId('');
+      return;
+    }
+    setActiveId(id);
+  };
+
   return (
     <Space spacing={4} vertical>
       {menuConfig.map(item => [
@@ -127,21 +112,21 @@ const CustomSubMenu = ({ menuConfig }) => {
             item?.children?.length ? (
               <div
                 className={cls(styles.groupSubMenuArrow, {
-                  [styles.groupSubMenuArrowActive]: active,
+                  [styles.groupSubMenuArrowActive]: activeId === item.type,
                 })}
               />
             ) : null
           }
           onClick={() => {
-            item.path ? navigate(item.path) : setActive(!active);
+            item.path ? navigate(item.path) : toggleActive(item.type);
           }}
         />,
-        active &&
+        activeId === item.type &&
           item?.children?.map(child => (
             <SubMenuItem
               key={child.type}
               {...child}
-              className="sub-menu-item"
+              subNode={true}
               isActive={child.type === project_type}
               onClick={() => {
                 navigate(child.path);
@@ -157,6 +142,39 @@ export const ExploreSubMenu = () => (
   <CustomSubMenu menuConfig={getExploreMenuConfig()} />
 );
 
-export const TemplateSubMenu = () => (
-  <CustomSubMenu menuConfig={getTemplateMenuConfig()} />
-);
+export const TemplateSubMenu = () => {
+  const [subMenus, setSubMenus] = useState([]);
+  useEffect(() => {
+    aopApi.GetCardTypeCount().then(res => {
+      const list = res.body.cardClassList?.map(e => ({
+        type: `id-${e.id}`,
+        title: e.name,
+        isActive: true,
+        path: `/template/card/id-${e.id}`,
+      }));
+      setSubMenus(list);
+    });
+  }, []);
+
+  return (
+    <CustomSubMenu
+      menuConfig={[
+        {
+          type: 'project',
+          icon: <IconBotDevelop />,
+          activeIcon: <IconBotDevelop />,
+          title: I18n.t('Template_project'),
+          isActive: true,
+          path: '/template/project',
+        },
+        {
+          type: 'card',
+          icon: <IconBotCard />,
+          activeIcon: <IconBotCard />,
+          title: I18n.t('Template_card'),
+          children: subMenus,
+        },
+      ]}
+    />
+  );
+};
