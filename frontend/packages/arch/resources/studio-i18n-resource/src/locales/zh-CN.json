@@ -3879,5 +3879,6 @@
   "workspace_library_search": "搜索资源",
   "workspace_no_permission_access": "无法查看空间",
   "workspace_mcp": "MCP管理",
-  "workspace_card": "卡片管理"
+  "workspace_card": "卡片管理",
+  "card_manage_edit_tooltip": "点击进入卡片编辑器"
 }

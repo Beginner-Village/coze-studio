@@ -3831,5 +3831,6 @@
   "workspace_library_search": "Search resources",
   "workspace_no_permission_access": "No permission to access this workspace.",
   "workspace_mcp": "Mcp Management",
-  "workspace_card": "Card Management"
+  "workspace_card": "Card Management",
+  "card_manage_edit_tooltip": "Click to enter the card editor"
 }

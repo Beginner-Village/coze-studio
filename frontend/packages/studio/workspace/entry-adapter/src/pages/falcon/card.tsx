@@ -32,6 +32,7 @@ import {
   RadioGroup,
   Radio,
   SideSheet,
+  Tooltip,
 } from '@coze-arch/coze-design';
 import { GridList, GridItem } from './components/gridList';
 import { FalconCardDetail } from './cardDetail';
@@ -77,6 +78,8 @@ export const FalconCard: FC<DevelopProps> = ({ spaceId }) => {
         ? 'Edit'
         : 'View',
   );
+
+  const editTips = I18n.t('card_manage_edit_tooltip');
 
   const goDetail = (type, params = {}) => {
     setActionType(type);
@@ -313,10 +316,10 @@ export const FalconCard: FC<DevelopProps> = ({ spaceId }) => {
               >
                 <div
                   className="py-[12px]"
-                  onClick={e => {
-                    goEditor(item.cardId);
-                    e?.stopPropagation();
-                  }}
+                  // onClick={e => {
+                  //   goEditor(item.cardId);
+                  //   e?.stopPropagation();
+                  // }}
                 >
                   <div className="flex flex-col gap-[8px]">
                     <div
@@ -325,12 +328,19 @@ export const FalconCard: FC<DevelopProps> = ({ spaceId }) => {
                         background: `#EFF0F4 url("${placeholderImg}") no-repeat center center / 108px auto`,
                       }}
                     >
-                      <div
-                        className="w-full h-full"
-                        style={{
-                          background: `url("${replaceUrl(item.picUrl)}") no-repeat center center / cover`,
-                        }}
-                      />
+                      <Tooltip content={editTips}>
+                        <div
+                          className="w-full h-full"
+                          style={{
+                            background: `url("${replaceUrl(item.picUrl)}") no-repeat center center / contain`,
+                            cursor: 'pointer',
+                          }}
+                          onClick={e => {
+                            goEditor(item.cardId);
+                            e?.stopPropagation();
+                          }}
+                        />
+                      </Tooltip>
                     </div>
                     <div>
                       <div className="flex gap-[6px] mb-[4px] items-center">

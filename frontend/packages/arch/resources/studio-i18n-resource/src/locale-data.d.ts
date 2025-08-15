@@ -16263,6 +16263,7 @@ export type I18nKeysNoOptionsType =
   | 'Data_request_download_user_info4'
   | 'Data_request_download_user_info5'
   | 'coze_premium_credits_cycle_app_tip6'
+  | 'card_manage_edit_tooltip'
   | 'data_request_download_failed'
   | 'data_request_failed'
   | 'data_request_request_failed'
