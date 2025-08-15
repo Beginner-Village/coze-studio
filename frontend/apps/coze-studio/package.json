@@ -66,6 +66,7 @@
     "@coze-community/explore": "workspace:*",
     "@coze-studio/bot-plugin-store": "workspace:*",
     "@rsbuild/core": "~1.1.0",
+    "code-inspector-plugin": "1.1.1",
     "@rsdoctor/rspack-plugin": "1.0.0-rc.0",
     "@rspack/core": ">=0.7",
     "@types/node": "18.18.9",
@@ -80,4 +81,3 @@
     "webpack": "~5.91.0"
   }
 }
-
