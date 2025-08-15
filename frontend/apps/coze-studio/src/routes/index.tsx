@@ -276,7 +276,7 @@ export const router: ReturnType<typeof createBrowserRouter> =
             },
             // project store
             {
-              path: 'project/:project_type',
+              path: 'project/:sub_route_id',
               element: <ExploreProjectPage />,
               loader: () => ({
                 type: 'project',

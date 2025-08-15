@@ -111,9 +111,9 @@ export const FalconCard: FC<DevelopProps> = ({ spaceId }) => {
         })
         .then(res => {
           const newList = res.body.cardList || [];
+          allPageCountRef.current = Number(res.body.totalPages);
           if (isAppend) {
             setCardList(prev => [...prev, ...newList]);
-            allPageCountRef.current = Number(res.body.totalPages);
           } else {
             setCardList(newList);
           }

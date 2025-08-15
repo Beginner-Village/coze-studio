@@ -42,13 +42,3 @@ const getTemplateData = async () => {
   });
   return result.data?.products || [];
 };
-
-export const TemplateCardPage = () => (
-  <PageList
-    title={I18n.t('template_name')}
-    getDataList={() => getTemplateData()}
-    renderCard={data => <TemplateCard {...(data as TemplateCardProps)} />}
-    renderCardSkeleton={() => <TemplateCardSkeleton />}
-  />
-);
-

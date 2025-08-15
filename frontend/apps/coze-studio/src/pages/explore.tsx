@@ -56,7 +56,7 @@ export const exploreRouter: RouteObject = {
       }),
     },
     {
-      path: 'project/:project_type',
+      path: 'project/:sub_route_id',
       element: <ProjectPage />,
       loader: () => ({
         type: 'project',

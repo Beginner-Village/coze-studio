@@ -84,7 +84,7 @@ const getExploreMenuConfig = () => [
 const CustomSubMenu = ({ menuConfig }) => {
   const navigate = useNavigate();
   const { type } = useExploreRoute();
-  const { project_type } = useParams();
+  const { sub_route_id } = useParams();
   const firstParentNodeIndex = menuConfig.findIndex(item =>
     Array.isArray(item.children),
   );
@@ -127,7 +127,7 @@ const CustomSubMenu = ({ menuConfig }) => {
               key={child.type}
               {...child}
               subNode={true}
-              isActive={child.type === project_type}
+              isActive={child.type === sub_route_id}
               onClick={() => {
                 navigate(child.path);
               }}
@@ -147,10 +147,10 @@ export const TemplateSubMenu = () => {
   useEffect(() => {
     aopApi.GetCardTypeCount().then(res => {
       const list = res.body.cardClassList?.map(e => ({
-        type: `id-${e.id}`,
+        type: `${e.id}`,
         title: e.name,
         isActive: true,
-        path: `/template/card/id-${e.id}`,
+        path: `/template/card/${e.id}`,
       }));
       setSubMenus(list);
     });
@@ -172,7 +172,15 @@ export const TemplateSubMenu = () => {
           icon: <IconBotCard />,
           activeIcon: <IconBotCard />,
           title: I18n.t('Template_card'),
-          children: subMenus,
+          children: [
+            {
+              type: 'all',
+              title: I18n.t('All'),
+              isActive: true,
+              path: '/template/card/all',
+            },
+            ...subMenus,
+          ],
         },
       ]}
     />
