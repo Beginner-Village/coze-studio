@@ -114,6 +114,7 @@ const DocsRedirect = lazy(() => import('./pages/docs'));
 
 const SpaceModelConfig = lazy(() => import('./pages/space-model-config'));
 const AddModelPage = lazy(() => import('./pages/space-model-config/AddModelPage'));
+const EditModelPage = lazy(() => import('./pages/space-model-config/EditModelPage'));
 
 export const router: ReturnType<typeof createBrowserRouter> =
   createBrowserRouter([
@@ -208,6 +209,10 @@ export const router: ReturnType<typeof createBrowserRouter> =
                     {
                       path: 'add',
                       Component: AddModelPage,
+                    },
+                    {
+                      path: 'edit/:model_id',
+                      Component: EditModelPage,
                     },
                   ],
                   loader: () => ({

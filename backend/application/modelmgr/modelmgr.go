@@ -39,11 +39,11 @@ import (
 )
 
 type ModelmgrApplicationService struct {
-	Mgr                     inframodelmgr.Manager
-	TosClient               storage.Storage
-	ModelService            service.ModelService
-	ModelRepo               repository.ModelRepository
-	ModelTemplateRepo       repository.ModelTemplateRepository
+	Mgr               inframodelmgr.Manager
+	TosClient         storage.Storage
+	ModelService      service.ModelService
+	ModelRepo         repository.ModelRepository
+	ModelTemplateRepo repository.ModelTemplateRepository
 }
 
 var ModelmgrApplicationSVC = &ModelmgrApplicationService{}
@@ -81,7 +81,7 @@ func (m *ModelmgrApplicationService) GetModelList(ctx context.Context, req *deve
 		if req.SpaceID != nil && *req.SpaceID != "" && mm.Meta.Status == 2 {
 			continue
 		}
-		
+
 		logs.CtxInfof(ctx, "ChatModel DefaultParameters: %v", mm.DefaultParameters)
 		logs.CtxInfof(ctx, "ChatModel ID: %d, Name: %s, Status: %d", mm.ID, mm.Name, mm.Meta.Status)
 		logs.CtxInfof(ctx, "ChatModel DefaultParameters count: %d", len(mm.DefaultParameters))
@@ -91,7 +91,7 @@ func (m *ModelmgrApplicationService) GetModelList(ctx context.Context, req *deve
 				mm.IconURL = iconUrl
 			}
 		}
-		
+
 		apiModel, err := modelDo2To(mm, locale)
 		if err != nil {
 			return nil, err
@@ -216,19 +216,13 @@ func (m *ModelmgrApplicationService) CreateModel(ctx context.Context, req *model
 
 	// 处理 ConnConfig
 	if req.Meta.ConnConfig != nil {
-		// 检查是否有特殊的原始conn_config数据（用于ImportModelFromTemplate）
-		if rawConfig, ok := req.Meta.ConnConfig.ExtraParams["__raw_conn_config__"]; ok {
-			// 使用原始的conn_config JSON
-			metaEntity.ConnConfig = &rawConfig
-		} else {
-			// 正常序列化ConnConfig
-			connConfigJSON, err := json.Marshal(req.Meta.ConnConfig)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal conn_config: %w", err)
-			}
-			connConfigStr := string(connConfigJSON)
-			metaEntity.ConnConfig = &connConfigStr
+		// 直接序列化新的ConnConfig结构体
+		connConfigJSON, err := json.Marshal(req.Meta.ConnConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal conn_config: %w", err)
 		}
+		connConfigStr := string(connConfigJSON)
+		metaEntity.ConnConfig = &connConfigStr
 	}
 
 	// 处理 Description
@@ -328,6 +322,14 @@ func (m *ModelmgrApplicationService) UpdateModel(ctx context.Context, req *model
 			return nil, fmt.Errorf("failed to marshal default_parameters: %w", err)
 		}
 		model.DefaultParams = string(paramsJSON)
+	}
+	if req.ConnConfig != nil {
+		connConfigJSON, err := json.Marshal(req.ConnConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal conn_config: %w", err)
+		}
+		connConfigStr := string(connConfigJSON)
+		meta.ConnConfig = &connConfigStr
 	}
 
 	// 更新模型
@@ -691,11 +693,11 @@ func (m *ModelmgrApplicationService) GetModelTemplates(ctx context.Context) ([]*
 
 		apiTemplates = append(apiTemplates, &modelmgrapi.ModelTemplate{
 			ID:          strconv.FormatUint(template.ID, 10),
-			Name:        template.ModelName,  // 使用数据库中的model_name字段
+			Name:        template.ModelName, // 使用数据库中的model_name字段
 			Provider:    template.Provider,
 			Description: description,
-			ModelName:   &template.ModelName,  // 添加model_name字段
-			ModelType:   &template.ModelType,  // 添加model_type字段
+			ModelName:   &template.ModelName, // 添加model_name字段
+			ModelType:   &template.ModelType, // 添加model_type字段
 		})
 	}
 
@@ -785,7 +787,6 @@ func (m *ModelmgrApplicationService) convertToModelMetaOutput(meta *inframodelmg
 
 	return apiMeta, nil
 }
-
 
 func modelDo2To(model *inframodelmgr.Model, locale i18n.Locale) (*developer_api.Model, error) {
 	mm := model.Meta

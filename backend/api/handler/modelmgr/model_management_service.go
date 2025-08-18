@@ -518,15 +518,35 @@ func ImportModelFromTemplate(ctx context.Context, c *app.RequestContext) {
 
 		// 处理ConnConfig
 		if connConfig, ok := metaData["conn_config"].(map[string]interface{}); ok {
-			// 将整个conn_config作为JSON字符串放入ExtraParams
-			connConfigJSON, err := json.Marshal(connConfig)
-			if err == nil {
-				meta.ConnConfig = &modelmgr.ConnConfig{
-					ExtraParams: map[string]string{
-						"__raw_conn_config__": string(connConfigJSON),
-					},
-				}
+			// 解析新的ConnConfig结构体字段
+			config := &modelmgr.ConnConfig{}
+
+			// 解析base_url字段
+			if baseURL, ok := connConfig["base_url"].(string); ok {
+				config.BaseURL = baseURL
 			}
+
+			// 解析api_key字段
+			if apiKey, ok := connConfig["api_key"].(string); ok {
+				config.APIKey = &apiKey
+			}
+
+			// 解析timeout字段
+			if timeout, ok := connConfig["timeout"].(string); ok {
+				config.Timeout = &timeout
+			}
+
+			// 解析model字段
+			if model, ok := connConfig["model"].(string); ok {
+				config.Model = model
+			}
+
+			// 解析enable_thinking字段
+			if enableThinking, ok := connConfig["enable_thinking"].(bool); ok {
+				config.EnableThinking = &enableThinking
+			}
+
+			meta.ConnConfig = config
 		}
 
 		// Capability
@@ -593,7 +613,10 @@ func ImportModelFromTemplate(ctx context.Context, c *app.RequestContext) {
 		}
 	} else {
 		// 如果没有meta字段，提供完整的默认值
-		meta.ConnConfig = &modelmgr.ConnConfig{}
+		meta.ConnConfig = &modelmgr.ConnConfig{
+			BaseURL: "", // required字段需要提供默认值
+			Model:   "", // required字段需要提供默认值
+		}
 		meta.Capability = &modelmgr.ModelCapability{}
 	}
 

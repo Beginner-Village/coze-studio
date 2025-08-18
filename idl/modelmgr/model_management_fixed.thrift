@@ -55,11 +55,11 @@ struct ModelCapability {
 
 // 新增：连接配置结构体，替代JSON字符串
 struct ConnConfig {
-    1: optional string endpoint,
-    2: optional string auth_type,
-    3: optional string api_key,
-    4: optional map<string,string> headers,
-    5: optional map<string,string> extra_params,
+    1: required string base_url,
+    2: optional string api_key,
+    3: optional string timeout,
+    4: required string model,
+    5: optional bool enable_thinking,
 }
 
 // 新增：自定义配置结构体，替代JSON字符串
@@ -167,6 +167,7 @@ struct UpdateModelRequest {
     5: optional string                    icon_url,
     6: optional list<ModelParameterInput> default_parameters,
     7: optional i32                       status,
+    8: optional ConnConfig                conn_config,
 
     255: optional base.Base Base (api.none="true"),
 }
