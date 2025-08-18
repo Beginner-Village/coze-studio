@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 /* eslint-disable complexity */
 /*
  * Copyright 2025 coze-dev Authors
@@ -15,7 +16,13 @@
  * limitations under the License.
  */
 
-import { forwardRef, useImperativeHandle } from 'react';
+import {
+  forwardRef,
+  useImperativeHandle,
+  useState,
+  useRef,
+  useCallback,
+} from 'react';
 
 import classNames from 'classnames';
 import { useInfiniteScroll } from 'ahooks';
@@ -27,6 +34,7 @@ import {
   Layout,
   Cascader,
   Space,
+  Spin,
 } from '@coze-arch/coze-design';
 import { renderHtmlTitle } from '@coze-arch/bot-utils';
 import { EVENT_NAMES, sendTeaEvent } from '@coze-arch/bot-tea';
@@ -61,7 +69,12 @@ export { usePromptConfig } from './hooks/use-entity-configs/use-prompt-config';
 export { useKnowledgeConfig } from './hooks/use-entity-configs/use-knowledge-config';
 export { type LibraryEntityConfig } from './types';
 export { type UseEntityConfigHook } from './hooks/use-entity-configs/types';
-export { BaseLibraryItem } from './components/base-library-item';
+import { GridLibraryItem } from './components/grid-library-item';
+import {
+  GridList,
+  GridItem,
+} from '../../../../entry-adapter/src/pages/falcon/components/gridList';
+import cls from 'classnames';
 
 export const BaseLibraryPage = forwardRef<
   { reloadList: () => void },
@@ -73,6 +86,9 @@ export const BaseLibraryPage = forwardRef<
       useCachedQueryParams({
         spaceId,
       });
+
+    const [layoutType, setLayoutType] = useState('grid');
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     const resType = Number(sourceType);
     // const restTypeFilter =
@@ -137,9 +153,23 @@ export const BaseLibraryPage = forwardRef<
     const scopeOptions = getScopeOptions();
     const statusOptions = getStatusOptions();
 
+    const handleScroll = useCallback(() => {
+      if (scrollRef.current && !listResp.loading) {
+        const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+        const threshold = 100;
+        if (scrollTop + clientHeight >= scrollHeight - threshold) {
+          if (listResp.data?.hasMore) {
+            listResp.loadMore();
+          }
+        }
+      }
+    }, [listResp]);
+
     return (
       <Layout
-        className={s['layout-content']}
+        className={cls(s['layout-content'], {
+          'flex-col': layoutType === 'grid',
+        })}
         title={renderHtmlTitle(I18n.t('navigation_workspace_library'))}
       >
         <Layout.Header className={classNames(s['layout-header'], 'pb-0')}>
@@ -253,76 +283,125 @@ export const BaseLibraryPage = forwardRef<
                   }}
                 />
               </Space>
-              <Search
-                data-testid="workspace.library.filter.name"
-                className="!min-w-min"
-                style={params.name ? highlightFilterStyle : {}}
-                showClear={true}
-                width={200}
-                loading={listResp.loading}
-                placeholder={I18n.t('workspace_library_search')}
-                value={params.name}
-                onSearch={v => {
-                  sendTeaEvent(EVENT_NAMES.search_front, {
-                    full_url: window.location.href,
-                    source: 'library',
-                    search_word: v,
-                  });
-                  setParams(prev => ({
-                    ...prev,
-                    name: v,
-                  }));
-                }}
-              />
+              <Space>
+                <div className={s.filterSwitch}>
+                  {['list', 'grid'].map(item => (
+                    <div
+                      key={item}
+                      className={cls(s.filterItem, s[item], {
+                        [s.active]: layoutType === item,
+                      })}
+                      onClick={() => {
+                        setLayoutType(item);
+                      }}
+                    />
+                  ))}
+                </div>
+                <Search
+                  data-testid="workspace.library.filter.name"
+                  className="!min-w-min"
+                  style={params.name ? highlightFilterStyle : {}}
+                  showClear={true}
+                  width={200}
+                  loading={listResp.loading}
+                  placeholder={I18n.t('workspace_library_search')}
+                  value={params.name}
+                  onSearch={v => {
+                    sendTeaEvent(EVENT_NAMES.search_front, {
+                      full_url: window.location.href,
+                      source: 'library',
+                      search_word: v,
+                    });
+                    setParams(prev => ({
+                      ...prev,
+                      name: v,
+                    }));
+                  }}
+                />
+              </Space>
             </div>
           </div>
         </Layout.Header>
-        <Layout.Content>
-          <Table
-            data-testid="workspace.library.table"
-            offsetY={178}
-            tableProps={{
-              loading: listResp.loading,
-              dataSource: listResp.data?.list,
-              columns,
-              // Click on the whole line
-              onRow: (record?: ResourceInfo) => {
-                if (
-                  !record ||
-                  record.res_type === undefined ||
-                  record.detail_disable
-                ) {
-                  return {};
-                }
-                return {
-                  onClick: () => {
-                    sendTeaEvent(EVENT_NAMES.workspace_action_front, {
-                      space_id: spaceId,
-                      space_type: isPersonalSpace ? 'personal' : 'teamspace',
-                      tab_name: 'library',
-                      action: 'click',
-                      id: record.res_id,
-                      name: record.name,
-                      type:
-                        record.res_type && eventLibraryType[record.res_type],
-                    });
-                    entityConfigs
-                      .find(c => c.target.includes(record.res_type as ResType))
-                      ?.onItemClick(record);
-                  },
-                };
-              },
-            }}
-            empty={
-              <WorkspaceEmpty onClear={resetParams} hasFilter={hasFilter} />
-            }
-            enableLoad
-            loadMode="cursor"
-            strictDataSourceProp
-            hasMore={listResp.data?.hasMore}
-            onLoad={listResp.loadMore}
-          />
-        </Layout.Content>
+        {layoutType === 'list' ? (
+          <Layout.Content>
+            <Table
+              data-testid="workspace.library.table"
+              offsetY={178}
+              tableProps={{
+                loading: listResp.loading,
+                dataSource: listResp.data?.list,
+                columns,
+                // Click on the whole line
+                onRow: (record?: ResourceInfo) => {
+                  if (
+                    !record ||
+                    record.res_type === undefined ||
+                    record.detail_disable
+                  ) {
+                    return {};
+                  }
+                  return {
+                    onClick: () => {
+                      sendTeaEvent(EVENT_NAMES.workspace_action_front, {
+                        space_id: spaceId,
+                        space_type: isPersonalSpace ? 'personal' : 'teamspace',
+                        tab_name: 'library',
+                        action: 'click',
+                        id: record.res_id,
+                        name: record.name,
+                        type:
+                          record.res_type && eventLibraryType[record.res_type],
+                      });
+                      entityConfigs
+                        .find(c =>
+                          c.target.includes(record.res_type as ResType),
+                        )
+                        ?.onItemClick(record);
+                    },
+                  };
+                },
+              }}
+              empty={
+                <WorkspaceEmpty onClear={resetParams} hasFilter={hasFilter} />
+              }
+              enableLoad
+              loadMode="cursor"
+              strictDataSourceProp
+              hasMore={listResp.data?.hasMore}
+              onLoad={listResp.loadMore}
+            />
+          </Layout.Content>
+        ) : (
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto mx-[24px]"
+          >
+            <GridList averageItemWidth={276}>
+              {listResp.data?.list.map(record => (
+                <GridItem key={record.res_id}>
+                  <div className="grid-item p-[12px]">
+                    <GridLibraryItem
+                      resourceInfo={record}
+                      entityConfigs={entityConfigs}
+                      reloadList={listResp.reload}
+                    />
+                  </div>
+                </GridItem>
+              ))}
+            </GridList>
+            {listResp.loading ? (
+              <Spin>
+                <div className="w-full h-[100px] flex items-center justify-center" />
+              </Spin>
+            ) : null}
+            {!listResp.data?.list.length && (
+              <div className="w-full h-full flex items-center justify-center">
+                <WorkspaceEmpty onClear={resetParams} hasFilter={hasFilter} />
+              </div>
+            )}
+          </div>
+        )}
       </Layout>
     );
   },

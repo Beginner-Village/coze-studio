@@ -16154,6 +16154,7 @@ export type I18nKeysNoOptionsType =
   | 'workspace_develop'
   | 'workspace_mcp'
   | 'workspace_card'
+  | 'workspace_card_template'
   | 'workspace_mcp_detail'
   | 'workspace_card_detail'
   | 'workspace_develop_search'

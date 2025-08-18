@@ -3,6 +3,7 @@
   grid-template-columns: repeat(3, 1fr);
   grid-gap: 16px;
   margin-bottom: 16px;
+  width: 100%;
 }
 
 .gridItem {
@@ -10,6 +11,8 @@
   border: 1px solid #DCE0E4;
   border-radius: 6px;
   transition: box-shadow 0.3s ease-in-out;
+  white-space: wrap;
+  position: relative;
 
   &:not(.disabled):hover {
     border-color: #358AFF;
