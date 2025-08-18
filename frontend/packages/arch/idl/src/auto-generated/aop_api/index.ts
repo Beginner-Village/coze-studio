@@ -250,5 +250,22 @@ export default class AopApiService<T> {
     const data = _req;
     return this.request({ url, method, data }, options);
   }
+
+  // 获取卡片库卡片详情
+  GetCardMarketDetail(req?: any, options?: T): Promise<any> {
+    const _req = req || {};
+    const url = this.genBaseURL('IDC10025.do');
+    const method = 'POST';
+    const data = _req;
+    return this.request({ url, method, data }, options);
+  }
+
+  CardMarketAddToMe(req?: any, options?: T): Promise<any> {
+    const _req = req || {};
+    const url = this.genBaseURL('IDC10028.do');
+    const method = 'POST';
+    const data = _req;
+    return this.request({ url, method, data }, options);
+  }
 }
 /* eslint-enable */

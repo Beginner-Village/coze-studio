@@ -31,6 +31,12 @@ const TemplateProjectPage = lazy(() =>
   })),
 );
 
+const FalconMarketCardDetail = lazy(() =>
+  import('@coze-studio/workspace-adapter/marketCardDetail').then(exps => ({
+    default: exps.FalconMarketCardDetail,
+  })),
+);
+
 const TemplateCardPage = lazy(
   () => import('@coze-studio/workspace-adapter/cardTemplate'),
 );
@@ -61,6 +67,13 @@ export const templateRouter: RouteObject = {
       element: <TemplateCardPage />,
       loader: () => ({
         type: 'card',
+      }),
+    },
+    {
+      path: 'market-card-detail',
+      element: <FalconMarketCardDetail />,
+      loader: () => ({
+        type: 'marketCardDetail',
       }),
     },
   ],

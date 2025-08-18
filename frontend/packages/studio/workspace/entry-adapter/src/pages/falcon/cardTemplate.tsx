@@ -53,6 +53,7 @@ export const FalconCardTemplate: FC<DevelopProps> = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pageNoRef = useRef(1);
   const allPageCountRef = useRef(1);
+  const navigate = useNavigate();
 
   const getCardListData = useCallback(
     (isAppend = false) => {
@@ -140,6 +141,15 @@ export const FalconCardTemplate: FC<DevelopProps> = () => {
                 className={cls(
                   'px-[16px] h-full flex flex-col justify-between',
                 )}
+                onClick={e => {
+                  navigate(
+                    `/template/market-card-detail?card_id=${
+                      item.cardId
+                    }&preview_img=${replaceUrl(item.picUrl)}&creator=${
+                      item.createUserName
+                    }&createTime=${item.cardShelfTime}`,
+                  );
+                }}
               >
                 <div className="py-[12px]">
                   <div className="flex flex-col gap-[8px]">

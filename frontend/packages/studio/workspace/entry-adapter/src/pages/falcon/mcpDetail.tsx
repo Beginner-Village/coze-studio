@@ -63,7 +63,6 @@ export const FalconMcpDetail = ({ spaceId }) => {
         mcpConfig: values.service_config,
         sassWorkspaceId: spaceId,
       };
-      console.log('🚀 ~ handleSubmit ~ values:', subParams, values);
 
       setLoading(true);
       aopApi
@@ -94,7 +93,7 @@ export const FalconMcpDetail = ({ spaceId }) => {
           })) || [];
         setServiceTypeOptions(list);
       });
-  }, []);
+  }, [spaceId]);
 
   useEffect(() => {
     if (mcpId) {
