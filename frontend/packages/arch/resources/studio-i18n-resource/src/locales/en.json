@@ -1947,6 +1947,8 @@
   "member_action_remove": "Remove",
   "member_search_placeholder": "Search members by name",
   "member_filter_all": "All Roles",
+  "members_no_found": "No members found",
+  "failed_to_fetch_members": "Failed to fetch members",
   "member_add_modal_title": "Add Member",
   "member_add_search_placeholder": "Search by username or email",
   "member_remove_confirm_title": "Confirm Remove Member",

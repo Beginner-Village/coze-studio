@@ -1974,6 +1974,8 @@
   "member_action_remove": "移除",
   "member_search_placeholder": "按名称搜索成员",
   "member_filter_all": "全部角色",
+  "members_no_found": "暂无成员",
+  "failed_to_fetch_members": "获取成员失败",
   "member_add_modal_title": "添加成员",
   "member_add_search_placeholder": "搜索用户名或邮箱",
   "member_remove_confirm_title": "确认移除成员",

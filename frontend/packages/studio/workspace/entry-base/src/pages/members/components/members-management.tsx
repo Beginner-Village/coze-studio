@@ -260,11 +260,11 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
       render: (_text, record) => {
         const isCurrentUser = record.user_id === currentUserId;
         const isOwner = record.space_role_type === SpaceRoleType.Owner;
-        
+
         if (isCurrentUser || isOwner) {
           return null;
         }
-        
+
         return (
           <Space>
             <Select
@@ -298,7 +298,9 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
     <div className={s['members-container']}>
       <div className={s['members-header']}>
         <div className={s['header-row']}>
-          <h1 className={s['page-title']}>{I18n.t('navigation_workspace_members')}</h1>
+          <h1 className={s['page-title']}>
+            {I18n.t('navigation_workspace_members')}
+          </h1>
           {currentUserRole === SpaceRoleType.Owner && (
             <Button
               theme="solid"
@@ -329,7 +331,9 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
               setPage(1);
             }}
           >
-            <Select.Option value={0}>{I18n.t('member_filter_all')}</Select.Option>
+            <Select.Option value={0}>
+              {I18n.t('member_filter_all')}
+            </Select.Option>
             <Select.Option value={SpaceRoleType.Owner}>
               {I18n.t('member_role_owner')}
             </Select.Option>
@@ -342,7 +346,7 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
           </Select>
         </div>
       </div>
-      
+
       <div className={s['members-content']}>
         <Table
           offsetY={150}
@@ -355,13 +359,13 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
               current: page,
               pageSize,
               total,
-              onChange: (current) => setPage(current),
-              showTotal: (total) => `${total} members`,
+              onChange: current => setPage(current),
+              showTotal: total => `${total} members`,
             },
           }}
           empty={
             <div style={{ padding: '40px 0', textAlign: 'center' }}>
-              {I18n.t('No members found')}
+              {I18n.t('members_no_found')}
             </div>
           }
         />
@@ -398,22 +402,28 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
               <Text type="tertiary">{I18n.t('Loading')}</Text>
             </div>
           )}
-          {!searchMemberLoading && searchResults.length === 0 && searchValue && (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-              <Text type="tertiary">{I18n.t('No results found')}</Text>
-            </div>
-          )}
+          {!searchMemberLoading &&
+            searchResults.length === 0 &&
+            searchValue && (
+              <div
+                style={{ textAlign: 'center', padding: '40px', color: '#999' }}
+              >
+                <Text type="tertiary">{I18n.t('No results found')}</Text>
+              </div>
+            )}
           {searchResults.length > 0 && (
-            <div style={{ 
-              maxHeight: 400, 
-              overflow: 'auto',
-              border: '1px solid #f0f0f0',
-              borderRadius: 4,
-            }}>
+            <div
+              style={{
+                maxHeight: 400,
+                overflow: 'auto',
+                border: '1px solid #f0f0f0',
+                borderRadius: 4,
+              }}
+            >
               {searchResults.map((member, index) => {
                 const existingUserIds = members.map(m => m.user_id);
                 const isExisting = existingUserIds.includes(member.user_id);
-                
+
                 return (
                   <div
                     key={member.user_id}
@@ -421,16 +431,24 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
                       display: 'flex',
                       alignItems: 'center',
                       padding: '12px 16px',
-                      borderBottom: index === searchResults.length - 1 ? 'none' : '1px solid #f0f0f0',
+                      borderBottom:
+                        index === searchResults.length - 1
+                          ? 'none'
+                          : '1px solid #f0f0f0',
                       cursor: isExisting ? 'not-allowed' : 'pointer',
                       opacity: isExisting ? 0.6 : 1,
                     }}
                     onClick={() => {
                       if (!isExisting) {
                         if (selectedMembers.includes(member.user_id || '')) {
-                          setSelectedMembers(selectedMembers.filter(id => id !== member.user_id));
+                          setSelectedMembers(
+                            selectedMembers.filter(id => id !== member.user_id),
+                          );
                         } else {
-                          setSelectedMembers([...selectedMembers, member.user_id || '']);
+                          setSelectedMembers([
+                            ...selectedMembers,
+                            member.user_id || '',
+                          ]);
                         }
                       }
                     }}
@@ -440,7 +458,7 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
                       disabled={isExisting}
                       checked={selectedMembers.includes(member.user_id || '')}
                       onChange={() => {}}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={e => e.stopPropagation()}
                       style={{ marginRight: 12 }}
                     />
                     <Avatar
