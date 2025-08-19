@@ -187,7 +187,7 @@ export const FalconMarketCardDetail = () => {
                   {I18n.t('workspace_card_params')}
                 </div>
                 <div
-                  className="w-full px-[24px] py-[24px] bg-[#fff] rounded-[6px]"
+                  className="w-full px-[24px] py-[24px] bg-[#fff] rounded-[6px] mb-[24px]"
                   style={{
                     border:
                       '1px solid rgba(var(--coze-stroke-5), var(--coze-stroke-5-alpha))',
@@ -239,7 +239,7 @@ export const FalconMarketCardDetail = () => {
             )}
             {showType === 'version' && (
               <div
-                className="w-full px-[24px] pt-[24px] pb-[8px] bg-[#fff] rounded-[6px] mt-[16px]"
+                className="w-full px-[24px] pt-[24px] pb-[8px] bg-[#fff] rounded-[6px] mt-[16px] mb-[24px]"
                 style={{
                   border:
                     '1px solid rgba(var(--coze-stroke-5), var(--coze-stroke-5-alpha))',

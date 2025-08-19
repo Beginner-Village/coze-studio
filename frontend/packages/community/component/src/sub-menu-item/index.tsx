@@ -47,7 +47,7 @@ export const SubMenuItem: FC<SubMenuItemProps> = ({
       'h-[32px] w-full',
       'px-[8px]',
       'cursor-pointer',
-      'hover:coz-mg-primary-hovered',
+      'hover:coz-mg-secondary-hovered',
       isActive ? 'coz-bg-primary coz-fg-plus' : 'coz-fg-primary coz-bg-max',
     )}
   >
@@ -56,12 +56,11 @@ export const SubMenuItem: FC<SubMenuItemProps> = ({
     </div>
     <Typography.Text
       ellipsis={{ showTooltip: true, rows: 1 }}
-      weight={500}
-      className={
-        subNode
-          ? 'flex-1 text-[14px] leading-[20px] font-[400] coz-fg-secondary'
-          : 'flex-1 text-[14px] leading-[20px] font-[500]'
-      }
+      weight={subNode ? 400 : 500}
+      className={classNames(
+        'flex-1 text-[14px] leading-[20px] ',
+        isActive ? 'coz-fg-plus' : 'coz-fg-primary',
+      )}
     >
       {title}
     </Typography.Text>
