@@ -239,7 +239,7 @@ export const FalconMarketCardDetail = () => {
             )}
             {showType === 'version' && (
               <div
-                className="w-full px-[24px] pt-[24px] pb-[16px] bg-[#fff] rounded-[6px] mt-[16px]"
+                className="w-full px-[24px] pt-[24px] pb-[8px] bg-[#fff] rounded-[6px] mt-[16px]"
                 style={{
                   border:
                     '1px solid rgba(var(--coze-stroke-5), var(--coze-stroke-5-alpha))',
@@ -269,6 +269,8 @@ export const FalconMarketCardDetail = () => {
                         key: '3',
                         title: I18n.t('PublishedTime'),
                         dataIndex: 'createTime',
+                        align: 'left',
+                        width: 200,
                       },
                     ],
                     className: 'bg-[#fff]',
