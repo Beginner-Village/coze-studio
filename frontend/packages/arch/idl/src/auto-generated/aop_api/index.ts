@@ -267,5 +267,14 @@ export default class AopApiService<T> {
     const data = _req;
     return this.request({ url, method, data }, options);
   }
+
+  // 获取卡片市场版本列表
+  GetCardMarketVersionList(req?: any, options?: T): Promise<any> {
+    const _req = req || {};
+    const url = this.genBaseURL('IDC10004.do');
+    const method = 'POST';
+    const data = _req;
+    return this.request({ url, method, data }, options);
+  }
 }
 /* eslint-enable */

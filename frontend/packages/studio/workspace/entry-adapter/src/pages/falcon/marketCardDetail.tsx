@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 /* eslint-disable @coze-arch/max-line-per-function */
 /* eslint-disable prettier/prettier */
 import { useEffect, useCallback, useState, useRef } from 'react';
@@ -13,6 +14,7 @@ import {
   RadioGroup,
   Radio,
   Table,
+  Pagination,
 } from '@coze-arch/coze-design';
 import { getParamsFromQuery } from '../../../../../../arch/bot-utils';
 import { useParams } from 'react-router-dom';
@@ -41,71 +43,6 @@ import { aopApi } from '@coze-arch/bot-api';
 
 import styles from './index.module.less';
 
-const cardList = [
-  {
-    bizChannel: '',
-    cardClassId: '4',
-    cardId: '10000176',
-    cardName: '理财产品对比',
-    cardPicUrl: '',
-    cardShelfStatus: '1',
-    cardShelfTime: '',
-    code: 'financialProductsComparison',
-    createUserId: '',
-    createUserName: '',
-    picUrl:
-      '@filestore/dev-public-cbbiz/20250714174158_截屏2025-07-14 17.39.55.png',
-    sassAppId: '100001',
-    sassWorkspaceId: '7533521629687578624',
-  },
-  {
-    bizChannel: '',
-    cardClassId: '4',
-    cardId: '10000173',
-    cardName: '产品解读',
-    cardPicUrl: '',
-    cardShelfStatus: '1',
-    cardShelfTime: '',
-    code: 'productInterpretation',
-    createUserId: '',
-    createUserName: '',
-    picUrl:
-      '@filestore/dev-public-cbbiz/20250714161144_截屏2025-07-14 16.11.36.png',
-    sassAppId: '100001',
-    sassWorkspaceId: '7533521629687578624',
-  },
-  {
-    bizChannel: '',
-    cardClassId: '4',
-    cardId: '10000154',
-    cardName: '理财持仓收益-弹窗',
-    cardPicUrl: '',
-    cardShelfStatus: '1',
-    cardShelfTime: '',
-    code: 'financialProductEarningDialog',
-    createUserId: '',
-    createUserName: '',
-    picUrl: '@filestore/dev-public-cbbiz/20250624104919_12.jpg',
-    sassAppId: '100001',
-    sassWorkspaceId: '7533521629687578624',
-  },
-  {
-    bizChannel: '',
-    cardClassId: '4',
-    cardId: '10000143',
-    cardName: '产品赎回',
-    cardPicUrl: '',
-    cardShelfStatus: '1',
-    cardShelfTime: '',
-    code: 'financialProductRedemption',
-    createUserId: '',
-    createUserName: '',
-    picUrl: '@filestore/dev-public-cbbiz/20250606101850_ic_39566.png',
-    sassAppId: '100001',
-    sassWorkspaceId: '7533521629687578624',
-  },
-];
-
 export const FalconMarketCardDetail = () => {
   const cardId = getParamsFromQuery({ key: 'card_id' });
   const creator = getParamsFromQuery({ key: 'creator' });
@@ -114,6 +51,11 @@ export const FalconMarketCardDetail = () => {
   const [cardDetail, setCardDetail] = useState({});
   const [showType, setShowType] = useState('preview');
   const [addCardId, setAddCardId] = useState('');
+  const [versionPageNum, setVersionPageNum] = useState(1);
+  const [versionList, setVersionList] = useState([]);
+  const [versionTotal, setVersionTotal] = useState(0);
+  const [cardList, setCardList] = useState([]);
+  const pageSize = 30;
   const navigate = useNavigate();
 
   const addToMe = useCallback(() => {
@@ -131,6 +73,31 @@ export const FalconMarketCardDetail = () => {
   }, [cardId]);
 
   useEffect(() => {
+    aopApi
+      .GetCardMarketVersionList({
+        cardId: cardId,
+        pageNo: versionPageNum,
+        pageSize: pageSize,
+      })
+      .then(res => {
+        const newList = res.body.versionList || [];
+        setVersionList(newList);
+        setVersionTotal(Number(res.body.totalNums));
+      });
+  }, [cardId, versionPageNum]);
+
+  useEffect(() => {
+    aopApi
+      .GetCardMarketList({
+        cardClassId: ~~(Math.random() * 11 + 1),
+        pageNo: 1,
+        pageSize: 4,
+      })
+      .then(res => {
+        const newList = res.body.cardList || [];
+        setCardList(newList);
+      });
+
     aopApi
       .GetCardMarketDetail({
         cardId: cardId,
@@ -258,16 +225,78 @@ export const FalconMarketCardDetail = () => {
                       dataSource: cardDetail.paramList || [],
                       pagination: false,
                     }}
+                    empty={
+                      <div className="w-full h-full flex flex-col items-center pt-[20px]">
+                        <IconCozEmpty className="w-[48px] h-[48px] coz-fg-dim" />
+                        <div className="text-[16px] font-[500] leading-[22px] mt-[8px] mb-[16px] coz-fg-primary">
+                          {I18n.t('analytic_query_blank_context')}
+                        </div>
+                      </div>
+                    }
                   />
-                  {(cardDetail.paramList || []).length === 0 && (
+                </div>
+              </div>
+            )}
+            {showType === 'version' && (
+              <div
+                className="w-full px-[24px] pt-[24px] pb-[16px] bg-[#fff] rounded-[6px] mt-[16px]"
+                style={{
+                  border:
+                    '1px solid rgba(var(--coze-stroke-5), var(--coze-stroke-5-alpha))',
+                }}
+              >
+                <Table
+                  tableProps={{
+                    columns: [
+                      {
+                        key: '1',
+                        title: I18n.t('ocean_deploy_list_pkg_version'),
+                        dataIndex: 'version',
+                      },
+                      {
+                        key: '2',
+                        title: I18n.t('bot_publish_columns_platform'),
+                        dataIndex: 'platformStatus',
+                        align: 'left',
+                        render: (_, record) => {
+                          const platform = JSON.parse(
+                            record.platformStatus || '[]',
+                          );
+                          return platform?.join('、') || '-';
+                        },
+                      },
+                      {
+                        key: '3',
+                        title: I18n.t('PublishedTime'),
+                        dataIndex: 'createTime',
+                      },
+                    ],
+                    className: 'bg-[#fff]',
+                    rowKey: 'versionId',
+                    dataSource: versionList || [],
+                    pagination: {
+                      total: versionTotal,
+                      currentPage: versionPageNum,
+                      pageSize,
+                      onPageChange: setVersionPageNum,
+                    },
+                  }}
+                  empty={
                     <div className="w-full h-full flex flex-col items-center pt-[20px]">
                       <IconCozEmpty className="w-[48px] h-[48px] coz-fg-dim" />
                       <div className="text-[16px] font-[500] leading-[22px] mt-[8px] mb-[16px] coz-fg-primary">
                         {I18n.t('analytic_query_blank_context')}
                       </div>
                     </div>
-                  )}
-                </div>
+                  }
+                />
+                {/* <Pagination
+                  className={styles['version-pagination']}
+                  total={versionTotal}
+                  pageSize={pageSize}
+                  currentPage={versionPageNum}
+                  onPageChange={setVersionPageNum}
+                /> */}
               </div>
             )}
           </div>
@@ -280,7 +309,7 @@ export const FalconMarketCardDetail = () => {
                 <GridItem key={item.cardId}>
                   <div
                     className={cls(
-                      'px-[16px] h-full flex flex-col justify-between',
+                      'px-[12px] h-full flex flex-col justify-between',
                     )}
                     onClick={e => {
                       navigate(

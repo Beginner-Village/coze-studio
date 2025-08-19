@@ -139,7 +139,7 @@ export const FalconCardTemplate: FC<DevelopProps> = () => {
             <GridItem key={item.cardId}>
               <div
                 className={cls(
-                  'px-[16px] h-full flex flex-col justify-between',
+                  'px-[12px] h-full flex flex-col justify-between',
                 )}
                 onClick={e => {
                   navigate(
