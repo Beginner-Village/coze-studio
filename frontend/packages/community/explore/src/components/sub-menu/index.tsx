@@ -146,12 +146,24 @@ export const TemplateSubMenu = () => {
   const [subMenus, setSubMenus] = useState([]);
   useEffect(() => {
     aopApi.GetCardTypeCount().then(res => {
-      const list = res.body.cardClassList?.map(e => ({
-        type: `${e.id}`,
-        title: e.name,
+      let total = 0;
+      const list = res.body.cardClassList?.map(e => {
+        total += Number(e.count || 0);
+        return {
+          type: `${e.id}`,
+          title: e.name,
+          subText: `${e.count}`,
+          isActive: true,
+          path: `/template/card/${e.id}`,
+        };
+      });
+      list.unshift({
+        type: 'all',
+        title: I18n.t('All'),
+        subText: `${total}`,
         isActive: true,
-        path: `/template/card/${e.id}`,
-      }));
+        path: '/template/card/all',
+      });
       setSubMenus(list);
     });
   }, []);
@@ -172,15 +184,7 @@ export const TemplateSubMenu = () => {
           icon: <IconBotCard />,
           activeIcon: <IconBotCard />,
           title: I18n.t('Template_card'),
-          children: [
-            {
-              type: 'all',
-              title: I18n.t('All'),
-              isActive: true,
-              path: '/template/card/all',
-            },
-            ...subMenus,
-          ],
+          children: subMenus,
         },
       ]}
     />

@@ -165,6 +165,28 @@ export const BaseLibraryPage = forwardRef<
       }
     }, [listResp]);
 
+    const onRowClick = (record?: ResourceInfo) => {
+      if (!record || record.res_type === undefined || record.detail_disable) {
+        return {};
+      }
+      return {
+        onClick: () => {
+          sendTeaEvent(EVENT_NAMES.workspace_action_front, {
+            space_id: spaceId,
+            space_type: isPersonalSpace ? 'personal' : 'teamspace',
+            tab_name: 'library',
+            action: 'click',
+            id: record.res_id,
+            name: record.name,
+            type: record.res_type && eventLibraryType[record.res_type],
+          });
+          entityConfigs
+            .find(c => c.target.includes(record.res_type as ResType))
+            ?.onItemClick(record);
+        },
+      };
+    };
+
     return (
       <Layout
         className={cls(s['layout-content'], {
@@ -331,35 +353,7 @@ export const BaseLibraryPage = forwardRef<
                 loading: listResp.loading,
                 dataSource: listResp.data?.list,
                 columns,
-                // Click on the whole line
-                onRow: (record?: ResourceInfo) => {
-                  if (
-                    !record ||
-                    record.res_type === undefined ||
-                    record.detail_disable
-                  ) {
-                    return {};
-                  }
-                  return {
-                    onClick: () => {
-                      sendTeaEvent(EVENT_NAMES.workspace_action_front, {
-                        space_id: spaceId,
-                        space_type: isPersonalSpace ? 'personal' : 'teamspace',
-                        tab_name: 'library',
-                        action: 'click',
-                        id: record.res_id,
-                        name: record.name,
-                        type:
-                          record.res_type && eventLibraryType[record.res_type],
-                      });
-                      entityConfigs
-                        .find(c =>
-                          c.target.includes(record.res_type as ResType),
-                        )
-                        ?.onItemClick(record);
-                    },
-                  };
-                },
+                onRow: onRowClick,
               }}
               empty={
                 <WorkspaceEmpty onClear={resetParams} hasFilter={hasFilter} />
@@ -380,7 +374,10 @@ export const BaseLibraryPage = forwardRef<
             <GridList averageItemWidth={276}>
               {listResp.data?.list.map(record => (
                 <GridItem key={record.res_id}>
-                  <div className="grid-item p-[12px]">
+                  <div
+                    className="grid-item p-[12px] cursor-pointer"
+                    onClick={() => onRowClick(record)?.onClick()}
+                  >
                     <GridLibraryItem
                       resourceInfo={record}
                       entityConfigs={entityConfigs}

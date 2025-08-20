@@ -145,7 +145,6 @@ const SpaceManagementPage: React.FC = () => {
         setMembers(response.data || []);
       }
     } catch (error: any) {
-      console.error('Failed to fetch members:', error);
       if (error.code === '200' || error.code === 200) {
         const responseData = error.response?.data;
         if (responseData && responseData.data) {

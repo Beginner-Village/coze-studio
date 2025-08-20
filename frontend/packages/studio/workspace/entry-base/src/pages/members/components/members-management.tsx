@@ -1,3 +1,5 @@
+/* eslint-disable max-lines-per-function */
+/* eslint-disable @coze-arch/max-line-per-function */
 /*
  * Copyright 2025 coze-dev Authors
  *
@@ -79,10 +81,10 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
         setTotal(resp.data.total || 0);
         setCurrentUserRole(resp.data.space_role_type || SpaceRoleType.Member);
       } else {
-        Toast.error(resp.msg || 'Failed to fetch members');
+        Toast.error(resp.msg || I18n.t('failed_to_fetch_members'));
       }
     } catch (error) {
-      Toast.error('Failed to fetch members');
+      Toast.error(I18n.t('failed_to_fetch_members'));
     } finally {
       setLoading(false);
     }
@@ -109,10 +111,10 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
         setSearchResults(resp.member_info_list || []);
         console.log('Search results:', resp.member_info_list);
       } else {
-        Toast.error(resp.msg || 'Failed to search members');
+        Toast.error(resp.msg || I18n.t('failed_to_search_members'));
       }
     } catch (error) {
-      Toast.error('Failed to search members');
+      Toast.error(I18n.t('failed_to_search_members'));
     } finally {
       setSearchMemberLoading(false);
     }
@@ -120,7 +122,7 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
 
   const handleAddMembers = async () => {
     if (selectedMembers.length === 0) {
-      Toast.warning('Please select members to add');
+      Toast.warning(I18n.t('please_select_members_to_add'));
       return;
     }
 
@@ -142,16 +144,16 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
       });
 
       if (resp.code === 0) {
-        Toast.success('Members added successfully');
+        Toast.success(I18n.t('members_added_successfully'));
         setAddMemberVisible(false);
         setSelectedMembers([]);
         setSearchResults([]);
         fetchMembers();
       } else {
-        Toast.error(resp.msg || 'Failed to add members');
+        Toast.error(resp.msg || I18n.t('failed_to_add_members'));
       }
     } catch (error) {
-      Toast.error('Failed to add members');
+      Toast.error(I18n.t('failed_to_add_members'));
     }
   };
 
@@ -169,13 +171,13 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
           });
 
           if (resp.code === 0) {
-            Toast.success('Member removed successfully');
+            Toast.success(I18n.t('member_removed_successfully'));
             fetchMembers();
           } else {
-            Toast.error(resp.msg || 'Failed to remove member');
+            Toast.error(resp.msg || I18n.t('failed_to_remove_member'));
           }
         } catch (error) {
-          Toast.error('Failed to remove member');
+          Toast.error(I18n.t('failed_to_remove_member'));
         }
       },
     });
@@ -189,13 +191,13 @@ export const MembersManagement: FC<MembersManagementProps> = ({ spaceId }) => {
       });
 
       if (resp.code === 0) {
-        Toast.success('Role updated successfully');
+        Toast.success(I18n.t('role_updated_successfully'));
         fetchMembers();
       } else {
-        Toast.error(resp.msg || 'Failed to update role');
+        Toast.error(resp.msg || I18n.t('failed_to_update_role'));
       }
     } catch (error) {
-      Toast.error('Failed to update role');
+      Toast.error(I18n.t('failed_to_update_role'));
     }
   };
 

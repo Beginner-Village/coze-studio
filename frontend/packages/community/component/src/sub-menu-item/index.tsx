@@ -22,6 +22,7 @@ import { Typography } from '@coze-arch/coze-design';
 export interface SubMenuItemProps {
   icon?: ReactNode;
   title?: string;
+  subText?: string;
   activeIcon?: ReactNode;
   isActive: boolean;
   suffix?: ReactNode;
@@ -32,6 +33,7 @@ export interface SubMenuItemProps {
 export const SubMenuItem: FC<SubMenuItemProps> = ({
   icon = null,
   title,
+  subText,
   activeIcon = null,
   isActive,
   suffix,
@@ -63,6 +65,9 @@ export const SubMenuItem: FC<SubMenuItemProps> = ({
       )}
     >
       {title}
+      {subText ? (
+        <span className={classNames('text-[12px] ml-[4px]')}>{subText}</span>
+      ) : null}
     </Typography.Text>
     {suffix}
   </div>
