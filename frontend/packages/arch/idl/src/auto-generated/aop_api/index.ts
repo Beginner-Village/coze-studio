@@ -236,7 +236,7 @@ export default class AopApiService<T> {
   // 获取卡片市场类型
   GetCardTypeCount(req?: any, options?: T): Promise<any> {
     const _req = req || {};
-    const url = this.genBaseURL('IDC10032.do');
+    const url = this.genBaseURL('IDC10033.do');
     const method = 'POST';
     const data = _req;
     return this.request({ url, method, data }, options);
