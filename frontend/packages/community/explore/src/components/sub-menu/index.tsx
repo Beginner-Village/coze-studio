@@ -38,6 +38,7 @@ import { Space } from '@coze-arch/coze-design';
 import { useExploreRoute } from '../../hooks/use-explore-route';
 import cls from 'classnames';
 import { aopApi } from '@coze-arch/bot-api';
+
 import styles from './index.module.less';
 
 const getExploreMenuConfig = () => [
@@ -142,6 +143,10 @@ export const ExploreSubMenu = () => (
   <CustomSubMenu menuConfig={getExploreMenuConfig()} />
 );
 
+const SubText = ({ children }) => (
+  <span className={cls('text-[12px] ml-[4px]')}>{children}</span>
+);
+
 export const TemplateSubMenu = () => {
   const [subMenus, setSubMenus] = useState([]);
   useEffect(() => {
@@ -152,7 +157,7 @@ export const TemplateSubMenu = () => {
         return {
           type: `${e.id}`,
           title: e.name,
-          subText: `${e.count}`,
+          subText: <SubText>{e.count}</SubText>,
           isActive: true,
           path: `/template/card/${e.id}`,
         };
@@ -160,7 +165,7 @@ export const TemplateSubMenu = () => {
       list.unshift({
         type: 'all',
         title: I18n.t('All'),
-        subText: `${total}`,
+        subText: <SubText>{total}</SubText>,
         isActive: true,
         path: '/template/card/all',
       });
