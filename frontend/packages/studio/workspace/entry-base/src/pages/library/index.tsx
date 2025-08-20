@@ -89,6 +89,9 @@ export const BaseLibraryPage = forwardRef<
 
     const [layoutType, setLayoutType] = useState('grid');
     const scrollRef = useRef<HTMLDivElement>(null);
+    const defaultGridItemWidth = 276;
+    const [gridItemWidth, setGridItemWidth] = useState(defaultGridItemWidth);
+    const [gridItemCount, setGridItemCount] = useState(9);
 
     const resType = Number(sourceType);
     // const restTypeFilter =
@@ -118,7 +121,7 @@ export const BaseLibraryPage = forwardRef<
                   : [typeFilter],
               cursor: prev?.nextCursorId,
               space_id: spaceId,
-              size: LIBRARY_PAGE_SIZE,
+              size: layoutType === 'grid' ? gridItemCount : LIBRARY_PAGE_SIZE,
             },
           ),
         );
@@ -371,7 +374,18 @@ export const BaseLibraryPage = forwardRef<
             onScroll={handleScroll}
             className="flex-1 overflow-y-auto mx-[24px]"
           >
-            <GridList averageItemWidth={276}>
+            <GridList
+              averageItemWidth={defaultGridItemWidth}
+              onResize={(width, count) => {
+                const calcCount =
+                  count *
+                  Math.round(document.documentElement.clientHeight / 240);
+                setGridItemWidth(width);
+                setGridItemCount(
+                  calcCount > LIBRARY_PAGE_SIZE ? calcCount : LIBRARY_PAGE_SIZE,
+                );
+              }}
+            >
               {listResp.data?.list.map(record => (
                 <GridItem key={record.res_id}>
                   <div
@@ -382,6 +396,7 @@ export const BaseLibraryPage = forwardRef<
                       resourceInfo={record}
                       entityConfigs={entityConfigs}
                       reloadList={listResp.reload}
+                      gridItemWidth={gridItemWidth}
                     />
                   </div>
                 </GridItem>

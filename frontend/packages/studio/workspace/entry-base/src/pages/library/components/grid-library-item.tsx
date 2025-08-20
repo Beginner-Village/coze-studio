@@ -37,6 +37,7 @@ export const GridLibraryItem: React.FC<{
   tag?: ReactNode;
   entityConfigs: LibraryEntityConfig[];
   reloadList: () => void;
+  gridItemWidth?: number;
 }> = ({
   resourceInfo,
   defaultIcon,
@@ -44,6 +45,7 @@ export const GridLibraryItem: React.FC<{
   tag,
   entityConfigs,
   reloadList,
+  gridItemWidth,
 }) => {
   const config =
     resourceInfo.res_type !== undefined
@@ -74,7 +76,7 @@ export const GridLibraryItem: React.FC<{
               data-testid="workspace.library.item.name"
               className="h-[20px] text-[16px] coz-fg-primary leading-[20px]"
               style={{
-                maxWidth: '100%',
+                maxWidth: gridItemWidth ? `${gridItemWidth - 64}px` : '',
               }}
               ellipsis={{ showTooltip: true }}
             >
@@ -100,7 +102,7 @@ export const GridLibraryItem: React.FC<{
                   className="!h-[16px] !font-[400] !coz-fg-secondary !leading-[16px] break-words"
                   ellipsis={{ showTooltip: true }}
                   style={{
-                    maxWidth: '276px',
+                    maxWidth: gridItemWidth ? `${gridItemWidth - 64}px` : '',
                   }}
                 >
                   {resourceInfo.desc}
