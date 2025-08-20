@@ -210,12 +210,15 @@ export const FalconMarketCardDetail = () => {
                           key: '3',
                           title: '类型',
                           dataIndex: 'paramType',
+                          width: 100,
+                          align: 'center',
                         },
                         {
                           key: '4',
                           title: '是否必填',
                           dataIndex: 'isRequired',
-                          align: 'left',
+                          width: 100,
+                          align: 'center',
                           render: (text, record) =>
                             record.isRequired === '1' ? '是' : '否',
                         },
