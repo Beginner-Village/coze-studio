@@ -37,7 +37,7 @@ const mergedConfig = defineConfig({
       // },
       {
         context: ['/api', '/v1', '/aop-web', '/filestore', '/agent-h5/'],
-        target: 'https://agent.finmall.com/',
+        target: 'https://agents.finmall.com/',
         secure: false,
         changeOrigin: true,
       },
