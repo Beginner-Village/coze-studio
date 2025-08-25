@@ -18,6 +18,7 @@ import { Navigate, type RouteObject } from 'react-router-dom';
 import { lazy } from 'react';
 
 import { BaseEnum } from '@coze-arch/web-context';
+import { MicroAppWrapper } from '../apps/MicroAppWrapper'
 
 const subMenu = lazy(() =>
   import('@coze-community/explore').then(exps => ({
@@ -61,6 +62,10 @@ export const exploreRouter: RouteObject = {
       loader: () => ({
         type: 'project',
       }),
+    },
+    {
+      path: 'agent/*',
+      element: <MicroAppWrapper appName="agent" />,
     },
   ],
 };
