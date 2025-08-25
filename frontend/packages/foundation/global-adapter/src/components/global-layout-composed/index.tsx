@@ -15,7 +15,7 @@
  */
 
 import { useParams } from 'react-router-dom';
-import { type FC, type PropsWithChildren } from 'react';
+import { type FC, type PropsWithChildren, type RefObject, useEffect, useRef, useState } from 'react';
 
 import { GlobalLayout } from '@coze-foundation/layout';
 import { useCreateBotAction } from '@coze-foundation/global';
@@ -42,11 +42,22 @@ import {
 
 import { AccountDropdown } from '../account-dropdown';
 import { useHasSider } from './hooks/use-has-sider';
+import { logout } from '@coze-foundation/account-adapter';
+
 
 export const GlobalLayoutComposed: FC<PropsWithChildren> = ({ children }) => {
   const config = useRouteConfig();
   const hasSider = useHasSider();
   const { space_id } = useParams();
+  const [isInit, setInit] = useState(false);
+  let handler = () => logout()
+
+  useEffect(() => {
+    if(!isInit){
+      window.document.addEventListener('exit', handler, false)
+      setInit(true)
+    }
+  })
 
   const { createBot, createBotModal } = useCreateBotAction({
     currentSpaceId: space_id,
