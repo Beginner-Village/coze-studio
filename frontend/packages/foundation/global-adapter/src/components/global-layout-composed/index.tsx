@@ -49,15 +49,14 @@ export const GlobalLayoutComposed: FC<PropsWithChildren> = ({ children }) => {
   const config = useRouteConfig();
   const hasSider = useHasSider();
   const { space_id } = useParams();
-  const [isInit, setInit] = useState(false);
-  let handler = () => logout()
 
   useEffect(() => {
-    if(!isInit){
-      window.document.addEventListener('exit', handler, false)
-      setInit(true)
+    let handler = () => logout()
+    window.document.addEventListener('exit', handler, false)
+    return () => {
+      window.document.removeEventListener('exit', handler, false)
     }
-  })
+  }, [])
 
   const { createBot, createBotModal } = useCreateBotAction({
     currentSpaceId: space_id,
