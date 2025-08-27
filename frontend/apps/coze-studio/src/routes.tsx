@@ -24,6 +24,8 @@ import { BaseEnum } from '@coze-arch/web-context';
 import { exploreRouter } from './pages/explore';
 import { templateRouter } from './pages/template';
 import { Layout } from './layout';
+import { MicroAppWrapper} from './apps/MicroAppWrapper'
+
 const subMenu = lazy(() =>
   import('@coze-foundation/space-ui-adapter').then(exps => ({
     default: exps.WorkspaceSubMenu,
@@ -182,6 +184,10 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
                 loader: () => ({
                   subMenuKey: SpaceSubModuleEnum.DEVELOP,
                 }),
+              },
+              {
+                path: 'agent/*',
+                element: <MicroAppWrapper appName="agent" />,
               },
               {
                 path: 'mcp',
