@@ -60,6 +60,8 @@ declare const FEATURE_ENABLE_TEA_UG: boolean;
 declare const FEATURE_ENABLE_VARIABLE: boolean;
 declare const FEATURE_ENABLE_WORKFLOW_LLM_PAYMENT: boolean;
 declare const FEATURE_GOOGLE_LOGIN: boolean;
+declare const FEATURE_SHOW_EXTERNAL_KNOWLEDGE: boolean;
+declare const FEATURE_SHOW_MCP: boolean;
 declare const FEEL_GOOD_HOST: string;
 declare const FEEL_GOOD_PID: '';
 declare const FEISHU_PUBLISH_ID: string;

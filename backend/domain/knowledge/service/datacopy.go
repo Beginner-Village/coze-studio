@@ -224,7 +224,15 @@ func (k *knowledgeSVC) copyKnowledgeDocuments(ctx context.Context, copyCtx *know
 		return err
 	}
 	collectionName := getCollectionName(copyCtx.CopyTask.TargetDataID)
-	for _, ssMgr := range k.searchStoreManagers {
+
+	// Get managers for the target space (supports space-level embedding)
+	managers, err := k.getManagersForSpace(ctx, uint64(copyCtx.CopyTask.TargetSpaceID))
+	if err != nil {
+		logs.CtxErrorf(ctx, "getManagersForSpace failed: %v", err)
+		return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", err.Error()))
+	}
+
+	for _, ssMgr := range managers {
 		if err = ssMgr.Create(ctx, &searchstore.CreateRequest{
 			CollectionName: collectionName,
 			Fields:         fields,
@@ -448,7 +456,15 @@ func (k *knowledgeSVC) copyDocument(ctx context.Context, copyCtx *knowledgeCopyC
 		if err != nil {
 			return err
 		}
-		for _, mgr := range k.searchStoreManagers {
+
+		// Get managers for the target space (supports space-level embedding)
+		copyManagers, err := k.getManagersForSpace(ctx, uint64(copyCtx.CopyTask.TargetSpaceID))
+		if err != nil {
+			logs.CtxErrorf(ctx, "getManagersForSpace failed: %v", err)
+			return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", err.Error()))
+		}
+
+		for _, mgr := range copyManagers {
 			ss, err := mgr.GetSearchStore(ctx, collectionName)
 			if err != nil {
 				return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", err.Error()))

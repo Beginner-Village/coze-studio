@@ -160,6 +160,7 @@ func (a *OpenapiAgentRunApplication) buildAgentRunRequest(ctx context.Context, a
 		ConnectorID:      connectorID,
 		ContentType:      contentType,
 		Ext:              ar.ExtraParams,
+		CustomVariables:  ar.CustomVariables, // 传递会话自定义变量，用于覆盖智能体预设变量
 	}
 	return arm, nil
 }

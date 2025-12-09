@@ -2638,7 +2638,9 @@ func (w *ApplicationService) ListWorkflow(ctx context.Context, req *workflow.Get
 		return nil, fmt.Errorf("the number of page or size must be greater than 0, and the size must be greater than 0 and less than 100")
 	}
 
-	if err := checkUserSpace(ctx, ctxutil.MustGetUIDFromCtx(ctx), mustParseInt64(req.GetSpaceID())); err != nil {
+	currentUserID := ctxutil.MustGetUIDFromCtx(ctx)
+	spacePerm, err := checkUserSpacePermission(ctx, currentUserID, mustParseInt64(req.GetSpaceID()))
+	if err != nil {
 		return nil, err
 	}
 
@@ -2768,10 +2770,13 @@ func (w *ApplicationService) ListWorkflow(ctx context.Context, req *workflow.Get
 
 		ww.StartNode = startNode
 
+		// Determine permissions based on user's space role
+		// Creator always has full permissions, others depend on space role (Owner/Admin can edit, Member can only view/copy)
+		canEdit := w.CreatorID == currentUserID || spacePerm.CanEdit
 		auth := &workflow.ResourceAuthInfo{
 			WorkflowID: strconv.FormatInt(w.ID, 10),
 			UserID:     strconv.FormatInt(w.CreatorID, 10),
-			Auth:       &workflow.ResourceActionAuth{CanEdit: true, CanDelete: true, CanCopy: true},
+			Auth:       &workflow.ResourceActionAuth{CanEdit: canEdit, CanDelete: canEdit, CanCopy: true},
 		}
 		workflowList = append(workflowList, ww)
 		response.Data.AuthList = append(response.Data.AuthList, auth)
@@ -4474,6 +4479,21 @@ func checkUserSpace(ctx context.Context, uid int64, spaceID int64) error {
 	}
 
 	return nil
+}
+
+// checkUserSpacePermission checks if a user has access to a space and returns their permission details
+// Returns the permission including CanEdit which is true for Owner and Admin, false for Member
+func checkUserSpacePermission(ctx context.Context, uid int64, spaceID int64) (*crossuser.SpacePermission, error) {
+	perm, err := crossuser.DefaultSVC().CheckSpacePermission(ctx, spaceID, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	if !perm.IsMember {
+		return nil, fmt.Errorf("user %d does not have access to space %d", uid, spaceID)
+	}
+
+	return perm, nil
 }
 
 func (w *ApplicationService) populateChatFlowRoleFields(role *workflow.ChatFlowRole, targetRole interface{}) error {

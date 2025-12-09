@@ -211,17 +211,18 @@ import (
 		}
 	}
 
-	 ar := &crossagent.AgentRuntime{
-		 AgentVersion:     rtDependence.runMeta.Version,
-		 UserID:           rtDependence.runMeta.UserID,
-		 AgentID:          rtDependence.runMeta.AgentID,
-		 SpaceID:          rtDependence.runMeta.SpaceID,
-		 IsDraft:          rtDependence.runMeta.IsDraft,
-		 ConnectorID:      rtDependence.runMeta.ConnectorID,
-		 PreRetrieveTools: rtDependence.runMeta.PreRetrieveTools,
-		 HistoryMsg:       historySchema,
-		 Input:            inputSchema,
-	 }
+	ar := &crossagent.AgentRuntime{
+		AgentVersion:     rtDependence.runMeta.Version,
+		UserID:           rtDependence.runMeta.UserID,
+		AgentID:          rtDependence.runMeta.AgentID,
+		SpaceID:          rtDependence.runMeta.SpaceID,
+		IsDraft:          rtDependence.runMeta.IsDraft,
+		ConnectorID:      rtDependence.runMeta.ConnectorID,
+		PreRetrieveTools: rtDependence.runMeta.PreRetrieveTools,
+		HistoryMsg:       historySchema,
+		Input:            inputSchema,
+		Variables:        rtDependence.runMeta.CustomVariables, // 传递会话自定义变量
+	}
 
 	 streamer, err := crossagent.DefaultSVC().StreamExecute(ctx, ar)
 	 if err != nil {

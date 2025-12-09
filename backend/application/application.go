@@ -19,8 +19,11 @@ package application
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/coze-dev/coze-studio/backend/api/handler/coze"
+	embeddingHandler "github.com/coze-dev/coze-studio/backend/api/handler/embedding"
+	embeddingApp "github.com/coze-dev/coze-studio/backend/application/embedding"
 	"github.com/coze-dev/coze-studio/backend/application/openauth"
 	"github.com/coze-dev/coze-studio/backend/application/template"
 	crosssearch "github.com/coze-dev/coze-studio/backend/crossdomain/contract/search"
@@ -40,6 +43,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/application/search"
 	"github.com/coze-dev/coze-studio/backend/application/shortcutcmd"
 	"github.com/coze-dev/coze-studio/backend/application/singleagent"
+	spaceapp "github.com/coze-dev/coze-studio/backend/application/space"
 	"github.com/coze-dev/coze-studio/backend/application/statistics"
 	"github.com/coze-dev/coze-studio/backend/application/upload"
 	"github.com/coze-dev/coze-studio/backend/application/user"
@@ -128,8 +132,8 @@ func Init(ctx context.Context) (err error) {
 		return fmt.Errorf("Init - initBasicServices failed, err: %v", err)
 	}
 
-	// 设置全局统计服务
-	globalStatisticsApp = basicServices.statisticsApp
+	// 设置全局统计服务（线程安全）
+	setGlobalStatisticsApp(basicServices.statisticsApp)
 
 	primaryServices, err := initPrimaryServices(ctx, basicServices)
 	if err != nil {
@@ -162,6 +166,10 @@ func Init(ctx context.Context) (err error) {
 		coze.InitModelService(modelService)
 	}
 
+	// Initialize Space Embedding Service
+	spaceEmbeddingApp := embeddingApp.NewSpaceEmbeddingApp(infra.DB)
+	embeddingHandler.InitSpaceEmbeddingApp(spaceEmbeddingApp)
+
 	return nil
 }
 
@@ -192,6 +200,7 @@ func initBasicServices(ctx context.Context, infra *appinfra.AppDependencies, e *
 	modelMgrSVC := modelmgr.InitService(infra.ModelMgr, infra.TOSClient, modelService, modelRepo, modelTemplateRepo)
 	connectorSVC := connector.InitService(infra.TOSClient)
 	userSVC := user.InitService(ctx, infra.DB, infra.TOSClient, infra.IDGenSVC)
+	spaceapp.InitSpaceExportImportService(infra.DB, infra.TOSClient, infra.IDGenSVC, e.resourceEventBus, e.projectEventBus)
 	templateSVC := template.InitService(ctx, &template.ServiceComponents{
 		DB:      infra.DB,
 		IDGen:   infra.IDGenSVC,
@@ -410,9 +419,25 @@ func initModelService(infra *appinfra.AppDependencies) modelservice.ModelService
 	return modelservice.NewModelService(repo, infra.TOSClient)
 }
 
-var globalStatisticsApp *statistics.StatisticsApp
+var (
+	globalStatisticsApp      *statistics.StatisticsApp
+	statisticsAppOnce        sync.Once
+	statisticsAppInitialized bool
+)
 
-// GetStatisticsApp 获取统计应用实例
+// GetStatisticsApp 获取统计应用实例（线程安全）
+// 注意：此函数应在 Init() 调用后使用
 func GetStatisticsApp() *statistics.StatisticsApp {
+	if !statisticsAppInitialized {
+		return nil
+	}
 	return globalStatisticsApp
+}
+
+// setGlobalStatisticsApp 设置全局统计应用实例（仅供Init调用）
+func setGlobalStatisticsApp(app *statistics.StatisticsApp) {
+	statisticsAppOnce.Do(func() {
+		globalStatisticsApp = app
+		statisticsAppInitialized = true
+	})
 }

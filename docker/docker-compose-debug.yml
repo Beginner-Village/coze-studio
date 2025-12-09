@@ -231,7 +231,7 @@ services:
 
           # Download plugin package locally
           echo 'Copying smartcn plugin...';
-          cp /opt/bitnami/elasticsearch/analysis-smartcn.zip /tmp/analysis-smartcn.zip 
+          cp /opt/bitnami/elasticsearch/analysis-smartcn.zip /tmp/analysis-smartcn.zip
 
           elasticsearch-plugin install file:///tmp/analysis-smartcn.zip
           if [[ "$$?" != "0" ]]; then
@@ -277,9 +277,7 @@ services:
     privileged: true
     profiles: ['middleware']
     env_file: *env_file
-    ports:
-      - '9000:9000'
-      - '9001:9001'
+vvvvvvvvv
     volumes:
       - ./data/minio:/data
     environment:

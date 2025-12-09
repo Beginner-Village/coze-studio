@@ -985,8 +985,8 @@ func callExternalCardAPI(ctx context.Context, req *workflow.GetCardListRequest) 
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// 创建HTTP请求
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", "http://10.10.10.208:8500/aop-web/IDC10030.do", bytes.NewBuffer(jsonData))
+	// 创建HTTP请求 - 通过nginx代理访问外部卡片API
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", "http://localhost:8888/aop-web/IDC10030.do", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -1147,8 +1147,8 @@ func callExternalCardDetailAPI(ctx context.Context, req *workflow.GetCardDetailR
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// 创建HTTP请求 - 使用正确的卡片详情API地址
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", "http://10.10.10.208:8500/aop-web/IDC10025.do", bytes.NewBuffer(jsonData))
+	// 创建HTTP请求 - 通过nginx代理访问外部卡片详情API
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", "http://localhost:8888/aop-web/IDC10025.do", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

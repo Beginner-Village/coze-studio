@@ -80,6 +80,7 @@ func (c *impl) buildSingleAgentStreamExecuteReq(ctx context.Context, agentRuntim
 			}
 		}),
 		ResumeInfo: agentRuntime.ResumeInfo,
+		Variables:  agentRuntime.Variables, // 传递会话自定义变量
 	}
 }
 

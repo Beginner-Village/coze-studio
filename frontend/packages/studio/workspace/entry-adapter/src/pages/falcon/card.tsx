@@ -105,6 +105,7 @@ export const FalconCard: FC<DevelopProps> = ({ spaceId }) => {
 
   const getCardListData = useCallback(
     (isAppend = false) => {
+      console.log('[FalconCard] getCardListData called', { isAppend, spaceId, groupType, filterType, filterQueryText });
       if (isAppend) {
         if (pageNoRef.current > allPageCountRef.current) {
           return;
@@ -116,6 +117,7 @@ export const FalconCard: FC<DevelopProps> = ({ spaceId }) => {
       }
 
       setLoading(true);
+      console.log('[FalconCard] Calling GetCardResourceList API...');
       aopApi
         .GetCardResourceList({
           createdBy: groupType === 1,
@@ -126,6 +128,7 @@ export const FalconCard: FC<DevelopProps> = ({ spaceId }) => {
           pageSize: 30,
         })
         .then(res => {
+          console.log('[FalconCard] GetCardResourceList response:', res);
           const newList = res.body.cardList || [];
           allPageCountRef.current = Number(res.body.totalPages);
           if (isAppend) {
@@ -133,6 +136,9 @@ export const FalconCard: FC<DevelopProps> = ({ spaceId }) => {
           } else {
             setCardList(newList);
           }
+        })
+        .catch(err => {
+          console.error('[FalconCard] GetCardResourceList error:', err);
         })
         .finally(() => {
           setLoading(false);

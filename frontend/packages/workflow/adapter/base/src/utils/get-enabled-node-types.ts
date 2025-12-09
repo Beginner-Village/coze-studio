@@ -16,6 +16,10 @@
 
 import { StandardNodeType } from '@coze-workflow/base';
 
+// Feature flags - 这些值通过 rsbuild source.define 从 GLOBAL_ENVS 注入
+// 在 features.ts 中定义，构建时替换为实际值
+declare const FEATURE_SHOW_MCP: boolean;
+
 // All nodes are available by default and can be customized.
 export const getEnabledNodeTypes = (_params: {
   loopSelected: boolean;
@@ -25,7 +29,7 @@ export const getEnabledNodeTypes = (_params: {
   isBindDouyin: boolean;
 }) => {
   const { loopSelected } = _params;
-  const nodesMap = {
+  const nodesMap: Record<string, boolean> = {
     [StandardNodeType.LLM]: true,
     [StandardNodeType.Api]: true,
     [StandardNodeType.Code]: true,
@@ -66,7 +70,8 @@ export const getEnabledNodeTypes = (_params: {
     // [StandardNodeType.CreateMessage]: true,
     // [StandardNodeType.UpdateMessage]: true,
     // [StandardNodeType.DeleteMessage]: true,
-    [StandardNodeType.Mcp]: true,
+    // MCP 节点 - 受 FEATURE_SHOW_MCP 控制
+    [StandardNodeType.Mcp]: FEATURE_SHOW_MCP,
   };
   const enabledNodeTypes: StandardNodeType[] = Object.keys(nodesMap)
     .filter(key => nodesMap[key])

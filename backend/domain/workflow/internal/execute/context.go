@@ -37,7 +37,7 @@ import (
 )
 
 type Context struct {
-	RootCtx
+	*RootCtx
 
 	*SubWorkflowCtx
 
@@ -273,7 +273,7 @@ func PrepareRootExeCtx(ctx context.Context, h *WorkflowHandler) (context.Context
 	}
 
 	rootExeCtx := &Context{
-		RootCtx: RootCtx{
+		RootCtx: &RootCtx{
 			RootWorkflowBasic: h.rootWorkflowBasic,
 			RootExecuteID:     h.rootExecuteID,
 			ResumeEvent:       h.resumeEvent,

@@ -14,12 +14,80 @@
  * limitations under the License.
  */
 
-import { workflowApi } from '@coze-studio/api-schema';
-
 import type { CardItem } from './types';
 
+console.log('[Card Selector API] 使用直接调用 /aop-web/ 的新版本');
+
+// 转换 sassWorkspaceId：当值为特定ID时转换为 'dev'
+function transformSassWorkspaceId(id: string): string {
+  return id === '7533521629687578624' ? 'dev' : id;
+}
+
+// 外部卡片API响应类型
+interface ExternalCardListResponse {
+  header: {
+    errorCode: string;
+    errorMsg: string;
+  };
+  body: {
+    cardList: Array<{
+      cardId: string;
+      cardName: string;
+      code: string;
+      cardPicUrl: string;
+      picUrl: string;
+      cardShelfStatus: string;
+      cardShelfTime: string;
+      createUserId: string;
+      createUserName: string;
+      sassAppId: string;
+      sassWorkspaceId: string;
+      bizChannel: string;
+      cardClassId: string;
+    }>;
+    pageNo: string;
+    pageSize: string;
+    totalNums: string;
+    totalPages: string;
+  };
+}
+
+interface ExternalCardDetailResponse {
+  header: {
+    errorCode: string;
+    errorMsg: string;
+  };
+  body: {
+    cardId: string;
+    cardName: string;
+    code: string;
+    cardPicUrl: string;
+    picUrl: string;
+    cardShelfStatus: string;
+    cardShelfTime: string;
+    createUserId: string;
+    createUserName: string;
+    sassAppId: string;
+    sassWorkspaceId: string;
+    bizChannel: string;
+    cardClassId: string;
+    paramList: Array<{
+      paramName: string;
+      paramType: string;
+      isRequired: string; // "0" 或 "1"
+      paramDesc: string;
+      children?: Array<{
+        paramName: string;
+        paramType: string;
+        isRequired: string;
+        paramDesc: string;
+      }>;
+    }>;
+  };
+}
+
 /**
- * 获取卡片列表
+ * 获取卡片列表 - 直接调用外部API
  * @param params 请求参数
  * @returns 卡片列表响应
  */
@@ -29,22 +97,56 @@ export async function fetchCardList(params: {
   pageSize?: number;
   searchValue?: string;
 }): Promise<{ cardList: CardItem[]; totalNums: string; totalPages: string }> {
-  const { sassWorkspaceId, pageNo = 1, pageSize = 200, searchValue } = params;
+  const { sassWorkspaceId: rawSassWorkspaceId, pageNo = 1, pageSize = 200, searchValue } = params;
+  const sassWorkspaceId = transformSassWorkspaceId(rawSassWorkspaceId);
+
+  console.log('[Card Selector API] fetchCardList 被调用，参数:', {
+    rawSassWorkspaceId,
+    sassWorkspaceId,
+    pageNo,
+    pageSize,
+    searchValue,
+  });
 
   try {
-    const response = await workflowApi.GetCardList({
-      sassWorkspaceId,
-      pageNo,
-      pageSize,
-      searchValue,
+    // 构造外部API请求体
+    const requestBody = {
+      body: {
+        sassWorkspaceId,
+        pageNo: String(pageNo),
+        pageSize: String(pageSize),
+        searchValue: searchValue || '',
+        cardName: '',
+        cardCode: '',
+        createdBy: true,
+        variableValueList: [{}],
+      },
+    };
+
+    console.log('[Card Selector API] 准备发送请求到 /aop-web/IDC10030.do，请求体:', requestBody);
+
+    const response = await fetch('/aop-web/IDC10030.do', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Request-Origion': 'SwaggerBootstrapUi',
+        'Accept': '*/*',
+      },
+      body: JSON.stringify(requestBody),
     });
 
-    if (response.code !== 0) {
-      throw new Error(`API Error: ${response.msg}`);
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
+    }
+
+    const data: ExternalCardListResponse = await response.json();
+
+    if (data.header.errorCode !== '0') {
+      throw new Error(`API Error: ${data.header.errorMsg}`);
     }
 
     // 转换为本地类型格式
-    const cardList: CardItem[] = response.data.cardList.map(card => ({
+    const cardList: CardItem[] = data.body.cardList.map(card => ({
       cardId: card.cardId,
       cardName: card.cardName,
       code: card.code,
@@ -62,8 +164,8 @@ export async function fetchCardList(params: {
 
     return {
       cardList,
-      totalNums: response.data.totalNums,
-      totalPages: response.data.totalPages,
+      totalNums: data.body.totalNums,
+      totalPages: data.body.totalPages,
     };
   } catch (error) {
     console.error('Failed to fetch card list:', error);
@@ -72,7 +174,7 @@ export async function fetchCardList(params: {
 }
 
 /**
- * 获取卡片详情
+ * 获取卡片详情 - 直接调用外部API
  * @param params 请求参数
  * @returns 卡片详情响应
  */
@@ -95,43 +197,63 @@ export async function fetchCardDetail(params: {
     }>;
   };
 }> {
-  const { cardId, sassWorkspaceId } = params;
+  const { cardId, sassWorkspaceId: rawSassWorkspaceId } = params;
+  const sassWorkspaceId = transformSassWorkspaceId(rawSassWorkspaceId);
 
   try {
-    const response = await workflowApi.GetCardDetail({
-      cardId,
-      sassWorkspaceId,
+    // 构造外部API请求体
+    const requestBody = {
+      body: {
+        cardId,
+        sassWorkspaceId,
+      },
+    };
+
+    const response = await fetch('/aop-web/IDC10025.do', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Request-Origion': 'SwaggerBootstrapUi',
+        'Accept': '*/*',
+      },
+      body: JSON.stringify(requestBody),
     });
 
-    if (response.code !== 0) {
-      throw new Error(`API Error: ${response.msg}`);
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status}`);
+    }
+
+    const data: ExternalCardDetailResponse = await response.json();
+
+    if (data.header.errorCode !== '0') {
+      throw new Error(`API Error: ${data.header.errorMsg}`);
     }
 
     // 转换为本地类型格式
     const cardDetail = {
-      cardId: response.data.cardId,
-      cardName: response.data.cardName,
-      code: response.data.code,
-      cardPicUrl: response.data.cardPicUrl,
-      picUrl: response.data.picUrl,
-      cardShelfStatus: response.data.cardShelfStatus,
-      cardShelfTime: response.data.cardShelfTime,
-      createUserId: response.data.createUserId,
-      createUserName: response.data.createUserName,
-      sassAppId: response.data.sassAppId,
-      sassWorkspaceId: response.data.sassWorkspaceId,
-      bizChannel: response.data.bizChannel,
-      cardClassId: response.data.cardClassId,
-      paramList: response.data.paramList?.map(param => ({
+      cardId: data.body.cardId,
+      cardName: data.body.cardName,
+      code: data.body.code,
+      cardPicUrl: data.body.cardPicUrl,
+      picUrl: data.body.picUrl,
+      cardShelfStatus: data.body.cardShelfStatus,
+      cardShelfTime: data.body.cardShelfTime,
+      createUserId: data.body.createUserId,
+      createUserName: data.body.createUserName,
+      sassAppId: data.body.sassAppId,
+      sassWorkspaceId: data.body.sassWorkspaceId,
+      bizChannel: data.body.bizChannel,
+      cardClassId: data.body.cardClassId,
+      paramList: data.body.paramList?.map(param => ({
         paramName: param.paramName,
         paramType: param.paramType,
-        required: param.required,
-        desc: param.desc,
+        required: param.isRequired === '1', // "1" 表示必需
+        desc: param.paramDesc,
         children: param.children?.map(child => ({
           paramName: child.paramName,
           paramType: child.paramType,
-          required: child.required,
-          desc: child.desc,
+          required: child.isRequired === '1',
+          desc: child.paramDesc,
         })),
       })),
     };

@@ -78,6 +78,7 @@ func NewKnowledgeSVC(config *KnowledgeSVCConfig) (Knowledge, eventbus.ConsumerHa
 		rdb:                 config.RDB,
 		producer:            config.Producer,
 		searchStoreManagers: config.SearchStoreManagers,
+		managerFactory:      config.ManagerFactory,
 		parseManager:        config.ParseManager,
 		storage:             config.Storage,
 		reranker:            config.Reranker,
@@ -102,7 +103,8 @@ type KnowledgeSVCConfig struct {
 	IDGen               idgen.IDGenerator              // required
 	RDB                 rdb.RDB                        // Required: Form storage
 	Producer            eventbus.Producer              // Required: Document indexing process goes through mq asynchronous processing
-	SearchStoreManagers []searchstore.Manager          // Required: Vector/Full Text
+	SearchStoreManagers []searchstore.Manager          // Optional: Vector/Full Text (legacy, use ManagerFactory for space-level embedding)
+	ManagerFactory      searchstore.ManagerFactory     // Optional: Factory for creating managers with space-level embedding
 	ParseManager        parser.Manager                 // Optional: document segmentation and processing capability, default builtin parser
 	Storage             storage.Storage                // required: oss
 	ModelFactory        chatmodel.Factory              // Required: Model factory
@@ -124,7 +126,8 @@ type knowledgeSVC struct {
 	idgen               idgen.IDGenerator
 	rdb                 rdb.RDB
 	producer            eventbus.Producer
-	searchStoreManagers []searchstore.Manager
+	searchStoreManagers []searchstore.Manager          // Legacy: fixed managers
+	managerFactory      searchstore.ManagerFactory     // New: factory for space-level embedding
 	parseManager        parser.Manager
 	rewriter            messages2query.MessagesToQuery
 	reranker            rerank.Reranker
@@ -132,6 +135,26 @@ type knowledgeSVC struct {
 	nl2Sql              nl2sql.NL2SQL
 	cacheCli            cache.Cmdable
 	enableCompactTable  bool // Table data compression
+}
+
+// getManagersForSpace returns SearchStore managers for the given space
+// If managerFactory is configured, it uses space-level embedding configuration
+// Otherwise, it falls back to the legacy fixed managers
+func (k *knowledgeSVC) getManagersForSpace(ctx context.Context, spaceID uint64) ([]searchstore.Manager, error) {
+	if k.managerFactory != nil {
+		managers, err := k.managerFactory.GetManagers(ctx, spaceID)
+		if err != nil {
+			logs.CtxWarnf(ctx, "[getManagersForSpace] factory failed for space %d: %v, using legacy managers", spaceID, err)
+			// Fall back to legacy managers
+			if len(k.searchStoreManagers) > 0 {
+				return k.searchStoreManagers, nil
+			}
+			return nil, err
+		}
+		return managers, nil
+	}
+	// No factory configured, use legacy managers
+	return k.searchStoreManagers, nil
 }
 
 func (k *knowledgeSVC) CreateKnowledge(ctx context.Context, request *CreateKnowledgeRequest) (response *CreateKnowledgeResponse, err error) {
@@ -247,7 +270,11 @@ func (k *knowledgeSVC) DeleteKnowledge(ctx context.Context, request *DeleteKnowl
 		}
 	}
 	collectionName := getCollectionName(request.KnowledgeID)
-	for _, mgr := range k.searchStoreManagers {
+	managers, err := k.getManagersForSpace(ctx, uint64(knModel.SpaceID))
+	if err != nil {
+		return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", fmt.Sprintf("get managers failed: %v", err)))
+	}
+	for _, mgr := range managers {
 		if err = mgr.Drop(ctx, &searchstore.DropRequest{CollectionName: collectionName}); err != nil {
 			return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", err.Error()))
 		}

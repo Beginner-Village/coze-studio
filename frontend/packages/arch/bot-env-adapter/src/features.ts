@@ -17,6 +17,22 @@
 import { base } from './base';
 const { IS_RELEASE_VERSION, IS_OVERSEA, IS_BOE } = base;
 export const features = {
+  // ==========================================
+  // 自定义功能开关（用于临时隐藏/显示功能）
+  // 设置为 true 显示，设置为 false 隐藏
+  // ==========================================
+  /**
+   * MCP 相关功能开关
+   * - 侧边栏 MCP 菜单
+   * - 工作流节点选择弹窗中的 MCP 节点
+   */
+  FEATURE_SHOW_MCP: false,
+  /**
+   * 外部知识库菜单开关
+   * - 侧边栏外部知识库菜单
+   */
+  FEATURE_SHOW_EXTERNAL_KNOWLEDGE: false,
+  // ==========================================
   // After communicating with Zhiqiang & products, remove the sso of boe environment.
   FEATURE_ENABLE_SSO: !IS_RELEASE_VERSION && !IS_BOE,
   FEATURE_ENABLE_APP_GUIDE: !IS_RELEASE_VERSION || IS_OVERSEA,

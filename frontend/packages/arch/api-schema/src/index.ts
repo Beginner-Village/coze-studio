@@ -4,3 +4,6 @@ export * as explore from './idl/marketplace/public_api';
 export * as ynet_workflow from './idl/ynet_workflow/ynet_workflow';
 export * as ynet_agent from './idl/ynet-agent/ynet_agent';
 export * as statistics from './idl/statistics/statistics';
+export * as space_management from './idl/space/space_management';
+export * as space_export_import from './idl/space/space_export_import';
+export * as space_embedding from './idl/embedding/space_embedding';

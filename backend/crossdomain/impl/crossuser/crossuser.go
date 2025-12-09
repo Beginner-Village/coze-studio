@@ -40,3 +40,20 @@ func InitDomainService(u service.User) crossuser.User {
 func (u *impl) GetUserSpaceList(ctx context.Context, userID int64) (spaces []*entity.Space, err error) {
 	return u.DomainSVC.GetUserSpaceList(ctx, userID)
 }
+
+// CheckSpacePermission checks user's permission in a space
+func (u *impl) CheckSpacePermission(ctx context.Context, spaceID, userID int64) (*crossuser.SpacePermission, error) {
+	isMember, roleType, canInvite, canManage, err := u.DomainSVC.CheckMemberPermission(ctx, spaceID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	role := entity.RoleType(roleType)
+	return &crossuser.SpacePermission{
+		IsMember:  isMember,
+		RoleType:  roleType,
+		CanInvite: canInvite,
+		CanManage: canManage,
+		CanEdit:   isMember && role.CanEdit(),
+	}, nil
+}

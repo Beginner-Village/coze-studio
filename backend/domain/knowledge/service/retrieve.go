@@ -149,12 +149,19 @@ func (k *knowledgeSVC) newRetrieveContext(ctx context.Context, req *RetrieveRequ
 		}
 	}
 
+	// Get SpaceID from the first enabled knowledge (they should all be in the same space)
+	var spaceID uint64
+	if len(enableKnowledge) > 0 {
+		spaceID = uint64(enableKnowledge[0].SpaceID)
+	}
+
 	resp := RetrieveContext{
 		Ctx:              ctx,
 		OriginQuery:      req.Query,
 		ChatHistory:      append(req.ChatHistory, schema.UserMessage(req.Query)),
 		KnowledgeIDs:     knowledgeIDSets,
 		KnowledgeInfoMap: knowledgeInfoMap,
+		SpaceID:          spaceID,
 		Strategy:         req.Strategy,
 		Documents:        enableDocs,
 		ChatModel:        cm,
@@ -215,9 +222,17 @@ func (k *knowledgeSVC) vectorRetrieveNode(ctx context.Context, req *RetrieveCont
 	if req.Strategy.SearchType == knowledgeModel.SearchTypeFullText {
 		return nil, nil
 	}
+
+	// Get managers for the space (supports space-level embedding)
+	managers, err := k.getManagersForSpace(ctx, req.SpaceID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "getManagersForSpace failed: %v", err)
+		return nil, nil
+	}
+
 	var manager searchstore.Manager
-	for i := range k.searchStoreManagers {
-		m := k.searchStoreManagers[i]
+	for i := range managers {
+		m := managers[i]
 		if m != nil && m.GetType() == searchstore.TypeVectorStore {
 			manager = m
 			break
@@ -239,9 +254,17 @@ func (k *knowledgeSVC) esRetrieveNode(ctx context.Context, req *RetrieveContext)
 	if req.Strategy.SearchType == knowledgeModel.SearchTypeSemantic {
 		return nil, nil
 	}
+
+	// Get managers for the space (supports space-level embedding)
+	managers, err := k.getManagersForSpace(ctx, req.SpaceID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "getManagersForSpace failed: %v", err)
+		return nil, nil
+	}
+
 	var manager searchstore.Manager
-	for i := range k.searchStoreManagers {
-		m := k.searchStoreManagers[i]
+	for i := range managers {
+		m := managers[i]
 		if m != nil && m.GetType() == searchstore.TypeTextStore {
 			manager = m
 			break

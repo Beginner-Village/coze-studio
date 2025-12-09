@@ -95,12 +95,15 @@ function CardSelectorComp({
   // 获取卡片列表
   const fetchCards = useCallback(
     async (search = '') => {
+      console.log('[CardSelectorComp] fetchCards 被调用，search:', search, 'loading:', loading);
       if (loading) {
+        console.log('[CardSelectorComp] 已在加载中，跳过请求');
         return;
       }
 
       setLoading(true);
       try {
+        console.log('[CardSelectorComp] 开始调用 fetchCardList，sassWorkspaceId:', sassWorkspaceId);
         const response = await fetchCardList({
           sassWorkspaceId,
           pageNo: 1,
@@ -108,9 +111,10 @@ function CardSelectorComp({
           searchValue: search,
         });
 
+        console.log('[CardSelectorComp] fetchCardList 响应:', response);
         setCardList(response.cardList || []);
       } catch (error) {
-        console.error('获取卡片列表出错:', error);
+        console.error('[CardSelectorComp] 获取卡片列表出错:', error);
         message.error('获取卡片列表失败，请稍后重试');
         setCardList([]);
       } finally {
@@ -143,8 +147,10 @@ function CardSelectorComp({
 
   // 在组件挂载时预取卡片列表，确保无论是否触发焦点事件都会请求
   useEffect(() => {
+    console.log('[CardSelectorComp] useEffect 挂载，cardList.length:', cardList.length, 'loading:', loading);
     // 若已存在列表则不重复请求
     if (cardList.length === 0 && !loading) {
+      console.log('[CardSelectorComp] 首次挂载，开始预取卡片列表');
       void fetchCards();
     }
     // 仅在首次挂载时尝试预取

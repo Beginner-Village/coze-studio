@@ -97,8 +97,23 @@ func (k *knowledgeSVC) HandleMessage(ctx context.Context, msg *eventbus.Message)
 }
 
 func (k *knowledgeSVC) deleteKnowledgeDataEventHandler(ctx context.Context, event *entity.Event) error {
+	// Get spaceID from knowledge for space-level embedding
+	knModel, err := k.knowledgeRepo.GetByID(ctx, event.KnowledgeID)
+	if err != nil {
+		logs.CtxWarnf(ctx, "[deleteKnowledgeDataEventHandler] get knowledge failed: %v, using legacy managers", err)
+	}
+	var spaceID uint64
+	if knModel != nil {
+		spaceID = uint64(knModel.SpaceID)
+	}
+
+	managers, err := k.getManagersForSpace(ctx, spaceID)
+	if err != nil {
+		return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", fmt.Sprintf("get managers failed: %v", err)))
+	}
+
 	// Delete the data in each store of the knowledge base
-	for _, manager := range k.searchStoreManagers {
+	for _, manager := range managers {
 		s, err := manager.GetSearchStore(ctx, getCollectionName(event.KnowledgeID))
 		if err != nil {
 			return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", fmt.Sprintf("get search store failed, err: %v", err)))
@@ -143,6 +158,12 @@ func (k *knowledgeSVC) indexDocument(ctx context.Context, event *entity.Event) (
 	doc := event.Document
 	if doc == nil {
 		return errorx.New(errno.ErrKnowledgeNonRetryableCode, errorx.KV("reason", "[indexDocument] document not provided"))
+	}
+
+	// Get managers for space-level embedding
+	managers, err := k.getManagersForSpace(ctx, uint64(doc.SpaceID))
+	if err != nil {
+		return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", fmt.Sprintf("get managers failed: %v", err)))
 	}
 
 	// 1. The index operations on the same document in the retry queue and the ordinary queue are concurrent, and the same document data is written twice (generated when the backend bugfix is online)
@@ -198,7 +219,7 @@ func (k *knowledgeSVC) indexDocument(ctx context.Context, event *entity.Event) (
 			if err = k.sliceRepo.DeleteByDocument(ctx, doc.ID); err != nil {
 				return errorx.New(errno.ErrKnowledgeDBCode, errorx.KV("msg", fmt.Sprintf("delete document slice failed, err: %v", err)))
 			}
-			for _, manager := range k.searchStoreManagers {
+			for _, manager := range managers {
 				s, err := manager.GetSearchStore(ctx, collectionName)
 				if err != nil {
 					return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", fmt.Sprintf("get search store failed, err: %v", err)))
@@ -350,8 +371,8 @@ func (k *knowledgeSVC) indexDocument(ctx context.Context, event *entity.Event) (
 	if err != nil {
 		return errorx.New(errno.ErrKnowledgeSystemCode, errorx.KV("msg", fmt.Sprintf("reformat document failed, err: %v", err)))
 	}
-	progressbar := progressbar.NewProgressBar(ctx, doc.ID, int64(len(ssDocs)*len(k.searchStoreManagers)), k.cacheCli, true)
-	for _, manager := range k.searchStoreManagers {
+	progressbar := progressbar.NewProgressBar(ctx, doc.ID, int64(len(ssDocs)*len(managers)), k.cacheCli, true)
+	for _, manager := range managers {
 		now := time.Now()
 		if err = manager.Create(ctx, &searchstore.CreateRequest{
 			CollectionName: collectionName,
@@ -470,6 +491,13 @@ func (k *knowledgeSVC) indexSlice(ctx context.Context, event *entity.Event) (err
 	if slice.KnowledgeID == 0 {
 		slice.KnowledgeID = event.Document.KnowledgeID
 	}
+
+	// Get managers for space-level embedding
+	managers, err := k.getManagersForSpace(ctx, uint64(event.Document.SpaceID))
+	if err != nil {
+		return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", fmt.Sprintf("get managers failed: %v", err)))
+	}
+
 	defer func() {
 		if err != nil {
 			if setStatusErr := k.sliceRepo.BatchSetStatus(ctx, []int64{slice.ID}, int32(model.SliceStatusFailed), err.Error()); setStatusErr != nil {
@@ -485,7 +513,7 @@ func (k *knowledgeSVC) indexSlice(ctx context.Context, event *entity.Event) (err
 
 	indexingFields := getIndexingFields(fields)
 	collectionName := getCollectionName(slice.KnowledgeID)
-	for _, manager := range k.searchStoreManagers {
+	for _, manager := range managers {
 		ss, err := manager.GetSearchStore(ctx, collectionName)
 		if err != nil {
 			return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", fmt.Sprintf("get search store failed, err: %v", err)))

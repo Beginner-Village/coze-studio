@@ -80,15 +80,7 @@ function useAddModelLogic(spaceId: string) {
 
   // 根据选择的厂商和模型类型过滤可用的模型
   const availableModels = React.useMemo(() => {
-    console.log('=== 可用模型计算调试 ===');
-    console.log('选择的厂商:', selectedProvider);
-    console.log('选择的模型类型:', selectedModelType);
-    console.log('是否本地厂商:', isLocalProvider);
-    console.log('自定义模型名称:', customModelName);
-    console.log('模板总数:', templates.length);
-
     if (!selectedProvider || !selectedModelType) {
-      console.log('未选择厂商或模型类型，返回空数组');
       return [];
     }
 
@@ -96,21 +88,17 @@ function useAddModelLogic(spaceId: string) {
       MODEL_TYPE_MAPPING[
         selectedModelType as keyof typeof MODEL_TYPE_MAPPING
       ];
-    console.log('期望的模型类型映射:', expectedType);
 
     const filteredTemplates = templates.filter(t => {
       const providerMatch = t.provider === selectedProvider;
       const typeMatch = t.model_type === expectedType;
-      console.log(`模板 ${t.name}: 厂商匹配=${providerMatch}, 类型匹配=${typeMatch}, 厂商=${t.provider}, 类型=${t.model_type}`);
       return providerMatch && typeMatch;
     });
-
-    console.log('过滤后的模板:', filteredTemplates);
 
     const models = filteredTemplates
       .filter(t => {
         const modelName = t.model_name || t.name;
-        return modelName && modelName.trim(); // 过滤掉空名称或只有空格的模板
+        return modelName && modelName.trim();
       })
       .map(t => ({
         value: t.model_name || t.name,
@@ -119,16 +107,13 @@ function useAddModelLogic(spaceId: string) {
       }));
 
     if (isLocalProvider && selectedModelType) {
-      console.log('本地厂商逻辑: customModelName=', customModelName);
       if (customModelName) {
-        console.log('添加自定义模型到选项列表');
         models.unshift({
           value: customModelName,
           label: `${customModelName} (自定义)`,
           templateId: 'custom',
         });
       } else {
-        console.log('添加占位符选项');
         models.unshift({
           value: '',
           label: '请先输入模型名称',
@@ -137,7 +122,6 @@ function useAddModelLogic(spaceId: string) {
       }
     }
 
-    console.log('最终可用模型:', models);
     return models;
   }, [
     templates,
@@ -157,11 +141,9 @@ function useAddModelLogic(spaceId: string) {
           const data = await response.json();
           setTemplates(data.templates || []);
         } else {
-          console.error('Failed to load templates');
           Toast.error('加载模型模板失败');
         }
-      } catch (error) {
-        console.error('Error loading templates:', error);
+      } catch {
         Toast.error('加载模型模板失败');
       } finally {
         setIsLoadingTemplates(false);
@@ -360,8 +342,7 @@ function ModelConfigForm({
                     const configObj = JSON.parse(modelConfig);
                     onModelConfigChange(JSON.stringify(configObj, null, JSON_INDENT));
                     Toast.success('格式化成功');
-                  } catch (error) {
-                    console.error('JSON format error:', error);
+                  } catch {
                     Toast.error('JSON格式错误，请检查语法');
                   }
                 }}
@@ -499,8 +480,8 @@ export default function AddModelPage(_props: AddModelPageProps) {
               formApi.setValue('baseUrl', template.meta.conn_config.base_url);
             }
           }
-        } catch (error) {
-          console.error('Error loading local model template:', error);
+        } catch {
+          // 加载本地模型模板失败，静默处理
         }
       }
       return;
@@ -544,8 +525,8 @@ export default function AddModelPage(_props: AddModelPageProps) {
           };
           setModelConfig(JSON.stringify(updatedTemplate, null, JSON_INDENT));
         }
-      } catch (error) {
-        console.error('Error loading template content:', error);
+      } catch {
+        // 加载模板内容失败，静默处理
       }
     }
   };
@@ -605,20 +586,13 @@ export default function AddModelPage(_props: AddModelPageProps) {
 
   // 当表单值变化时，更新JSON配置
   const handleFormChange = (values: Record<string, unknown>) => {
-    console.log('=== 表单变化调试 ===');
-    console.log('表单值:', values);
-    console.log('名称字段值:', values.name);
-    console.log('当前customModelName:', customModelName);
-    
     // 更新自定义模型名称（用于本地模型）
     if (values.name !== undefined) {
       const newModelName = String(values.name || '');
-      console.log('设置自定义模型名称:', newModelName);
       setCustomModelName(newModelName);
-      
+
       // 如果是本地厂商且名称改变了，清除当前选中的基础模型
       if (isLocalProvider && newModelName !== customModelName) {
-        console.log('本地厂商名称变化，清除基础模型选择');
         if (formApi) {
           formApi.setValue('baseModel', '');
         }
@@ -658,8 +632,8 @@ export default function AddModelPage(_props: AddModelPageProps) {
             },
           };
           setModelConfig(JSON.stringify(updatedConfig, null, JSON_INDENT));
-        } catch (error) {
-          console.error('Error updating config:', error);
+        } catch {
+          // 更新配置失败，重新生成
           const jsonConfig = generateJsonConfig(values);
           setModelConfig(jsonConfig);
         }
@@ -679,8 +653,7 @@ export default function AddModelPage(_props: AddModelPageProps) {
       // 验证JSON格式
       try {
         JSON.parse(finalConfig);
-      } catch (error) {
-        console.error('Invalid JSON format:', error);
+      } catch {
         Toast.error('配置格式错误，请检查JSON格式');
         setIsSaving(false);
         return;
@@ -708,8 +681,7 @@ export default function AddModelPage(_props: AddModelPageProps) {
         const errorMsg = responseData.msg || responseData.message || '未知错误';
         Toast.error(`保存失败: ${errorMsg}`);
       }
-    } catch (error) {
-      console.error('Error saving model:', error);
+    } catch {
       Toast.error('保存失败，请重试');
     } finally {
       setIsSaving(false);

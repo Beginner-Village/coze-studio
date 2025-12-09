@@ -63,3 +63,8 @@ func (r RoleType) CanInvite() bool {
 func (r RoleType) CanManage() bool {
 	return r <= RoleTypeAdmin // Owner(1) 和 Admin(2) 都可以管理
 }
+
+// CanEdit returns whether the role can edit resources (plugins, workflows, etc.) in the space
+func (r RoleType) CanEdit() bool {
+	return r <= RoleTypeAdmin // Owner(1) 和 Admin(2) 都可以编辑资源
+}

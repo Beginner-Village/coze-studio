@@ -103,6 +103,8 @@ const IDEPublish = lazy(() =>
 const Develop = lazy(() => import('./pages/develop'));
 const Library = lazy(() => import('./pages/library'));
 const Members = lazy(() => import('./pages/members'));
+const ExportImportPage = lazy(() => import('./pages/space-export-import'));
+const SpaceEmbeddingConfig = lazy(() => import('./pages/space-embedding-config'));
 
 const WorkflowPage = lazy(() =>
   import('@coze-workflow/playground-adapter').then(res => ({
@@ -257,6 +259,20 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   Component: Members,
                   loader: () => ({
                     subMenuKey: SpaceSubModuleEnum.MEMBERS,
+                  }),
+                },
+                {
+                  path: 'export-import',
+                  Component: ExportImportPage,
+                  loader: () => ({
+                    subMenuKey: SpaceSubModuleEnum.EXPORT_IMPORT,
+                  }),
+                },
+                {
+                  path: 'embedding-config',
+                  Component: SpaceEmbeddingConfig,
+                  loader: () => ({
+                    subMenuKey: SpaceSubModuleEnum.EMBEDDING,
                   }),
                 },
                 {

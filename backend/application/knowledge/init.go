@@ -36,12 +36,14 @@ import (
 
 	"github.com/coze-dev/coze-studio/backend/application/internal"
 	"github.com/coze-dev/coze-studio/backend/application/search"
+	embeddingService "github.com/coze-dev/coze-studio/backend/domain/embedding/service"
 	knowledgeImpl "github.com/coze-dev/coze-studio/backend/domain/knowledge/service"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/cache"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/document/nl2sql"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/document/ocr"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/document/parser"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/document/searchstore"
+	"github.com/coze-dev/coze-studio/backend/infra/contract/embedding"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/messages2query"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/rdb"
@@ -53,6 +55,8 @@ import (
 	ssvikingdb "github.com/coze-dev/coze-studio/backend/infra/impl/document/searchstore/vikingdb"
 	arkemb "github.com/coze-dev/coze-studio/backend/infra/impl/embedding/ark"
 	"github.com/coze-dev/coze-studio/backend/infra/impl/embedding/http"
+	embeddingProvider "github.com/coze-dev/coze-studio/backend/infra/impl/embedding/provider"
+	embeddingRepo "github.com/coze-dev/coze-studio/backend/infra/impl/embedding/repository"
 	"github.com/coze-dev/coze-studio/backend/infra/impl/embedding/wrap"
 	"github.com/coze-dev/coze-studio/backend/infra/impl/eventbus"
 	builtinM2Q "github.com/coze-dev/coze-studio/backend/infra/impl/messages2query/builtin"
@@ -60,7 +64,6 @@ import (
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
 	"github.com/coze-dev/coze-studio/backend/pkg/logs"
 	"github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/embedding"
 )
 
 type ServiceComponents struct {
@@ -96,6 +99,13 @@ func InitService(c *ServiceComponents) (*KnowledgeApplicationService, error) {
 		return nil, fmt.Errorf("init vector store failed, err=%w", err)
 	}
 	sManagers = append(sManagers, mgr)
+
+	// Create ManagerFactory for space-level embedding support
+	managerFactory, err := createManagerFactory(ctx, c.DB)
+	if err != nil {
+		// Log warning but continue - factory is optional for backward compatibility
+		logs.CtxWarnf(ctx, "[InitService] failed to create manager factory: %v, using legacy managers", err)
+	}
 
 	// Use the provided OCR implementation from ServiceComponents
 
@@ -135,13 +145,13 @@ func InitService(c *ServiceComponents) (*KnowledgeApplicationService, error) {
 		}
 	}
 
-
 	knowledgeDomainSVC, knowledgeEventHandler := knowledgeImpl.NewKnowledgeSVC(&knowledgeImpl.KnowledgeSVCConfig{
 		DB:                  c.DB,
 		IDGen:               c.IDGenSVC,
 		RDB:                 c.RDB,
 		Producer:            knowledgeProducer,
 		SearchStoreManagers: sManagers,
+		ManagerFactory:      managerFactory, // New: space-level embedding support
 		ParseManager:        c.ParserManager,
 		Storage:             c.Storage,
 		Rewriter:            rewriter,
@@ -160,6 +170,55 @@ func InitService(c *ServiceComponents) (*KnowledgeApplicationService, error) {
 	KnowledgeSVC.eventBus = c.EventBus
 	KnowledgeSVC.storage = c.Storage
 	return KnowledgeSVC, nil
+}
+
+// createManagerFactory creates a ManagerFactory for space-level embedding support
+// Currently only supports Milvus vector store
+func createManagerFactory(ctx context.Context, db *gorm.DB) (searchstore.ManagerFactory, error) {
+	vsType := os.Getenv("VECTOR_STORE_TYPE")
+
+	// Only support Milvus for now
+	if vsType != "milvus" {
+		logs.CtxInfof(ctx, "[createManagerFactory] vector store type %s does not support ManagerFactory yet", vsType)
+		return nil, nil
+	}
+
+	// Get global embedding
+	globalEmb, err := getEmbedding(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get global embedding: %w", err)
+	}
+
+	// Create SpaceEmbeddingService
+	repo := embeddingRepo.NewSpaceEmbeddingRepository(db)
+	embSvc := embeddingService.NewSpaceEmbeddingService(repo)
+
+	// Create SpaceEmbeddingProvider
+	provider := embeddingProvider.NewSpaceEmbeddingProvider(embSvc, globalEmb)
+
+	// Create Milvus client
+	cctx, cancel := context.WithTimeout(ctx, time.Second*5)
+	defer cancel()
+
+	milvusAddr := os.Getenv("MILVUS_ADDR")
+	mc, err := milvusclient.New(cctx, &milvusclient.ClientConfig{Address: milvusAddr})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create milvus client: %w", err)
+	}
+
+	// Create ManagerFactory
+	factory, err := ssmilvus.NewManagerFactory(&ssmilvus.ManagerFactoryConfig{
+		Client:            mc,
+		EmbeddingProvider: provider,
+		GlobalEmbedding:   globalEmb,
+		EnableHybrid:      ptr.Of(globalEmb.SupportStatus() == embedding.SupportDenseAndSparse),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create manager factory: %w", err)
+	}
+
+	logs.CtxInfof(ctx, "[createManagerFactory] successfully created Milvus ManagerFactory with space-level embedding support")
+	return factory, nil
 }
 
 func getVectorStore(ctx context.Context) (searchstore.Manager, error) {
@@ -334,6 +393,12 @@ func getEmbedding(ctx context.Context) (embedding.Embedder, error) {
 			}
 		}
 
+		// ARK API has a strict limit of 10 for batch size (applies to all ARK embeddings)
+		arkBatchSize := batchSize
+		if arkBatchSize > 10 {
+			arkBatchSize = 10
+		}
+
 		emb, err = arkemb.NewArkEmbedder(ctx, &ark.EmbeddingConfig{
 			APIKey: func() string {
 				if arkEmbeddingApiKey != "" {
@@ -344,7 +409,7 @@ func getEmbedding(ctx context.Context) (embedding.Embedder, error) {
 			Model:   arkEmbeddingModel,
 			BaseURL: arkEmbeddingBaseURL,
 			APIType: &apiType,
-		}, dims, batchSize)
+		}, dims, arkBatchSize)
 		if err != nil {
 			return nil, fmt.Errorf("init ark embedding client failed, err=%w", err)
 		}

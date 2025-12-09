@@ -335,6 +335,7 @@ func (c *ConversationApplicationService) buildAgentRunRequest(ctx context.Contex
 		ConnectorID:      consts.CozeConnectorID,
 		ContentType:      contentType,
 		Ext:              ar.Extra,
+		CustomVariables:  ar.CustomVariables, // 传递会话自定义变量，用于覆盖智能体预设变量
 	}
 	return arm, nil
 }

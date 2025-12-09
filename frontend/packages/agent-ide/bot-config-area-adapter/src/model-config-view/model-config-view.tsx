@@ -16,7 +16,6 @@
 
 import { I18n } from '@coze-arch/i18n';
 import { BotMode } from '@coze-arch/bot-api/playground_api';
-import { useGetSingleAgentCurrentModel } from '@coze-agent-ide/model-manager';
 import { DialogueConfigView } from '@coze-agent-ide/bot-config-area';
 
 import { SingleAgentModelView } from './single-agent-model-view';
@@ -25,14 +24,16 @@ export const ModelConfigView: React.FC<{
   mode: BotMode;
   modelListExtraHeaderSlot?: React.ReactNode;
 }> = ({ mode, modelListExtraHeaderSlot }) => {
-  const currentModel = useGetSingleAgentCurrentModel();
-
+  // Note: Always render SingleAgentModelView for SingleMode
+  // The component handles fallback to first available model internally
+  // Do not check currentModel?.model_type here as it would hide the selector
+  // when the model is not found (e.g., after import)
   if (mode === BotMode.SingleMode) {
-    return currentModel?.model_type ? (
+    return (
       <SingleAgentModelView
         modelListExtraHeaderSlot={modelListExtraHeaderSlot}
       />
-    ) : null;
+    );
   }
   if (mode === BotMode.MultiMode || mode === BotMode.WorkflowMode) {
     return (

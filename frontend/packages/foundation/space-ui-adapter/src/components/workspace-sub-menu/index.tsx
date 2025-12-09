@@ -49,7 +49,14 @@ import { ResType } from '@coze-arch/idl/plugin_develop';
 
 import { SpaceSubModuleEnum } from '@/const';
 
-const createSubMenuConfig = () => [
+// Feature flags - 这些值通过 rsbuild source.define 从 GLOBAL_ENVS 注入
+// 在 features.ts 中定义，构建时替换为实际值
+declare const FEATURE_SHOW_MCP: boolean;
+declare const FEATURE_SHOW_EXTERNAL_KNOWLEDGE: boolean;
+
+const createSubMenuConfig = () => {
+
+  const menuItems = [
     {
       icon: <IconBotDevelop />,
       activeIcon: <IconBotDevelopActive />,
@@ -62,7 +69,8 @@ const createSubMenuConfig = () => [
       title: () =>
         I18n.t('navigation_workspace_library_title', {}, 'Resource Library'),
     },
-    {
+    // MCP 菜单 - 受 FEATURE_SHOW_MCP 控制
+    FEATURE_SHOW_MCP && {
       icon: <IconMcp />,
       activeIcon: <IconMcpActive />,
       title: () =>
@@ -70,6 +78,7 @@ const createSubMenuConfig = () => [
       path: `${SpaceSubModuleEnum.MCP}`,
       dataTestId: 'navigation_workspace_library_mcp',
     },
+    // 卡片菜单
     {
       icon: <IconCard />,
       activeIcon: <IconCardActive />,
@@ -78,13 +87,6 @@ const createSubMenuConfig = () => [
       path: `${SpaceSubModuleEnum.CARD}`,
       dataTestId: 'navigation_workspace_library_card',
     },
-    // {
-    //   icon: <IconCozKnowledge />,
-    //   activeIcon: <IconCozKnowledgeFill />,
-    //   title: () => I18n.t('navigation_workspace_library', {}, 'Library'),
-    //   path: SpaceSubModuleEnum.LIBRARY,
-    //   dataTestId: 'navigation_workspace_library',
-    // },
     {
       icon: <IconBotWorkflow />,
       activeIcon: <IconBotWorkflowActive />,
@@ -109,7 +111,8 @@ const createSubMenuConfig = () => [
       path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Knowledge}`,
       dataTestId: 'navigation_workspace_library_knowledge',
     },
-    {
+    // 外部知识库菜单 - 受 FEATURE_SHOW_EXTERNAL_KNOWLEDGE 控制
+    FEATURE_SHOW_EXTERNAL_KNOWLEDGE && {
       icon: <IconBotKnowledge />,
       activeIcon: <IconBotKnowledgeActive />,
       title: () => '外部知识库',
@@ -143,6 +146,13 @@ const createSubMenuConfig = () => [
       dataTestId: 'navigation_workspace_models',
     },
     {
+      icon: <IconBotKnowledge />,
+      activeIcon: <IconBotKnowledgeActive />,
+      title: () => I18n.t('navigation_workspace_manage_embedding', {}, 'Embedding'),
+      path: SpaceSubModuleEnum.EMBEDDING,
+      dataTestId: 'navigation_workspace_embedding',
+    },
+    {
       icon: <IconBotPlugin />,
       activeIcon: <IconBotPluginActive />,
       title: () => I18n.t('navigation_workspace_manage_external_agents', {}, '外部智能体'),
@@ -156,7 +166,18 @@ const createSubMenuConfig = () => [
       path: SpaceSubModuleEnum.MEMBERS,
       dataTestId: 'navigation_workspace_members',
     },
-];
+    {
+      icon: <IconBotWorkflow />,
+      activeIcon: <IconBotWorkflowActive />,
+      title: () => '导出/导入',
+      path: SpaceSubModuleEnum.EXPORT_IMPORT,
+      dataTestId: 'navigation_workspace_export_import',
+    },
+  ];
+
+  // 过滤掉 false 值（被 feature flag 隐藏的菜单项）
+  return menuItems.filter(Boolean);
+};
 
 export const WorkspaceSubMenu = () => {
   const { subMenuKey } = useRouteConfig();

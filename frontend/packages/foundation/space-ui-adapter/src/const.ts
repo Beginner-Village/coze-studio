@@ -19,7 +19,9 @@ export enum SpaceSubModuleEnum {
   LIBRARY = 'library',
   MEMBERS = 'members',
   MODELS = 'models',
+  EMBEDDING = 'embedding-config',
   HIAGENTS = 'hiagents',
   MCP = 'mcp',
   CARD = 'card',
+  EXPORT_IMPORT = 'export-import',
 }

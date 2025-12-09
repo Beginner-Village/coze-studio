@@ -56,6 +56,13 @@ func (s *SingleAgentApplicationService) GetAgentBotInfo(ctx context.Context, req
 		return nil, errorx.New(errno.ErrAgentInvalidParamCode, errorx.KVf("msg", "agent %d not found", req.GetBotID()))
 	}
 
+	// DEBUG: Log workflow data from database
+	logs.CtxInfof(ctx, "[DEBUG] GetAgentBotInfo: agent_id=%d, workflow count=%d", req.GetBotID(), len(agentInfo.Workflow))
+	for i, wf := range agentInfo.Workflow {
+		logs.CtxInfof(ctx, "[DEBUG] GetAgentBotInfo: workflow[%d] = workflow_id=%d, plugin_id=%d, name=%s",
+			i, wf.GetWorkflowId(), wf.GetPluginId(), wf.GetWorkflowName())
+	}
+
 	vo, err := s.singleAgentDraftDo2Vo(ctx, agentInfo)
 	if err != nil {
 		return nil, err
@@ -181,6 +188,11 @@ func (s *SingleAgentApplicationService) fetchModelDetails(ctx context.Context, a
 }
 
 func (s *SingleAgentApplicationService) fetchKnowledgeDetails(ctx context.Context, agentInfo *entity.SingleAgent) ([]*knowledgeModel.Knowledge, error) {
+	// Check if Knowledge is nil (imported agents may have no knowledge configured)
+	if agentInfo.Knowledge == nil || agentInfo.Knowledge.KnowledgeInfo == nil {
+		return nil, nil
+	}
+
 	knowledgeIDs := make([]int64, 0, len(agentInfo.Knowledge.KnowledgeInfo))
 	for _, v := range agentInfo.Knowledge.KnowledgeInfo {
 		id, err := conv.StrToInt64(v.GetId())

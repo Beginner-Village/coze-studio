@@ -30,6 +30,14 @@ export interface SpecialAnswerContentProps extends IBaseContentProps {
   }>;
 }
 
+declare global {
+  interface Window {
+    APP_CONFIG?: {
+      CARD_URL?: string;
+    };
+  }
+}
+
 // eventId 生成器：时间戳 + 自增整数
 let eventIdCounter = 0;
 const generateEventId = (): string => {
@@ -59,37 +67,55 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
       console.log('⏭️ 跳过 iframe 事件设置:', {
         hasIframe: !!iframe,
         hasContent: !!specialContent,
-        viewMode
+        viewMode,
       });
       return;
     }
 
+    // 计算目标 Origin
+    const cardUrl =
+      window.APP_CONFIG?.CARD_URL ||
+      'https://agent.finmall.com/agent-h5-web/card/index.html';
+    let targetOrigin = '';
+    try {
+      if (cardUrl.startsWith('http')) {
+        targetOrigin = new URL(cardUrl).origin;
+      } else {
+        targetOrigin = window.location.origin;
+      }
+    } catch (e) {
+      console.warn('⚠️ 解析 Card URL 失败，使用当前 Origin:', e);
+      targetOrigin = window.location.origin;
+    }
+
     console.log('🔧 设置 iframe 事件监听器...', {
-      src: iframe.src
+      src: iframe.src,
+      targetOrigin,
     });
 
     const sendCardData = () => {
       try {
         // 准备卡片数据
         const { templateId, kvMap, dataResponse } = specialContent;
-        const cardData = kvMap && Object.keys(kvMap).length > 0 ? kvMap : dataResponse;
+        const cardData =
+          kvMap && Object.keys(kvMap).length > 0 ? kvMap : dataResponse;
 
         console.log('📦 准备发送卡片数据:', {
           templateId,
           hasKvMap: !!kvMap,
           hasDataResponse: !!dataResponse,
-          cardDataKeys: Object.keys(cardData || {})
+          cardDataKeys: Object.keys(cardData || {}),
         });
 
         // 构建 postMessage 消息结构
         const messagePayload = {
-          channel: 'agent',           // 固定标识
+          channel: 'agent', // 固定标识
           eventId: generateEventId(), // 时间戳 + 自增整数
-          event: 'card',              // 渲染卡片消息
+          event: 'card', // 渲染卡片消息
           data: {
-            code: templateId || '',   // 卡片模板ID
-            data: cardData || {}      // 卡片数据
-          }
+            code: templateId || '', // 卡片模板ID
+            data: cardData || {}, // 卡片数据
+          },
         };
 
         // 序列化为 JSON 字符串后发送
@@ -97,12 +123,13 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
 
         // 通过 postMessage 发送卡片数据到 iframe
         if (iframe.contentWindow) {
-          iframe.contentWindow.postMessage(messageString, 'https://agent.finmall.com');
+          iframe.contentWindow.postMessage(messageString, targetOrigin);
 
           console.log('📤 发送卡片数据到 iframe:', {
             eventId: messagePayload.eventId,
             templateId,
-            dataSize: messageString.length
+            targetOrigin,
+            dataSize: messageString.length,
           });
           console.log('📋 完整消息:', messagePayload);
         } else {
@@ -111,7 +138,8 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
 
         // 尝试获取iframe内容的高度（仅限同域情况）
         try {
-          const iframeDocument = iframe.contentDocument || iframe.contentWindow?.document;
+          const iframeDocument =
+            iframe.contentDocument || iframe.contentWindow?.document;
           if (iframeDocument) {
             const body = iframeDocument.body;
             const html = iframeDocument.documentElement;
@@ -120,7 +148,7 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
               body?.offsetHeight || 0,
               html?.clientHeight || 0,
               html?.scrollHeight || 0,
-              html?.offsetHeight || 0
+              html?.offsetHeight || 0,
             );
 
             if (height > 100) {
@@ -147,9 +175,25 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
     // 监听来自iframe的消息（用于跨域高度获取）
     const handleMessage = (event: MessageEvent) => {
       // 验证消息来源（安全考虑）
-      if (event.origin !== 'https://agent.finmall.com') return;
+      if (event.origin !== targetOrigin) {
+        // 如果是同域，origin 可能是 null (本地文件) 或 与 window.location.origin 相同
+        // 这里主要防止恶意站点的消息
+        // 对于相对路径（同域），我们允许 event.origin === window.location.origin
+        if (
+          targetOrigin === window.location.origin &&
+          event.origin === window.location.origin
+        ) {
+          // pass
+        } else {
+          return;
+        }
+      }
 
-      if (event.data && typeof event.data === 'object' && event.data.type === 'resize') {
+      if (
+        event.data &&
+        typeof event.data === 'object' &&
+        event.data.type === 'resize'
+      ) {
         const newHeight = event.data.height;
         if (typeof newHeight === 'number' && newHeight > 100) {
           setIframeHeight(newHeight + 20);
@@ -176,7 +220,9 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
 
   // 生成iframe URL（仅包含 spaceId 参数，卡片数据通过 postMessage 传递）
   const generateIframeUrl = () => {
-    const baseUrl = 'https://agent.finmall.com/agent-h5-web/card/index.html';
+    const baseUrl =
+      window.APP_CONFIG?.CARD_URL ||
+      'https://agent.finmall.com/agent-h5-web/card/index.html';
 
     // 从 URL 中提取 spaceId 参数
     // 支持两种格式：/space/{space_id}/... 或 ?space_id=xxx
@@ -200,7 +246,12 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
 
     if (spaceId) {
       const iframeUrl = `${baseUrl}?spaceId=${spaceId}`;
-      console.log('🔗 iframe链接（含spaceId）:', iframeUrl, '| spaceId:', spaceId);
+      console.log(
+        '🔗 iframe链接（含spaceId）:',
+        iframeUrl,
+        '| spaceId:',
+        spaceId,
+      );
       return iframeUrl;
     }
 
@@ -216,7 +267,7 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
           <div className="special-answer-native">
             {/* 显示原始消息内容 */}
             <TextContent message={message} {...restProps} />
-            
+
             {/* 显示特殊内容的JSON数据（调试用） */}
             <div className="special-answer-data">
               <details>
@@ -239,11 +290,11 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
           </div>
         )}
       </div>
-      
+
       {/* 底部控制区域 */}
       <div className="answer-footer">
         <div className="view-mode-toggle">
-          <div 
+          <div
             className={`toggle-option left ${viewMode === 'iframe' ? 'active' : ''}`}
             onClick={() => setViewMode('iframe')}
             title="卡片显示"
@@ -251,7 +302,7 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
             卡片
           </div>
           <div className="toggle-divider"></div>
-          <div 
+          <div
             className={`toggle-option right ${viewMode === 'native' ? 'active' : ''}`}
             onClick={() => setViewMode('native')}
             title="原生显示"

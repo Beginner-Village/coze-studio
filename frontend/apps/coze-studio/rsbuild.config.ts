@@ -29,22 +29,17 @@ const mergedConfig = defineConfig({
   server: {
     strictPort: true,
     proxy: [
-      // {
-      //   context: ['/api', '/v1'],
-      //   target: 'https://agent.finmall.com/' || API_PROXY_TARGET,
-      //   secure: false,
-      //   changeOrigin: true,
-      // },
+      // /aop-web 直接代理到外部卡片服务（本地开发调试用，绕过后端认证）
       {
-        context: ['/api', '/v1', '/aop-web', '/filestore', '/agent-h5/'],
-        // target: 'https://agents.finmall.com/',
-        target: 'http://localhost:8888/',
+        context: ['/aop-web'],
+        target: 'http://10.10.10.208:8500/',
         secure: false,
         changeOrigin: true,
       },
+      // 其他API代理到本地后端
       {
-        context: ['/aop-web', '/filestore', '/agent-h5/'],
-        target: 'https://agent.finmall.com/',
+        context: ['/api', '/v1', '/filestore', '/agent-h5/'],
+        target: 'http://localhost:8888/',
         secure: false,
         changeOrigin: true,
       },

@@ -114,6 +114,9 @@ type ExecuteRequest struct {
 	History      []*schema.Message
 	ResumeInfo   *InterruptInfo
 	PreCallTools []*agentrun.ToolsRetriever
+
+	// Variables 会话级自定义变量，用于覆盖智能体预设变量
+	Variables map[string]string
 }
 
 type AgentIdentity struct {

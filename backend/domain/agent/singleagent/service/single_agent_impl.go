@@ -128,6 +128,7 @@ func (s *singleAgentImpl) StreamExecute(ctx context.Context, req *entity.Execute
 
 		ResumeInfo:   req.ResumeInfo,
 		PreCallTools: req.PreCallTools,
+		Variables:    req.Variables, // 传递会话自定义变量，用于覆盖智能体预设变量
 	}
 	return rn.StreamExecute(ctx, rn.PreHandlerReq(ctx, exeReq))
 }

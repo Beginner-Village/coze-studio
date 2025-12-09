@@ -44,6 +44,10 @@ type AgentRuntime struct {
 	HistoryMsg []*schema.Message
 	Input      *schema.Message
 	ResumeInfo *ResumeInfo
+
+	// Variables 会话级自定义变量，用于覆盖智能体预设变量
+	// 在发起会话时通过 custom_variables 参数传入
+	Variables map[string]string
 }
 
 type ResumeInfo = singleagent.InterruptInfo

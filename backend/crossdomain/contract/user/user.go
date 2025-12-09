@@ -23,10 +23,23 @@ import (
 )
 
 type EntitySpace = entity.Space
+type EntityRoleType = entity.RoleType
+
+// SpacePermission represents the permission details for a user in a space
+type SpacePermission struct {
+	IsMember  bool
+	RoleType  int32
+	CanInvite bool
+	CanManage bool
+	CanEdit   bool
+}
 
 //go:generate mockgen -destination ../../../internal/mock/crossdomain/crossuser/crossuser.go --package mockCrossUser -source crossuser.go
 type User interface {
 	GetUserSpaceList(ctx context.Context, userID int64) (spaces []*EntitySpace, err error)
+	// CheckSpacePermission checks user's permission in a space
+	// Returns permission details including whether user can edit resources
+	CheckSpacePermission(ctx context.Context, spaceID, userID int64) (*SpacePermission, error)
 }
 
 var defaultSVC User

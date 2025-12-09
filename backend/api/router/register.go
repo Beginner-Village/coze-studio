@@ -30,6 +30,7 @@ import (
 	cozeHandler "github.com/coze-dev/coze-studio/backend/api/handler/coze"
 	external_knowledge_handler "github.com/coze-dev/coze-studio/backend/api/handler/external_knowledge"
 	coze "github.com/coze-dev/coze-studio/backend/api/router/coze"
+	embedding "github.com/coze-dev/coze-studio/backend/api/router/embedding"
 	external_knowledge "github.com/coze-dev/coze-studio/backend/api/router/external_knowledge"
 	memory_config "github.com/coze-dev/coze-studio/backend/api/router/memory_config"
 	modelmgr "github.com/coze-dev/coze-studio/backend/api/router/modelmgr"
@@ -53,9 +54,11 @@ func GeneratedRegister(r *server.Hertz) {
 	statistics.Register(r)
 
 	coze.Register(r)
+	embedding.Register(r)
 	external_knowledge.Register(r)
 	modelmgr.Register(r)
 	space.Register(r)
+	space.RegisterExportImport(r)
 	// space_member.Register(r) // 已经在space模块中包含了
 	template_publish.Register(r)
 	// Manually register import/export routes until IDL is regenerated

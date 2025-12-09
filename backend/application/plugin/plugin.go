@@ -44,6 +44,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
 	"github.com/coze-dev/coze-studio/backend/application/base/pluginutil"
 	crosssearch "github.com/coze-dev/coze-studio/backend/crossdomain/contract/search"
+	crossuser "github.com/coze-dev/coze-studio/backend/crossdomain/contract/user"
 	pluginConf "github.com/coze-dev/coze-studio/backend/domain/plugin/conf"
 	"github.com/coze-dev/coze-studio/backend/domain/plugin/encrypt"
 	"github.com/coze-dev/coze-studio/backend/domain/plugin/entity"
@@ -731,14 +732,49 @@ func (p *PluginApplicationService) GetUpdatedAPIs(ctx context.Context, req *plug
 }
 
 func (p *PluginApplicationService) GetUserAuthority(ctx context.Context, req *pluginAPI.GetUserAuthorityRequest) (resp *pluginAPI.GetUserAuthorityResponse, err error) {
+	uid := ctxutil.GetUIDFromCtx(ctx)
+	if uid == nil {
+		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "session is required"))
+	}
+
+	// Get plugin info to find the spaceID
+	plugin, err := p.DomainSVC.GetDraftPlugin(ctx, req.PluginID)
+	if err != nil {
+		return nil, errorx.Wrapf(err, "GetDraftPlugin failed, pluginID=%d", req.PluginID)
+	}
+
+	// Default: all permissions allowed (for plugin creator)
+	canEdit := true
+	canDelete := true
+	canDebug := true
+	canPublish := true
+
+	// If not the plugin creator, check space permission
+	if plugin.DeveloperID != *uid {
+		perm, err := crossuser.DefaultSVC().CheckSpacePermission(ctx, plugin.SpaceID, *uid)
+		if err != nil {
+			return nil, errorx.Wrapf(err, "CheckSpacePermission failed, spaceID=%d, userID=%d", plugin.SpaceID, *uid)
+		}
+
+		if !perm.IsMember {
+			return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "not a member of this space"))
+		}
+
+		// Owner/Admin can edit, Member can only read
+		canEdit = perm.CanEdit
+		canDelete = perm.CanEdit
+		canDebug = perm.CanEdit
+		canPublish = perm.CanEdit
+	}
+
 	resp = &pluginAPI.GetUserAuthorityResponse{
 		Data: &common.GetUserAuthorityData{
-			CanEdit:          true,
-			CanRead:          true,
-			CanDelete:        true,
-			CanDebug:         true,
-			CanPublish:       true,
-			CanReadChangelog: true,
+			CanEdit:          canEdit,
+			CanRead:          true, // All members can read
+			CanDelete:        canDelete,
+			CanDebug:         canDebug,
+			CanPublish:       canPublish,
+			CanReadChangelog: true, // All members can read changelog
 		},
 	}
 
@@ -1704,8 +1740,19 @@ func (p *PluginApplicationService) validateDraftPluginAccess(ctx context.Context
 		return nil, errorx.Wrapf(err, "GetDraftPlugin failed, pluginID=%d", pluginID)
 	}
 
-	if plugin.DeveloperID != *uid {
-		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "you are not the plugin owner"))
+	// Allow access if user is the plugin creator
+	if plugin.DeveloperID == *uid {
+		return plugin, nil
+	}
+
+	// Check if user has edit permission in the plugin's space (Owner or Admin)
+	perm, err := crossuser.DefaultSVC().CheckSpacePermission(ctx, plugin.SpaceID, *uid)
+	if err != nil {
+		return nil, errorx.Wrapf(err, "CheckSpacePermission failed, spaceID=%d, userID=%d", plugin.SpaceID, *uid)
+	}
+
+	if !perm.CanEdit {
+		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "no permission to edit this plugin"))
 	}
 
 	return plugin, nil

@@ -72,3 +72,18 @@ func (mr *MockUserMockRecorder) GetUserSpaceList(ctx, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserSpaceList", reflect.TypeOf((*MockUser)(nil).GetUserSpaceList), ctx, userID)
 }
+
+// CheckSpacePermission mocks base method.
+func (m *MockUser) CheckSpacePermission(ctx context.Context, spaceID, userID int64) (*crossuser.SpacePermission, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckSpacePermission", ctx, spaceID, userID)
+	ret0, _ := ret[0].(*crossuser.SpacePermission)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckSpacePermission indicates an expected call of CheckSpacePermission.
+func (mr *MockUserMockRecorder) CheckSpacePermission(ctx, spaceID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckSpacePermission", reflect.TypeOf((*MockUser)(nil).CheckSpacePermission), ctx, spaceID, userID)
+}

@@ -1,0 +1,318 @@
+/*
+ * Copyright 2025 coze-dev Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package spaceimport
+
+import (
+	"context"
+	"strconv"
+
+	"github.com/bytedance/sonic"
+
+	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_common"
+	"github.com/coze-dev/coze-studio/backend/application/space/export"
+	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+)
+
+// ReferenceRewriter handles rewriting of resource references during import
+type ReferenceRewriter struct{}
+
+// NewReferenceRewriter creates a new ReferenceRewriter
+func NewReferenceRewriter() *ReferenceRewriter {
+	return &ReferenceRewriter{}
+}
+
+// RewriteAgent rewrites all references in an agent
+func (r *ReferenceRewriter) RewriteAgent(ctx context.Context, agent *export.ExportedAgent, importCtx *ImportContext) *export.ExportedAgent {
+	// DEBUG: Print critical info at start
+	logs.CtxInfof(ctx, "========== RewriteAgent START ==========")
+	logs.CtxInfof(ctx, "Agent: ID=%d, Name=%s", agent.ID, agent.Name)
+	logs.CtxInfof(ctx, "Agent WorkflowRefs count: %d", len(agent.WorkflowRefs))
+	if importCtx.PackageIDs != nil {
+		logs.CtxInfof(ctx, "PackageIDs.Workflows count: %d", len(importCtx.PackageIDs.Workflows))
+	} else {
+		logs.CtxErrorf(ctx, "PackageIDs is NIL!")
+	}
+	logs.CtxInfof(ctx, "WorkflowIDMap count: %d", len(importCtx.WorkflowIDMap))
+
+	// Rewrite plugin references
+	if agent.PluginRefs != nil {
+		for _, pluginRef := range agent.PluginRefs {
+			oldID := pluginRef.GetApiId()
+			oldPluginID := pluginRef.GetPluginId()
+			if importCtx.IsInPackagePlugin(oldID) {
+				// Custom plugin in package - remap to new ID
+				newID := importCtx.RemapPluginID(oldID)
+				pluginRef.ApiId = &newID
+				pluginRef.PluginId = &newID
+			} else if isBuiltinPlugin(oldPluginID) {
+				// Built-in plugin - keep original reference (target system should have it)
+				logs.CtxDebugf(ctx, "Keeping built-in plugin reference: plugin_id=%d, api_id=%d", oldPluginID, oldID)
+			} else {
+				// Out-of-package custom plugin - clear reference
+				logs.CtxWarnf(ctx, "Clearing out-of-package plugin reference: plugin_id=%d, api_id=%d", oldPluginID, oldID)
+				var zero int64 = 0
+				pluginRef.ApiId = &zero
+				pluginRef.PluginId = &zero
+			}
+		}
+	}
+
+	// Rewrite workflow references
+	if agent.WorkflowRefs != nil {
+		logs.CtxDebugf(ctx, "Agent %d has %d workflow refs, package has %d workflows",
+			agent.ID, len(agent.WorkflowRefs), len(importCtx.PackageIDs.Workflows))
+
+		validWorkflowRefs := make([]*bot_common.WorkflowInfo, 0, len(agent.WorkflowRefs))
+		for _, workflowRef := range agent.WorkflowRefs {
+			oldID := workflowRef.GetWorkflowId()
+			logs.CtxDebugf(ctx, "Processing workflow ref: oldID=%d, isInPackage=%v",
+				oldID, importCtx.IsInPackageWorkflow(oldID))
+
+			if importCtx.IsInPackageWorkflow(oldID) {
+				newID := importCtx.RemapWorkflowID(oldID)
+				logs.CtxDebugf(ctx, "Remapping workflow: %d -> %d", oldID, newID)
+				workflowRef.WorkflowId = &newID
+				// Also update PluginId and ApiId if they match the old workflow ID
+				// In workflow refs, these fields often mirror the workflow_id
+				if workflowRef.GetPluginId() == oldID {
+					workflowRef.PluginId = &newID
+				}
+				if workflowRef.GetApiId() == oldID {
+					workflowRef.ApiId = &newID
+				}
+				validWorkflowRefs = append(validWorkflowRefs, workflowRef)
+			} else if oldID != 0 {
+				// Log out-of-package workflow reference for debugging
+				logs.CtxWarnf(ctx, "Workflow %d not in package for agent %d, will be removed. Package workflows: %v",
+					oldID, agent.ID, importCtx.PackageIDs.Workflows)
+			}
+			// Skip invalid or out-of-package workflow refs (don't add to validWorkflowRefs)
+		}
+		// Replace with only valid workflow refs (removes invalid ones instead of setting to 0)
+		agent.WorkflowRefs = validWorkflowRefs
+		logs.CtxDebugf(ctx, "Agent %d workflow refs after rewrite: %d", agent.ID, len(agent.WorkflowRefs))
+	}
+
+	// Clear knowledge references (not exported)
+	agent.KnowledgeRefs = nil
+
+	// Clear external knowledge references
+	agent.ExternalKnowledge = nil
+
+	// Clear database references (not exported)
+	agent.DatabaseRefs = nil
+
+	// Rewrite variables_meta_id
+	if agent.VariablesMetaID != nil {
+		oldID := *agent.VariablesMetaID
+		if importCtx.IsInPackageVariable(oldID) {
+			newID := importCtx.RemapVariableID(oldID)
+			agent.VariablesMetaID = &newID
+		} else {
+			agent.VariablesMetaID = nil
+		}
+	}
+
+	// Rewrite agent tools
+	if agent.AgentTools != nil {
+		validTools := make([]*export.ExportedAgentTool, 0, len(agent.AgentTools))
+		for _, tool := range agent.AgentTools {
+			if importCtx.IsInPackagePlugin(tool.PluginID) {
+				tool.PluginID = importCtx.RemapPluginID(tool.PluginID)
+				validTools = append(validTools, tool)
+			}
+			// Skip tools that reference out-of-package plugins
+		}
+		agent.AgentTools = validTools
+	}
+
+	// Rewrite model_id in ModelInfo
+	if agent.ModelInfo != nil && agent.ModelInfo.ModelId != nil {
+		oldModelID := *agent.ModelInfo.ModelId
+		// Use GetEffectiveModelID which handles:
+		// 1. In-package models that were actually created -> remap to new ID
+		// 2. In-package models that were skipped -> use fallback
+		// 3. Out-of-package models -> use fallback
+		effectiveModelID := importCtx.GetEffectiveModelID(oldModelID)
+		if effectiveModelID != nil {
+			agent.ModelInfo.ModelId = effectiveModelID
+			logs.CtxDebugf(ctx, "Rewrote model_id for agent %d: %d -> %d", agent.ID, oldModelID, *effectiveModelID)
+		} else {
+			// No fallback available, clear model_id
+			agent.ModelInfo.ModelId = nil
+			logs.CtxWarnf(ctx, "No model available for agent %d (original model_id=%d), cleared model_id", agent.ID, oldModelID)
+		}
+	} else if agent.ModelInfo != nil && agent.ModelInfo.ModelId == nil {
+		// Agent has ModelInfo but no model_id, try to set fallback
+		if importCtx.FallbackModelID != nil {
+			agent.ModelInfo.ModelId = importCtx.FallbackModelID
+			logs.CtxInfof(ctx, "Set fallback model_id=%d for agent %d (had no model)", *importCtx.FallbackModelID, agent.ID)
+		}
+	}
+
+	logs.CtxDebugf(ctx, "Rewrote references for agent %d", agent.ID)
+	return agent
+}
+
+// RewritePlugin rewrites all references in a plugin
+func (r *ReferenceRewriter) RewritePlugin(ctx context.Context, plugin *export.ExportedPlugin, importCtx *ImportContext) *export.ExportedPlugin {
+	// Plugins typically don't have references to other resources
+	// but we process them in case of future extensions
+	logs.CtxDebugf(ctx, "Processed plugin %d (no references to rewrite)", plugin.ID)
+	return plugin
+}
+
+// RewriteWorkflow rewrites all references in a workflow canvas
+func (r *ReferenceRewriter) RewriteWorkflow(ctx context.Context, workflow *export.ExportedWorkflow, importCtx *ImportContext) *export.ExportedWorkflow {
+	if workflow.Canvas == nil {
+		return workflow
+	}
+
+	// Parse canvas JSON and rewrite references
+	rewrittenCanvas := r.rewriteCanvasReferences(ctx, workflow.Canvas, importCtx)
+	workflow.Canvas = rewrittenCanvas
+
+	logs.CtxDebugf(ctx, "Rewrote references for workflow %d", workflow.ID)
+	return workflow
+}
+
+// rewriteCanvasReferences recursively rewrites references in workflow canvas
+func (r *ReferenceRewriter) rewriteCanvasReferences(ctx context.Context, canvas interface{}, importCtx *ImportContext) interface{} {
+	if canvas == nil {
+		return nil
+	}
+
+	// Convert to map for processing
+	canvasBytes, err := sonic.Marshal(canvas)
+	if err != nil {
+		logs.CtxWarnf(ctx, "Failed to marshal canvas: %v", err)
+		return canvas
+	}
+
+	var canvasMap map[string]interface{}
+	if err := sonic.Unmarshal(canvasBytes, &canvasMap); err != nil {
+		logs.CtxWarnf(ctx, "Failed to unmarshal canvas: %v", err)
+		return canvas
+	}
+
+	// Rewrite nodes
+	if nodes, ok := canvasMap["nodes"].([]interface{}); ok {
+		for i, node := range nodes {
+			if nodeMap, ok := node.(map[string]interface{}); ok {
+				nodes[i] = r.rewriteNodeReferences(ctx, nodeMap, importCtx)
+			}
+		}
+		canvasMap["nodes"] = nodes
+	}
+
+	return canvasMap
+}
+
+// rewriteNodeReferences rewrites references in a single workflow node
+func (r *ReferenceRewriter) rewriteNodeReferences(ctx context.Context, node map[string]interface{}, importCtx *ImportContext) map[string]interface{} {
+	// Get node data
+	data, ok := node["data"].(map[string]interface{})
+	if !ok {
+		return node
+	}
+
+	// Rewrite agent_id
+	if agentID, ok := getInt64FromInterface(data["agent_id"]); ok && agentID != 0 {
+		if importCtx.IsInPackageAgent(agentID) {
+			data["agent_id"] = importCtx.RemapAgentID(agentID)
+		} else {
+			data["agent_id"] = 0
+		}
+	}
+
+	// Rewrite plugin_id
+	if pluginID, ok := getInt64FromInterface(data["plugin_id"]); ok && pluginID != 0 {
+		if importCtx.IsInPackagePlugin(pluginID) {
+			data["plugin_id"] = importCtx.RemapPluginID(pluginID)
+		} else {
+			data["plugin_id"] = 0
+		}
+	}
+
+	// Rewrite workflow_id (for sub-workflow nodes)
+	if workflowID, ok := getInt64FromInterface(data["workflow_id"]); ok && workflowID != 0 {
+		if importCtx.IsInPackageWorkflow(workflowID) {
+			data["workflow_id"] = importCtx.RemapWorkflowID(workflowID)
+		} else {
+			data["workflow_id"] = 0
+		}
+	}
+
+	// Clear knowledge_id (not exported)
+	if _, ok := data["knowledge_id"]; ok {
+		data["knowledge_id"] = 0
+	}
+
+	// Clear database_id (not exported)
+	if _, ok := data["database_id"]; ok {
+		data["database_id"] = 0
+	}
+
+	node["data"] = data
+	return node
+}
+
+// RewriteVariable rewrites all references in a variable
+func (r *ReferenceRewriter) RewriteVariable(ctx context.Context, variable *export.ExportedVariable, importCtx *ImportContext) *export.ExportedVariable {
+	// Rewrite biz_id for agent variables
+	if variable.BizType == 1 { // 1 = agent
+		oldBizID := variable.BizID
+		// Parse string BizID to int64 for remapping
+		oldAgentID, err := strconv.ParseInt(oldBizID, 10, 64)
+		if err == nil && importCtx.IsInPackageAgent(oldAgentID) {
+			newAgentID := importCtx.RemapAgentID(oldAgentID)
+			variable.BizID = strconv.FormatInt(newAgentID, 10)
+		}
+	}
+
+	logs.CtxDebugf(ctx, "Rewrote references for variable %d", variable.ID)
+	return variable
+}
+
+// getInt64FromInterface safely extracts an int64 from an interface{}
+func getInt64FromInterface(v interface{}) (int64, bool) {
+	if v == nil {
+		return 0, false
+	}
+
+	switch val := v.(type) {
+	case int64:
+		return val, true
+	case int:
+		return int64(val), true
+	case int32:
+		return int64(val), true
+	case float64:
+		return int64(val), true
+	case float32:
+		return int64(val), true
+	default:
+		return 0, false
+	}
+}
+
+// isBuiltinPlugin checks if a plugin ID represents a built-in system plugin
+// Built-in plugins have small IDs (typically < 1000) assigned by the system
+// Examples: plugin_id=4 is Wolfram Alpha calculator
+func isBuiltinPlugin(pluginID int64) bool {
+	return pluginID > 0 && pluginID < 1000
+}

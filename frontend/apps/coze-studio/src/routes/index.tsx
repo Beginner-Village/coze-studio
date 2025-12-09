@@ -254,6 +254,12 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   },
                 },
 
+                // embedding configuration
+                {
+                  path: 'embedding-config',
+                  lazy: () => import('../pages/space-embedding-config'),
+                },
+
                 // hiagent management
                 {
                   path: 'hiagents/*',
@@ -264,6 +270,12 @@ export const router: ReturnType<typeof createBrowserRouter> =
                 {
                   path: 'members',
                   lazy: () => import('../pages/members'),
+                },
+
+                // export/import management
+                {
+                  path: 'export-import',
+                  lazy: () => import('../pages/space-export-import'),
                 },
               ],
             },
