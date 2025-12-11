@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
@@ -66,6 +67,17 @@ func GetModel(ctx context.Context, c *app.RequestContext) {
 
 	detail, err := modelmgr.ModelmgrApplicationSVC.GetModel(ctx, req.ModelID)
 	if err != nil {
+		// 检查是否是"记录不存在"错误
+		if strings.Contains(err.Error(), "record not found") {
+			c.JSON(consts.StatusOK, &apimodelmgr.GetModelResponse{
+				BaseResp: &base.BaseResp{
+					StatusCode:    40404,
+					StatusMessage: "模型不存在",
+				},
+				Data: nil,
+			})
+			return
+		}
 		internalServerErrorResponse(ctx, c, err)
 		return
 	}
@@ -92,6 +104,17 @@ func UpdateModel(ctx context.Context, c *app.RequestContext) {
 
 	detail, err := modelmgr.ModelmgrApplicationSVC.UpdateModel(ctx, &req)
 	if err != nil {
+		// 检查是否是"记录不存在"错误
+		if strings.Contains(err.Error(), "record not found") {
+			c.JSON(consts.StatusOK, &apimodelmgr.UpdateModelResponse{
+				BaseResp: &base.BaseResp{
+					StatusCode:    40404,
+					StatusMessage: "模型不存在",
+				},
+				Data: nil,
+			})
+			return
+		}
 		internalServerErrorResponse(ctx, c, err)
 		return
 	}
@@ -118,6 +141,16 @@ func DeleteModel(ctx context.Context, c *app.RequestContext) {
 
 	err := modelmgr.ModelmgrApplicationSVC.DeleteModel(ctx, req.ModelID)
 	if err != nil {
+		// 检查是否是"记录不存在"错误
+		if strings.Contains(err.Error(), "record not found") {
+			c.JSON(consts.StatusOK, &apimodelmgr.DeleteModelResponse{
+				BaseResp: &base.BaseResp{
+					StatusCode:    40404,
+					StatusMessage: "模型不存在",
+				},
+			})
+			return
+		}
 		internalServerErrorResponse(ctx, c, err)
 		return
 	}

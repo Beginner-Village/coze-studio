@@ -32,6 +32,7 @@ type Model struct {
 	Description       *MultilingualText `yaml:"description"`
 	DefaultParameters []*Parameter      `yaml:"default_parameters"`
 	Meta              ModelMeta         `yaml:"meta"`
+	IsPublic          bool              `yaml:"is_public"` // 是否为公共模型
 }
 
 func (m *Model) FindParameter(name ParameterName) (*Parameter, bool) {

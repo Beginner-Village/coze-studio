@@ -37,7 +37,7 @@ export interface SettingOnErrorExt {
    */
   backupLLmParam?: {
     modelName?: string;
-    modelType?: number;
+    modelType?: string | number; // 使用 string | number 支持大整数ID
     temperature?: number;
     frequencyPenalty?: number;
     presencePenalty?: number;

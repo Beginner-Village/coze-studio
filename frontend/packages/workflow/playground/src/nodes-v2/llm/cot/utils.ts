@@ -156,7 +156,7 @@ export function getOutputs({
   isBatch,
   modelsService,
 }: {
-  modelType: number | undefined;
+  modelType: string | number | undefined; // 使用 string | number 支持大整数ID
   outputs: ViewVariableTreeNode[] | undefined;
   isBatch: boolean;
   modelsService: WorkflowModelsService;
@@ -187,7 +187,7 @@ export function formatReasoningContentOnInit({
 }: {
   outputs: ViewVariableTreeNode[] | undefined;
   isBatch: boolean;
-  modelType?: number;
+  modelType?: string | number; // 使用 string | number 支持大整数ID
   modelsService: WorkflowModelsService;
 }) {
   if (!outputs) {

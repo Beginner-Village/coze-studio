@@ -662,7 +662,7 @@ struct ModelAbility {
 
 struct Model {
     1: string     name
-    2: i64        model_type
+    2: i64        model_type (api.js_conv='true',agw.js_conv="str")
     3: ModelClass model_class
     4: string     model_icon         // Model icon url
     5: double     model_input_price

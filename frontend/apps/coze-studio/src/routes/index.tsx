@@ -22,6 +22,7 @@ import { BaseEnum } from '@coze-arch/web-context';
 
 import { Layout } from '../layout';
 import { ProjectRouter } from '../components/project-router';
+import { AdminError } from '../pages/admin/components/AdminError';
 import {
   LoginPage,
   SpaceLayout,
@@ -349,6 +350,35 @@ export const router: ReturnType<typeof createBrowserRouter> =
               }),
             },
           ],
+        },
+
+      ],
+    },
+    // Admin Routes - 独立于 Layout，不继承全局布局
+    {
+      path: '/admin',
+      lazy: () => import('../pages/admin/components/AdminLayout'),
+      errorElement: <AdminError />,
+      children: [
+        {
+          index: true,
+          element: <Navigate to="models" replace />,
+        },
+        {
+          path: 'models',
+          lazy: () => import('../pages/admin/models'),
+        },
+        {
+          path: 'models/create',
+          lazy: () => import('../pages/admin/models/create'),
+        },
+        {
+          path: 'models/:model_id/edit',
+          lazy: () => import('../pages/admin/models/edit'),
+        },
+        {
+          path: 'users',
+          lazy: () => import('../pages/admin/users'),
         },
       ],
     },

@@ -63,14 +63,15 @@ export class WorkflowModelsService {
    * @param modelType
    * @returns
    */
-  isCoTModel(modelType: number): boolean {
-    return !!this.getCoTModels().find(model => model.model_type === modelType);
+  isCoTModel(modelType: string | number): boolean {
+    // 使用字符串比较避免大整数精度丢失问题
+    return !!this.getCoTModels().find(model => `${model.model_type}` === `${modelType}`);
   }
 
   /**
    * Determine whether it is a FunctionCall model
    */
-  isFunctionCallModel(modelType: number): boolean {
+  isFunctionCallModel(modelType: string | number): boolean {
     return !!this.getModelAbility(modelType)?.function_call;
   }
 
@@ -79,8 +80,9 @@ export class WorkflowModelsService {
    * @param modelType
    * @returns
    */
-  getModelByType(modelType?: number) {
-    return this.models.find(model => model.model_type === modelType);
+  getModelByType(modelType?: string | number) {
+    // 使用字符串比较避免大整数精度丢失问题
+    return this.models.find(model => `${model.model_type}` === `${modelType}`);
   }
 
   /**
@@ -88,7 +90,7 @@ export class WorkflowModelsService {
    * @param modelType
    * @returns
    */
-  getModelAbility(modelType?: number) {
+  getModelAbility(modelType?: string | number) {
     return this.getModelByType(modelType)?.model_ability;
   }
 }

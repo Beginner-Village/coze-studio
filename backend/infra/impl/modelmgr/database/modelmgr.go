@@ -176,34 +176,25 @@ import (
 	 }, nil
  }
 
- // listModelsBySpace 根据空间ID查询模型列表
+ // listModelsBySpace 根据空间ID查询模型列表（包含空间私有模型和公共模型）
  func (m *ModelMgr) listModelsBySpace(ctx context.Context, req *modelmgr.ListModelRequest) (*modelmgr.ListModelResponse, error) {
 	 logs.Infof("listModelsBySpace called with spaceID: %d", *req.SpaceID)
 
-	 // 首先查询空间中的模型实体
-	 spaceModelQuery := m.db.WithContext(ctx).
-		 Table("space_model sm").
-		 Select("sm.model_entity_id").
-		 Where("sm.space_id = ?", *req.SpaceID).
-		 Where("sm.deleted_at IS NULL")
-
-	 // 处理游标 - 使用space_model的ID作为游标
-	 if req.Cursor != nil && *req.Cursor != "" {
-		 cursorID, err := strconv.ParseInt(*req.Cursor, 10, 64)
-		 if err != nil {
-			 return nil, fmt.Errorf("invalid cursor: %w", err)
-		 }
-		 spaceModelQuery = spaceModelQuery.Where("sm.id > ?", cursorID)
-	 }
-
-	 // 设置限制和排序
 	 limit := req.Limit
 	 if limit <= 0 {
 		 limit = 20
 	 }
-	 spaceModelQuery = spaceModelQuery.Order("sm.id ASC").Limit(limit + 1)
 
-	 // 获取space_model记录
+	 models := make([]*modelmgr.Model, 0)
+
+	 // ==================== 第一部分：查询空间私有模型 ====================
+	 spaceModelQuery := m.db.WithContext(ctx).
+		 Table("space_model sm").
+		 Select("sm.model_entity_id, sm.id as space_model_id, sm.status").
+		 Where("sm.space_id = ?", *req.SpaceID).
+		 Where("sm.deleted_at IS NULL").
+		 Order("sm.id ASC")
+
 	 type spaceModelResult struct {
 		 ModelEntityID uint64 `json:"model_entity_id"`
 		 SpaceModelID  uint64 `json:"space_model_id"`
@@ -211,127 +202,159 @@ import (
 	 }
 
 	 var spaceModels []spaceModelResult
-	 if err := spaceModelQuery.Select("sm.model_entity_id, sm.id as space_model_id, sm.status").Scan(&spaceModels).Error; err != nil {
+	 if err := spaceModelQuery.Scan(&spaceModels).Error; err != nil {
 		 return nil, fmt.Errorf("failed to query space models: %w", err)
 	 }
 
-	 if len(spaceModels) == 0 {
-		 return &modelmgr.ListModelResponse{
-			 ModelList:  []*modelmgr.Model{},
-			 HasMore:    false,
-			 NextCursor: nil,
-		 }, nil
+	 // 处理空间私有模型
+	 if len(spaceModels) > 0 {
+		 entityIDs := make([]uint64, 0, len(spaceModels))
+		 spaceModelStatusMap := make(map[uint64]int)
+		 for _, sm := range spaceModels {
+			 entityIDs = append(entityIDs, sm.ModelEntityID)
+			 spaceModelStatusMap[sm.ModelEntityID] = sm.Status
+		 }
+
+		 entityQuery := m.db.WithContext(ctx).Model(&entity.ModelEntity{}).
+			 Where("id IN ?", entityIDs).
+			 Where("deleted_at IS NULL")
+
+		 if req.FuzzyModelName != nil && *req.FuzzyModelName != "" {
+			 entityQuery = entityQuery.Where("name LIKE ?", "%"+*req.FuzzyModelName+"%")
+		 }
+
+		 var entities []entity.ModelEntity
+		 if err := entityQuery.Find(&entities).Error; err != nil {
+			 return nil, fmt.Errorf("failed to query model entities: %w", err)
+		 }
+
+		 metaIDs := make([]uint64, 0, len(entities))
+		 for _, e := range entities {
+			 metaIDs = append(metaIDs, e.MetaID)
+		 }
+
+		 if len(metaIDs) > 0 {
+			 var metas []entity.ModelMeta
+			 metaQuery := m.db.WithContext(ctx).Model(&entity.ModelMeta{}).
+				 Where("id IN ?", metaIDs).
+				 Where("deleted_at IS NULL")
+
+			 if len(req.Status) > 0 {
+				 statusValues := make([]int, len(req.Status))
+				 for i, s := range req.Status {
+					 statusValues[i] = int(s)
+				 }
+				 metaQuery = metaQuery.Where("status IN ?", statusValues)
+			 } else {
+				 metaQuery = metaQuery.Where("status IN ?", []int{int(modelmgr.StatusDefault), int(modelmgr.StatusInUse)})
+			 }
+
+			 if err := metaQuery.Find(&metas).Error; err != nil {
+				 return nil, fmt.Errorf("failed to query model metas: %w", err)
+			 }
+
+			 metaMap := make(map[uint64]*entity.ModelMeta)
+			 for i := range metas {
+				 metaMap[metas[i].ID] = &metas[i]
+			 }
+
+			 for _, ent := range entities {
+				 meta, ok := metaMap[ent.MetaID]
+				 if !ok {
+					 continue
+				 }
+
+				 model, err := m.convertToModel(&ent, meta)
+				 if err != nil {
+					 logs.Warnf("failed to convert model, id=%d, err=%v", ent.ID, err)
+					 continue
+				 }
+
+				 if spaceStatus, ok := spaceModelStatusMap[ent.ID]; ok {
+					 model.Meta.Status = modelmgr.ModelStatus(spaceStatus)
+				 }
+
+				 model.IsPublic = false // 标记为空间私有模型
+				 models = append(models, model)
+
+				 if m.redis != nil && req.SpaceID != nil {
+					 _ = m.cacheSpaceModel(ctx, *req.SpaceID, model)
+				 }
+			 }
+		 }
 	 }
 
-	 // 提取模型实体ID列表
-	 entityIDs := make([]uint64, 0, len(spaceModels))
-	 spaceModelIDMap := make(map[uint64]uint64) // modelEntityID -> spaceModelID
-	 spaceModelStatusMap := make(map[uint64]int) // modelEntityID -> space status
-	 for _, sm := range spaceModels {
-		 entityIDs = append(entityIDs, sm.ModelEntityID)
-		 spaceModelIDMap[sm.ModelEntityID] = sm.SpaceModelID
-		 spaceModelStatusMap[sm.ModelEntityID] = sm.Status
-	 }
+	 // ==================== 第二部分：查询公共模型 ====================
+	 publicModelQuery := m.db.WithContext(ctx).Model(&entity.ModelEntity{}).
+		 Where("is_public = 1").
+		 Where("status = 1"). // 只查询启用状态的公共模型
+		 Where("deleted_at IS NULL").
+		 Order("created_at DESC")
 
-	 // 查询 model_entity
-	 entityQuery := m.db.WithContext(ctx).Model(&entity.ModelEntity{}).
-		 Where("id IN ?", entityIDs).
-		 Where("deleted_at IS NULL")
-
-	 // 处理模糊查询
 	 if req.FuzzyModelName != nil && *req.FuzzyModelName != "" {
-		 entityQuery = entityQuery.Where("name LIKE ?", "%"+*req.FuzzyModelName+"%")
+		 publicModelQuery = publicModelQuery.Where("name LIKE ?", "%"+*req.FuzzyModelName+"%")
 	 }
 
-	 var entities []entity.ModelEntity
-	 if err := entityQuery.Find(&entities).Error; err != nil {
-		 return nil, fmt.Errorf("failed to query model entities: %w", err)
-	 }
-
-	 // 收集 meta_id
-	 metaIDs := make([]uint64, 0, len(entities))
-	 for _, e := range entities {
-		 metaIDs = append(metaIDs, e.MetaID)
-	 }
-
-	 // 查询 model_meta
-	 var metas []entity.ModelMeta
-	 metaQuery := m.db.WithContext(ctx).Model(&entity.ModelMeta{}).
-		 Where("id IN ?", metaIDs).
-		 Where("deleted_at IS NULL")
-
-	 // 处理状态过滤
-	 if len(req.Status) > 0 {
-		 statusValues := make([]int, len(req.Status))
-		 for i, s := range req.Status {
-			 statusValues[i] = int(s)
+	 var publicEntities []entity.ModelEntity
+	 if err := publicModelQuery.Find(&publicEntities).Error; err != nil {
+		 logs.Warnf("failed to query public models: %v", err)
+		 // 不返回错误，继续返回已有的空间模型
+	 } else if len(publicEntities) > 0 {
+		 publicMetaIDs := make([]uint64, 0, len(publicEntities))
+		 for _, e := range publicEntities {
+			 publicMetaIDs = append(publicMetaIDs, e.MetaID)
 		 }
-		 metaQuery = metaQuery.Where("status IN ?", statusValues)
-	 } else {
-		 // 默认查询 default 和 in_use 状态
-		 metaQuery = metaQuery.Where("status IN ?", []int{int(modelmgr.StatusDefault), int(modelmgr.StatusInUse)})
+
+		 var publicMetas []entity.ModelMeta
+		 publicMetaQuery := m.db.WithContext(ctx).Model(&entity.ModelMeta{}).
+			 Where("id IN ?", publicMetaIDs).
+			 Where("deleted_at IS NULL")
+
+		 if len(req.Status) > 0 {
+			 statusValues := make([]int, len(req.Status))
+			 for i, s := range req.Status {
+				 statusValues[i] = int(s)
+			 }
+			 publicMetaQuery = publicMetaQuery.Where("status IN ?", statusValues)
+		 } else {
+			 publicMetaQuery = publicMetaQuery.Where("status IN ?", []int{int(modelmgr.StatusDefault), int(modelmgr.StatusInUse)})
+		 }
+
+		 if err := publicMetaQuery.Find(&publicMetas).Error; err != nil {
+			 logs.Warnf("failed to query public model metas: %v", err)
+		 } else {
+			 publicMetaMap := make(map[uint64]*entity.ModelMeta)
+			 for i := range publicMetas {
+				 publicMetaMap[publicMetas[i].ID] = &publicMetas[i]
+			 }
+
+			 for _, ent := range publicEntities {
+				 meta, ok := publicMetaMap[ent.MetaID]
+				 if !ok {
+					 continue
+				 }
+
+				 model, err := m.convertToModel(&ent, meta)
+				 if err != nil {
+					 logs.Warnf("failed to convert public model, id=%d, err=%v", ent.ID, err)
+					 continue
+				 }
+
+				 model.IsPublic = true // 标记为公共模型
+				 models = append(models, model)
+			 }
+		 }
 	 }
 
-	 if err := metaQuery.Find(&metas).Error; err != nil {
-		 return nil, fmt.Errorf("failed to query model metas: %w", err)
+	 // 处理分页
+	 hasMore := len(models) > limit
+	 if hasMore {
+		 models = models[:limit]
 	 }
 
-	 // 构建 meta map
-	 metaMap := make(map[uint64]*entity.ModelMeta)
-	 for i := range metas {
-		 metaMap[metas[i].ID] = &metas[i]
-	 }
-
-	 // 转换结果
-	 models := make([]*modelmgr.Model, 0, len(entities))
-	 hasMore := false
 	 var nextCursor *string
-
-	 // 按照space_model的顺序来排序entities
-	 entityMap := make(map[uint64]*entity.ModelEntity)
-	 for i := range entities {
-		 entityMap[entities[i].ID] = &entities[i]
-	 }
-
-	 processedCount := 0
-	 for _, sm := range spaceModels {
-		 if processedCount >= limit {
-			 hasMore = true
-			 break
-		 }
-
-		 entity, ok := entityMap[sm.ModelEntityID]
-		 if !ok {
-			 continue // 可能被其他条件过滤掉了
-		 }
-
-		 meta, ok := metaMap[entity.MetaID]
-		 if !ok {
-			 // 如果没有找到对应的 meta，跳过
-			 continue
-		 }
-
-		 model, err := m.convertToModel(entity, meta)
-		 if err != nil {
-			 logs.Warnf("failed to convert model, id=%d, err=%v", entity.ID, err)
-			 continue
-		 }
-
-		 // 使用空间模型的状态覆盖元数据的状态
-		 if spaceStatus, ok := spaceModelStatusMap[entity.ID]; ok {
-			 model.Meta.Status = modelmgr.ModelStatus(spaceStatus)
-		 }
-
-		 models = append(models, model)
-		 processedCount++
-
-		 // 缓存到空间级别
-		 if m.redis != nil && req.SpaceID != nil {
-			 _ = m.cacheSpaceModel(ctx, *req.SpaceID, model)
-		 }
-
-		 // 使用space_model的ID作为下一个游标
-		 cursor := strconv.FormatUint(sm.SpaceModelID, 10)
+	 if len(models) > 0 {
+		 cursor := strconv.FormatInt(models[len(models)-1].ID, 10)
 		 nextCursor = &cursor
 	 }
 
@@ -383,6 +406,8 @@ import (
 
 	 // 从数据库获取缺失的模型
 	 if len(missedIDs) > 0 {
+		 logs.CtxInfof(ctx, "[MGetModelByID] Querying database for model IDs: %v", missedIDs)
+
 		 // 查询 model_entity
 		 var entities []entity.ModelEntity
 		 err := m.db.WithContext(ctx).Model(&entity.ModelEntity{}).
@@ -394,12 +419,16 @@ import (
 			 return nil, fmt.Errorf("failed to get model entities by ids: %w", err)
 		 }
 
+		 logs.CtxInfof(ctx, "[MGetModelByID] Found %d entities", len(entities))
+
 		 // 收集 meta_id
 		 metaIDs := make([]uint64, 0, len(entities))
 		 entityMap := make(map[uint64]*entity.ModelEntity)
 		 for i := range entities {
 			 metaIDs = append(metaIDs, entities[i].MetaID)
 			 entityMap[entities[i].ID] = &entities[i]
+			 logs.CtxInfof(ctx, "[MGetModelByID] Entity ID=%d, Name=%s, MetaID=%d, IsPublic=%d, Status=%d",
+				 entities[i].ID, entities[i].Name, entities[i].MetaID, entities[i].IsPublic, entities[i].Status)
 		 }
 
 		 // 查询 model_meta
@@ -413,6 +442,20 @@ import (
 			 return nil, fmt.Errorf("failed to get model metas by ids: %w", err)
 		 }
 
+		 logs.CtxInfof(ctx, "[MGetModelByID] Found %d metas for metaIDs: %v", len(metas), metaIDs)
+		 for i := range metas {
+			 connConfigPreview := "nil"
+			 if metas[i].ConnConfig != nil {
+				 if len(*metas[i].ConnConfig) > 100 {
+					 connConfigPreview = (*metas[i].ConnConfig)[:100] + "..."
+				 } else {
+					 connConfigPreview = *metas[i].ConnConfig
+				 }
+			 }
+			 logs.CtxInfof(ctx, "[MGetModelByID] Meta ID=%d, Protocol=%s, Status=%d, ConnConfig=%s",
+				 metas[i].ID, metas[i].Protocol, metas[i].Status, connConfigPreview)
+		 }
+
 		 // 构建 meta map
 		 metaMap := make(map[uint64]*entity.ModelMeta)
 		 for i := range metas {
@@ -423,13 +466,16 @@ import (
 		 for _, id := range missedIDs {
 			 entity, ok := entityMap[uint64(id)]
 			 if !ok {
+				 logs.CtxWarnf(ctx, "[MGetModelByID] Entity not found for ID=%d", id)
 				 continue
 			 }
 
 			 meta, ok := metaMap[entity.MetaID]
 			 if !ok {
+				 logs.CtxWarnf(ctx, "[MGetModelByID] Meta not found for Entity ID=%d, MetaID=%d", entity.ID, entity.MetaID)
 				 continue
 			 }
+			 logs.CtxInfof(ctx, "[MGetModelByID] Processing entity ID=%d with meta ID=%d", entity.ID, meta.ID)
 
 			 model, err := m.convertToModel(entity, meta)
 			 if err != nil {
@@ -520,6 +566,10 @@ import (
 	 }
 
 	 // 解析连接配置
+	 logs.Infof("[convertToModel] Model ID=%d, meta.ConnConfig is nil: %v", entity.ID, meta.ConnConfig == nil)
+	 if meta.ConnConfig != nil {
+		 logs.Infof("[convertToModel] Model ID=%d, meta.ConnConfig value: %s", entity.ID, *meta.ConnConfig)
+	 }
 	 if meta.ConnConfig != nil && *meta.ConnConfig != "" {
 		 // 先尝试解析为 map 以处理特殊字段
 		 var configMap map[string]interface{}
@@ -563,11 +613,16 @@ import (
 					 logs.Warnf("failed to unmarshal conn config, id=%d, err=%v", entity.ID, err)
 				 } else {
 					 model.Meta.ConnConfig = &config
+					 logs.Infof("[convertToModel] Model ID=%d, ConnConfig successfully parsed, BaseURL=%s, Model=%s",
+						 entity.ID, config.BaseURL, config.Model)
 				 }
 			 }
 		 }
+	 } else {
+		 logs.Warnf("[convertToModel] Model ID=%d has nil or empty ConnConfig!", entity.ID)
 	 }
 
+	 logs.Infof("[convertToModel] Model ID=%d conversion done, ConnConfig is nil: %v", entity.ID, model.Meta.ConnConfig == nil)
 	 return model, nil
  }
 
@@ -645,19 +700,37 @@ import (
  }
 
  // CheckModelAvailableInSpace 检查模型在特定空间是否可用
+ // 模型可用的条件：
+ // 1. 模型在 space_model 表中且状态为启用
+ // 2. 或者模型是公共模型（is_public=1）且状态为启用
  func (m *ModelMgr) CheckModelAvailableInSpace(ctx context.Context, spaceID uint64, modelID int64) (bool, error) {
-	 // 查询space_model表
-	 var count int64
+	 // 首先检查是否为空间私有模型
+	 var spaceModelCount int64
 	 err := m.db.WithContext(ctx).
 		 Table("space_model").
 		 Where("space_id = ? AND model_entity_id = ? AND deleted_at IS NULL AND status = 1", spaceID, modelID).
-		 Count(&count).Error
+		 Count(&spaceModelCount).Error
 
 	 if err != nil {
 		 return false, fmt.Errorf("failed to check model availability in space: %w", err)
 	 }
 
-	 return count > 0, nil
+	 if spaceModelCount > 0 {
+		 return true, nil
+	 }
+
+	 // 如果不是空间私有模型，检查是否为公共模型
+	 var publicModelCount int64
+	 err = m.db.WithContext(ctx).
+		 Model(&entity.ModelEntity{}).
+		 Where("id = ? AND is_public = 1 AND status = 1 AND deleted_at IS NULL", modelID).
+		 Count(&publicModelCount).Error
+
+	 if err != nil {
+		 return false, fmt.Errorf("failed to check public model availability: %w", err)
+	 }
+
+	 return publicModelCount > 0, nil
  }
 
  // RefreshAllCache 刷新所有缓存

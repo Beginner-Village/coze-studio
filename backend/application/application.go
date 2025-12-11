@@ -37,6 +37,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/application/external_knowledge"
 	"github.com/coze-dev/coze-studio/backend/application/knowledge"
 	"github.com/coze-dev/coze-studio/backend/application/memory"
+	"github.com/coze-dev/coze-studio/backend/application/admin"
 	"github.com/coze-dev/coze-studio/backend/application/modelmgr"
 	"github.com/coze-dev/coze-studio/backend/application/plugin"
 	"github.com/coze-dev/coze-studio/backend/application/prompt"
@@ -81,6 +82,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/infra/contract/eventbus"
 	"github.com/coze-dev/coze-studio/backend/infra/impl/checkpoint"
 	implEventbus "github.com/coze-dev/coze-studio/backend/infra/impl/eventbus"
+	adminrepo "github.com/coze-dev/coze-studio/backend/domain/admin/repository"
 )
 
 type eventbusImpl struct {
@@ -198,6 +200,13 @@ func initBasicServices(ctx context.Context, infra *appinfra.AppDependencies, e *
 	modelTemplateRepo := modelrepository.NewModelTemplateRepository(infra.DB)
 	modelService := modelservice.NewModelService(modelRepo, infra.TOSClient)
 	modelMgrSVC := modelmgr.InitService(infra.ModelMgr, infra.TOSClient, modelService, modelRepo, modelTemplateRepo)
+	// wire admin application service dependencies
+	adminRepo := adminrepo.NewAdminRepository(infra.DB)
+	admin.AdminApplicationSVC = &admin.AdminApplicationService{
+		AdminRepo:     adminRepo,
+		ModelRepo:     modelRepo,
+		StorageClient: infra.TOSClient,
+	}
 	connectorSVC := connector.InitService(infra.TOSClient)
 	userSVC := user.InitService(ctx, infra.DB, infra.TOSClient, infra.IDGenSVC)
 	spaceapp.InitSpaceExportImportService(infra.DB, infra.TOSClient, infra.IDGenSVC, e.resourceEventBus, e.projectEventBus)

@@ -18,7 +18,7 @@ package model
 
 type LLMParams struct {
 	ModelName         string         `json:"modelName"`
-	ModelType         int64          `json:"modelType"`
+	ModelType         int64          `json:"modelType,string"` // 使用string避免JavaScript大整数精度丢失
 	Prompt            string         `json:"prompt"` // user prompt
 	Temperature       *float64       `json:"temperature"`
 	FrequencyPenalty  float64        `json:"frequencyPenalty"`

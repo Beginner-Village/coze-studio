@@ -64,20 +64,27 @@ func (m *modelManager) GetModel(ctx context.Context, params *model.LLMParams) (e
 
 	// 原有的标准模型逻辑
 	modelID := params.ModelType
+	logs.CtxInfof(ctx, "[GetModel] Fetching model with ID: %d", modelID)
 	models, err := m.modelMgr.MGetModelByID(ctx, &modelmgr.MGetModelRequest{
 		IDs: []int64{modelID},
 	})
 	if err != nil {
+		logs.CtxErrorf(ctx, "[GetModel] MGetModelByID failed: %v", err)
 		return nil, nil, err
 	}
+	logs.CtxInfof(ctx, "[GetModel] MGetModelByID returned %d models", len(models))
+
 	var config *chatmodel.Config
 	var protocol chatmodel.Protocol
 	var mdl *modelmgr.Model
 	for i := range models {
 		md := models[i]
+		logs.CtxInfof(ctx, "[GetModel] Checking model ID=%d, Name=%s, Status=%v, ConnConfig is nil: %v",
+			md.ID, md.Name, md.Meta.Status, md.Meta.ConnConfig == nil)
 		if md.ID == modelID {
 			// 检查模型状态，确保模型是启用状态
 			if md.Meta.Status != modelmgr.StatusInUse {
+				logs.CtxWarnf(ctx, "[GetModel] Model ID=%d is not in use, status=%v", modelID, md.Meta.Status)
 				return nil, nil, fmt.Errorf("model is not available, modelID=%v, status=%v", modelID, md.Meta.Status)
 			}
 			protocol = md.Meta.Protocol
@@ -88,6 +95,7 @@ func (m *modelManager) GetModel(ctx context.Context, params *model.LLMParams) (e
 	}
 
 	if config == nil {
+		logs.CtxErrorf(ctx, "[GetModel] Model ID=%d found but ConnConfig is nil!", modelID)
 		return nil, nil, fmt.Errorf("model type %v ,not found config ", modelID)
 	}
 

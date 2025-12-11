@@ -55,7 +55,8 @@ export function Model() {
     }
 
     if (model.modelType) {
-      const matched = models.find(v => v.model_type === model.modelType);
+      // 使用字符串比较避免大整数精度丢失问题
+      const matched = models.find(v => `${v.model_type}` === `${model.modelType}`);
       if (matched) {
         return {
           displayName: matched.name,
@@ -78,7 +79,8 @@ export function Model() {
           shape="square"
           src={[
             avatarSrc,
-            models.find(item => item.model_type === data?.model?.modelType)
+            // 使用字符串比较避免大整数精度丢失问题
+            models.find(item => `${item.model_type}` === `${data?.model?.modelType}`)
               ?.model_icon,
           ].find(Boolean)}
           className={'shrink-0 h-4 w-4 mr-1'}

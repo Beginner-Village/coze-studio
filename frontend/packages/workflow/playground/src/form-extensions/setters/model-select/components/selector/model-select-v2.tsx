@@ -27,11 +27,12 @@ import { useGlobalState } from '@/hooks';
 
 import styles from './model-select-v2.module.less';
 
+// 使用 string | number 支持大整数ID，避免JavaScript精度丢失
 export interface ModelSelectV2Props
   extends Pick<ModelSelectProps, 'triggerRender' | 'popoverPosition'> {
   className?: string;
-  value: number | undefined;
-  onChange: (value: number) => void;
+  value: string | number | undefined;
+  onChange: (value: string | number) => void;
   models: Model[];
   readonly?: boolean;
 }
@@ -62,7 +63,8 @@ export const ModelSelectV2: React.FC<ModelSelectV2Props> = ({
       clickToHide
       onModelChange={(model: Model) => {
         if (model.model_type) {
-          onChange(Number(model.model_type));
+          // 直接传递model_type，不使用Number()转换以避免大整数精度丢失
+          onChange(model.model_type);
         }
       }}
       triggerRender={triggerRender}

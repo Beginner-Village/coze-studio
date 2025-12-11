@@ -35,6 +35,9 @@ import (
 var noNeedSessionCheckPath = map[string]bool{
 	"/api/passport/web/email/login/":       true,
 	"/api/passport/web/email/register/v2/": true,
+	// Admin 初始化相关 API 不需要认证（用于首次设置管理员）
+	"/api/admin/check": true,
+	"/api/admin/init":  true,
 }
 
 func SessionAuthMW() app.HandlerFunc {

@@ -25,6 +25,7 @@ import { exploreRouter } from './pages/explore';
 import { templateRouter } from './pages/template';
 import { Layout } from './layout';
 import { MicroAppWrapper} from './apps/MicroAppWrapper'
+import { AdminError } from './pages/admin/components/AdminError'
 
 const subMenu = lazy(() =>
   import('@coze-foundation/space-ui-adapter').then(exps => ({
@@ -458,6 +459,34 @@ export const router: ReturnType<typeof createBrowserRouter> =
             hasSider: false,
             requireAuth: true,
           }),
+        },
+      ],
+    },
+    // Admin Routes - 独立于 Layout，不继承全局布局
+    {
+      path: '/admin',
+      lazy: () => import('./pages/admin/components/AdminLayout'),
+      errorElement: <AdminError />,
+      children: [
+        {
+          index: true,
+          element: <Navigate to="models" replace />,
+        },
+        {
+          path: 'models',
+          lazy: () => import('./pages/admin/models'),
+        },
+        {
+          path: 'models/create',
+          lazy: () => import('./pages/admin/models/create'),
+        },
+        {
+          path: 'models/:model_id/edit',
+          lazy: () => import('./pages/admin/models/edit'),
+        },
+        {
+          path: 'users',
+          lazy: () => import('./pages/admin/users'),
         },
       ],
     },

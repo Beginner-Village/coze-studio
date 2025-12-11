@@ -210,7 +210,7 @@ type SimpleLLMParam struct {
 	GenerationDiversity string               `json:"generationDiversity"`
 	MaxTokens           int                  `json:"maxTokens"`
 	ModelName           string               `json:"modelName"`
-	ModelType           int64                `json:"modelType"`
+	ModelType           int64                `json:"modelType,string"` // 使用string避免JavaScript大整数精度丢失
 	ResponseFormat      model.ResponseFormat `json:"responseFormat"`
 	SystemPrompt        string               `json:"systemPrompt"`
 	Temperature         float64              `json:"temperature"`

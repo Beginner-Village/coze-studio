@@ -51,6 +51,14 @@ type ModelRepository interface {
 	RemoveModelFromSpace(ctx context.Context, spaceID, modelID uint64) error
 	UpdateSpaceModelConfig(ctx context.Context, spaceID, modelID uint64, config map[string]interface{}) error
 	UpdateSpaceModelStatus(ctx context.Context, spaceID, modelID uint64, status int) error
+
+	// 公共模型操作
+	GetPublicModels(ctx context.Context) ([]*entity.SpaceModelView, error)
+	GetPublicModelByID(ctx context.Context, modelID uint64) (*entity.ModelEntity, error)
+	CreatePublicModel(ctx context.Context, model *entity.ModelEntity) error
+	UpdatePublicModel(ctx context.Context, model *entity.ModelEntity) error
+	DeletePublicModel(ctx context.Context, modelID uint64) error
+	SetModelPublic(ctx context.Context, modelID uint64, isPublic int) error
 }
 
 type modelRepository struct {
@@ -255,13 +263,16 @@ func (r *modelRepository) GetSpaceModels(ctx context.Context, spaceID uint64) ([
 		Description  *string `json:"description"`
 		Capability   *string `json:"capability"`
 		IconURI      string  `json:"icon_uri"`
+		IconURL      string  `json:"icon_url"`
 		Protocol     string  `json:"protocol"`
 		CustomConfig *string `json:"custom_config"`
 		Status       int     `json:"status"`
+		IsPublic     int     `json:"is_public"`
 	}
 
 	var results []queryResult
 
+	// 查询空间私有模型
 	query := r.db.WithContext(ctx).
 		Table("space_model sm").
 		Select(`
@@ -270,9 +281,11 @@ func (r *modelRepository) GetSpaceModels(ctx context.Context, spaceID uint64) ([
 			me.description,
 			mm.capability,
 			mm.icon_uri,
+			mm.icon_url,
 			mm.protocol,
 			sm.custom_config,
-			sm.status
+			sm.status,
+			0 as is_public
 		`).
 		Joins("JOIN model_entity me ON sm.model_entity_id = me.id").
 		Joins("JOIN model_meta mm ON me.meta_id = mm.id").
@@ -280,28 +293,55 @@ func (r *modelRepository) GetSpaceModels(ctx context.Context, spaceID uint64) ([
 		Where("sm.deleted_at IS NULL").
 		Where("me.deleted_at IS NULL").
 		Where("mm.deleted_at IS NULL").
-		Order("sm.created_at DESC")
-
-	// 添加调试日志 - 打印SQL语句
-	sqlStr := query.ToSQL(func(tx *gorm.DB) *gorm.DB {
-		return tx.Scan(&results)
-	})
-	logs.Infof("GetSpaceModels SQL: %s, spaceID: %d", sqlStr, spaceID)
+		Where("me.is_public = 0")
 
 	if err := query.Scan(&results).Error; err != nil {
 		return nil, fmt.Errorf("failed to query space models: %w", err)
 	}
 
-	logs.Infof("GetSpaceModels query results count: %d", len(results))
+	logs.Infof("GetSpaceModels query space private models count: %d", len(results))
 
+	// 查询公共模型
+	var publicResults []queryResult
+	publicQuery := r.db.WithContext(ctx).
+		Table("model_entity me").
+		Select(`
+			me.id as entity_id,
+			me.name,
+			me.description,
+			mm.capability,
+			mm.icon_uri,
+			mm.icon_url,
+			mm.protocol,
+			NULL as custom_config,
+			me.status,
+			1 as is_public
+		`).
+		Joins("JOIN model_meta mm ON me.meta_id = mm.id").
+		Where("me.is_public = 1").
+		Where("me.deleted_at IS NULL").
+		Where("mm.deleted_at IS NULL")
+
+	if err := publicQuery.Scan(&publicResults).Error; err != nil {
+		return nil, fmt.Errorf("failed to query public models: %w", err)
+	}
+
+	logs.Infof("GetSpaceModels query public models count: %d", len(publicResults))
+
+	// 合并结果
+	results = append(results, publicResults...)
+
+	// 转换结果
 	spaceModels := make([]*entity.SpaceModelView, 0, len(results))
 	for _, result := range results {
 		model := &entity.SpaceModelView{
 			ID:       fmt.Sprintf("%d", result.EntityID),
 			Name:     result.Name,
 			IconURI:  result.IconURI,
+			IconURL:  result.IconURL,
 			Protocol: result.Protocol,
 			Status:   result.Status,
+			IsPublic: result.IsPublic,
 		}
 
 		// 处理描述信息，提取中文描述
@@ -348,4 +388,183 @@ func (r *modelRepository) GetSpaceModels(ctx context.Context, spaceID uint64) ([
 	}
 
 	return spaceModels, nil
+}
+
+// GetPublicModels 获取所有公共模型
+func (r *modelRepository) GetPublicModels(ctx context.Context) ([]*entity.SpaceModelView, error) {
+	type queryResult struct {
+		EntityID    uint64  `json:"entity_id"`
+		Name        string  `json:"name"`
+		Description *string `json:"description"`
+		Capability  *string `json:"capability"`
+		IconURI     string  `json:"icon_uri"`
+		IconURL     string  `json:"icon_url"`
+		Protocol    string  `json:"protocol"`
+		Status      int     `json:"status"`
+	}
+
+	var results []queryResult
+
+	err := r.db.WithContext(ctx).
+		Table("model_entity me").
+		Select(`
+			me.id as entity_id,
+			me.name,
+			me.description,
+			mm.capability,
+			mm.icon_uri,
+			mm.icon_url,
+			mm.protocol,
+			me.status
+		`).
+		Joins("JOIN model_meta mm ON me.meta_id = mm.id").
+		Where("me.is_public = 1").
+		Where("me.deleted_at IS NULL").
+		Where("mm.deleted_at IS NULL").
+		Order("me.created_at DESC").
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to query public models: %w", err)
+	}
+
+	models := make([]*entity.SpaceModelView, 0, len(results))
+	for _, result := range results {
+		model := &entity.SpaceModelView{
+			ID:       fmt.Sprintf("%d", result.EntityID),
+			Name:     result.Name,
+			IconURI:  result.IconURI,
+			IconURL:  result.IconURL,
+			Protocol: result.Protocol,
+			Status:   result.Status,
+			IsPublic: 1,
+		}
+
+		// 处理描述和能力信息（复用现有逻辑）
+		if result.Description != nil {
+			var descMap map[string]string
+			if err := json.Unmarshal([]byte(*result.Description), &descMap); err == nil {
+				if zhDesc, exists := descMap["zh"]; exists && zhDesc != "" {
+					model.Description = zhDesc
+				} else if enDesc, exists := descMap["en"]; exists && enDesc != "" {
+					model.Description = enDesc
+				}
+			} else {
+				model.Description = *result.Description
+			}
+		}
+
+		if result.Capability != nil {
+			var capMap map[string]interface{}
+			if err := json.Unmarshal([]byte(*result.Capability), &capMap); err == nil {
+				if inputTokens, exists := capMap["input_tokens"]; exists {
+					switch v := inputTokens.(type) {
+					case float64:
+						model.ContextLength = int64(v)
+					case int64:
+						model.ContextLength = v
+					case int:
+						model.ContextLength = int64(v)
+					}
+				}
+			}
+		}
+
+		models = append(models, model)
+	}
+
+	return models, nil
+}
+
+// GetPublicModelByID 根据ID获取公共模型
+func (r *modelRepository) GetPublicModelByID(ctx context.Context, modelID uint64) (*entity.ModelEntity, error) {
+	var model entity.ModelEntity
+	err := r.db.WithContext(ctx).
+		Where("id = ? AND is_public = 1 AND deleted_at IS NULL", modelID).
+		First(&model).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get public model: %w", err)
+	}
+	return &model, nil
+}
+
+// CreatePublicModel 创建公共模型
+func (r *modelRepository) CreatePublicModel(ctx context.Context, model *entity.ModelEntity) error {
+	model.IsPublic = 1
+	if model.CreatedAt == 0 {
+		model.CreatedAt = uint64(time.Now().UnixMilli())
+	}
+	model.UpdatedAt = model.CreatedAt
+
+	err := r.db.WithContext(ctx).Create(model).Error
+	if err != nil {
+		return fmt.Errorf("failed to create public model: %w", err)
+	}
+	return nil
+}
+
+// UpdatePublicModel 更新公共模型
+func (r *modelRepository) UpdatePublicModel(ctx context.Context, model *entity.ModelEntity) error {
+	model.UpdatedAt = uint64(time.Now().UnixMilli())
+
+	err := r.db.WithContext(ctx).
+		Model(&entity.ModelEntity{}).
+		Where("id = ? AND is_public = 1 AND deleted_at IS NULL", model.ID).
+		Updates(model).Error
+	if err != nil {
+		return fmt.Errorf("failed to update public model: %w", err)
+	}
+	return nil
+}
+
+// DeletePublicModel 删除公共模型（同时删除 model_entity 和 model_meta）
+func (r *modelRepository) DeletePublicModel(ctx context.Context, modelID uint64) error {
+	now := uint64(time.Now().UnixMilli())
+
+	// 同时删除 model_entity 和 model_meta
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 获取 meta_id
+		var model entity.ModelEntity
+		if err := tx.Where("id = ? AND is_public = 1 AND deleted_at IS NULL", modelID).First(&model).Error; err != nil {
+			return err
+		}
+
+		// 删除 model_entity
+		if err := tx.Model(&entity.ModelEntity{}).
+			Where("id = ?", modelID).
+			Updates(map[string]interface{}{"deleted_at": now, "updated_at": now}).Error; err != nil {
+			return err
+		}
+
+		// 删除 model_meta
+		if err := tx.Model(&entity.ModelMeta{}).
+			Where("id = ?", model.MetaID).
+			Updates(map[string]interface{}{"deleted_at": now, "updated_at": now}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to delete public model: %w", err)
+	}
+	return nil
+}
+
+// SetModelPublic 设置模型的公共状态
+func (r *modelRepository) SetModelPublic(ctx context.Context, modelID uint64, isPublic int) error {
+	now := uint64(time.Now().UnixMilli())
+
+	err := r.db.WithContext(ctx).
+		Model(&entity.ModelEntity{}).
+		Where("id = ? AND deleted_at IS NULL", modelID).
+		Updates(map[string]interface{}{
+			"is_public":  isPublic,
+			"updated_at": now,
+		}).Error
+	if err != nil {
+		return fmt.Errorf("failed to set model public status: %w", err)
+	}
+	return nil
 }

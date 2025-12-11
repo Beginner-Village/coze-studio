@@ -32,7 +32,8 @@ export const UserPrompt = ({ field, fieldState }) => {
   const { models } = useWorkflowModels();
 
   const modelType = form.getValueIn('model.modelType');
-  const curModel = models?.find(model => model.model_type === modelType);
+  // 使用字符串比较避免大整数精度丢失问题
+  const curModel = models?.find(model => `${model.model_type}` === `${modelType}`);
   const isUserPromptRequired = curModel?.is_up_required ?? false;
 
   useEffect(() => {

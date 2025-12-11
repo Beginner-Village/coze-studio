@@ -123,7 +123,8 @@ export const transformOnSubmit = (
 
   const { isChatflow } = globalState || {};
 
-  const modelMeta = models.find(m => m.model_type === model.modelType);
+  // 使用字符串比较避免大整数精度丢失问题
+  const modelMeta = models.find(m => `${m.model_type}` === `${model.modelType}`);
 
   const promptItem = {
     type: 'literal',

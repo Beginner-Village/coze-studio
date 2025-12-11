@@ -24,6 +24,7 @@ type ModelEntity struct {
 	DefaultParams string  `gorm:"type:json;not null;comment:默认参数" json:"default_params"`
 	Scenario      uint64  `gorm:"not null;comment:模型应用场景" json:"scenario"`
 	Status        int     `gorm:"not null;default:1;comment:模型状态" json:"status"`
+	IsPublic      int     `gorm:"not null;default:0;comment:是否为公共模型: 0=私有, 1=公共" json:"is_public"`
 	CreatedAt     uint64  `gorm:"not null;default:0;comment:Create Time in Milliseconds" json:"created_at"`
 	UpdatedAt     uint64  `gorm:"not null;default:0;comment:Update Time in Milliseconds" json:"updated_at"`
 	DeletedAt     *uint64 `gorm:"comment:Delete Time in Milliseconds" json:"deleted_at"`
@@ -42,6 +43,7 @@ type ModelMeta struct {
 	Capability  *string `gorm:"type:json;comment:模型能力" json:"capability"`
 	ConnConfig  *string `gorm:"type:json;comment:模型连接配置" json:"conn_config"`
 	Status      int     `gorm:"not null;default:1;comment:模型状态" json:"status"`
+	IsPublic    int     `gorm:"not null;default:0;comment:是否为公共模型: 0=私有, 1=公共" json:"is_public"`
 	Description string  `gorm:"size:2048;not null;default:'';comment:模型描述" json:"description"`
 	CreatedAt   uint64  `gorm:"not null;default:0;comment:Create Time in Milliseconds" json:"created_at"`
 	UpdatedAt   uint64  `gorm:"not null;default:0;comment:Update Time in Milliseconds" json:"updated_at"`

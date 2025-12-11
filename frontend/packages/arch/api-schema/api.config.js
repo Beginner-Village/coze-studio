@@ -29,6 +29,7 @@ const config = [
       ynet_workflow: './idl/ynet_workflow/ynet_workflow.thrift', // 工作流版本管理API
       ynet_agent: './idl/ynet-agent/ynet_agent.thrift', // 智能体版本管理API
       statistics: './idl/statistics/statistics.thrift', // 数据统计接口
+      admin: './idl/admin/admin.thrift', // 公共模型管理后台API
     },
     commonCodePath: path.resolve(__dirname, './src/api/config.ts'), // custom profile
     output: './src', // Product location

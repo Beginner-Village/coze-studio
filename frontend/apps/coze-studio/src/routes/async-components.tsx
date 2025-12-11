@@ -150,3 +150,12 @@ export const ExploreProjectPage = lazy(() =>
   })),
 );
 
+// External App Page
+export const ExternalAppPage = lazy(() =>
+  import('../pages/external-app').then(exps => ({
+    default: exps.default,
+  })),
+);
+
+// Admin Router - 完整的 Admin 路由组件
+export const AdminRouter = lazy(() => import('../pages/admin'));

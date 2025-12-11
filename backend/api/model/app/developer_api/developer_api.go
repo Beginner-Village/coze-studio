@@ -22448,7 +22448,7 @@ func (p *ModelAbility) String() string {
 
 type Model struct {
 	Name       string     `thrift:"name,1" form:"name" json:"name" query:"name"`
-	ModelType  int64      `thrift:"model_type,2" form:"model_type" json:"model_type" query:"model_type"`
+	ModelType  int64      `thrift:"model_type,2" form:"model_type" json:"model_type,string" query:"model_type"`
 	ModelClass ModelClass `thrift:"model_class,3" form:"model_class" json:"model_class" query:"model_class"`
 	// Model icon url
 	ModelIcon        string      `thrift:"model_icon,4" form:"model_icon" json:"model_icon" query:"model_icon"`

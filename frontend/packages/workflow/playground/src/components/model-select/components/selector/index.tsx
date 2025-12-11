@@ -23,12 +23,13 @@ import {
   type ModelSelectV2Props,
 } from '@/form-extensions/setters/model-select/components/selector/model-select-v2';
 
+// 使用 string | number 支持大整数ID，避免JavaScript精度丢失
 export interface ModelSelectProps
   extends Pick<ModelSelectV2Props, 'popoverPosition' | 'triggerRender'> {
   className?: string;
   style?: CSSProperties;
-  value: number | undefined;
-  onChange: (value: number) => void;
+  value: string | number | undefined;
+  onChange: (value: string | number) => void;
   models: Model[];
   readonly?: boolean;
 }

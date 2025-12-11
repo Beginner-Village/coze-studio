@@ -1,19 +1,3 @@
-/*
- * Copyright 2025 coze-dev Authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import { createAPI } from './../../api/config';
 /** HiAgent 智能体信息 - 对应 external_agent_config 表 */
 export interface HiAgentInfo {
@@ -171,7 +155,7 @@ export interface RevertDraftBotData {
 }
 /** HiAgent CRUD 接口 */
 export const CreateHiAgent = /*#__PURE__*/createAPI<CreateHiAgentRequest, CreateHiAgentResponse>({
-  "url": "/api/space/:space_id/hi-agents",
+  "url": "/api/space/{space_id}/hi-agents",
   "method": "POST",
   "name": "CreateHiAgent",
   "reqType": "CreateHiAgentRequest",
@@ -184,7 +168,7 @@ export const CreateHiAgent = /*#__PURE__*/createAPI<CreateHiAgentRequest, Create
   "service": "ynet_agent"
 });
 export const UpdateHiAgent = /*#__PURE__*/createAPI<UpdateHiAgentRequest, UpdateHiAgentResponse>({
-  "url": "/api/space/:space_id/hi-agents/:agent_id",
+  "url": "/api/space/{space_id}/hi-agents/{agent_id}",
   "method": "PUT",
   "name": "UpdateHiAgent",
   "reqType": "UpdateHiAgentRequest",
@@ -197,7 +181,7 @@ export const UpdateHiAgent = /*#__PURE__*/createAPI<UpdateHiAgentRequest, Update
   "service": "ynet_agent"
 });
 export const DeleteHiAgent = /*#__PURE__*/createAPI<DeleteHiAgentRequest, DeleteHiAgentResponse>({
-  "url": "/api/space/:space_id/hi-agents/:agent_id",
+  "url": "/api/space/{space_id}/hi-agents/{agent_id}",
   "method": "DELETE",
   "name": "DeleteHiAgent",
   "reqType": "DeleteHiAgentRequest",
@@ -209,7 +193,7 @@ export const DeleteHiAgent = /*#__PURE__*/createAPI<DeleteHiAgentRequest, Delete
   "service": "ynet_agent"
 });
 export const GetHiAgent = /*#__PURE__*/createAPI<GetHiAgentRequest, GetHiAgentResponse>({
-  "url": "/api/space/:space_id/hi-agents/:agent_id",
+  "url": "/api/space/{space_id}/hi-agents/{agent_id}",
   "method": "GET",
   "name": "GetHiAgent",
   "reqType": "GetHiAgentRequest",
@@ -221,7 +205,7 @@ export const GetHiAgent = /*#__PURE__*/createAPI<GetHiAgentRequest, GetHiAgentRe
   "service": "ynet_agent"
 });
 export const GetHiAgentList = /*#__PURE__*/createAPI<GetHiAgentListRequest, GetHiAgentListResponse>({
-  "url": "/api/space/:space_id/hi-agents",
+  "url": "/api/space/{space_id}/hi-agents",
   "method": "GET",
   "name": "GetHiAgentList",
   "reqType": "GetHiAgentListRequest",

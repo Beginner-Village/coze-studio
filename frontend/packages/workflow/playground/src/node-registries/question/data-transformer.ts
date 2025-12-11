@@ -109,7 +109,8 @@ export function transformOnSubmit(value, context) {
   const { question, answer_type, options, dynamic_option, option_type } =
     questionParams;
 
-  const modelMeta = models.find(m => m.model_type === llmParam?.modelType);
+  // 使用字符串比较避免大整数精度丢失问题
+  const modelMeta = models.find(m => `${m.model_type}` === `${llmParam?.modelType}`);
 
   return {
     inputs: {

@@ -42,6 +42,7 @@ interface SpaceModel {
   status: number;
   icon_uri?: string;
   icon_url?: string;
+  is_public?: number; // 1=公共模型, 0=私有模型
 }
 
 interface ModelCardProps {
@@ -123,6 +124,8 @@ function ModelCard({
   onDelete,
   onEdit,
 }: ModelCardProps) {
+  const isPublic = model.is_public === 1;
+
   return (
     <div
       key={model.id}
@@ -157,12 +160,20 @@ function ModelCard({
             </Avatar>
 
             <div className="flex-1 min-w-0">
-              <h3
-                className="text-[14px] font-medium coz-fg-primary truncate"
-                title={model.name}
-              >
-                {model.name}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3
+                  className="text-[14px] font-medium coz-fg-primary truncate"
+                  title={model.name}
+                >
+                  {model.name}
+                </h3>
+                {/* 公共模型标识 */}
+                {isPublic && (
+                  <span className="px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-700 whitespace-nowrap">
+                    公共
+                  </span>
+                )}
+              </div>
               <p
                 className="text-[12px] coz-fg-secondary line-clamp-2 mt-[2px]"
                 title={model.description}
@@ -198,7 +209,8 @@ function ModelCard({
           <span className="coz-fg-secondary">{model.protocol}</span>
         </div>
 
-        {isHovered ? (
+        {/* 公共模型不显示操作按钮，只显示收藏 */}
+        {isHovered && !isPublic ? (
           <>
             <div
               className="absolute bottom-[16px] right-[16px] w-[100px] h-[16px]"
@@ -236,6 +248,32 @@ function ModelCard({
               >
                 <IconButton icon={<IconCozMore />} />
               </Dropdown>
+            </div>
+          </>
+        ) : null}
+
+        {/* 公共模型hover时只显示收藏按钮 */}
+        {isHovered && isPublic ? (
+          <>
+            <div
+              className="absolute bottom-[16px] right-[16px] w-[50px] h-[16px]"
+              style={{
+                background:
+                  'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 21.38%)',
+              }}
+            />
+
+            <div
+              className="absolute bottom-[16px] right-[16px] flex gap-[4px]"
+              onClick={e => {
+                e.stopPropagation();
+              }}
+            >
+              <IconButton
+                icon={<IconCozStarFill />}
+                onClick={() => onToggleFavorite(model.id)}
+                className={isFavorite ? 'coz-fg-hglt-yellow' : ''}
+              />
             </div>
           </>
         ) : null}
@@ -318,6 +356,7 @@ function useModelData(spaceId: string) {
               status: model.status || 1, // 默认为1（启用）
               icon_uri: model.icon_uri,
               icon_url: model.icon_url,
+              is_public: (model as any).is_public || 0, // 公共模型标识
             }),
           );
 

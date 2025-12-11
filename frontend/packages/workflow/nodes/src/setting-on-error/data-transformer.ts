@@ -89,7 +89,8 @@ const formatExtOnSave = (
   }
   const models = playgroundContext?.models || [];
   const llmParam = ext.backupLLmParam;
-  const modelMeta = models.find(m => m.model_type === llmParam?.modelType);
+  // 使用字符串比较避免大整数精度丢失问题
+  const modelMeta = models.find(m => `${m.model_type}` === `${llmParam?.modelType}`);
 
   return {
     backupLLmParam: llmParam

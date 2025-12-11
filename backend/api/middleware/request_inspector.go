@@ -61,6 +61,7 @@ var staticFilePath = map[string]bool{
 	"/":            true,
 	"/sign":        true,
 	"/favicon.png": true,
+	"/config.js":   true,
 }
 
 func isStaticFile(ctx *app.RequestContext) bool {
@@ -71,7 +72,9 @@ func isStaticFile(ctx *app.RequestContext) bool {
 
 	if strings.HasPrefix(path, "/static/") ||
 		strings.HasPrefix(path, "/explore/") ||
-		strings.HasPrefix(path, "/space/") {
+		strings.HasPrefix(path, "/space/") ||
+		strings.HasPrefix(path, "/admin") ||
+		strings.HasPrefix(path, "/template/") {
 		return true
 	}
 
