@@ -41,7 +41,7 @@ const defaultGenerationDiversity = GenerationDiversity.Balance;
 
 interface IValue {
   modelName?: string;
-  modelType?: number;
+  modelType?: string | number; // 使用 string | number 支持大整数ID，避免JavaScript精度丢失
   generationDiversity?: GenerationDiversity;
   responseFormat?: ResponseFormat;
   [k: string]: unknown;
@@ -61,7 +61,8 @@ export const ModelSelect: FC<ModelSelectProps> = ({
 }) => {
   const { models } = useWorkflowModels();
   const model = useMemo(
-    () => models.find(m => (m.model_type as number) === _value?.modelType),
+    // 使用字符串比较避免大整数精度丢失问题
+    () => models.find(m => `${m.model_type}` === `${_value?.modelType}`),
     [models, _value?.modelType],
   );
 
@@ -69,8 +70,9 @@ export const ModelSelect: FC<ModelSelectProps> = ({
    * Generate default values from modelMeta
    */
   const getDefaultValue = useCallback(
-    ({ modelType, value }: { modelType?: number; value?: object }) => {
-      const _model = models.find(m => m.model_type === modelType);
+    ({ modelType, value }: { modelType?: string | number; value?: object }) => {
+      // 使用字符串比较避免大整数精度丢失问题
+      const _model = models.find(m => `${m.model_type}` === `${modelType}`);
       return generateDefaultValueByMeta({
         modelParams: _model?.model_params,
         value,
@@ -81,7 +83,7 @@ export const ModelSelect: FC<ModelSelectProps> = ({
 
   const defaultValue = useMemo(
     () =>
-      getDefaultValue({ modelType: model?.model_type as number | undefined }),
+      getDefaultValue({ modelType: model?.model_type }),
     [model],
   );
 
@@ -132,20 +134,20 @@ export const ModelSelect: FC<ModelSelectProps> = ({
               if (generationDiversity === GenerationDiversity.Customize) {
                 _defaultValue =
                   getDefaultValue({
-                    modelType: record.value as number,
+                    modelType: record.value as string | number, // 保持原始类型，避免精度丢失
                     value: cacheData[node.id] as object,
                   })?.[generationDiversity] ?? {};
               } else {
                 _defaultValue =
                   getDefaultValue({
-                    modelType: record.value as number,
+                    modelType: record.value as string | number, // 保持原始类型，避免精度丢失
                   })?.[generationDiversity] ?? {};
               }
 
               onChange?.({
                 ..._defaultValue,
                 modelName: record.label as string,
-                modelType: record.value as number,
+                modelType: record.value as string | number, // 保持原始类型，避免精度丢失
                 generationDiversity,
                 // Do not reset the output format when switching models
                 responseFormat:

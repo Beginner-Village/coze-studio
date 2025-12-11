@@ -404,7 +404,7 @@ export { WorkflowInfo, WorkflowGlobalStateEntity };
 
 export interface IModelValue {
   modelName?: string;
-  modelType?: number;
+  modelType?: string | number; // 使用 string | number 支持大整数ID，避免JavaScript精度丢失
   generationDiversity?: GenerationDiversity;
   responseFormat?: ResponseFormat;
 

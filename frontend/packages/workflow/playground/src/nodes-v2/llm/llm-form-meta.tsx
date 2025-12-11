@@ -390,8 +390,9 @@ export const LLM_FORM_META: FormMetaV2<FormData> = {
     [userPromptFieldKey]: (({ value, formValues, context }) => {
       const { playgroundContext } = context;
       const modelType = get(formValues, 'model.modelType');
+      // 使用字符串比较避免大整数精度丢失问题
       const curModel = playgroundContext?.models?.find(
-        model => model.model_type === modelType,
+        model => `${model.model_type}` === `${modelType}`,
       );
       const isUserPromptRequired = curModel?.is_up_required ?? false;
       if (!isUserPromptRequired) {
@@ -529,7 +530,7 @@ export const LLM_FORM_META: FormMetaV2<FormData> = {
             modelsService,
             isBatch,
             outputs,
-            modelType: model.modelType as number,
+            modelType: model.modelType, // 保持原始类型，避免精度丢失
           }),
 
       // The model will re-fill the value according to llmParam, and the previous chatHistoryRound will also be filled at this time.
@@ -569,7 +570,8 @@ export const LLM_FORM_META: FormMetaV2<FormData> = {
       .getService<WorkflowModelsService>(WorkflowModelsService)
       .getModels();
     const { model } = value;
-    const modelMeta = models.find(m => m.model_type === model.modelType);
+    // 使用字符串比较避免大整数精度丢失问题
+    const modelMeta = models.find(m => `${m.model_type}` === `${model.modelType}`);
 
     const llmParam = modelItemToBlockInput(model, modelMeta);
     const { batchMode } = value;

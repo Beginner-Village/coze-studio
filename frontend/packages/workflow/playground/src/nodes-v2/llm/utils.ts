@@ -53,7 +53,10 @@ const getDefaultModels = (modelMeta: Model): InputValueDTO[] => {
     if (defaultValue !== undefined) {
       if (ModelParamType.Float === type) {
         defaultModel.push(BlockInput.createFloat(k, defaultValue));
-      } else if (ModelParamType.Int === type || ['modelType'].includes(k)) {
+      } else if (['modelType'].includes(k)) {
+        // modelType 使用 String 类型避免大整数精度丢失
+        defaultModel.push(BlockInput.createString(k, `${defaultValue}`));
+      } else if (ModelParamType.Int === type) {
         defaultModel.push(BlockInput.createInteger(k, defaultValue));
       }
     }
@@ -63,11 +66,13 @@ const getDefaultModels = (modelMeta: Model): InputValueDTO[] => {
 };
 
 export const getDefaultLLMParams = (models: Model[]) => {
+  // 使用字符串比较避免大整数精度丢失问题
   const modelMeta =
-    models.find(m => m.model_type === DEFAULT_MODEL_TYPE) ?? models[0];
+    models.find(m => `${m.model_type}` === `${DEFAULT_MODEL_TYPE}`) ?? models[0];
 
   const llmParam = [
-    BlockInput.createInteger('modelType', `${modelMeta?.model_type ?? ''}`),
+    // modelType 使用 String 类型避免大整数精度丢失
+    BlockInput.createString('modelType', `${modelMeta?.model_type ?? ''}`),
     BlockInput.createString('modelName', modelMeta?.name ?? ''),
     BlockInput.createString('generationDiversity', GenerationDiversity.Balance),
     ...getDefaultModels(modelMeta),
@@ -85,7 +90,12 @@ export const reviseLLMParamPair = (d: InputValueDTO): [string, unknown] => {
     k = 'modelName';
   }
   let v = d.input.value.content;
-  if (
+
+  // modelType 保持原始字符串类型，避免大整数精度丢失
+  if (['modelType'].includes(k)) {
+    // 不做 Number 转换，保持字符串
+    v = `${d.input.value.content}`;
+  } else if (
     [VariableTypeDTO.float, VariableTypeDTO.integer].includes(
       d.input.type as VariableTypeDTO,
     )
@@ -111,7 +121,10 @@ export const modelItemToBlockInput = (
     )?.type;
     if (ModelParamType.Float === type) {
       return BlockInput.createFloat(k, model[k]);
-    } else if (ModelParamType.Int === type || ['modelType'].includes(k)) {
+    } else if (['modelType'].includes(k)) {
+      // modelType 使用 String 类型避免大整数精度丢失
+      return BlockInput.createString(k, `${model[k]}`);
+    } else if (ModelParamType.Int === type) {
       return BlockInput.createInteger(k, model[k]);
     }
 

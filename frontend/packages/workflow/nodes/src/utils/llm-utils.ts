@@ -37,11 +37,11 @@ const getDefaultModels = (modelMeta: Model): Record<string, unknown> => {
       p.default_val[GenerationDiversity.Customize];
 
     if (defaultValue !== undefined) {
-      if (
-        [ModelParamType.Float, ModelParamType.Int].includes(type) ||
-        ['modelType'].includes(k)
-      ) {
+      if ([ModelParamType.Float, ModelParamType.Int].includes(type)) {
         defaultModel[k] = Number(defaultValue);
+      } else if (['modelType'].includes(k)) {
+        // modelType 保持原始类型（字符串），避免大整数精度丢失
+        defaultModel[k] = defaultValue;
       }
     }
   });
@@ -68,11 +68,13 @@ export const formatModelData = (
 
     const { type } = modelParam;
 
-    if (
-      [ModelParamType.Float, ModelParamType.Int].includes(type) ||
-      ['modelType'].includes(key)
-    ) {
+    if ([ModelParamType.Float, ModelParamType.Int].includes(type)) {
       return Number(value);
+    }
+
+    // modelType 保持原始类型，不转换为数字，避免大整数精度丢失
+    if (['modelType'].includes(key)) {
+      return value;
     }
 
     return value;
@@ -82,8 +84,9 @@ export const formatModelData = (
 export const getDefaultLLMParams = (
   models: Model[],
 ): Record<string, unknown> => {
+  // 使用字符串比较避免大整数精度丢失问题
   const modelMeta =
-    models.find(m => m.model_type === DEFAULT_MODEL_TYPE) ?? models[0];
+    models.find(m => `${m.model_type}` === `${DEFAULT_MODEL_TYPE}`) ?? models[0];
 
   const llmParam = {
     modelType: modelMeta?.model_type,

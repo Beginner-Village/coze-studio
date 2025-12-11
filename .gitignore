@@ -123,3 +123,21 @@ values-dev.yaml
 *.tsbuildinfo
 
 ynet-docker/docker-compose.yml
+
+# Build artifacts
+backend/coze-studio
+frontend/apps/coze-studio/dist-update.tar.gz
+tmp/
+
+# Analysis docs (temporary)
+CODE_SNIPPETS_loop_history.md
+QUICK_REFERENCE_loop_history.md
+PROJECT_ARCHITECTURE_ANALYSIS.md
+EXPLORATION_INDEX.md
+DOCS_INDEX.md
+README_ANALYSIS.md
+chatflow_loop_history_analysis.md
+
+# Excel files
+*.xlsx
+*.csv
