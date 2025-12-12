@@ -36,6 +36,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/singleagent"
 	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
 	"github.com/coze-dev/coze-studio/backend/application/upload"
+	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/conversation"
 	saEntity "github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/entity"
 	convEntity "github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/entity"
@@ -48,6 +49,11 @@ import (
 	"github.com/coze-dev/coze-studio/backend/types/consts"
 	"github.com/coze-dev/coze-studio/backend/types/errno"
 )
+
+// ConversationExtData 会话扩展数据结构，用于存储会话级自定义变量等信息
+type ConversationExtData struct {
+	CustomVariables map[string]string `json:"custom_variables,omitempty"`
+}
 
 func (a *OpenapiAgentRunApplication) OpenapiAgentRun(ctx context.Context, sseSender *sseImpl.SSenderImpl, ar *run.ChatV3Request) error {
 
@@ -86,6 +92,8 @@ func (a *OpenapiAgentRunApplication) OpenapiAgentRun(ctx context.Context, sseSen
 
 func (a *OpenapiAgentRunApplication) checkConversation(ctx context.Context, ar *run.ChatV3Request, userID int64, connectorID int64) (*convEntity.Conversation, error) {
 	var conversationData *convEntity.Conversation
+	var isNewConversation bool
+
 	if ptr.From(ar.ConversationID) > 0 {
 		conData, err := ConversationSVC.ConversationDomainSVC.GetByID(ctx, ptr.From(ar.ConversationID))
 		if err != nil {
@@ -95,7 +103,7 @@ func (a *OpenapiAgentRunApplication) checkConversation(ctx context.Context, ar *
 	}
 
 	if ptr.From(ar.ConversationID) == 0 || conversationData == nil {
-
+		isNewConversation = true
 		conData, err := ConversationSVC.ConversationDomainSVC.Create(ctx, &convEntity.CreateMeta{
 			AgentID:     ar.BotID,
 			UserID:      userID,
@@ -117,7 +125,56 @@ func (a *OpenapiAgentRunApplication) checkConversation(ctx context.Context, ar *
 		return nil, errors.New("conversation data not match")
 	}
 
+	// 处理会话级 custom_variables 持久化
+	if err := a.handleCustomVariablesPersistence(ctx, ar, conversationData, isNewConversation); err != nil {
+		logs.CtxErrorf(ctx, "handleCustomVariablesPersistence err:%v", err)
+		// 不返回错误，继续执行（custom_variables 持久化失败不应阻断主流程）
+	}
+
 	return conversationData, nil
+}
+
+// handleCustomVariablesPersistence 处理会话级 custom_variables 的持久化
+// 1. 如果请求带有 custom_variables，保存到会话的 Ext 字段
+// 2. 如果请求不带 custom_variables，从会话的 Ext 字段读取并设置到请求中
+func (a *OpenapiAgentRunApplication) handleCustomVariablesPersistence(ctx context.Context, ar *run.ChatV3Request, conversationData *convEntity.Conversation, isNewConversation bool) error {
+	// 解析会话现有的 Ext 数据
+	var extData ConversationExtData
+	if conversationData.Ext != "" {
+		if err := json.Unmarshal([]byte(conversationData.Ext), &extData); err != nil {
+			logs.CtxWarnf(ctx, "Failed to parse conversation ext data: %v, treating as empty", err)
+			extData = ConversationExtData{}
+		}
+	}
+
+	// 如果请求带有 custom_variables
+	if len(ar.CustomVariables) > 0 {
+		// 合并新的 custom_variables（新值覆盖旧值）
+		if extData.CustomVariables == nil {
+			extData.CustomVariables = make(map[string]string)
+		}
+		for k, v := range ar.CustomVariables {
+			extData.CustomVariables[k] = v
+		}
+
+		// 保存到数据库
+		extBytes, err := json.Marshal(extData)
+		if err != nil {
+			return fmt.Errorf("failed to marshal ext data: %w", err)
+		}
+
+		if err := conversation.DefaultSVC().UpdateExt(ctx, conversationData.ID, string(extBytes)); err != nil {
+			return fmt.Errorf("failed to update conversation ext: %w", err)
+		}
+
+		logs.CtxInfof(ctx, "Saved custom_variables to conversation %d: %v", conversationData.ID, ar.CustomVariables)
+	} else if !isNewConversation && len(extData.CustomVariables) > 0 {
+		// 请求不带 custom_variables，但会话中有存储的值，从会话中读取
+		ar.CustomVariables = extData.CustomVariables
+		logs.CtxInfof(ctx, "Loaded custom_variables from conversation %d: %v", conversationData.ID, ar.CustomVariables)
+	}
+
+	return nil
 }
 
 func (a *OpenapiAgentRunApplication) checkAgent(ctx context.Context, ar *run.ChatV3Request, connectorID int64) (*saEntity.SingleAgent, error) {
