@@ -59,10 +59,14 @@ type ExecuteConfig struct {
 	SectionID                         *int64
 	MaxHistoryRounds                  *int32
 
+	// CustomVariables 会话级自定义变量，用于覆盖智能体/工作流预设变量
+	// 在发起会话时通过 custom_variables 参数传入，工作流变量节点读取时优先使用此值
+	CustomVariables map[string]string
+
 	// HiAgent conversation mapping: map[agentID]HiAgentConversationInfo
 	// Used to maintain HiAgent conversation state across multiple calls in the same ChatFlow session
-	HiAgentConversations              map[string]*HiAgentConversationInfo
-	hiAgentConversationsMu            sync.RWMutex
+	HiAgentConversations   map[string]*HiAgentConversationInfo
+	hiAgentConversationsMu sync.RWMutex
 }
 
 type ExecuteMode string

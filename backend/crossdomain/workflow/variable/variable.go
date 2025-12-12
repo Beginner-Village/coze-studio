@@ -106,16 +106,35 @@ func (v *varStore) Get(ctx context.Context, path compose.FieldPath, opts ...vari
 		return nil, errors.New("field path is required")
 	}
 	key := path[0]
+
+	// 优先检查会话级自定义变量，如果存在则直接使用该值覆盖数据库值
+	var customValue string
+	hasCustomValue := false
+	if opt.StoreInfo.CustomVariables != nil {
+		if cv, ok := opt.StoreInfo.CustomVariables[key]; ok {
+			customValue = cv
+			hasCustomValue = true
+		}
+	}
+
 	kvItems, err := v.vs.GetVariableChannelInstance(ctx, meta, []string{key}, project_memory.VariableChannelPtr(v.variableChannel))
 	if err != nil {
 		return nil, err
 	}
 
 	if len(kvItems) == 0 {
+		// 如果数据库中不存在该变量，但有自定义值，直接返回字符串
+		if hasCustomValue {
+			return customValue, nil
+		}
 		return nil, fmt.Errorf("variable %s not exists", key)
 	}
 
+	// 如果有自定义值，使用自定义值；否则使用数据库值
 	value := kvItems[0].GetValue()
+	if hasCustomValue {
+		value = customValue
+	}
 
 	schema := kvItems[0].GetSchema()
 

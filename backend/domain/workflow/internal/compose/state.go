@@ -413,10 +413,11 @@ func statePreHandlerForVars(s *schema2.NodeSchema) compose.StatePreHandler[map[s
 		if exeCtx = execute.GetExeCtx(ctx); exeCtx != nil {
 			exeCfg := execute.GetExeCtx(ctx).RootCtx.ExeCfg
 			opts = append(opts, variable.WithStoreInfo(variable.StoreInfo{
-				AgentID:      exeCfg.AgentID,
-				AppID:        exeCfg.AppID,
-				ConnectorID:  exeCfg.ConnectorID,
-				ConnectorUID: exeCfg.ConnectorUID,
+				AgentID:         exeCfg.AgentID,
+				AppID:           exeCfg.AppID,
+				ConnectorID:     exeCfg.ConnectorID,
+				ConnectorUID:    exeCfg.ConnectorUID,
+				CustomVariables: exeCfg.CustomVariables,
 			}))
 		}
 		out := make(map[string]any)
@@ -492,10 +493,11 @@ func streamStatePreHandlerForVars(s *schema2.NodeSchema) compose.StreamStatePreH
 		if exeCtx = execute.GetExeCtx(ctx); exeCtx != nil {
 			exeCfg := exeCtx.RootCtx.ExeCfg
 			opts = append(opts, variable.WithStoreInfo(variable.StoreInfo{
-				AgentID:      exeCfg.AgentID,
-				AppID:        exeCfg.AppID,
-				ConnectorID:  exeCfg.ConnectorID,
-				ConnectorUID: exeCfg.ConnectorUID,
+				AgentID:         exeCfg.AgentID,
+				AppID:           exeCfg.AppID,
+				ConnectorID:     exeCfg.ConnectorID,
+				ConnectorUID:    exeCfg.ConnectorUID,
+				CustomVariables: exeCfg.CustomVariables,
 			}))
 		}
 
@@ -782,10 +784,11 @@ func statePostHandlerForVars(s *schema2.NodeSchema) compose.StatePostHandler[map
 		if exeCtx = execute.GetExeCtx(ctx); exeCtx != nil {
 			exeCfg := execute.GetExeCtx(ctx).RootCtx.ExeCfg
 			opts = append(opts, variable.WithStoreInfo(variable.StoreInfo{
-				AgentID:      exeCfg.AgentID,
-				AppID:        exeCfg.AppID,
-				ConnectorID:  exeCfg.ConnectorID,
-				ConnectorUID: exeCfg.ConnectorUID,
+				AgentID:         exeCfg.AgentID,
+				AppID:           exeCfg.AppID,
+				ConnectorID:     exeCfg.ConnectorID,
+				ConnectorUID:    exeCfg.ConnectorUID,
+				CustomVariables: exeCfg.CustomVariables,
 			}))
 		}
 		out := make(map[string]any)

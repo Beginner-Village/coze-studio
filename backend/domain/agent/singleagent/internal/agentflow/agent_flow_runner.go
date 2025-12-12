@@ -76,10 +76,11 @@ func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (
 	var workflowMsgSr *schema.StreamReader[*crossworkflow.WorkflowMessage]
 	if r.containWfTool {
 		cfReq := crossworkflow.ExecuteConfig{
-			AgentID:      &req.Identity.AgentID,
-			ConnectorUID: req.UserID,
-			ConnectorID:  req.Identity.ConnectorID,
-			BizType:      crossworkflow.BizTypeAgent,
+			AgentID:         &req.Identity.AgentID,
+			ConnectorUID:    req.UserID,
+			ConnectorID:     req.Identity.ConnectorID,
+			BizType:         crossworkflow.BizTypeAgent,
+			CustomVariables: req.Variables, // 传递会话级自定义变量到工作流
 		}
 		if req.Identity.IsDraft {
 			cfReq.Mode = crossworkflow.ExecuteModeDebug

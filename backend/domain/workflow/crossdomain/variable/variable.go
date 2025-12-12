@@ -87,6 +87,9 @@ type StoreInfo struct {
 	AgentID      *int64
 	ConnectorID  int64
 	ConnectorUID string
+	// CustomVariables 会话级自定义变量，用于覆盖预设变量值
+	// 在发起会话时通过 custom_variables 参数传入，变量节点读取时优先使用此值
+	CustomVariables map[string]string
 }
 
 type StoreConfig struct {
