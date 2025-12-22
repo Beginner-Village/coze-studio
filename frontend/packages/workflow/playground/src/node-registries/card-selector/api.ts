@@ -18,11 +18,6 @@ import type { CardItem } from './types';
 
 console.log('[Card Selector API] 使用直接调用 /aop-web/ 的新版本');
 
-// 转换 sassWorkspaceId：当值为特定ID时转换为 'dev'
-function transformSassWorkspaceId(id: string): string {
-  return id === '7533521629687578624' ? 'dev' : id;
-}
-
 // 外部卡片API响应类型
 interface ExternalCardListResponse {
   header: {
@@ -97,11 +92,9 @@ export async function fetchCardList(params: {
   pageSize?: number;
   searchValue?: string;
 }): Promise<{ cardList: CardItem[]; totalNums: string; totalPages: string }> {
-  const { sassWorkspaceId: rawSassWorkspaceId, pageNo = 1, pageSize = 200, searchValue } = params;
-  const sassWorkspaceId = transformSassWorkspaceId(rawSassWorkspaceId);
+  const { sassWorkspaceId, pageNo = 1, pageSize = 200, searchValue } = params;
 
   console.log('[Card Selector API] fetchCardList 被调用，参数:', {
-    rawSassWorkspaceId,
     sassWorkspaceId,
     pageNo,
     pageSize,
@@ -123,14 +116,17 @@ export async function fetchCardList(params: {
       },
     };
 
-    console.log('[Card Selector API] 准备发送请求到 /aop-web/IDC10030.do，请求体:', requestBody);
+    console.log(
+      '[Card Selector API] 准备发送请求到 /aop-web/IDC10030.do，请求体:',
+      requestBody,
+    );
 
     const response = await fetch('/aop-web/IDC10030.do', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Request-Origion': 'SwaggerBootstrapUi',
-        'Accept': '*/*',
+        Accept: '*/*',
       },
       body: JSON.stringify(requestBody),
     });
@@ -197,8 +193,7 @@ export async function fetchCardDetail(params: {
     }>;
   };
 }> {
-  const { cardId, sassWorkspaceId: rawSassWorkspaceId } = params;
-  const sassWorkspaceId = transformSassWorkspaceId(rawSassWorkspaceId);
+  const { cardId, sassWorkspaceId } = params;
 
   try {
     // 构造外部API请求体
@@ -214,7 +209,7 @@ export async function fetchCardDetail(params: {
       headers: {
         'Content-Type': 'application/json',
         'Request-Origion': 'SwaggerBootstrapUi',
-        'Accept': '*/*',
+        Accept: '*/*',
       },
       body: JSON.stringify(requestBody),
     });

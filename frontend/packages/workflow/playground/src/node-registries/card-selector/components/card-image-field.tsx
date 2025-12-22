@@ -23,11 +23,6 @@ import { Section, useWatch } from '@/form';
 import type { CardItem } from '../types';
 import { SELECTED_CARD_PATH } from '../constants';
 
-// 转换 sassWorkspaceId：当值为特定ID时转换为 'dev'
-function transformSassWorkspaceId(id: string): string {
-  return id === '7533521629687578624' ? 'dev' : id;
-}
-
 interface CardImageFieldProps {
   title?: string;
   tooltip?: string;
@@ -37,9 +32,8 @@ interface CardImageFieldProps {
 function CardImageFieldComp({
   title,
   tooltip,
-  sassWorkspaceId: rawSassWorkspaceId = '7533521629687578624', // 默认工作空间ID
+  sassWorkspaceId = '7533521629687578624', // 默认工作空间ID
 }: CardImageFieldProps) {
-  const sassWorkspaceId = transformSassWorkspaceId(rawSassWorkspaceId);
   const selectedCard = useWatch<CardItem | undefined>(SELECTED_CARD_PATH);
   const [cardPicUrl, setCardPicUrl] = useState<string>('');
   const [loadingPic, setLoadingPic] = useState(false);

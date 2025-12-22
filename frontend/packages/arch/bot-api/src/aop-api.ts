@@ -18,22 +18,8 @@ import AopApiService from '@coze-arch/idl/aop_api';
 
 import { axiosInstance, type BotAPIRequestConfig } from './axios';
 
-// 转换 sassWorkspaceId：当值为特定ID时转换为 'dev'
-function transformSassWorkspaceId(data: Record<string, unknown>): Record<string, unknown> {
-  if (data && typeof data === 'object') {
-    const transformed = { ...data };
-    if (transformed.sassWorkspaceId === '7533521629687578624') {
-      transformed.sassWorkspaceId = 'dev';
-    }
-    return transformed;
-  }
-  return data;
-}
-
 export const aopApi = new AopApiService<BotAPIRequestConfig>({
   request: (params, config = {}) => {
-    // 转换请求体中的 sassWorkspaceId
-    const transformedData = transformSassWorkspaceId(params.data);
     params.data = {
       header: {
         version: '1.0.0',
@@ -53,7 +39,7 @@ export const aopApi = new AopApiService<BotAPIRequestConfig>({
         transTime: Date.now(),
         globalFlowNo: '',
       },
-      body: transformedData,
+      body: params.data,
     };
     return axiosInstance.request({
       ...params,

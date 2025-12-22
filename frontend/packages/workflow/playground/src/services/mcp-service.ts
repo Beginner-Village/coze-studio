@@ -21,11 +21,6 @@ import {
   MCP_STATUS_ENUM,
 } from '@/types/mcp';
 
-// 转换 sassWorkspaceId：当值为特定ID时转换为 'dev'
-function transformSassWorkspaceId(id: string): string {
-  return id === '7533521629687578624' ? 'dev' : id;
-}
-
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Namespace class for MCP API methods
 export class McpApiService {
   private static readonly BASE_URL = '/api/mcp'; // 通过代理调用，避免CORS问题
@@ -37,10 +32,8 @@ export class McpApiService {
     sassWorkspaceId?: string;
   }): Promise<McpServiceListResponse> {
     try {
-      const workspaceId = transformSassWorkspaceId(
-        options?.sassWorkspaceId || '7533521629687578624',
-      );
-      const response = await fetch(`/aop-web/MCP0017.do`, {
+      const workspaceId = options?.sassWorkspaceId || '7533521629687578624';
+      const response = await fetch('/aop-web/MCP0017.do', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,10 +81,8 @@ export class McpApiService {
     options?: { sassWorkspaceId?: string },
   ): Promise<McpToolsListResponse> {
     try {
-      const workspaceId = transformSassWorkspaceId(
-        options?.sassWorkspaceId || '7533521629687578624',
-      );
-      const response = await fetch(`/aop-web/MCP0013.do`, {
+      const workspaceId = options?.sassWorkspaceId || '7533521629687578624';
+      const response = await fetch('/aop-web/MCP0013.do', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
