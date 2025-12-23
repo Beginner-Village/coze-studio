@@ -348,6 +348,7 @@ func (s *SpaceImporter) createWorkflow(ctx context.Context, tx *gorm.DB, workflo
 		"mode":              workflow.Mode,
 		"content_type":      0, // Default content type
 		"status":            0, // Unpublished
+		"app_id":            0, // Library workflow (app_id=0 means it's in the library, not bound to a project)
 		"creator_id":        importCtx.UserID,
 		"author_id":         importCtx.UserID,
 		"updater_id":        importCtx.UserID,

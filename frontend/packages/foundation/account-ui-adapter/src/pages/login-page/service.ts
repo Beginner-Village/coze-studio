@@ -54,7 +54,7 @@ export const useLoginService = ({
     async () => {
       const res = (await passport.PassportWebEmailRegisterV2Post({
         email,
-        password,
+        password: regPassword,
       })) as unknown as { data: UserInfo };
       return res.data;
     },
