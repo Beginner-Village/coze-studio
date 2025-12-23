@@ -727,14 +727,16 @@ func (s *SpaceImporter) syncToES(ctx context.Context, resources *export.SpaceRes
 		err := s.eventBus.PublishResources(ctx, &searchEntity.ResourceDomainEvent{
 			OpType: searchEntity.Created,
 			Resource: &searchEntity.ResourceDocument{
-				ResType:      resCommon.ResType_Plugin,
-				ResSubType:   ptr.Of(plugin.PluginType),
-				ResID:        newID,
-				Name:         ptr.Of(plugin.Name),
-				OwnerID:      ptr.Of(importCtx.UserID),
-				SpaceID:      ptr.Of(importCtx.TargetSpaceID),
-				CreateTimeMS: ptr.Of(now),
-				UpdateTimeMS: ptr.Of(now),
+				ResType:       resCommon.ResType_Plugin,
+				ResSubType:    ptr.Of(plugin.PluginType),
+				ResID:         newID,
+				Name:          ptr.Of(plugin.Name),
+				OwnerID:       ptr.Of(importCtx.UserID),
+				SpaceID:       ptr.Of(importCtx.TargetSpaceID),
+				APPID:         ptr.Of(int64(0)), // Library plugin (app_id=0)
+				PublishStatus: ptr.Of(resCommon.PublishStatus_UnPublished), // Default to unpublished
+				CreateTimeMS:  ptr.Of(now),
+				UpdateTimeMS:  ptr.Of(now),
 			},
 		})
 		if err != nil {
@@ -748,13 +750,15 @@ func (s *SpaceImporter) syncToES(ctx context.Context, resources *export.SpaceRes
 		err := s.eventBus.PublishResources(ctx, &searchEntity.ResourceDomainEvent{
 			OpType: searchEntity.Created,
 			Resource: &searchEntity.ResourceDocument{
-				ResType:      resCommon.ResType_Workflow,
-				ResID:        newID,
-				Name:         ptr.Of(workflow.Name),
-				OwnerID:      ptr.Of(importCtx.UserID),
-				SpaceID:      ptr.Of(importCtx.TargetSpaceID),
-				CreateTimeMS: ptr.Of(now),
-				UpdateTimeMS: ptr.Of(now),
+				ResType:       resCommon.ResType_Workflow,
+				ResID:         newID,
+				Name:          ptr.Of(workflow.Name),
+				OwnerID:       ptr.Of(importCtx.UserID),
+				SpaceID:       ptr.Of(importCtx.TargetSpaceID),
+				APPID:         ptr.Of(int64(0)), // Library workflow (app_id=0)
+				PublishStatus: ptr.Of(resCommon.PublishStatus_UnPublished), // Default to unpublished
+				CreateTimeMS:  ptr.Of(now),
+				UpdateTimeMS:  ptr.Of(now),
 			},
 		})
 		if err != nil {
