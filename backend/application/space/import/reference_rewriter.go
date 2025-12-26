@@ -17,7 +17,9 @@
 package spaceimport
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"strconv"
 
 	"github.com/bytedance/sonic"
@@ -197,14 +199,21 @@ func (r *ReferenceRewriter) rewriteCanvasReferences(ctx context.Context, canvas 
 	}
 
 	// Convert to map for processing
+	// Use sonic for marshaling (fast and correct)
 	canvasBytes, err := sonic.Marshal(canvas)
 	if err != nil {
 		logs.CtxWarnf(ctx, "Failed to marshal canvas: %v", err)
 		return canvas
 	}
 
+	// IMPORTANT: Use json.Decoder with UseNumber() to avoid precision loss for large int64 IDs
+	// float64 can only represent integers up to 2^53 precisely, but workflow_id/plugin_id/agent_id
+	// can be 18+ digit numbers that exceed this limit. Using UseNumber() keeps numbers as json.Number
+	// (string representation) which preserves full precision.
 	var canvasMap map[string]interface{}
-	if err := sonic.Unmarshal(canvasBytes, &canvasMap); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(canvasBytes))
+	decoder.UseNumber()
+	if err := decoder.Decode(&canvasMap); err != nil {
 		logs.CtxWarnf(ctx, "Failed to unmarshal canvas: %v", err)
 		return canvas
 	}
@@ -289,6 +298,9 @@ func (r *ReferenceRewriter) RewriteVariable(ctx context.Context, variable *expor
 }
 
 // getInt64FromInterface safely extracts an int64 from an interface{}
+// IMPORTANT: Handles precision loss for large int64 values (> 2^53) when parsed from JSON
+// JSON numbers are typically parsed as float64, which can only represent integers up to 2^53 precisely
+// When using json.Decoder with UseNumber(), numbers are parsed as json.Number (string) which preserves precision
 func getInt64FromInterface(v interface{}) (int64, bool) {
 	if v == nil {
 		return 0, false
@@ -301,10 +313,31 @@ func getInt64FromInterface(v interface{}) (int64, bool) {
 		return int64(val), true
 	case int32:
 		return int64(val), true
+	case json.Number:
+		// json.Number is used when UseNumber() is enabled on json.Decoder
+		// This preserves precision for large integers (> 2^53)
+		n, err := val.Int64()
+		if err != nil {
+			return 0, false
+		}
+		return n, true
 	case float64:
+		// WARNING: float64 can only precisely represent integers up to 2^53 (9007199254740991)
+		// For larger values, precision is lost. This is a known limitation.
+		// The fix is to use string representation for large IDs in JSON.
 		return int64(val), true
 	case float32:
 		return int64(val), true
+	case string:
+		// Support string representation of int64 to avoid precision loss
+		if val == "" {
+			return 0, false
+		}
+		n, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			return 0, false
+		}
+		return n, true
 	default:
 		return 0, false
 	}
