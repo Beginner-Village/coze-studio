@@ -242,6 +242,9 @@ const RegisterForm = ({
         onChange={setSms}
         placeholder={I18n.t('open_source_register_placeholder_sms')}
       />
+      <div className="text-[12px] text-gray-400 -mt-[8px] mb-[8px]">
+        开发环境提示：随便输入4位数字即可
+      </div>
       <Form.Input
         noLabel
         size="large"
