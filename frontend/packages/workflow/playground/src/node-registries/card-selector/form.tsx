@@ -18,8 +18,8 @@ import { type InputValueVO } from '@coze-workflow/base';
 import { I18n } from '@coze-arch/i18n';
 
 import { withNodeConfigForm } from '@/node-registries/common/hocs';
-import { useWatch } from '@/form';
 import { useGlobalState } from '@/hooks';
+import { useWatch } from '@/form';
 
 import { InputsParametersField, AnswerContentField } from '../common/fields';
 import {
@@ -44,12 +44,12 @@ export const FormRender = withNodeConfigForm(() => {
         sassWorkspaceId={spaceId}
       />
 
-      {/* 输入参数字段 */}
+      {/* 输入参数字段 - 用于绑定卡片模板需要的输入变量 */}
       <InputsParametersField
         key={INPUT_PATH}
         name={INPUT_PATH}
-        title={I18n.t('workflow_detail_end_output')}
-        tooltip={I18n.t('workflow_message_variable_tooltips')}
+        title={I18n.t('输入变量')}
+        tooltip={I18n.t('绑定卡片模板所需的输入参数')}
         isTree={true}
       />
 

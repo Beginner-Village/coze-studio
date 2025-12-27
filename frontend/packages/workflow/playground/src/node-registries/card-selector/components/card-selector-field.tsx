@@ -249,10 +249,18 @@ function CardSelectorComp({
         console.log('[CardSelectorComp] 获取到卡片详情:', cardDetail);
         console.log('[CardSelectorComp] paramList:', cardDetail.paramList);
 
-        // 始终保持输出变量为固定的 output，因为卡片节点的输出就是 content JSON
-        // 不需要根据 paramList 动态设置输出变量
-        currentForm.setFieldValue(INPUT_PATH, [{ name: 'output' }]);
-        console.log('[CardSelectorComp] 设置输出变量: [{ name: "output" }]');
+        // 根据 paramList 设置输入变量，这些是卡片模板需要绑定的输入参数
+        if (cardDetail.paramList && cardDetail.paramList.length > 0) {
+          const inputParameters = convertParamsToInputValues(
+            cardDetail.paramList,
+          );
+          currentForm.setFieldValue(INPUT_PATH, inputParameters);
+          console.log('[CardSelectorComp] 设置输入变量:', inputParameters);
+        } else {
+          // 如果没有参数，清空输入变量
+          currentForm.setFieldValue(INPUT_PATH, []);
+          console.log('[CardSelectorComp] paramList 为空，清空输入变量');
+        }
 
         // 根据卡片信息生成输出模板
         if (cardDetail.paramList && cardDetail.paramList.length > 0) {
