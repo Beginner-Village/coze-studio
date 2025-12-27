@@ -237,17 +237,21 @@ function CardSelectorComp({
 
           message.success('已根据卡片自动生成输入变量和输出模板');
         } else {
-          console.log('[CardSelectorComp] paramList 为空，使用默认模板');
-          // paramList为空时，设置空的输入变量和默认输出模板
+          console.log(
+            '[CardSelectorComp] paramList 为空，使用卡片信息生成空模板',
+          );
+          // paramList为空时，设置空的输入变量，但使用选中卡片的信息生成输出模板
           form.setFieldValue(INPUT_PATH, []);
-          const defaultTemplate = JSON.stringify(
+
+          // 使用选中卡片的 code 和 cardName 生成模板，dataResponse 为空
+          const emptyTemplate = JSON.stringify(
             {
               contentList: [
                 {
                   displayResponseType: 'TEMPLATE',
                   rawContent: {},
-                  templateId: 'annuityDepositeSuccess',
-                  templateName: '养老金缴存成功',
+                  templateId: cardDetail.code || selectedCard.code,
+                  templateName: cardDetail.cardName || selectedCard.cardName,
                   kvMap: {},
                   dataResponse: {},
                 },
@@ -256,9 +260,9 @@ function CardSelectorComp({
             null,
             JSON_INDENT,
           );
-          form.setFieldValue(ANSWER_CONTENT_PATH, defaultTemplate);
+          form.setFieldValue(ANSWER_CONTENT_PATH, emptyTemplate);
 
-          message.success('已清空输入变量并设置默认输出模板');
+          message.success('已根据卡片生成输出模板（该卡片无输入参数）');
         }
       } catch (error) {
         console.error('[CardSelectorComp] 获取卡片详情失败:', error);

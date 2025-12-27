@@ -117,11 +117,11 @@ export async function fetchCardList(params: {
     };
 
     console.log(
-      '[Card Selector API] 准备发送请求到 /aop-web/IDC10030.do，请求体:',
+      '[Card Selector API] 准备发送请求到 /aop-web/IDC10001.do，请求体:',
       requestBody,
     );
 
-    const response = await fetch('/aop-web/IDC10030.do', {
+    const response = await fetch('/aop-web/IDC10001.do', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
