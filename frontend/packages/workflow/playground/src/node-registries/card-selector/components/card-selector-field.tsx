@@ -249,26 +249,21 @@ function CardSelectorComp({
         console.log('[CardSelectorComp] 获取到卡片详情:', cardDetail);
         console.log('[CardSelectorComp] paramList:', cardDetail.paramList);
 
-        if (cardDetail.paramList && cardDetail.paramList.length > 0) {
-          const inputParameters = convertParamsToInputValues(
-            cardDetail.paramList,
-          );
-          console.log('[CardSelectorComp] 生成的输入参数:', inputParameters);
-          currentForm.setFieldValue(INPUT_PATH, inputParameters);
+        // 始终保持输出变量为固定的 output，因为卡片节点的输出就是 content JSON
+        // 不需要根据 paramList 动态设置输出变量
+        currentForm.setFieldValue(INPUT_PATH, [{ name: 'output' }]);
+        console.log('[CardSelectorComp] 设置输出变量: [{ name: "output" }]');
 
-          // 自动生成输出模板
+        // 根据卡片信息生成输出模板
+        if (cardDetail.paramList && cardDetail.paramList.length > 0) {
           const answerContent = generateAnswerContent(cardDetail);
           console.log('[CardSelectorComp] 生成的输出模板:', answerContent);
           currentForm.setFieldValue(ANSWER_CONTENT_PATH, answerContent);
-
-          message.success('已根据卡片自动生成输入变量和输出模板');
+          message.success('已根据卡片自动生成输出模板');
         } else {
           console.log(
             '[CardSelectorComp] paramList 为空，使用卡片信息生成空模板',
           );
-          // paramList为空时，设置空的输入变量，但使用选中卡片的信息生成输出模板
-          currentForm.setFieldValue(INPUT_PATH, []);
-
           // 使用选中卡片的 code 和 cardName 生成模板，dataResponse 为空
           const emptyTemplate = JSON.stringify(
             {
@@ -287,8 +282,7 @@ function CardSelectorComp({
             JSON_INDENT,
           );
           currentForm.setFieldValue(ANSWER_CONTENT_PATH, emptyTemplate);
-
-          message.success('已根据卡片生成输出模板（该卡片无输入参数）');
+          message.success('已根据卡片生成输出模板');
         }
       } catch (error) {
         console.error('[CardSelectorComp] 获取卡片详情失败:', error);
