@@ -47,7 +47,7 @@ export const CardExport = ({
     const [pageNo, setPageNo] = useState(1);
     const [pageSize, setPageSize] = useState(5);
     const [totalNum, setTotalNum] = useState(0);
-    const [selectCards, setSelectCards] = useState([]);
+    const [selectCards, setSelectCards] = useState([] as any[]);
     const [cardClassMap, setCardClassMap] = useState({});
     const [buttonLoading, setButtonLoading] = useState(false);
     const [recordVisible, setRecordVisible] = useState(false);
@@ -67,23 +67,27 @@ export const CardExport = ({
         {
             title: '卡片名称',
             dataIndex: 'cardName',
-            width: '20%',
+            width: '22%',
+            align: 'left',
         },
         {
             title: '卡片编码',
             dataIndex: 'code',
-            width: '20%',
+            width: '22%',
+            align: 'left',
         },
         {
             title: '卡片缩略图',
             dataIndex: 'picUrl',
-            width: '20%',
+            width: '22%',
+            align: 'left',
             render: (text, record) => (<Image src={replaceUrl(record.picUrl)} width={40} height={40} />)
         },
         {
             title: '卡片分类',
             dataIndex: 'cardClassId',
-            width: '20%',
+            width: '22%',
+            align: 'left',
             render: (text, record) => (<span>{cardClassMap[record.cardClassId] || '--'}</span>)
         },
     ];
@@ -92,23 +96,27 @@ export const CardExport = ({
             title: '导出任务',
             dataIndex: 'cardCount',
             width: '25%',
+            align: 'left',
             render: (text, record) => (<span>{record.cardCount}张卡片</span>)
         },
         {
             title: '导出时间',
             dataIndex: 'createTime',
             width: '25%',
+            align: 'left',
         },
         {
             title: '导出文件',
             dataIndex: 'downUrl',
             width: '25%',
+            align: 'left',
             render: (text, record) => (record.status == '1' ? <a href={replaceUrl(record.downUrl)} target='_blank'>下载</a> : '--')
         },
         {
             title: '导出状态',
             dataIndex: 'status',
             width: '25%',
+            align: 'left',
             render: (text, record) => (record.status == '1' ? <span>成功</span> : record.status == '2' ? <span>失败</span> : record.status == '0' ? <span>{record.progress || '等待'}</span> : '--')
         },
     ];
@@ -125,16 +133,15 @@ export const CardExport = ({
     const getCardClassList = useCallback(() => {
         aopApi
         .GetCardTypeCount({
+            sassAppId: '100001',
             sassWorkspaceId: spaceId,
         })
         .then(res => {
             const listData = res.body.cardClassList;
             let allCount = 0
-            let classMap = {}
             
             listData.forEach(item => {
                 allCount += Number(item.count);
-                classMap[item.id] = item.name
             });
             const list = [
                 {
@@ -148,10 +155,25 @@ export const CardExport = ({
                     count: Number(item.count),
                 })),
             ];
-            setCardClassMap(classMap);
             setTypeList(list);
         });
     })
+
+    const getCardClassMap = useCallback(() => {
+            aopApi
+            .GetCardTypes({
+                sassAppId: '100001',
+                sassWorkspaceId: spaceId,
+            })
+            .then(res => {
+                const listData = res.body.cardClassList;
+                let classMap = {}
+                listData.forEach(item => {
+                    classMap[item.id] = item.name
+                });
+                setCardClassMap(classMap);
+            });
+        })
 
     const getCardListData = useCallback(
         () => {
@@ -160,6 +182,7 @@ export const CardExport = ({
             aopApi
             .GetCardResourceList({
                 createdBy: true,
+                sassAppId: '100001',
                 sassWorkspaceId: spaceId,
                 cardClassId: filterType,
                 pageNo: pageNo,
@@ -178,15 +201,16 @@ export const CardExport = ({
                 setLoading(false);
             });
         },
-        [spaceId, filterType, pageNo, pageSize]
+        // [spaceId, filterType, pageNo, pageSize]
     );
 
     const getCardRecordListData = useCallback(
         () => {
             setRecordLoading(true);
             aopApi
-            .getExportCardRecordList({
+            .GetExportCardRecordList({
                 applyScene: "1",
+                sassAppId: '100001',
                 sassWorkspaceId: spaceId,
                 pageNo: recordPageNo,
                 pageSize: recordPageSize,
@@ -202,7 +226,7 @@ export const CardExport = ({
                 setRecordLoading(false);
             });
         }, 
-        [spaceId, recordPageNo, recordPageSize]
+        // [spaceId, recordPageNo, recordPageSize]
     )
 
     const exportCard = useCallback(async () => {
@@ -212,29 +236,36 @@ export const CardExport = ({
             content: '确定要导出选中的卡片吗？',
             okText: '确定',
             cancelText: '取消',
-            onOk: async () => {
-                try{
-                    setButtonLoading(true)
-                    // 调用导出卡片接口
-                    await aopApi.ExportCard({
-                        applyScene: "1",
-                        cards: selectCards.map((item) => (item as any).cardId),
-                        sassWorkspaceId: spaceId,
-                    })
-                    Toast.info({
-                        content: '卡片导出任务已加入队列，请查看“导出记录列表”',
-                        duration: 3,
-                    })
-                }finally{
-                    setButtonLoading(false)
-                }
+            onOk: () => {
+                (async ()=>{
+                    try{
+                        setButtonLoading(true)
+                        // 调用导出卡片接口
+                        await aopApi.ExportCard({
+                            applyScene: "1",
+                            cards: selectCards.map((item) => (item as any).cardId),
+                            sassAppId: '100001',
+                            sassWorkspaceId: spaceId,
+                        })
+                        Toast.info({
+                            content: '卡片导出任务已加入队列，请查看“导出记录列表”',
+                            duration: 3,
+                        })
+                    }finally{
+                        setButtonLoading(false)
+                    }
+                })();
             },
         })
     })
 
     useEffect(() => {
         getCardListData();
-    }, [getCardListData]);
+    }, [spaceId, filterType, pageNo, pageSize]);
+
+    useEffect(() => {
+        getCardRecordListData();
+    }, [spaceId, recordPageNo, recordPageSize]);
 
     useEffect(() => {
         if(!recordVisible) return
@@ -252,6 +283,7 @@ export const CardExport = ({
         setTotalNum(0)
         setSelectCards([])
         getCardClassList()
+        getCardClassMap()
         getCardListData()
     }, [visible]);
 
@@ -304,13 +336,28 @@ export const CardExport = ({
                             rowKey: 'cardId',
                             loading,
                             rowSelection: {
+                                selectedRowKeys: selectCards.map((item) => (item as any).cardId),
                                 onChange: (selectedRowKeys, selectedRows) => {
                                     console.log(
                                     `selectedRowKeys: ${selectedRowKeys}`,
                                     'selectedRows: ',
                                     selectedRows,
                                     );
-                                    setSelectCards(selectedRows as any);
+                                    let selects: any[] = [].concat(selectCards as any)
+                                    let selectIds = selects.map((item) => {
+                                        return item.cardId
+                                    });
+                                    let list = (cardList as any)
+                                    list.forEach((item) => {
+                                        if((selectedRowKeys || []).includes(item.cardId)){
+                                            if(!selectIds.includes(item.cardId)){
+                                                selects.push(item)
+                                            }
+                                        }else{
+                                            selects = selects.filter((i) => i.cardId !== item.cardId)
+                                        }
+                                    })
+                                    setSelectCards(selects);
                                 },
                             },
                         }}
@@ -332,7 +379,7 @@ export const CardExport = ({
                             onChange={(page, pageSize) => {
                                 setPageNo(page);
                                 setPageSize(pageSize);
-                                getCardListData();
+                                console.info('asdf===========', page, pageSize)
                             }}
                         />
                     </div>
@@ -371,7 +418,6 @@ export const CardExport = ({
                                     onChange={(page, pageSize) => {
                                         setRecordPageNo(page);
                                         setRecordPageSize(pageSize);
-                                        getCardRecordListData();
                                     }}
                                 />
                             </div>
