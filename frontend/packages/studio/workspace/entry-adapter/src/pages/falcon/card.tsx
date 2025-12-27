@@ -48,10 +48,12 @@ import {
   RadioGroup,
   Radio,
   SideSheet,
+  Dropdown,
   Tooltip,
 } from '@coze-arch/coze-design';
 import { GridList, GridItem } from './components/gridList';
 import { FalconCardDetail } from './cardDetail';
+import { FalconCardDropdown } from './components/cardDropdown'
 import { aopApi } from '@coze-arch/bot-api';
 import { replaceUrl } from './utils';
 import placeholderImg from './assets/placeholder.png';
@@ -305,7 +307,9 @@ export const FalconCard: FC<DevelopProps> = ({ spaceId }) => {
           >
             {I18n.t('workspace_create_card')}
           </Button>
+          <FalconCardDropdown spaceId={spaceId}/>
         </HeaderActions>
+  
       </Header>
       <SubHeader>
         <SubHeaderFilters>
