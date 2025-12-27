@@ -95,20 +95,32 @@ function CardSelectorComp({
   // 获取卡片列表
   const fetchCards = useCallback(
     async (search = '') => {
-      console.log('[CardSelectorComp] fetchCards 被调用，search:', search, 'loading:', loading, 'sassWorkspaceId:', sassWorkspaceId);
+      console.log(
+        '[CardSelectorComp] fetchCards 被调用，search:',
+        search,
+        'loading:',
+        loading,
+        'sassWorkspaceId:',
+        sassWorkspaceId,
+      );
       if (loading) {
         console.log('[CardSelectorComp] 已在加载中，跳过请求');
         return;
       }
 
       if (!sassWorkspaceId) {
-        console.warn('[CardSelectorComp] sassWorkspaceId 未设置，无法获取卡片列表');
+        console.warn(
+          '[CardSelectorComp] sassWorkspaceId 未设置，无法获取卡片列表',
+        );
         return;
       }
 
       setLoading(true);
       try {
-        console.log('[CardSelectorComp] 开始调用 fetchCardList，sassWorkspaceId:', sassWorkspaceId);
+        console.log(
+          '[CardSelectorComp] 开始调用 fetchCardList，sassWorkspaceId:',
+          sassWorkspaceId,
+        );
         const response = await fetchCardList({
           sassWorkspaceId,
           pageNo: 1,
@@ -152,7 +164,12 @@ function CardSelectorComp({
 
   // 在组件挂载时预取卡片列表，确保无论是否触发焦点事件都会请求
   useEffect(() => {
-    console.log('[CardSelectorComp] useEffect 挂载，cardList.length:', cardList.length, 'loading:', loading);
+    console.log(
+      '[CardSelectorComp] useEffect 挂载，cardList.length:',
+      cardList.length,
+      'loading:',
+      loading,
+    );
     // 若已存在列表则不重复请求
     if (cardList.length === 0 && !loading) {
       console.log('[CardSelectorComp] 首次挂载，开始预取卡片列表');
@@ -165,56 +182,87 @@ function CardSelectorComp({
   // 处理选择
   const handleSelect = useCallback(
     async (selectedValue: string) => {
+      console.log(
+        '[CardSelectorComp] handleSelect 被调用，selectedValue:',
+        selectedValue,
+      );
+      console.log('[CardSelectorComp] cardList 长度:', cardList.length);
+      console.log('[CardSelectorComp] sassWorkspaceId:', sassWorkspaceId);
+
       const selectedCard = cardList.find(card => card.cardId === selectedValue);
-      if (selectedCard) {
-        onChange(selectedCard);
-        setSearchValue(`${selectedCard.cardName} (${selectedCard.code})`);
+      console.log('[CardSelectorComp] 找到的卡片:', selectedCard);
 
-        try {
-          // 获取卡片详情
-          const { cardDetail } = await fetchCardDetail({
-            cardId: selectedCard.cardId,
-            sassWorkspaceId,
-          });
+      if (!selectedCard) {
+        console.warn('[CardSelectorComp] 未找到匹配的卡片');
+        return;
+      }
 
-          if (cardDetail.paramList && cardDetail.paramList.length > 0) {
-            const inputParameters = convertParamsToInputValues(
-              cardDetail.paramList,
-            );
-            form.setFieldValue(INPUT_PATH, inputParameters);
+      onChange(selectedCard);
+      setSearchValue(`${selectedCard.cardName} (${selectedCard.code})`);
 
-            // 自动生成输出模板
-            const answerContent = generateAnswerContent(cardDetail);
-            form.setFieldValue(ANSWER_CONTENT_PATH, answerContent);
+      if (!sassWorkspaceId) {
+        console.warn(
+          '[CardSelectorComp] sassWorkspaceId 为空，无法获取卡片详情',
+        );
+        message.warning('无法获取卡片详情：工作空间ID未设置');
+        return;
+      }
 
-            message.success('已根据卡片自动生成输入变量和输出模板');
-          } else {
-            // paramList为空时，设置空的输入变量和默认输出模板
-            form.setFieldValue(INPUT_PATH, []);
-            const defaultTemplate = JSON.stringify(
-              {
-                contentList: [
-                  {
-                    displayResponseType: 'TEMPLATE',
-                    rawContent: {},
-                    templateId: 'annuityDepositeSuccess',
-                    templateName: '养老金缴存成功',
-                    kvMap: {},
-                    dataResponse: {},
-                  },
-                ],
-              },
-              null,
-              JSON_INDENT,
-            );
-            form.setFieldValue(ANSWER_CONTENT_PATH, defaultTemplate);
+      try {
+        // 获取卡片详情
+        console.log(
+          '[CardSelectorComp] 开始获取卡片详情，cardId:',
+          selectedCard.cardId,
+          'sassWorkspaceId:',
+          sassWorkspaceId,
+        );
+        const { cardDetail } = await fetchCardDetail({
+          cardId: selectedCard.cardId,
+          sassWorkspaceId,
+        });
+        console.log('[CardSelectorComp] 获取到卡片详情:', cardDetail);
+        console.log('[CardSelectorComp] paramList:', cardDetail.paramList);
 
-            message.success('已清空输入变量并设置默认输出模板');
-          }
-        } catch (error) {
-          console.error('获取卡片详情失败:', error);
-          message.error('获取卡片详情失败，请稍后重试');
+        if (cardDetail.paramList && cardDetail.paramList.length > 0) {
+          const inputParameters = convertParamsToInputValues(
+            cardDetail.paramList,
+          );
+          console.log('[CardSelectorComp] 生成的输入参数:', inputParameters);
+          form.setFieldValue(INPUT_PATH, inputParameters);
+
+          // 自动生成输出模板
+          const answerContent = generateAnswerContent(cardDetail);
+          console.log('[CardSelectorComp] 生成的输出模板:', answerContent);
+          form.setFieldValue(ANSWER_CONTENT_PATH, answerContent);
+
+          message.success('已根据卡片自动生成输入变量和输出模板');
+        } else {
+          console.log('[CardSelectorComp] paramList 为空，使用默认模板');
+          // paramList为空时，设置空的输入变量和默认输出模板
+          form.setFieldValue(INPUT_PATH, []);
+          const defaultTemplate = JSON.stringify(
+            {
+              contentList: [
+                {
+                  displayResponseType: 'TEMPLATE',
+                  rawContent: {},
+                  templateId: 'annuityDepositeSuccess',
+                  templateName: '养老金缴存成功',
+                  kvMap: {},
+                  dataResponse: {},
+                },
+              ],
+            },
+            null,
+            JSON_INDENT,
+          );
+          form.setFieldValue(ANSWER_CONTENT_PATH, defaultTemplate);
+
+          message.success('已清空输入变量并设置默认输出模板');
         }
+      } catch (error) {
+        console.error('[CardSelectorComp] 获取卡片详情失败:', error);
+        message.error('获取卡片详情失败，请稍后重试');
       }
     },
     [
