@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+} from 'react';
 
 import { type InputValueVO } from '@coze-workflow/base';
 import { I18n } from '@coze-arch/i18n';
@@ -46,6 +52,16 @@ function CardSelectorComp({
   const [cardList, setCardList] = useState<CardItem[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const form = useForm();
+
+  // 使用 ref 避免闭包问题
+  const cardListRef = useRef<CardItem[]>([]);
+  const sassWorkspaceIdRef = useRef<string | undefined>(sassWorkspaceId);
+  const formRef = useRef(form);
+
+  // 保持 ref 最新
+  cardListRef.current = cardList;
+  sassWorkspaceIdRef.current = sassWorkspaceId;
+  formRef.current = form;
 
   const JSON_INDENT = 2;
 
@@ -179,17 +195,27 @@ function CardSelectorComp({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 处理选择
+  // 处理选择 - 使用 ref 避免闭包问题
   const handleSelect = useCallback(
     async (selectedValue: string) => {
+      // 使用 ref 获取最新值
+      const currentCardList = cardListRef.current;
+      const currentSassWorkspaceId = sassWorkspaceIdRef.current;
+      const currentForm = formRef.current;
+
       console.log(
         '[CardSelectorComp] handleSelect 被调用，selectedValue:',
         selectedValue,
       );
-      console.log('[CardSelectorComp] cardList 长度:', cardList.length);
-      console.log('[CardSelectorComp] sassWorkspaceId:', sassWorkspaceId);
+      console.log('[CardSelectorComp] cardList 长度:', currentCardList.length);
+      console.log(
+        '[CardSelectorComp] sassWorkspaceId:',
+        currentSassWorkspaceId,
+      );
 
-      const selectedCard = cardList.find(card => card.cardId === selectedValue);
+      const selectedCard = currentCardList.find(
+        card => card.cardId === selectedValue,
+      );
       console.log('[CardSelectorComp] 找到的卡片:', selectedCard);
 
       if (!selectedCard) {
@@ -200,7 +226,7 @@ function CardSelectorComp({
       onChange(selectedCard);
       setSearchValue(`${selectedCard.cardName} (${selectedCard.code})`);
 
-      if (!sassWorkspaceId) {
+      if (!currentSassWorkspaceId) {
         console.warn(
           '[CardSelectorComp] sassWorkspaceId 为空，无法获取卡片详情',
         );
@@ -214,11 +240,11 @@ function CardSelectorComp({
           '[CardSelectorComp] 开始获取卡片详情，cardId:',
           selectedCard.cardId,
           'sassWorkspaceId:',
-          sassWorkspaceId,
+          currentSassWorkspaceId,
         );
         const { cardDetail } = await fetchCardDetail({
           cardId: selectedCard.cardId,
-          sassWorkspaceId,
+          sassWorkspaceId: currentSassWorkspaceId,
         });
         console.log('[CardSelectorComp] 获取到卡片详情:', cardDetail);
         console.log('[CardSelectorComp] paramList:', cardDetail.paramList);
@@ -228,12 +254,12 @@ function CardSelectorComp({
             cardDetail.paramList,
           );
           console.log('[CardSelectorComp] 生成的输入参数:', inputParameters);
-          form.setFieldValue(INPUT_PATH, inputParameters);
+          currentForm.setFieldValue(INPUT_PATH, inputParameters);
 
           // 自动生成输出模板
           const answerContent = generateAnswerContent(cardDetail);
           console.log('[CardSelectorComp] 生成的输出模板:', answerContent);
-          form.setFieldValue(ANSWER_CONTENT_PATH, answerContent);
+          currentForm.setFieldValue(ANSWER_CONTENT_PATH, answerContent);
 
           message.success('已根据卡片自动生成输入变量和输出模板');
         } else {
@@ -241,7 +267,7 @@ function CardSelectorComp({
             '[CardSelectorComp] paramList 为空，使用卡片信息生成空模板',
           );
           // paramList为空时，设置空的输入变量，但使用选中卡片的信息生成输出模板
-          form.setFieldValue(INPUT_PATH, []);
+          currentForm.setFieldValue(INPUT_PATH, []);
 
           // 使用选中卡片的 code 和 cardName 生成模板，dataResponse 为空
           const emptyTemplate = JSON.stringify(
@@ -260,7 +286,7 @@ function CardSelectorComp({
             null,
             JSON_INDENT,
           );
-          form.setFieldValue(ANSWER_CONTENT_PATH, emptyTemplate);
+          currentForm.setFieldValue(ANSWER_CONTENT_PATH, emptyTemplate);
 
           message.success('已根据卡片生成输出模板（该卡片无输入参数）');
         }
@@ -269,14 +295,7 @@ function CardSelectorComp({
         message.error('获取卡片详情失败，请稍后重试');
       }
     },
-    [
-      cardList,
-      onChange,
-      sassWorkspaceId,
-      form,
-      convertParamsToInputValues,
-      generateAnswerContent,
-    ],
+    [onChange, convertParamsToInputValues, generateAnswerContent],
   );
 
   // 处理输入变化
