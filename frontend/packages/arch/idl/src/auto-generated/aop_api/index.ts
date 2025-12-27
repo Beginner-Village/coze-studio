@@ -276,5 +276,44 @@ export default class AopApiService<T> {
     const data = _req;
     return this.request({ url, method, data }, options);
   }
+
+  // 获取卡片市场版本列表
+  ExportCard(req?: any, options?: T): Promise<any> {
+    const _req = req || {};
+    const url = this.genBaseURL('IDC20025.do');
+    const method = 'POST';
+    const data = _req;
+    return this.request({ url, method, data }, options);
+  }
+
+  // 获取卡片市场版本列表
+  GetExportCardRecordList(req?: any, options?: T): Promise<any> {
+    const _req = req || {};
+    const url = this.genBaseURL('IDC20026.do');
+    const method = 'POST';
+    const data = _req;
+    return this.request({ url, method, data }, options);
+  }
+
+  GetImportCardUploadUrl(): Promise<any> {
+    return this.genBaseURL('IDC20027.do');
+  }
+
+  ImportCard(req?: any, options?: T): Promise<any> {
+    const _req = req || {};
+    const url = this.genBaseURL('IDC20028.do');
+    const method = 'POST';
+    const data = _req;
+    return this.request({ url, method, data }, options);
+  }
+
+  GetImportCardResutList(req?: any, options?: T): Promise<any> {
+    const _req = req || {};
+    const url = this.genBaseURL('IDC20030.do');
+    const method = 'POST';
+    const data = _req;
+    return this.request({ url, method, data }, options);
+  }
+
 }
 /* eslint-enable */
