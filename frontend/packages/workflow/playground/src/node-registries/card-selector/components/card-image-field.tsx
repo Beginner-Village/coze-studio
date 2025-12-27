@@ -32,7 +32,7 @@ interface CardImageFieldProps {
 function CardImageFieldComp({
   title,
   tooltip,
-  sassWorkspaceId = '7533521629687578624', // 默认工作空间ID
+  sassWorkspaceId,
 }: CardImageFieldProps) {
   const selectedCard = useWatch<CardItem | undefined>(SELECTED_CARD_PATH);
   const [cardPicUrl, setCardPicUrl] = useState<string>('');

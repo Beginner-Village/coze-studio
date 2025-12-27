@@ -19,6 +19,7 @@ import { I18n } from '@coze-arch/i18n';
 
 import { withNodeConfigForm } from '@/node-registries/common/hocs';
 import { useWatch } from '@/form';
+import { useGlobalState } from '@/hooks';
 
 import { InputsParametersField, AnswerContentField } from '../common/fields';
 import {
@@ -31,6 +32,7 @@ import { CardSelectorField, CardImageField } from './components';
 
 export const FormRender = withNodeConfigForm(() => {
   const inputParameters = useWatch<InputValueVO[]>(INPUT_PATH);
+  const { spaceId } = useGlobalState(false);
   return (
     <>
       {/* 卡片选择字段 - 放在顶部 */}
@@ -39,6 +41,7 @@ export const FormRender = withNodeConfigForm(() => {
         name={SELECTED_CARD_PATH}
         title={I18n.t('选择卡片')}
         tooltip={I18n.t('从卡片库中选择一张卡片')}
+        sassWorkspaceId={spaceId}
       />
 
       {/* 输入参数字段 */}
@@ -69,6 +72,7 @@ export const FormRender = withNodeConfigForm(() => {
       <CardImageField
         title={I18n.t('卡片示意图')}
         tooltip={I18n.t('显示所选卡片的示意图')}
+        sassWorkspaceId={spaceId}
       />
     </>
   );

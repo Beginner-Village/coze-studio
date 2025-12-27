@@ -39,7 +39,7 @@ interface CardSelectorCompProps {
 function CardSelectorComp({
   title,
   tooltip,
-  sassWorkspaceId = '7533521629687578624', // 默认工作空间ID
+  sassWorkspaceId,
 }: CardSelectorCompProps) {
   const { value, onChange, readonly, name } = useField<CardItem | undefined>();
   const [loading, setLoading] = useState(false);
@@ -95,9 +95,14 @@ function CardSelectorComp({
   // 获取卡片列表
   const fetchCards = useCallback(
     async (search = '') => {
-      console.log('[CardSelectorComp] fetchCards 被调用，search:', search, 'loading:', loading);
+      console.log('[CardSelectorComp] fetchCards 被调用，search:', search, 'loading:', loading, 'sassWorkspaceId:', sassWorkspaceId);
       if (loading) {
         console.log('[CardSelectorComp] 已在加载中，跳过请求');
+        return;
+      }
+
+      if (!sassWorkspaceId) {
+        console.warn('[CardSelectorComp] sassWorkspaceId 未设置，无法获取卡片列表');
         return;
       }
 
