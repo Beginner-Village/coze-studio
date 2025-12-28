@@ -76,7 +76,15 @@ func (d *DatabaseApplicationService) ListDatabase(ctx context.Context, req *tabl
 	if err != nil {
 		return nil, err
 	}
-	if len(spaces) == 0 || spaces[0].ID != *req.SpaceID {
+	// 检查请求的 spaceID 是否在用户的空间列表中（而不是只检查第一个空间）
+	hasAccess := false
+	for _, space := range spaces {
+		if space.ID == *req.SpaceID {
+			hasAccess = true
+			break
+		}
+	}
+	if !hasAccess {
 		return nil, errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "space id is invalid"))
 	}
 
@@ -147,7 +155,15 @@ func (d *DatabaseApplicationService) AddDatabase(ctx context.Context, req *table
 	if err != nil {
 		return nil, err
 	}
-	if len(spaces) == 0 || spaces[0].ID != req.SpaceID {
+	// 检查请求的 spaceID 是否在用户的空间列表中（而不是只检查第一个空间）
+	hasAccess := false
+	for _, space := range spaces {
+		if space.ID == req.SpaceID {
+			hasAccess = true
+			break
+		}
+	}
+	if !hasAccess {
 		return nil, errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "space id is invalid"))
 	}
 
