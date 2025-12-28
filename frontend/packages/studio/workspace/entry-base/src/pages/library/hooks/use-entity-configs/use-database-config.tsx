@@ -17,6 +17,7 @@
 import { useNavigate } from 'react-router-dom';
 
 import { useRequest } from 'ahooks';
+import { useLibraryCreateDatabaseModal } from '@coze-data/database-v2';
 import {
   ActionKey,
   type ResourceInfo,
@@ -26,7 +27,6 @@ import { I18n } from '@coze-arch/i18n';
 import { IconCozDatabase } from '@coze-arch/coze-design/icons';
 import { Menu, Table, Toast } from '@coze-arch/coze-design';
 import { MemoryApi } from '@coze-arch/bot-api';
-import { useLibraryCreateDatabaseModal } from '@coze-data/database-v2';
 
 import { type UseEntityConfigHook } from './types';
 
@@ -45,6 +45,7 @@ export const useDatabaseConfig: UseEntityConfigHook = ({
     close: closeCreateDatabaseModal,
   } = useLibraryCreateDatabaseModal({
     enterFrom: 'library',
+    spaceId, // 传递当前空间ID，避免使用 store 中可能过时的值
     onFinish: databaseID => {
       navigate(
         `/space/${spaceId}/database/${databaseID}?page_modal=normal&biz=create`,
@@ -90,7 +91,7 @@ export const useDatabaseConfig: UseEntityConfigHook = ({
         const currentPath = window.location.pathname;
         const sourceTypeMatch = currentPath.match(/\/library\/(\d+)/);
         const sourceType = sourceTypeMatch ? sourceTypeMatch[1] : '5'; // 默认数据库页面
-        
+
         navigate(
           `/space/${spaceId}/database/${item.res_id}?page_mode=normal&from=library&return_to=${sourceType}`,
         );

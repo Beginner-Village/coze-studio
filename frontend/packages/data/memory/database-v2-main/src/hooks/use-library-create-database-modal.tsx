@@ -38,16 +38,21 @@ export const enum Step {
 export const useLibraryCreateDatabaseModal = ({
   projectID,
   onFinish,
+  spaceId: propSpaceId,
 }: {
   projectID?: string;
   onFinish?: (databaseID: string, draftId: string) => void;
   enterFrom?: 'library' | 'project';
+  /** 优先使用传入的 spaceId，避免 store 中的值不是当前页面的空间 */
+  spaceId?: string;
 }) => {
   const step = useRef<Step>(Step.BASE_INFO);
 
   const resourceNavigate = useDataNavigate();
 
-  const spaceId = useSpaceStore(store => store.getSpaceId());
+  const storeSpaceId = useSpaceStore(store => store.getSpaceId());
+  // 优先使用传入的 spaceId，如果没有则从 store 获取
+  const spaceId = propSpaceId || storeSpaceId;
   const userId = userStoreService.useUserInfo()?.user_id_str;
 
   const [databaseBaseInfo, setDatabaseBaseInfo] = useState<FormData>({

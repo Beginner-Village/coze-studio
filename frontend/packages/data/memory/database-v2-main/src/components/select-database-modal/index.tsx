@@ -33,6 +33,16 @@ import { type DatabaseInfo as DatabaseInitInfo } from '@coze-studio/bot-detail-s
 import { DatabaseCreateTableModal } from '@coze-data/database-v2-adapter/components/create-table-modal';
 import { getUnReactiveLanguage, I18n } from '@coze-arch/i18n';
 import {
+  Button,
+  Dropdown,
+  Input,
+  Tag,
+  Popover,
+  Spin,
+  Select,
+  Empty,
+} from '@coze-arch/coze-design';
+import {
   Image,
   UICompositionModal,
   UICompositionModalMain,
@@ -48,16 +58,6 @@ import {
 } from '@coze-arch/bot-api/memory';
 import { FormatType } from '@coze-arch/bot-api/knowledge';
 import { MemoryApi, KnowledgeApi } from '@coze-arch/bot-api';
-import {
-  Button,
-  Dropdown,
-  Input,
-  Tag,
-  Popover,
-  Spin,
-  Select,
-  Empty,
-} from '@coze-arch/coze-design';
 
 import { useLibraryCreateDatabaseModal } from '../../hooks/use-library-create-database-modal';
 import tipsTemplateEN from '../../assets/tips-template-en.png';
@@ -440,6 +440,7 @@ export const useSelectDatabaseModal = ({
   } = useLibraryCreateDatabaseModal({
     projectID,
     enterFrom: 'library',
+    spaceId, // 传递当前空间ID，避免使用 store 中可能过时的值
     onFinish: (databaseID, draftId) => {
       closeCreateDatabaseModal();
       onCreateDatabase?.(databaseID, draftId);

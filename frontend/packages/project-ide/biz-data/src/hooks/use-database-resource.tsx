@@ -33,9 +33,9 @@ import {
 } from '@coze-project-ide/biz-components';
 import { useLibraryCreateDatabaseModal } from '@coze-data/database-v2';
 import { I18n } from '@coze-arch/i18n';
+import { Toast } from '@coze-arch/coze-design';
 import { ResourceCopyScene } from '@coze-arch/bot-api/plugin_develop';
 import { MemoryApi } from '@coze-arch/bot-api';
-import { Toast } from '@coze-arch/coze-design';
 
 import { useResourceOperation } from './use-resource-operation';
 
@@ -66,6 +66,7 @@ const useDatabaseResource = (): UseDatabaseResourceReturn => {
   } = useLibraryCreateDatabaseModal({
     projectID: projectId,
     enterFrom: 'project',
+    spaceId, // 传递当前空间ID，避免使用 store 中可能过时的值
     onFinish: databaseID => {
       refetch();
       closeCreateDatabaseModal();
