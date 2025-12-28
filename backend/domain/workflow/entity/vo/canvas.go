@@ -306,7 +306,7 @@ type NodeBatch struct {
 
 type IntentDetectorLLMConfig struct {
 	ModelName      string     `json:"modelName"`
-	ModelType      int        `json:"modelType"`
+	ModelType      int64      `json:"modelType,string"`
 	Temperature    *float64   `json:"temperature"`
 	TopP           *float64   `json:"topP"`
 	MaxTokens      int        `json:"maxTokens"`
