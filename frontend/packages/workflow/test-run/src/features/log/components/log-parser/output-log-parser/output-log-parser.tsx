@@ -18,12 +18,13 @@ import { isObject } from 'lodash-es';
 import { type FlowNodeEntity } from '@flowgram-adapter/free-layout-editor';
 import { StandardNodeType } from '@coze-workflow/base/types';
 import { I18n } from '@coze-arch/i18n';
-import { NodeExeStatus } from '@coze-arch/bot-api/workflow_api';
 import { IconCozWarningCircle } from '@coze-arch/coze-design/icons';
 import { SegmentTab, Tag, Typography, Tooltip } from '@coze-arch/coze-design';
+import { NodeExeStatus } from '@coze-arch/bot-api/workflow_api';
 
 import { LogWrap } from '../log-wrap';
 import { DataViewer } from '../../data-viewer';
+import { CardPreview, isCardOutput } from '../../card-preview';
 import { type OutputLog } from '../../../types';
 import { useOutputLog, TabValue } from './use-output-log';
 import { SyncOutputToNode } from './sync-output-to-node';
@@ -78,6 +79,10 @@ export const OutputLogParser: React.FC<{
 
   const isLLM = log.nodeType === 'LLM';
 
+  // 检测是否为卡片节点输出
+  const isCardSelectorNode = log.nodeType === 'CardSelector';
+  const showCardPreview = isCardSelectorNode && isCardOutput(data);
+
   const showCodeSync =
     node?.flowNodeType === StandardNodeType.Code &&
     nodeStatus === NodeExeStatus.Success &&
@@ -130,6 +135,8 @@ export const OutputLogParser: React.FC<{
           onPreview={onPreview}
           className="!min-h-[100px]"
         />
+        {/* 卡片节点输出时显示卡片预览 */}
+        {showCardPreview ? <CardPreview data={data} /> : null}
       </div>
     </LogWrap>
   );

@@ -25,6 +25,7 @@ export {
   FunctionCallLogParser,
   WorkflowLinkParser,
 } from './components/log-parser';
+export { CardPreview, isCardOutput } from './components/card-preview';
 
 export { LogType } from './constants';
 export { generateLog } from './utils/generate-log';

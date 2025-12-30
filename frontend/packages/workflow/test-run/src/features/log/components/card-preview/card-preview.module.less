@@ -1,0 +1,113 @@
+.card-preview {
+  margin-top: 12px;
+  overflow: hidden;
+
+  border: 1px solid var(--coz-stroke-secondary, #e5e6eb);
+  border-radius: 8px;
+  background-color: var(--coz-bg-white, #fff);
+}
+
+.card-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+
+  border-bottom: 1px solid var(--coz-stroke-secondary, #e5e6eb);
+  background-color: var(--coz-bg-secondary, #f7f8fa);
+}
+
+.card-preview-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--coz-fg-primary, #1d2129);
+}
+
+.view-mode-toggle {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+
+  border: 1px solid var(--coz-stroke-secondary, #e5e6eb);
+  border-radius: 4px;
+  background-color: var(--coz-bg-white, #fff);
+}
+
+.toggle-option {
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 10px;
+
+  font-size: 12px;
+  color: var(--coz-fg-secondary, #4e5969);
+
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: var(--coz-fg-primary, #1d2129);
+    background-color: var(--coz-bg-hover, #f2f3f5);
+  }
+
+  &.active {
+    color: var(--coz-fg-white, #fff);
+    background-color: var(--coz-brand-primary, #165dff);
+
+    &:hover {
+      background-color: var(--coz-brand-primary-hover, #4080ff);
+    }
+  }
+}
+
+.toggle-divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 16px;
+  background-color: var(--coz-stroke-secondary, #e5e6eb);
+}
+
+.card-preview-content {
+  padding: 12px;
+}
+
+.card-iframe-container {
+  overflow: hidden;
+
+  width: 100%;
+  max-width: 375px; // 手机屏幕宽度
+  margin: 0 auto;
+
+  border: 1px solid var(--coz-stroke-secondary, #e5e6eb);
+  border-radius: 8px;
+  background-color: var(--coz-bg-white, #fff);
+
+  iframe {
+    display: block;
+    width: 100%;
+    min-height: 300px;
+
+    border: none;
+    background-color: var(--coz-bg-white, #fff);
+
+    transition: height 0.3s ease;
+  }
+}
+
+.card-json-container {
+  overflow: auto;
+
+  max-height: 400px;
+  padding: 12px;
+
+  font-size: 12px;
+  line-height: 1.5;
+
+  border-radius: 4px;
+  background-color: var(--coz-bg-tertiary, #f2f3f5);
+
+  pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--coz-fg-secondary, #4e5969);
+  }
+}
