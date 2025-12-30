@@ -262,7 +262,7 @@ func (d *DatabaseApplicationService) ListDatabaseRecords(ctx context.Context, re
 	if req.GetBotID() > 0 {
 		tableType = table.TableType_DraftTable
 	}
-	err := d.ValidateAccess(ctx, req.DatabaseID, tableType)
+	err := d.ValidateReadAccess(ctx, req.DatabaseID, tableType)
 	if err != nil {
 		return nil, err
 	}
@@ -463,7 +463,7 @@ func (d *DatabaseApplicationService) GetDatabaseTemplate(ctx context.Context, re
 		return nil, err
 	}
 
-	err = d.ValidateAccess(ctx, req.DatabaseID, table.TableType_OnlineTable)
+	err = d.ValidateReadAccess(ctx, req.DatabaseID, table.TableType_OnlineTable)
 	if err != nil {
 		return nil, err
 	}
@@ -604,7 +604,7 @@ func (d *DatabaseApplicationService) ValidateDatabaseTableSchema(ctx context.Con
 		return nil, err
 	}
 
-	err = d.ValidateAccess(ctx, req.DatabaseID, table.TableType_OnlineTable)
+	err = d.ValidateReadAccess(ctx, req.DatabaseID, table.TableType_OnlineTable)
 	if err != nil {
 		return nil, err
 	}
@@ -784,7 +784,20 @@ func getDatabaseID(ctx context.Context, tableType table.TableType, onlineID int6
 	return online.Databases[0].GetDraftID(), nil
 }
 
+// ValidateAccess 检查用户对数据库的访问权限（写权限：需要 Owner/Admin）
 func (d *DatabaseApplicationService) ValidateAccess(ctx context.Context, databaseID int64, tableType table.TableType) error {
+	return d.validateAccessWithPermission(ctx, databaseID, tableType, true)
+}
+
+// ValidateReadAccess 检查用户对数据库的只读访问权限（所有空间成员都可以）
+func (d *DatabaseApplicationService) ValidateReadAccess(ctx context.Context, databaseID int64, tableType table.TableType) error {
+	return d.validateAccessWithPermission(ctx, databaseID, tableType, false)
+}
+
+// validateAccessWithPermission 内部方法，根据 requireEdit 参数决定权限级别
+// requireEdit=true: 需要编辑权限（Owner/Admin）
+// requireEdit=false: 只需要成员权限（Owner/Admin/Member）
+func (d *DatabaseApplicationService) validateAccessWithPermission(ctx context.Context, databaseID int64, tableType table.TableType, requireEdit bool) error {
 	uid := ctxutil.GetUIDFromCtx(ctx)
 	if uid == nil {
 		return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "session uid not found"))
@@ -805,9 +818,24 @@ func (d *DatabaseApplicationService) ValidateAccess(ctx context.Context, databas
 		return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "database not found"))
 	}
 
-	if do.Databases[0].CreatorID != *uid {
-		logs.CtxErrorf(ctx, "user(%d) is not the creator(%d) of the database(%d)", *uid, do.Databases[0].CreatorID, databaseID)
-		return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("detail", "you are not the creator of the database"))
+	// 使用空间成员权限检查
+	spaceID := do.Databases[0].SpaceID
+	perm, err := crossuser.DefaultSVC().CheckSpacePermission(ctx, spaceID, *uid)
+	if err != nil {
+		logs.CtxErrorf(ctx, "CheckSpacePermission failed: user=%d, space=%d, err=%v", *uid, spaceID, err)
+		return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "failed to check space permission"))
+	}
+
+	// 首先检查是否是空间成员
+	if !perm.IsMember {
+		logs.CtxErrorf(ctx, "user(%d) is not a member of space(%d) for database(%d)", *uid, spaceID, databaseID)
+		return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("detail", "you are not a member of this space"))
+	}
+
+	// 如果需要编辑权限，检查 CanEdit（只有 Owner/Admin 有此权限）
+	if requireEdit && !perm.CanEdit {
+		logs.CtxErrorf(ctx, "user(%d) does not have edit permission in space(%d) for database(%d)", *uid, spaceID, databaseID)
+		return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("detail", "you do not have permission to edit this database"))
 	}
 
 	return nil
