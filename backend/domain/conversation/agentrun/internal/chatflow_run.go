@@ -46,16 +46,12 @@ func (art *AgentRuntime) ChatflowRun(ctx context.Context, imagex imagex.ImageX) 
 	}
 	resumeInfo := parseResumeInfo(ctx, art.GetHistory())
 	
-	// 从Workflow列表中获取第一个WorkflowId，而不是从LayoutInfo
+	// 从LayoutInfo获取chatflow的WorkflowId
+	// LayoutInfo存储的是智能体绑定的主chatflow，Workflow列表存储的是作为工具的工作流
 	var wfID int64
 	agentInfo := art.GetAgentInfo()
-	if len(agentInfo.Workflow) > 0 && agentInfo.Workflow[0].WorkflowId != nil {
-		wfID = *agentInfo.Workflow[0].WorkflowId
-	} else {
-		// 兼容性：如果Workflow列表为空，尝试从LayoutInfo获取
-		if agentInfo.LayoutInfo != nil && agentInfo.LayoutInfo.WorkflowId != "" {
-			wfID, _ = strconv.ParseInt(agentInfo.LayoutInfo.WorkflowId, 10, 64)
-		}
+	if agentInfo.LayoutInfo != nil && agentInfo.LayoutInfo.WorkflowId != "" {
+		wfID, _ = strconv.ParseInt(agentInfo.LayoutInfo.WorkflowId, 10, 64)
 	}
 
 	if wfID == 0 {
