@@ -381,6 +381,8 @@ export interface DatabaseInfo {
   extra_info?: Record<string, string>;
   /** 是否已经添加到bot中 */
   is_added_to_bot?: boolean;
+  /** 当前用户是否可以编辑此数据库 */
+  can_edit?: boolean;
   /** 0=coze知识库 1=火山知识库 */
   database_type?: DatabaseType;
   volcano_storage_config?: volcano_database.VolcanoStorageConfig;

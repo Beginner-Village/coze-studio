@@ -135,7 +135,19 @@ func (d *DatabaseApplicationService) GetDatabaseByID(ctx context.Context, req *t
 		return nil, fmt.Errorf("database %d not found", req.GetID())
 	}
 
-	return ConvertDatabaseRes(res.Databases[0]), nil
+	resp := ConvertDatabaseRes(res.Databases[0])
+
+	// 计算当前用户对该数据库的编辑权限
+	uid := ctxutil.GetUIDFromCtx(ctx)
+	if uid != nil && resp.DatabaseInfo != nil {
+		spaceID := res.Databases[0].SpaceID
+		perm, err := crossuser.DefaultSVC().CheckSpacePermission(ctx, spaceID, *uid)
+		if err == nil && perm != nil {
+			resp.DatabaseInfo.CanEdit = ptr.Of(perm.CanEdit)
+		}
+	}
+
+	return resp, nil
 }
 
 func (d *DatabaseApplicationService) AddDatabase(ctx context.Context, req *table.AddDatabaseRequest) (*table.SingleDatabaseResponse, error) {

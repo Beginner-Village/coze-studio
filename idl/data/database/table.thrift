@@ -93,6 +93,7 @@ struct DatabaseInfo {
     19: optional i64    bot_id       (api.js_conv="str", api.key="bot_id") // Related id. bot_id, the old one is available, the new one is not.
     20: optional map<string,string> extra_info // extended information
     21: optional bool   is_added_to_bot // Has it been added to the bot?
+    22: optional bool   can_edit // Whether the current user can edit this database
 }
 
 struct ListDatabaseResponse{

@@ -99,7 +99,7 @@ export const DatabaseDetail = ({
   const [databaseInfo, setDatabaseInfo] = useState<DatabaseInfo>({});
   // tab key
   const [activeKey, setActiveKey] = useState(
-    version ? DatabaseTabs.Structure : initialTab ?? DatabaseTabs.Structure,
+    version ? DatabaseTabs.Structure : (initialTab ?? DatabaseTabs.Structure),
   );
   // btn loading
   const [btnLoading, setBtnLoading] = useState(false);
@@ -130,8 +130,12 @@ export const DatabaseDetail = ({
     }
   };
 
-  // Need a store, follow-up renovation
-  const isReadOnlyMode = databaseInfo.creator_id !== userId || !!version;
+  // 使用后端返回的 can_edit 字段判断权限（支持空间成员权限）
+  // 如果 can_edit 未定义则回退到原有的 creator_id 判断（向后兼容）
+  const isReadOnlyMode =
+    (databaseInfo.can_edit !== undefined
+      ? databaseInfo.can_edit === false
+      : databaseInfo.creator_id !== userId) || !!version;
 
   const tableInitData: DatabaseInitInfo = useMemo(
     () => ({
