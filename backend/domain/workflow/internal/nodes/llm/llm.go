@@ -643,14 +643,10 @@ func (c *Config) Build(ctx context.Context, ns *schema2.NodeSchema, _ ...schema2
 		}
 
 		if fcParams.KnowledgeFCParam != nil && len(fcParams.KnowledgeFCParam.KnowledgeList) > 0 {
-			kwChatModel := workflow.GetRepository().GetKnowledgeRecallChatModel()
-			if kwChatModel == nil {
-				return nil, fmt.Errorf("workflow builtin chat model for knowledge recall not configured")
-			}
-
+			// 使用用户选择的模型，而不是内置模型
 			setting := fcParams.KnowledgeFCParam.GlobalSetting
 			knowledgeRecallConfig = &KnowledgeRecallConfig{
-				ChatModel: kwChatModel,
+				ChatModel: chatModel,
 			}
 			searchType, err := toRetrievalSearchType(setting.SearchMode)
 			if err != nil {
