@@ -19,11 +19,19 @@ package workflow
 import (
 	"sync"
 
+	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
 
 	"github.com/coze-dev/coze-studio/backend/api/model/workflow"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
 )
+
+func init() {
+	// Register HiAgentConversationInfo for Eino checkpoint serialization
+	// This is required because ExecuteConfig contains HiAgentConversations map[string]*HiAgentConversationInfo
+	// which needs to be serialized when using Eino's checkpoint feature
+	_ = compose.RegisterSerializableType[HiAgentConversationInfo]("workflow.HiAgentConversationInfo")
+}
 
 type Locator uint8
 
