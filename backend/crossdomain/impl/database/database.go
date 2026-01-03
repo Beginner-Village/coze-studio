@@ -54,6 +54,14 @@ func InitDomainService(c database.Database) crossdatabase.Database {
 }
 
 func (c *databaseImpl) ExecuteSQL(ctx context.Context, req *model.ExecuteSQLRequest) (*model.ExecuteSQLResponse, error) {
+	// 检查用户是否有权限访问该数据库所属的空间
+	if err := c.validateSpaceAccess(ctx, req.DatabaseID, req.TableType, req.UserID); err != nil {
+		return nil, err
+	}
+
+	// 空间成员已通过权限验证，可以访问空间内所有数据
+	req.SkipRowLevelFilter = true
+
 	return c.DomainSVC.ExecuteSQL(ctx, req)
 }
 
