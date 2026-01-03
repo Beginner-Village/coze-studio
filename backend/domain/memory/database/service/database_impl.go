@@ -1075,8 +1075,8 @@ func (d databaseService) executeCustomSQL(ctx context.Context, req *ExecuteSQLRe
 	if err != nil {
 		return nil, fmt.Errorf("parse sql failed: %v", err)
 	}
-	// add rw mode
-	if tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite && len(req.UserID) != 0 {
+	// add rw mode (skip if SkipRowLevelFilter is true - for space members who can access all data)
+	if tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite && len(req.UserID) != 0 && !req.SkipRowLevelFilter {
 		switch operation {
 		case sqlparsercontract.OperationTypeSelect, sqlparsercontract.OperationTypeUpdate, sqlparsercontract.OperationTypeDelete:
 			parsedSQL, err = sqlparser.NewSQLParser().AppendSQLFilter(parsedSQL, sqlparsercontract.SQLFilterOpAnd, fmt.Sprintf("%s = '%s'", database.DefaultUidColName, req.UserID))
@@ -1218,8 +1218,8 @@ func (d databaseService) executeSelectSQL(ctx context.Context, req *ExecuteSQLRe
 		}
 	}
 
-	// add rw mode
-	if tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite && req.UserID != "" {
+	// add rw mode (skip if SkipRowLevelFilter is true - for space members who can access all data)
+	if tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite && req.UserID != "" && !req.SkipRowLevelFilter {
 		cond := &rdb.Condition{
 			Field:    database.DefaultUidColName,
 			Operator: entity3.OperatorEqual,
@@ -1382,8 +1382,8 @@ func (d databaseService) executeUpdateSQL(ctx context.Context, req *ExecuteSQLRe
 		return -1, fmt.Errorf("convert condition failed: %v", err)
 	}
 
-	// add rw mode
-	if tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite && req.UserID != "" {
+	// add rw mode (skip if SkipRowLevelFilter is true - for space members who can access all data)
+	if tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite && req.UserID != "" && !req.SkipRowLevelFilter {
 		cond := &rdb.Condition{
 			Field:    database.DefaultUidColName,
 			Operator: entity3.OperatorEqual,
@@ -1422,8 +1422,8 @@ func (d databaseService) executeDeleteSQL(ctx context.Context, req *ExecuteSQLRe
 		return -1, fmt.Errorf("convert condition failed: %v", err)
 	}
 
-	// add rw mode
-	if tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite && req.UserID != "" {
+	// add rw mode (skip if SkipRowLevelFilter is true - for space members who can access all data)
+	if tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite && req.UserID != "" && !req.SkipRowLevelFilter {
 		cond := &rdb.Condition{
 			Field:    database.DefaultUidColName,
 			Operator: entity3.OperatorEqual,

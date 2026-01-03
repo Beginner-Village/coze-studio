@@ -19,6 +19,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cast"
@@ -27,11 +28,15 @@ import (
 	"github.com/coze-dev/coze-studio/backend/api/model/data/database/table"
 	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
 	crossdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/contract/database"
+	crossuser "github.com/coze-dev/coze-studio/backend/crossdomain/contract/user"
 	"github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
 	database "github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
+	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ternary"
+	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	"github.com/coze-dev/coze-studio/backend/types/errno"
 )
 
 var defaultSVC crossdatabase.Database
@@ -90,13 +95,19 @@ func (d *databaseImpl) Execute(ctx context.Context, request *model.CustomSQLRequ
 		}
 	}
 
+	// 检查用户是否有权限访问该数据库所属的空间
+	if err := d.validateSpaceAccess(ctx, databaseInfoID, tableType, request.UserID); err != nil {
+		return nil, err
+	}
+
 	req := &service.ExecuteSQLRequest{
-		DatabaseID:  databaseInfoID,
-		OperateType: model.OperateType_Custom,
-		SQL:         &request.SQL,
-		TableType:   tableType,
-		UserID:      request.UserID,
-		ConnectorID: ptr.Of(request.ConnectorID),
+		DatabaseID:         databaseInfoID,
+		OperateType:        model.OperateType_Custom,
+		SQL:                &request.SQL,
+		TableType:          tableType,
+		UserID:             request.UserID,
+		ConnectorID:        ptr.Of(request.ConnectorID),
+		SkipRowLevelFilter: true, // 空间成员已通过权限验证，可以访问空间内所有数据
 	}
 
 	req.SQLParams = make([]*model.SQLParamVal, 0, len(request.Params))
@@ -134,12 +145,18 @@ func (d *databaseImpl) Delete(ctx context.Context, request *model.DeleteRequest)
 		}
 	}
 
+	// 检查用户是否有权限访问该数据库所属的空间
+	if err := d.validateSpaceAccess(ctx, databaseInfoID, tableType, request.UserID); err != nil {
+		return nil, err
+	}
+
 	req := &service.ExecuteSQLRequest{
-		DatabaseID:  databaseInfoID,
-		OperateType: model.OperateType_Delete,
-		TableType:   tableType,
-		UserID:      request.UserID,
-		ConnectorID: ptr.Of(request.ConnectorID),
+		DatabaseID:         databaseInfoID,
+		OperateType:        model.OperateType_Delete,
+		TableType:          tableType,
+		UserID:             request.UserID,
+		ConnectorID:        ptr.Of(request.ConnectorID),
+		SkipRowLevelFilter: true, // 空间成员已通过权限验证，可以访问空间内所有数据
 	}
 
 	if request.ConditionGroup != nil {
@@ -170,12 +187,18 @@ func (d *databaseImpl) Query(ctx context.Context, request *model.QueryRequest) (
 		}
 	}
 
+	// 检查用户是否有权限访问该数据库所属的空间
+	if err := d.validateSpaceAccess(ctx, databaseInfoID, tableType, request.UserID); err != nil {
+		return nil, err
+	}
+
 	req := &service.ExecuteSQLRequest{
-		DatabaseID:  databaseInfoID,
-		OperateType: model.OperateType_Select,
-		TableType:   tableType,
-		UserID:      request.UserID,
-		ConnectorID: ptr.Of(request.ConnectorID),
+		DatabaseID:         databaseInfoID,
+		OperateType:        model.OperateType_Select,
+		TableType:          tableType,
+		UserID:             request.UserID,
+		ConnectorID:        ptr.Of(request.ConnectorID),
+		SkipRowLevelFilter: true, // 空间成员已通过权限验证，可以访问空间内所有数据
 	}
 
 	req.SelectFieldList = &model.SelectFieldList{FieldID: make([]string, 0, len(request.SelectFields))}
@@ -226,13 +249,24 @@ func (d *databaseImpl) Update(ctx context.Context, request *model.UpdateRequest)
 		}
 	}
 
+	// 检查用户是否有权限访问该数据库所属的空间
+	// 优先使用 context 中的用户ID，否则使用请求中的用户ID
+	userIDForCheck := request.UserID
+	if uid := ctxutil.GetUIDFromCtx(ctx); uid != nil {
+		userIDForCheck = conv.Int64ToStr(*uid)
+	}
+	if err := d.validateSpaceAccess(ctx, databaseInfoID, tableType, userIDForCheck); err != nil {
+		return nil, err
+	}
+
 	req := &service.ExecuteSQLRequest{
-		DatabaseID:  databaseInfoID,
-		OperateType: model.OperateType_Update,
-		SQLParams:   make([]*model.SQLParamVal, 0),
-		TableType:   tableType,
-		UserID:      request.UserID,
-		ConnectorID: ptr.Of(request.ConnectorID),
+		DatabaseID:         databaseInfoID,
+		OperateType:        model.OperateType_Update,
+		SQLParams:          make([]*model.SQLParamVal, 0),
+		TableType:          tableType,
+		UserID:             request.UserID,
+		ConnectorID:        ptr.Of(request.ConnectorID),
+		SkipRowLevelFilter: true, // 空间成员已通过权限验证，可以访问空间内所有数据
 	}
 
 	uid := ctxutil.GetUIDFromCtx(ctx)
@@ -275,12 +309,18 @@ func (d *databaseImpl) Insert(ctx context.Context, request *model.InsertRequest)
 		}
 	}
 
+	// 检查用户是否有权限访问该数据库所属的空间
+	if err := d.validateSpaceAccess(ctx, databaseInfoID, tableType, request.UserID); err != nil {
+		return nil, err
+	}
+
 	req := &service.ExecuteSQLRequest{
-		DatabaseID:  databaseInfoID,
-		OperateType: model.OperateType_Insert,
-		TableType:   tableType,
-		UserID:      request.UserID,
-		ConnectorID: ptr.Of(request.ConnectorID),
+		DatabaseID:         databaseInfoID,
+		OperateType:        model.OperateType_Insert,
+		TableType:          tableType,
+		UserID:             request.UserID,
+		ConnectorID:        ptr.Of(request.ConnectorID),
+		SkipRowLevelFilter: true, // 空间成员已通过权限验证，可以访问空间内所有数据
 	}
 
 	req.UpsertRows, req.SQLParams, err = resolveUpsertRow(request.Fields)
@@ -302,6 +342,51 @@ func (d *databaseImpl) getDraftTableID(ctx context.Context, onlineID int64) (int
 	}
 
 	return resp.Database.ID, nil
+}
+
+// validateSpaceAccess 验证用户对数据库的空间访问权限
+// 检查用户是否是数据库所属空间的成员
+func (d *databaseImpl) validateSpaceAccess(ctx context.Context, databaseID int64, tableType table.TableType, userIDStr string) error {
+	// 如果用户ID为空，跳过检查（兼容某些内部调用场景）
+	if userIDStr == "" {
+		return nil
+	}
+
+	// 1. 获取数据库信息
+	dbResp, err := d.DomainSVC.MGetDatabase(ctx, &service.MGetDatabaseRequest{
+		Basics: []*model.DatabaseBasic{{ID: databaseID, TableType: tableType}},
+	})
+	if err != nil {
+		logs.CtxErrorf(ctx, "validateSpaceAccess: failed to get database info, databaseID=%d, err=%v", databaseID, err)
+		return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "failed to get database info"))
+	}
+	if len(dbResp.Databases) == 0 {
+		logs.CtxErrorf(ctx, "validateSpaceAccess: database not found, databaseID=%d", databaseID)
+		return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "database not found"))
+	}
+
+	spaceID := dbResp.Databases[0].SpaceID
+
+	// 2. 解析用户ID
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		logs.CtxErrorf(ctx, "validateSpaceAccess: invalid user ID format, userIDStr=%s, err=%v", userIDStr, err)
+		return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "invalid user ID format"))
+	}
+
+	// 3. 检查用户是否是空间成员
+	perm, err := crossuser.DefaultSVC().CheckSpacePermission(ctx, spaceID, userID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "validateSpaceAccess: failed to check space permission, spaceID=%d, userID=%d, err=%v", spaceID, userID, err)
+		return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "failed to check space permission"))
+	}
+
+	if !perm.IsMember {
+		logs.CtxErrorf(ctx, "validateSpaceAccess: user is not a member of this space, spaceID=%d, userID=%d, databaseID=%d", spaceID, userID, databaseID)
+		return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("detail", "user is not a member of this space"))
+	}
+
+	return nil
 }
 
 func buildComplexCondition(conditionGroup *model.ConditionGroup) (*model.ComplexCondition, []*model.SQLParamVal, error) {

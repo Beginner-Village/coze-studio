@@ -33,6 +33,10 @@ type ExecuteSQLRequest struct {
 	TableType   table.TableType
 	OperateType OperateType
 
+	// SkipRowLevelFilter 为 true 时，跳过行级权限过滤 (RwMode_LimitedReadWrite)
+	// 当用户是数据库所属空间的成员时，应该设置为 true，允许访问空间内所有数据
+	SkipRowLevelFilter bool
+
 	// set the following values if OperateType is not 0.
 	SelectFieldList *SelectFieldList
 	OrderByList     []OrderBy
