@@ -33,6 +33,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
 	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	"github.com/coze-dev/coze-studio/backend/pkg/lang/ternary"
 	"github.com/coze-dev/coze-studio/backend/pkg/logs"
 	"github.com/coze-dev/coze-studio/backend/pkg/safego"
 	"github.com/coze-dev/coze-studio/backend/types/errno"
@@ -60,12 +61,17 @@ func (art *AgentRuntime) ChatflowRun(ctx context.Context, imagex imagex.ImageX) 
 	}
 	var wfStreamer *schema.StreamReader[*crossworkflow.WorkflowMessage]
 
+	// 根据 IsDraft 标志选择执行模式：
+	// - IsDraft=true (草稿/测试模式): 使用 Debug 模式，访问 DraftTable
+	// - IsDraft=false (发布模式): 使用 Release 模式，访问 OnlineTable
+	executeMode := ternary.IFElse(art.GetRunMeta().IsDraft, crossworkflow.ExecuteModeDebug, crossworkflow.ExecuteModeRelease)
+
 	executeConfig := crossworkflow.ExecuteConfig{
 		ID:           wfID,
 		ConnectorID:  art.GetRunMeta().ConnectorID,
 		ConnectorUID: art.GetRunMeta().UserID,
 		AgentID:      ptr.Of(art.GetRunMeta().AgentID),
-		Mode:         crossworkflow.ExecuteModeRelease,
+		Mode:         executeMode,
 		BizType:      crossworkflow.BizTypeAgent,
 		SyncPattern:  crossworkflow.SyncPatternStream,
 	}
