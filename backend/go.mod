@@ -11,13 +11,13 @@ require (
 	github.com/apache/rocketmq-client-go/v2 v2.1.3-0.20250427084711-67ec50b93040
 	github.com/apache/thrift v0.21.0
 	github.com/bytedance/mockey v1.2.14
-	github.com/bytedance/sonic v1.13.2
-	github.com/cloudwego/eino v0.3.55
+	github.com/bytedance/sonic v1.14.0
+	github.com/cloudwego/eino v0.4.7
 	github.com/cloudwego/eino-ext/components/model/ark v0.1.15
 	github.com/cloudwego/eino-ext/components/model/claude v0.1.1
 	github.com/cloudwego/eino-ext/components/model/deepseek v0.0.0-20250715055739-0d0e28441a2f
 	github.com/cloudwego/eino-ext/components/model/openai v0.0.0-20250715055739-0d0e28441a2f
-	github.com/cloudwego/eino-ext/libs/acl/openai v0.0.0-20250626133421-3c142631c961
+	github.com/cloudwego/eino-ext/libs/acl/openai v0.0.0-20250918130948-16e3a249e721
 	github.com/cloudwego/hertz v0.10.0
 	github.com/elastic/go-elasticsearch/v8 v8.18.0
 	github.com/getkin/kin-openapi v0.118.0
@@ -86,7 +86,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.37 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.7.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.18 // indirect
+	github.com/bahlo/generic-list-go v0.2.0 // indirect
+	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cloudwego/gopkg v0.1.4 // indirect
+	github.com/eino-contrib/jsonschema v1.0.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/frankban/quicktest v1.14.6 // indirect
@@ -95,11 +98,12 @@ require (
 	github.com/google/s2a-go v0.1.8 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
-	github.com/meguminnnnnnnnn/go-openai v0.0.0-20250620092828-0d508a1dcdde // indirect
+	github.com/meguminnnnnnnnn/go-openai v0.0.0-20250821095446-07791bea23a0 // indirect
 	github.com/peterbourgon/diskv/v3 v3.0.1 // indirect
 	github.com/rogpeppe/fastuuid v1.2.0 // indirect
 	github.com/shabbyrobe/xmlwriter v0.0.0-20200208144257-9fca06d00ffa // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 )
@@ -130,7 +134,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bytedance/gopkg v0.1.1
-	github.com/bytedance/sonic/loader v0.2.4 // indirect
+	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cilium/ebpf v0.11.0 // indirect

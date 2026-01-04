@@ -32,9 +32,9 @@ import {
 } from '@coze-arch/coze-design';
 import { listModels, type ModelDetailOutput } from '@coze-arch/bot-space-api';
 
-// 基于新的API定义的模型类型，但保持数字ID兼容现有组件逻辑
+// 基于新的API定义的模型类型，使用字符串ID避免大整数精度丢失
 interface SpaceModel {
-  id: number;
+  id: string; // 使用字符串类型避免大整数精度丢失
   name: string;
   description: string;
   context_length: number;
@@ -51,11 +51,11 @@ interface ModelCardProps {
   isFavorite: boolean;
   isHovered: boolean;
   spaceId: string;
-  onHover: (id: number | null) => void;
-  onToggleFavorite: (id: number) => void;
-  onToggleEnabled: (id: number, enabled: boolean) => void;
-  onDelete: (id: number) => void;
-  onEdit: (modelId: number) => void;
+  onHover: (id: string | null) => void;
+  onToggleFavorite: (id: string) => void;
+  onToggleEnabled: (id: string, enabled: boolean) => void;
+  onDelete: (id: string) => void;
+  onEdit: (modelId: string) => void;
 }
 
 interface ModelFiltersProps {
@@ -77,12 +77,12 @@ function ModelDropdownMenu({
   onDelete,
   onEdit,
 }: {
-  modelId: number;
+  modelId: string;
   isEnabled: boolean;
   spaceId: string;
-  onToggleEnabled: (id: number, enabled: boolean) => void;
-  onDelete: (id: number) => void;
-  onEdit: (modelId: number) => void;
+  onToggleEnabled: (id: string, enabled: boolean) => void;
+  onDelete: (id: string) => void;
+  onEdit: (modelId: string) => void;
 }) {
   return (
     <Dropdown.Menu>
@@ -335,7 +335,7 @@ function useModelData(spaceId: string) {
   const [models, setModels] = useState<SpaceModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [modelStates, setModelStates] = useState<Record<number, boolean>>({});
+  const [modelStates, setModelStates] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -348,7 +348,7 @@ function useModelData(spaceId: string) {
           // 将ModelDetailOutput转换为SpaceModel
           const convertedModels: SpaceModel[] = modelsData.map(
             (model: ModelDetailOutput) => ({
-              id: model.id, // 已经是number类型
+              id: String(model.id), // 确保ID为字符串类型
               name: model.name || '',
               description: model.description || '',
               context_length: model.context_length || 4096,
@@ -362,7 +362,7 @@ function useModelData(spaceId: string) {
 
           setModels(convertedModels);
 
-          const initialStates: Record<number, boolean> = {};
+          const initialStates: Record<string, boolean> = {};
           convertedModels.forEach((model: SpaceModel) => {
             initialStates[model.id] = model.status === 1; // 根据status设置启用状态
           });
@@ -427,15 +427,15 @@ function ModelListContent({
   providerFilter,
 }: {
   filteredModels: SpaceModel[];
-  modelStates: Record<number, boolean>;
-  favoriteModels: Set<number>;
-  hoveredModelId: number | null;
+  modelStates: Record<string, boolean>;
+  favoriteModels: Set<string>;
+  hoveredModelId: string | null;
   spaceId: string;
-  setHoveredModelId: (id: number | null) => void;
-  handleToggleFavorite: (id: number) => void;
-  handleToggleEnabled: (id: number, enabled: boolean) => Promise<void>;
-  handleDelete: (id: number) => Promise<void>;
-  handleEdit: (modelId: number) => void;
+  setHoveredModelId: (id: string | null) => void;
+  handleToggleFavorite: (id: string) => void;
+  handleToggleEnabled: (id: string, enabled: boolean) => Promise<void>;
+  handleDelete: (id: string) => Promise<void>;
+  handleEdit: (modelId: string) => void;
   searchValue: string;
   typeFilter: string;
   providerFilter: string;
@@ -478,13 +478,13 @@ export default function SpaceModelConfigPage() {
 
   const { models, loading, error, modelStates, setModelStates } =
     useModelData(spaceId);
-  const [hoveredModelId, setHoveredModelId] = useState<number | null>(null);
-  const [favoriteModels, setFavoriteModels] = useState<Set<number>>(new Set());
+  const [hoveredModelId, setHoveredModelId] = useState<string | null>(null);
+  const [favoriteModels, setFavoriteModels] = useState<Set<string>>(new Set());
   const [typeFilter, setTypeFilter] = useState('all');
   const [providerFilter, setProviderFilter] = useState('all');
   const [searchValue, setSearchValue] = useState('');
 
-  const handleToggleFavorite = (modelId: number) => {
+  const handleToggleFavorite = (modelId: string) => {
     setFavoriteModels(prev => {
       const newSet = new Set(prev);
       if (newSet.has(modelId)) {
@@ -496,7 +496,7 @@ export default function SpaceModelConfigPage() {
     });
   };
 
-  const handleToggleEnabled = async (modelId: number, enabled: boolean) => {
+  const handleToggleEnabled = async (modelId: string, enabled: boolean) => {
     const api = enabled
       ? '/api/model/space/enable'
       : '/api/model/space/disable';
@@ -506,7 +506,7 @@ export default function SpaceModelConfigPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           space_id: spaceId,
-          model_id: String(modelId),
+          model_id: modelId, // 已经是字符串类型
         }),
       });
 
@@ -529,7 +529,7 @@ export default function SpaceModelConfigPage() {
     }
   };
 
-  const handleDelete = async (modelId: number) => {
+  const handleDelete = async (modelId: string) => {
     if (!confirm('确定要从此空间移除该模型吗？')) {
       return;
     }
@@ -540,7 +540,7 @@ export default function SpaceModelConfigPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           space_id: spaceId,
-          model_id: String(modelId),
+          model_id: modelId, // 已经是字符串类型
         }),
       });
 
@@ -561,7 +561,7 @@ export default function SpaceModelConfigPage() {
     }
   };
 
-  const handleEdit = (modelId: number) => {
+  const handleEdit = (modelId: string) => {
     navigate(`/space/${spaceId}/models/edit/${modelId}`);
   };
 

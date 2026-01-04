@@ -64,6 +64,7 @@ function useAddModelLogic(spaceId: string) {
   const [templates, setTemplates] = useState<ModelTemplate[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
   const [customModelName, setCustomModelName] = useState<string>('');
+  const [modelIdentifier, setModelIdentifier] = useState<string>(''); // 模型标识（API调用时使用）
 
   // 判断是否为本地模型厂商
   const isLocalProvider = LOCAL_PROVIDERS.includes(
@@ -152,6 +153,11 @@ function useAddModelLogic(spaceId: string) {
     loadTemplates();
   }, []);
 
+  // 判断是否需要显示 enable_thinking 选项（Qwen 和支持思考的协议）
+  const showEnableThinking = ['qwen', 'deepseek', 'ark'].includes(
+    selectedProvider.toLowerCase(),
+  );
+
   return {
     isSaving,
     setIsSaving,
@@ -169,9 +175,12 @@ function useAddModelLogic(spaceId: string) {
     setIsLoadingTemplates,
     customModelName,
     setCustomModelName,
+    modelIdentifier,
+    setModelIdentifier,
     isLocalProvider,
     providers,
     availableModels,
+    showEnableThinking,
   };
 }
 
@@ -180,10 +189,13 @@ interface ModelConfigFormProps {
   isLoadingTemplates: boolean;
   providers: Array<{ value: string; label: string }>;
   selectedModelType: string;
+  selectedProvider: string;
   availableModels: Array<{ value: string; label: string; templateId: string }>;
   modelConfig: string;
+  modelIdentifier: string;
   isSaving: boolean;
   spaceId: string;
+  showEnableThinking: boolean;
   onSubmit: (values: Record<string, unknown>) => Promise<void>;
   onFormChange: (values: Record<string, unknown>) => void;
   onProviderChange: (
@@ -193,6 +205,7 @@ interface ModelConfigFormProps {
   onBaseModelChange: (
     value: string | number | unknown[] | Record<string, unknown>,
   ) => Promise<void>;
+  onModelIdentifierChange: (value: string) => void;
   onFormApiReady: (api: unknown) => void;
   onModelConfigChange: (config: string) => void;
   navigate: (path: string) => void;
@@ -203,15 +216,19 @@ function ModelConfigForm({
   isLoadingTemplates,
   providers,
   selectedModelType,
+  selectedProvider,
   availableModels,
   modelConfig,
+  modelIdentifier,
   isSaving,
   spaceId,
+  showEnableThinking,
   onSubmit,
   onFormChange,
   onProviderChange,
   onModelTypeChange,
   onBaseModelChange,
+  onModelIdentifierChange,
   onFormApiReady,
   onModelConfigChange,
   navigate,
@@ -269,20 +286,25 @@ function ModelConfigForm({
         </Form.RadioGroup>
 
         {selectedModelType === 'text_generation' && (
-          <div className="mb-4">
+          <div className="mb-4 flex gap-6">
             <Form.Checkbox field="functionCall">
               启用Function Call功能
             </Form.Checkbox>
+            {showEnableThinking && (
+              <Form.Checkbox field="enableThinking">
+                启用思考模式（Thinking）
+              </Form.Checkbox>
+            )}
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-4">
           <Form.Select
-            label="基础模型"
+            label="基础模型模板"
             field="baseModel"
-            rules={[{ required: true, message: '请选择基础模型' }]}
+            rules={[{ required: true, message: '请选择基础模型模板' }]}
             placeholder={
-              availableModels.length === 0 ? '无匹配的模型' : '请选择基础模型'
+              availableModels.length === 0 ? '无匹配的模型' : '请选择基础模型模板'
             }
             disabled={availableModels.length === 0}
             onChange={onBaseModelChange}
@@ -298,6 +320,22 @@ function ModelConfigForm({
             ))}
           </Form.Select>
 
+          <Form.Slot label="模型标识">
+            <div className="flex flex-col gap-1">
+              <input
+                className="w-full px-3 py-2 border rounded-md text-sm"
+                value={modelIdentifier}
+                onChange={(e) => onModelIdentifierChange(e.target.value)}
+                placeholder="API调用时使用的模型名称，如：qwen3-32b"
+              />
+              <span className="text-xs text-gray-500">
+                默认与模板一致，可修改为实际要调用的模型
+              </span>
+            </div>
+          </Form.Slot>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mt-4">
           <Form.Input
             label="最大token长度"
             field="maxTokens"
@@ -384,6 +422,7 @@ export default function AddModelPage(_props: AddModelPageProps) {
   const {
     isSaving,
     setIsSaving,
+    selectedProvider,
     setSelectedProvider,
     selectedModelType,
     setSelectedModelType,
@@ -395,9 +434,12 @@ export default function AddModelPage(_props: AddModelPageProps) {
     isLoadingTemplates,
     customModelName,
     setCustomModelName,
+    modelIdentifier,
+    setModelIdentifier,
     isLocalProvider,
     providers,
     availableModels,
+    showEnableThinking,
   } = useAddModelLogic(spaceId);
 
   // 当选择厂商时，更新选择的厂商
@@ -433,6 +475,9 @@ export default function AddModelPage(_props: AddModelPageProps) {
       return;
     }
 
+    // 同步设置模型标识（用户可以后续修改）
+    setModelIdentifier(modelValue);
+
     // 如果是本地模型的自定义选项，寻找对应的本地模型模板
     if (isLocalProvider && modelValue === customModelName) {
       // 查找本地模型的通用模板（根据模型类型）
@@ -466,6 +511,7 @@ export default function AddModelPage(_props: AddModelPageProps) {
               name: currentValues.name || modelValue,
               meta: {
                 ...template.meta,
+                name: modelValue, // 同步更新 meta.name
                 conn_config: {
                   ...template.meta.conn_config,
                   api_key: currentValues.apiKey || '',
@@ -516,6 +562,7 @@ export default function AddModelPage(_props: AddModelPageProps) {
             name: currentValues.name || template.name,
             meta: {
               ...template.meta,
+              name: modelValue, // 同步更新 meta.name 为选择的模型
               conn_config: {
                 ...template.meta.conn_config,
                 api_key: currentValues.apiKey || '',
@@ -531,8 +578,50 @@ export default function AddModelPage(_props: AddModelPageProps) {
     }
   };
 
+  // 当模型标识变化时，更新JSON配置
+  const handleModelIdentifierChange = (value: string) => {
+    setModelIdentifier(value);
+
+    // 同步更新 JSON 配置中的 model 字段和 meta.name 字段
+    if (modelConfig) {
+      try {
+        const currentConfig = JSON.parse(modelConfig);
+        const updatedConfig = {
+          ...currentConfig,
+          meta: {
+            ...currentConfig.meta,
+            name: value, // 同步更新 meta.name
+            conn_config: {
+              ...currentConfig.meta?.conn_config,
+              model: value,
+            },
+          },
+        };
+        setModelConfig(JSON.stringify(updatedConfig, null, JSON_INDENT));
+      } catch {
+        // 更新失败，静默处理
+      }
+    }
+  };
+
   // 根据表单内容生成JSON配置
   const generateJsonConfig = (values: Record<string, unknown>) => {
+    // 使用 modelIdentifier 如果有的话，否则使用 baseModel
+    const actualModel = modelIdentifier || values.baseModel;
+
+    const connConfig: Record<string, unknown> = {
+      base_url: values.baseUrl,
+      api_key: values.apiKey,
+      model: actualModel,
+      temperature: DEFAULT_TEMPERATURE,
+      max_tokens: DEFAULT_OUTPUT_TOKENS,
+    };
+
+    // 如果启用了思考模式，添加 enable_thinking 字段
+    if (values.enableThinking) {
+      connConfig.enable_thinking = true;
+    }
+
     const config = {
       id: Date.now(),
       name: values.name,
@@ -557,12 +646,14 @@ export default function AddModelPage(_props: AddModelPageProps) {
         },
       ],
       meta: {
+        name: actualModel, // 添加 meta.name
         protocol: values.provider,
         capability: {
           function_call:
             values.modelType === 'text_generation'
               ? values.functionCall || false
               : false,
+          reasoning: values.enableThinking || false, // 添加 reasoning
           input_modal: ['text'],
           output_modal:
             values.modelType === 'embedding' ? ['embedding'] : ['text'],
@@ -571,13 +662,7 @@ export default function AddModelPage(_props: AddModelPageProps) {
             values.modelType === 'text_generation' ? DEFAULT_OUTPUT_TOKENS : 0,
           max_tokens: values.maxTokens || DEFAULT_MAX_TOKENS,
         },
-        conn_config: {
-          base_url: values.baseUrl,
-          api_key: values.apiKey,
-          model: values.baseModel,
-          temperature: DEFAULT_TEMPERATURE,
-          max_tokens: DEFAULT_OUTPUT_TOKENS,
-        },
+        conn_config: connConfig,
       },
     };
 
@@ -607,28 +692,44 @@ export default function AddModelPage(_props: AddModelPageProps) {
       values.baseUrl &&
       values.apiKey
     ) {
+      // 使用 modelIdentifier 如果有的话，否则使用 baseModel
+      const actualModel = modelIdentifier || values.baseModel;
+
       // 如果已经有模板配置，则基于模板更新；否则生成新配置
       if (modelConfig) {
         try {
           const currentConfig = JSON.parse(modelConfig);
+
+          // 构建 conn_config，支持 enable_thinking
+          const connConfig = {
+            ...currentConfig.meta?.conn_config,
+            base_url: values.baseUrl,
+            api_key: values.apiKey,
+            model: actualModel,
+          };
+
+          // 处理 enable_thinking
+          if (values.enableThinking) {
+            connConfig.enable_thinking = true;
+          } else {
+            delete connConfig.enable_thinking;
+          }
+
           const updatedConfig = {
             ...currentConfig,
             name: values.name,
             meta: {
               ...currentConfig.meta,
+              name: actualModel, // 同步更新 meta.name
               capability: {
                 ...currentConfig.meta?.capability,
                 function_call:
                   values.modelType === 'text_generation'
                     ? values.functionCall || false
                     : false,
+                reasoning: values.enableThinking || false, // 同步更新 reasoning
               },
-              conn_config: {
-                ...currentConfig.meta?.conn_config,
-                base_url: values.baseUrl,
-                api_key: values.apiKey,
-                model: values.baseModel,
-              },
+              conn_config: connConfig,
             },
           };
           setModelConfig(JSON.stringify(updatedConfig, null, JSON_INDENT));
@@ -709,15 +810,19 @@ export default function AddModelPage(_props: AddModelPageProps) {
             isLoadingTemplates={isLoadingTemplates}
             providers={providers}
             selectedModelType={selectedModelType}
+            selectedProvider={selectedProvider}
             availableModels={availableModels}
             modelConfig={modelConfig}
+            modelIdentifier={modelIdentifier}
             isSaving={isSaving}
             spaceId={spaceId}
+            showEnableThinking={showEnableThinking}
             onSubmit={handleSubmit}
             onFormChange={handleFormChange}
             onProviderChange={handleProviderChange}
             onModelTypeChange={handleModelTypeChange}
             onBaseModelChange={handleBaseModelChange}
+            onModelIdentifierChange={handleModelIdentifierChange}
             onFormApiReady={setFormApi}
             onModelConfigChange={setModelConfig}
             navigate={navigate}

@@ -177,7 +177,7 @@ export const searchModels = async (
 
 // ModelDetailOutput 类型定义 - 兼容旧的API
 export interface ModelDetailOutput {
-  id: number;
+  id: string; // 使用字符串类型避免大整数精度丢失
   name: string;
   description: string;
   context_length: number;
@@ -197,9 +197,9 @@ export const listModels = async (
   try {
     const models = await getSpaceModelList();
     // 转换数据格式以兼容旧的API
-    const RANDOM_ID_MAX = 100000;
+    // 注意：保持ID为字符串类型，避免大整数精度丢失
     return models.map(model => ({
-      id: parseInt(model.id) || Math.floor(Math.random() * RANDOM_ID_MAX), // 转换string id为number，如果失败则生成随机ID
+      id: model.id, // 保持字符串ID，不使用parseInt以避免精度丢失
       name: model.name,
       description: model.description,
       context_length: model.context_length,
