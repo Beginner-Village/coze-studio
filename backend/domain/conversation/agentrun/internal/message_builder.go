@@ -390,23 +390,40 @@ func handlerWfInterruptEvent(_ context.Context, interruptEventData *crossworkflo
 }
 
 func historyPairs(historyMsg []*message.Message) []*message.Message {
+	// Build a map of FunctionCall and ToolResponse messages by RunID
+	fcMsgByRun := make(map[int64][]*message.Message)    // FunctionCall messages
+	trMsgByRun := make(map[int64][]*message.Message)    // ToolResponse messages
 
-	fcMsgPairs := make(map[int64][]*message.Message)
 	for _, one := range historyMsg {
-		if one.MessageType != message.MessageTypeFunctionCall && one.MessageType != message.MessageTypeToolResponse {
-			continue
+		if one.MessageType == message.MessageTypeFunctionCall {
+			fcMsgByRun[one.RunID] = append(fcMsgByRun[one.RunID], one)
+		} else if one.MessageType == message.MessageTypeToolResponse {
+			trMsgByRun[one.RunID] = append(trMsgByRun[one.RunID], one)
 		}
-		if _, ok := fcMsgPairs[one.RunID]; !ok {
-			fcMsgPairs[one.RunID] = []*message.Message{one}
-		} else {
-			fcMsgPairs[one.RunID] = append(fcMsgPairs[one.RunID], one)
+	}
+
+	// Determine which RunIDs have properly paired FunctionCall and ToolResponse
+	// A run is considered paired if it has at least one ToolResponse for its FunctionCalls
+	pairedRuns := make(map[int64]bool)
+	for runID, fcMsgs := range fcMsgByRun {
+		trMsgs := trMsgByRun[runID]
+		// Consider paired if we have at least as many ToolResponses as FunctionCalls
+		// or if both counts are greater than 0 (at least some pairing exists)
+		if len(trMsgs) >= len(fcMsgs) && len(fcMsgs) > 0 {
+			pairedRuns[runID] = true
 		}
 	}
 
 	var historyAfterPairs []*message.Message
 	for _, value := range historyMsg {
 		if value.MessageType == message.MessageTypeFunctionCall {
-			if len(fcMsgPairs[value.RunID])%2 == 0 {
+			// Only include FunctionCall if its run has proper pairing
+			if pairedRuns[value.RunID] {
+				historyAfterPairs = append(historyAfterPairs, value)
+			}
+		} else if value.MessageType == message.MessageTypeToolResponse {
+			// Only include ToolResponse if its run has proper pairing
+			if pairedRuns[value.RunID] {
 				historyAfterPairs = append(historyAfterPairs, value)
 			}
 		} else {
@@ -414,7 +431,6 @@ func historyPairs(historyMsg []*message.Message) []*message.Message {
 		}
 	}
 	return historyAfterPairs
-
 }
 
 func transMessageToSchemaMessage(ctx context.Context, msgs []*message.Message, imagexClient imagex.ImageX) []*schema.Message {
@@ -438,7 +454,42 @@ func transMessageToSchemaMessage(ctx context.Context, msgs []*message.Message, i
 		schemaMessage = append(schemaMessage, parseMessageURI(ctx, sm, imagexClient))
 	}
 
+	// Filter out unpaired ToolCalls to prevent Qwen model errors
+	schemaMessage = filterUnpairedToolCalls(schemaMessage)
+
 	return schemaMessage
+}
+
+// filterUnpairedToolCalls removes ToolCalls from messages that don't have corresponding ToolResponses.
+// This prevents errors like "An assistant message with tool_calls must be followed by tool messages".
+func filterUnpairedToolCalls(msgs []*schema.Message) []*schema.Message {
+	// Collect all ToolCallIDs that have responses
+	respondedToolCallIDs := make(map[string]bool)
+	for _, msg := range msgs {
+		if msg.Role == schema.Tool && msg.ToolCallID != "" {
+			respondedToolCallIDs[msg.ToolCallID] = true
+		}
+	}
+
+	// Process messages: clear ToolCalls that don't have responses
+	for _, msg := range msgs {
+		if msg.Role == schema.Assistant && len(msg.ToolCalls) > 0 {
+			// Check if all ToolCalls have corresponding responses
+			allPaired := true
+			for _, tc := range msg.ToolCalls {
+				if !respondedToolCallIDs[tc.ID] {
+					allPaired = false
+					break
+				}
+			}
+			// If not all ToolCalls have responses, clear the ToolCalls field
+			if !allPaired {
+				msg.ToolCalls = nil
+			}
+		}
+	}
+
+	return msgs
 }
 
 func parseMessageURI(ctx context.Context, mcMsg *schema.Message, imagexClient imagex.ImageX) *schema.Message {
