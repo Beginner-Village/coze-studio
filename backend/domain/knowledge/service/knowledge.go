@@ -138,7 +138,8 @@ type knowledgeSVC struct {
 }
 
 // getManagersForSpace returns SearchStore managers for the given space
-// If managerFactory is configured, it uses space-level embedding configuration
+// If managerFactory is configured, it uses space-level embedding configuration for vector stores
+// and merges with ES manager from legacy managers for full-text search support
 // Otherwise, it falls back to the legacy fixed managers
 func (k *knowledgeSVC) getManagersForSpace(ctx context.Context, spaceID uint64) ([]searchstore.Manager, error) {
 	if k.managerFactory != nil {
@@ -151,6 +152,17 @@ func (k *knowledgeSVC) getManagersForSpace(ctx context.Context, spaceID uint64) 
 			}
 			return nil, err
 		}
+
+		// Merge with ES manager from legacy managers for full-text search support
+		// Factory only returns vector store managers, but we also need ES manager
+		for _, m := range k.searchStoreManagers {
+			if m != nil && m.GetType() == searchstore.TypeTextStore {
+				managers = append(managers, m)
+				logs.CtxDebugf(ctx, "[getManagersForSpace] added ES manager for full-text search support")
+				break
+			}
+		}
+
 		return managers, nil
 	}
 	// No factory configured, use legacy managers
@@ -1059,13 +1071,23 @@ func (k *knowledgeSVC) CreateDocumentReview(ctx context.Context, request *Create
 	}
 	for i := range reviews {
 		review := reviews[i]
+		// Convert file extension for QA format: csv -> qa_csv, json -> qa_json
+		fileExt := review.DocumentType
+		if kn.FormatType == int32(knowledgeModel.DocumentTypeQA) {
+			switch fileExt {
+			case "csv":
+				fileExt = "qa_csv"
+			case "json":
+				fileExt = "qa_json"
+			}
+		}
 		doc := &entity.Document{
 			KnowledgeID:      request.KnowledgeID,
 			ParsingStrategy:  request.ParsingStrategy,
 			ChunkingStrategy: request.ChunkStrategy,
 			Type:             knowledgeModel.DocumentTypeText,
 			URI:              review.Uri,
-			FileExtension:    parser.FileExtension(review.DocumentType),
+			FileExtension:    parser.FileExtension(fileExt),
 			Info: knowledgeModel.Info{
 				Name:      review.DocumentName,
 				CreatorID: *uid,
@@ -1344,6 +1366,7 @@ func (k *knowledgeSVC) fromModelSlice(ctx context.Context, slice *model.Knowledg
 		CharCount:   int64(utf8.RuneCountInString(slice.Content)),
 		Hit:         slice.Hit,
 		SliceStatus: knowledgeModel.SliceStatus(slice.Status),
+		Answer:      slice.Answer, // QA format: populate answer from database
 	}
 	if slice.Content != "" {
 		processedContent := k.formatSliceContent(ctx, slice.Content)

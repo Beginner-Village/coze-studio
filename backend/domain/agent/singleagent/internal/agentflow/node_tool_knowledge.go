@@ -30,6 +30,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_common"
 	crossknowledge "github.com/coze-dev/coze-studio/backend/crossdomain/contract/knowledge"
 	knowledgeEntity "github.com/coze-dev/coze-studio/backend/domain/knowledge/entity"
+	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
 )
 
 const (
@@ -42,6 +43,7 @@ type knowledgeConfig struct {
 	knowledgeConfig *bot_common.Knowledge
 	Input           *schema.Message
 	GetHistory      func() []*schema.Message
+	modelInfo       *modelmgr.Model // Model info for query rewrite and NL2SQL
 }
 
 func newKnowledgeTool(ctx context.Context, conf *knowledgeConfig) (tool.InvokableTool, error) {
@@ -49,6 +51,7 @@ func newKnowledgeTool(ctx context.Context, conf *knowledgeConfig) (tool.Invokabl
 		knowledgeConfig: conf.knowledgeConfig,
 		Input:           conf.Input,
 		GetHistory:      conf.GetHistory,
+		modelInfo:       conf.modelInfo,
 	}
 
 	customTagsFn := func(name string, t reflect.Type, tag reflect.StructTag,
@@ -92,10 +95,11 @@ type knowledgeTool struct {
 	knowledgeConfig *bot_common.Knowledge
 	Input           *schema.Message
 	GetHistory      func() []*schema.Message
+	modelInfo       *modelmgr.Model // Model info for query rewrite and NL2SQL
 }
 
 func (k *knowledgeTool) Retrieve(ctx context.Context, req *RetrieveRequest) ([]*schema.Document, error) {
-	rr, err := genKnowledgeRequest(ctx, req.KnowledgeIDs, k.knowledgeConfig, k.Input.Content, k.GetHistory())
+	rr, err := genKnowledgeRequest(ctx, req.KnowledgeIDs, k.knowledgeConfig, k.Input.Content, k.GetHistory(), k.modelInfo)
 	if err != nil {
 		return nil, err
 	}

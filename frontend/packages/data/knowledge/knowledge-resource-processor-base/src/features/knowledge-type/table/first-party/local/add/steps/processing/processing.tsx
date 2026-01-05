@@ -23,9 +23,11 @@ import {
 import {
   type ContentProps,
   FooterBtnStatus,
+  UnitType,
 } from '@coze-data/knowledge-resource-processor-core';
 import { KnowledgeE2e } from '@coze-data/e2e';
 import { I18n } from '@coze-arch/i18n';
+import { FormatType } from '@coze-arch/bot-api/knowledge';
 
 import { useCreateDocument } from '@/hooks';
 import {
@@ -59,6 +61,8 @@ export const TableProcessing = <
     () => getDocIdFromProgressList(progressList),
     [progressList],
   );
+  // Determine format type based on UnitType: QA_DOC uses FormatType.QA, others use FormatType.Table
+  const formatType = params.type === UnitType.QA_DOC ? FormatType.QA : FormatType.Table;
   const createDocument = useCreateDocument(useStore);
   useEffect(() => {
     createDocument(
@@ -67,6 +71,7 @@ export const TableProcessing = <
         unitList,
         metaData: meta,
         tableSettings,
+        formatType,
       }),
     );
   }, []);

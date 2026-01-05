@@ -105,6 +105,10 @@ export enum FormatType {
   VolcanoStructured = 4,
   /** 火山非结构化 火山知识库特有 */
   VolcanoUnstructured = 5,
+  /** 火山数据库 */
+  VolcanoDatabase = 6,
+  /** 问答格式 */
+  QA = 7,
 }
 
 export enum SliceStatus {

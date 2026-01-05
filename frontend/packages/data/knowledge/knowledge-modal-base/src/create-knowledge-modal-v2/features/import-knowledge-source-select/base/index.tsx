@@ -20,6 +20,7 @@ import { type ImportKnowledgeSourceSelectModule } from '../module';
 import { TextKnowledgeSourceSelect } from './text-knowledge-source-select';
 import { TableKnowledgeSourceSelect } from './table-knowledge-source-select';
 import { ImageKnowledgeSourceSelect } from './image-knowledge-source-select';
+import { QAKnowledgeSourceSelect } from './qa-knowledge-source-select';
 
 export const ImportKnowledgeSourceSelect: ImportKnowledgeSourceSelectModule =
   props => {
@@ -37,6 +38,11 @@ export const ImportKnowledgeSourceSelect: ImportKnowledgeSourceSelectModule =
     if (formatType === FormatType.Table) {
       return (
         <TableKnowledgeSourceSelect initValue={initValue} onChange={onChange} />
+      );
+    }
+    if (formatType === FormatType.QA) {
+      return (
+        <QAKnowledgeSourceSelect initValue={initValue} onChange={onChange} />
       );
     }
   };

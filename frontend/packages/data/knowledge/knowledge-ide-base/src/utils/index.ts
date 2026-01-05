@@ -78,6 +78,12 @@ export const getUnitType = (doc: DocumentInfo) => {
       return UnitType.TABLE_LARK;
     }
   }
+  // QA format: Question/Answer pairs stored in structured format
+  if (doc.format_type === FormatType.QA) {
+    if (doc.source_type === DocumentSource.Document) {
+      return UnitType.QA_DOC;
+    }
+  }
   return UnitType.TEXT_URL;
 };
 export const DOCUMENT_SOURCE_TYPE_MAP: Record<DocumentSource, string> = {
@@ -117,6 +123,9 @@ export const getFormatTypeFromUnitType = (type: UnitType) => {
       return FormatType.Table;
     case UnitType.IMAGE:
       return FormatType.Image;
+    case UnitType.QA:
+    case UnitType.QA_DOC:
+      return FormatType.QA;
     default:
       return FormatType.Text;
   }
@@ -266,6 +275,12 @@ export const getAddContentMenu = ({
         ];
       }
 
+      break;
+    }
+    case FormatType.QA: {
+      // QA format only supports local file upload (CSV/JSON)
+      // @ts-expect-error -- linter-disable-autofix
+      validOptions = [UnitType.QA_DOC];
       break;
     }
     default:

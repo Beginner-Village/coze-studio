@@ -25,10 +25,19 @@ export interface OptionMessageContent {
   options: Array<Option>;
 }
 
+export interface CardData {
+  templateId?: string;
+  templateName?: string;
+  kvMap?: Record<string, unknown>;
+  dataResponse?: Record<string, unknown>;
+}
+
 export interface ReceivedMessage {
   type: MessageType;
   content_type: ContentType;
   content: string;
   id: string;
   answered?: boolean;
+  /** 卡片数据，当 content_type 为 Card 时使用 */
+  cardData?: CardData;
 }

@@ -1,0 +1,31 @@
+<svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Q letter -->
+  <path fill-rule="evenodd" clip-rule="evenodd"
+    d="M16 8C10.4772 8 6 12.4772 6 18C6 23.5228 10.4772 28 16 28C17.8562 28 19.5963 27.5012 21.0981 26.6285L24.2426 29.7731C24.6332 30.1636 25.2663 30.1636 25.6569 29.7731C26.0474 29.3825 26.0474 28.7494 25.6569 28.3588L22.5123 25.2142C23.4531 23.6757 24 21.8961 24 18C24 12.4772 19.5228 8 16 8ZM8 18C8 13.5817 11.5817 10 16 10C20.4183 10 22 13.5817 22 18C22 22.4183 20.4183 26 16 26C11.5817 26 8 22.4183 8 18Z"
+    fill="url(#paint0_linear_qa)" />
+  <!-- A letter -->
+  <path fill-rule="evenodd" clip-rule="evenodd"
+    d="M36 20L42 40H39.5L38 35H30L28.5 40H26L32 20H36ZM34 23L31 33H37L34 23Z"
+    fill="url(#paint1_linear_qa)" />
+  <!-- Chat bubble decoration -->
+  <path fill-rule="evenodd" clip-rule="evenodd"
+    d="M28 12C28 10.8954 28.8954 10 30 10H40C41.1046 10 42 10.8954 42 12V16C42 17.1046 41.1046 18 40 18H32L29 21V18H30C28.8954 18 28 17.1046 28 16V12Z"
+    fill="url(#paint2_linear_qa)" opacity="0.6" />
+  <defs>
+    <linearGradient id="paint0_linear_qa" x1="16" y1="8" x2="16" y2="30"
+      gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A855F7" />
+      <stop offset="1" stop-color="#7C3AED" />
+    </linearGradient>
+    <linearGradient id="paint1_linear_qa" x1="34" y1="20" x2="34" y2="40"
+      gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A855F7" />
+      <stop offset="1" stop-color="#7C3AED" />
+    </linearGradient>
+    <linearGradient id="paint2_linear_qa" x1="35" y1="10" x2="35" y2="21"
+      gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C084FC" />
+      <stop offset="1" stop-color="#A855F7" />
+    </linearGradient>
+  </defs>
+</svg>

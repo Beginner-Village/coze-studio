@@ -21,5 +21,6 @@ const (
 	TextKnowledgeDefaultIcon  = "default_icon/text_kn_default_icon.png"
 	TableKnowledgeDefaultIcon = "default_icon/table_kn_default_icon.png"
 	ImageKnowledgeDefaultIcon = "default_icon/image_kn_default_icon.png"
+	QAKnowledgeDefaultIcon    = "default_icon/qa_kn_default_icon.png"
 	DatabaseDefaultIcon       = "default_icon/default_database_icon.png"
 )

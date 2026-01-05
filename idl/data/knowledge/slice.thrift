@@ -68,10 +68,11 @@ struct ListSliceResponse {
 
 struct SliceInfo {
     1: i64         slice_id  (agw.js_conv="str", api.js_conv="true") // Sharding ID
-    2: string      content // Sharding content
+    2: string      content // Sharding content (Q for QA format)
     3: SliceStatus status // Sharding state
     4: i64         hit_count(agw.js_conv="str", api.js_conv="true")   // hit count
     5: i64         char_count(agw.js_conv="str", api.js_conv="true")  // character count
+    6: optional string answer // Answer content for QA format knowledge base
     7: i64         sequence(agw.js_conv="str", api.js_conv="true")    // serial number
     8: i64         document_id(agw.js_conv="str", api.js_conv="true") // The document ID to which sharding belongs
     9: string      chunk_info // Meta information related to sharding, extra- > chunk_info field in the transparent slice table (json)

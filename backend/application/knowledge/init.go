@@ -115,34 +115,46 @@ func InitService(c *ServiceComponents) (*KnowledgeApplicationService, error) {
 		root = os.Getenv("PWD")
 	}
 
+	// Query rewriter is optional - if not configured, knowledge retrieval will use original query
 	var rewriter messages2query.MessagesToQuery
-	if rewriterChatModel, _, err := internal.GetBuiltinChatModel(ctx, "M2Q_"); err != nil {
-		return nil, err
-	} else {
+	if rewriterChatModel, configured, err := internal.GetBuiltinChatModel(ctx, "M2Q_"); err != nil {
+		logs.CtxWarnf(ctx, "[InitService] failed to get M2Q chat model: %v, query rewrite will be disabled", err)
+	} else if configured && rewriterChatModel != nil {
 		filePath := filepath.Join(root, "resources/conf/prompt/messages_to_query_template_jinja2.json")
 		rewriterTemplate, err := readJinja2PromptTemplate(filePath)
 		if err != nil {
-			return nil, err
+			logs.CtxWarnf(ctx, "[InitService] failed to read M2Q template: %v, query rewrite will be disabled", err)
+		} else {
+			rewriter, err = builtinM2Q.NewMessagesToQuery(ctx, rewriterChatModel, rewriterTemplate)
+			if err != nil {
+				logs.CtxWarnf(ctx, "[InitService] failed to create M2Q rewriter: %v, query rewrite will be disabled", err)
+			} else {
+				logs.CtxInfof(ctx, "[InitService] query rewriter initialized successfully")
+			}
 		}
-		rewriter, err = builtinM2Q.NewMessagesToQuery(ctx, rewriterChatModel, rewriterTemplate)
-		if err != nil {
-			return nil, err
-		}
+	} else {
+		logs.CtxInfof(ctx, "[InitService] M2Q chat model not configured, query rewrite will be disabled")
 	}
 
+	// NL2SQL is optional - if not configured, table knowledge NL2SQL queries will be disabled
 	var n2s nl2sql.NL2SQL
-	if n2sChatModel, _, err := internal.GetBuiltinChatModel(ctx, "NL2SQL_"); err != nil {
-		return nil, err
-	} else {
+	if n2sChatModel, configured, err := internal.GetBuiltinChatModel(ctx, "NL2SQL_"); err != nil {
+		logs.CtxWarnf(ctx, "[InitService] failed to get NL2SQL chat model: %v, NL2SQL will be disabled", err)
+	} else if configured && n2sChatModel != nil {
 		filePath := filepath.Join(root, "resources/conf/prompt/nl2sql_template_jinja2.json")
 		n2sTemplate, err := readJinja2PromptTemplate(filePath)
 		if err != nil {
-			return nil, err
+			logs.CtxWarnf(ctx, "[InitService] failed to read NL2SQL template: %v, NL2SQL will be disabled", err)
+		} else {
+			n2s, err = builtinNL2SQL.NewNL2SQL(ctx, n2sChatModel, n2sTemplate)
+			if err != nil {
+				logs.CtxWarnf(ctx, "[InitService] failed to create NL2SQL: %v, NL2SQL will be disabled", err)
+			} else {
+				logs.CtxInfof(ctx, "[InitService] NL2SQL initialized successfully")
+			}
 		}
-		n2s, err = builtinNL2SQL.NewNL2SQL(ctx, n2sChatModel, n2sTemplate)
-		if err != nil {
-			return nil, err
-		}
+	} else {
+		logs.CtxInfof(ctx, "[InitService] NL2SQL chat model not configured, NL2SQL will be disabled")
 	}
 
 	knowledgeDomainSVC, knowledgeEventHandler := knowledgeImpl.NewKnowledgeSVC(&knowledgeImpl.KnowledgeSVCConfig{

@@ -25,7 +25,8 @@ export type LibraryType =
   | 'imageflow'
   | 'table'
   | 'text'
-  | 'image';
+  | 'image'
+  | 'qa';
 
 export interface ILibraryItems {
   type: LibraryType;
@@ -55,6 +56,8 @@ export const getReferenceType = (type: LibraryType): PromptReferenceType => {
     case 'image':
       return PromptReferenceType.Knowledge;
     case 'table':
+      return PromptReferenceType.Knowledge;
+    case 'qa':
       return PromptReferenceType.Knowledge;
     default:
       return PromptReferenceType.Plugin;

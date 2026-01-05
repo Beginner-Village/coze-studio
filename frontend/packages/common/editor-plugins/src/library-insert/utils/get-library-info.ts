@@ -56,6 +56,9 @@ const defaultLibraryBlockInfo: Record<
   image: {
     icon: imageIcon,
   },
+  qa: {
+    icon: textIcon, // Use textIcon temporarily for QA type
+  },
 };
 // Get the corresponding information according to the resource type
 export const getLibraryBlockInfoFromTemplate = (props: {

@@ -29,22 +29,26 @@ import (
 	crossknowledge "github.com/coze-dev/coze-studio/backend/crossdomain/contract/knowledge"
 	knowledgeEntity "github.com/coze-dev/coze-studio/backend/domain/knowledge/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/knowledge/service"
+	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
 )
 
 type retrieverConfig struct {
 	knowledgeConfig *bot_common.Knowledge
+	modelInfo       *modelmgr.Model // Model info for query rewrite and NL2SQL
 }
 
 func newKnowledgeRetriever(_ context.Context, conf *retrieverConfig) (*knowledgeRetriever, error) {
 	return &knowledgeRetriever{
 		knowledgeConfig: conf.knowledgeConfig,
+		modelInfo:       conf.modelInfo,
 	}, nil
 }
 
 type knowledgeRetriever struct {
 	knowledgeConfig *bot_common.Knowledge
+	modelInfo       *modelmgr.Model // Model info for query rewrite and NL2SQL
 }
 
 func (r *knowledgeRetriever) Retrieve(ctx context.Context, req *AgentRequest) ([]*schema.Document, error) {
@@ -62,7 +66,7 @@ func (r *knowledgeRetriever) Retrieve(ctx context.Context, req *AgentRequest) ([
 	}
 
 	kr, err := genKnowledgeRequest(ctx, knowledgeIDs, r.knowledgeConfig,
-		req.Input.Content, req.History)
+		req.Input.Content, req.History, r.modelInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +96,7 @@ func (r *knowledgeRetriever) PackRetrieveResultInfo(ctx context.Context, docs []
 }
 
 func genKnowledgeRequest(_ context.Context, ids []int64, conf *bot_common.Knowledge,
-	query string, history []*schema.Message,
+	query string, history []*schema.Message, modelInfo *modelmgr.Model,
 ) (*service.RetrieveRequest, error) {
 	rr := &service.RetrieveRequest{
 		Query:        query,
@@ -129,6 +133,13 @@ func genKnowledgeRequest(_ context.Context, ids []int64, conf *bot_common.Knowle
 			EnableRerank:       conf.RecallStrategy != nil && conf.RecallStrategy.UseRerank != nil && *conf.RecallStrategy.UseRerank,
 			EnableNL2SQL:       conf.RecallStrategy != nil && conf.RecallStrategy.UseNl2sql != nil && *conf.RecallStrategy.UseNl2sql,
 		},
+	}
+
+	// Use the agent's model for query rewrite and NL2SQL if available
+	if modelInfo != nil {
+		protocol := modelInfo.Meta.Protocol
+		rr.ChatModelProtocol = &protocol
+		rr.ChatModelConfig = modelInfo.Meta.ConnConfig
 	}
 
 	return rr, nil

@@ -209,6 +209,7 @@ const useKnowledgeFilter = ({
     FilterKnowledgeType.TEXT,
     FilterKnowledgeType.TABLE,
     FilterKnowledgeType.IMAGE,
+    FilterKnowledgeType.QA,
   ],
   projectID,
   beforeCreate,
@@ -258,6 +259,7 @@ const useKnowledgeFilter = ({
                     [FilterKnowledgeType.TABLE]: FormatType.Table,
                     [FilterKnowledgeType.TEXT]: FormatType.Text,
                     [FilterKnowledgeType.IMAGE]: FormatType.Image,
+                    [FilterKnowledgeType.QA]: FormatType.QA,
                   }[currentKnowledgeType],
             projectID,
           },
@@ -523,6 +525,22 @@ const useKnowledgeFilter = ({
           }
         >
           {I18n.t('knowledge_photo_025')}
+        </div>
+      );
+    }
+    if (type === FilterKnowledgeType.QA) {
+      return (
+        <div
+          data-testid="bot.knowledge.select-list-modal.qa-tab"
+          key={FilterKnowledgeType.QA}
+          onClick={() => setCurrentKnowledgeType(FilterKnowledgeType.QA)}
+          className={
+            currentKnowledgeType === FilterKnowledgeType.QA
+              ? styles['file-type-tab-item-active']
+              : styles['file-type-tab-item']
+          }
+        >
+          {I18n.t('create-knowledge-qa-type')}
         </div>
       );
     }

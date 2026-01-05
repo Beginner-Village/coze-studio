@@ -46,6 +46,9 @@ export const getResegmentType = (
     case FormatType.Table: {
       return 'table';
     }
+    case FormatType.QA: {
+      return 'qa';
+    }
     default:
       return 'text';
   }
@@ -132,6 +135,11 @@ export const getBasicConfig = () => ({
     // @ts-expect-error -- no translation yet TODO: hzf
     name: I18n.t('公众号'),
     icon: <IconCozWechatFill className="w-4 h-4 [&>path]:fill-current" />,
+  },
+  [UnitType.QA_DOC]: {
+    unitType: UnitType.QA_DOC,
+    name: I18n.t('knowledge_qa_local_title'),
+    icon: <IconCozDocument className="w-4 h-4 [&>path]:fill-current" />,
   },
 });
 

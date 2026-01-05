@@ -29,6 +29,10 @@ const (
 
 	MetaDataKeyCreatorID       = "creator_id"       // val: int64
 	MetaDataKeyExternalStorage = "external_storage" // val: map[string]any
+
+	// QA format support: answer field for QA knowledge base
+	// When Q is matched during retrieval, A is returned
+	MetaDataKeyAnswer = "qa_answer" // val: string
 )
 
 func GetDocumentColumns(doc *schema.Document) ([]*Column, error) {
@@ -122,5 +126,24 @@ func GetDocumentExternalStorage(doc *schema.Document) (map[string]any, error) {
 
 func WithDocumentExternalStorage(doc *schema.Document, externalStorage map[string]any) *schema.Document {
 	doc.MetaData[MetaDataKeyExternalStorage] = externalStorage
+	return doc
+}
+
+// GetDocumentAnswer returns the answer content for QA format documents
+func GetDocumentAnswer(doc *schema.Document) (string, bool) {
+	if doc == nil || doc.MetaData == nil {
+		return "", false
+	}
+
+	answer, ok := doc.MetaData[MetaDataKeyAnswer].(string)
+	return answer, ok
+}
+
+// WithDocumentAnswer sets the answer content for QA format documents
+func WithDocumentAnswer(doc *schema.Document, answer string) *schema.Document {
+	if doc.MetaData == nil {
+		doc.MetaData = make(map[string]any)
+	}
+	doc.MetaData[MetaDataKeyAnswer] = answer
 	return doc
 }

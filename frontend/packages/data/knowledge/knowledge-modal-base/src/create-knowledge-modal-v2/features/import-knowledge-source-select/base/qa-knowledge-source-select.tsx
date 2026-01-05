@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-export { TableCustomModule } from './table-custom';
-export { TableLocalModule } from './table-local';
-export { TextCustomModule } from './text-custom';
-export { TextLocalModule } from './text-local';
-export { ImageLocalModule } from './image-local';
-export { QALocalModule } from './qa-local';
-export type {
-  ImportKnowledgeMenuSourceModuleProps,
-  ImportKnowledgeMenuSourceModule,
-} from './module';
-export {
-  createImportKnowledgeMenuSourceFeatureRegistry,
-  type ImportKnowledgeMenuSourceFeatureType,
-  type ImportKnowledgeMenuSourceRegistry,
-} from './registry';
+import { type ImportKnowledgeSourceSelectModuleProps } from '../module';
+import { QALocal } from '../../import-knowledge-source/qa-local';
+import { SourceSelect } from '../../../components/source-select';
+
+export const QAKnowledgeSourceSelect = (
+  props: Omit<ImportKnowledgeSourceSelectModuleProps, 'formatType'>,
+) => {
+  const { initValue, onChange } = props;
+  return (
+    <SourceSelect
+      value={initValue}
+      onChange={e => {
+        onChange(e.target.value);
+      }}
+    >
+      <QALocal />
+    </SourceSelect>
+  );
+};

@@ -6,6 +6,7 @@ enum FormatType {
     Table = 1  // table
     Image = 2  // image
     Database = 3 // database
+    QA = 7  // QA format (Question-Answer pairs)
 }
 
 struct ChunkStrategy {

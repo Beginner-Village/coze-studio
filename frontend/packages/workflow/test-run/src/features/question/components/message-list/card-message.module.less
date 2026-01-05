@@ -1,0 +1,66 @@
+.card-message {
+  width: 100%;
+  min-width: 300px;
+  max-width: 375px;
+}
+
+.card-iframe-container {
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: var(--coz-mg-primary);
+  border: 1px solid var(--coz-stroke-secondary);
+}
+
+.card-iframe-container iframe {
+  display: block;
+  border: none;
+}
+
+.card-error {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background-color: var(--coz-bg-error-dim);
+  border: 1px solid var(--coz-stroke-error);
+}
+
+.card-error-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--coz-fg-error);
+  font-weight: 500;
+}
+
+.card-error-icon {
+  font-size: 16px;
+}
+
+.card-error-title {
+  font-size: 14px;
+}
+
+.card-error-content {
+  font-size: 12px;
+  color: var(--coz-fg-secondary);
+  word-break: break-all;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.card-error-code {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: var(--coz-mg-secondary);
+  font-family: monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.card-loading {
+  padding: 24px;
+  text-align: center;
+  color: var(--coz-fg-tertiary);
+}

@@ -90,6 +90,7 @@ const useAddKnowledgeLibrary = () => {
       text: FormatType.Text,
       table: FormatType.Table,
       image: FormatType.Image,
+      qa: FormatType.QA,
     };
     setDataSetList([
       ...dataSetList,
@@ -129,7 +130,7 @@ export const useAddLibrary = () => {
       addImageFlowLibrary(library);
       return;
     }
-    if (['text', 'table', 'image'].includes(library.type)) {
+    if (['text', 'table', 'image', 'qa'].includes(library.type)) {
       addKnowledgeLibrary(library);
       return;
     }

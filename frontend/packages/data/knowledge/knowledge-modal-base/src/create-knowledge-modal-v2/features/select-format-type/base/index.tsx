@@ -31,6 +31,8 @@ import { ReactComponent as TextKnowledgeLogo } from '../../../../assets/text-kno
 import { ReactComponent as TableKnowledgeLogo } from '../../../../assets/table-knowledge.svg';
 // eslint-disable-next-line @coze-arch/no-deep-relative-import
 import { ReactComponent as ImageKnowledgeLogo } from '../../../../assets/image-knowledge.svg';
+// eslint-disable-next-line @coze-arch/no-deep-relative-import
+import { ReactComponent as QAKnowledgeLogo } from '../../../../assets/qa-knowledge.svg';
 
 import styles from './index.module.less';
 
@@ -80,6 +82,19 @@ const SelectFormatTypeComponent: React.FC<
           <ImageKnowledgeLogo />
         </div>
         <div>{I18n.t('knowledge_photo_001')}</div>
+      </Radio>
+      <Radio
+        value={FormatType.QA}
+        key={FormatType.QA}
+        data-testid={KnowledgeE2e.CreateKnowledgeModalQARadioGroup}
+      >
+        <div className="radio-logo">
+          <QAKnowledgeLogo />
+        </div>
+        <div>{I18n.t('create-knowledge-qa-type')}</div>
+        <Tooltip content={I18n.t('knowledge_qa_tooltip')}>
+          <IconCozInfoCircle className={'info-icon'} />
+        </Tooltip>
       </Radio>
     </RadioGroup>
   );

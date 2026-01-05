@@ -69,6 +69,10 @@ func (m *manager) GetParser(config *parser.Config) (parser.Parser, error) {
 		pFn = ParseJSONMaps(config)
 	case parser.FileExtensionJPG, parser.FileExtensionJPEG, parser.FileExtensionPNG:
 		pFn = ParseImage(config, m.model)
+	case parser.FileExtensionQACSV:
+		pFn = ParseQACSV(config)
+	case parser.FileExtensionQAJSON:
+		pFn = ParseQAJSON(config)
 	default:
 		return nil, fmt.Errorf("[Parse] document type not support, type=%s", config.FileExtension)
 	}

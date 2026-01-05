@@ -62,6 +62,7 @@ const (
 	DocumentTypeText    DocumentType = 0 // Text
 	DocumentTypeTable   DocumentType = 1 // table
 	DocumentTypeImage   DocumentType = 2 // image
+	DocumentTypeQA      DocumentType = 7 // QA format (Question-Answer pairs)
 	DocumentTypeUnknown DocumentType = 9 // unknown
 )
 
@@ -159,6 +160,7 @@ type Slice struct {
 	DocumentID   int64
 	DocumentName string
 	RawContent   []*SliceContent
+	Answer       string      // Answer content for QA format (returned when question matches)
 	SliceStatus  SliceStatus
 	ByteCount    int64 // Sliced bytes
 	CharCount    int64 // number of sliced characters
@@ -168,6 +170,19 @@ type Slice struct {
 }
 
 func (s *Slice) GetSliceContent() string {
+	// For QA format: return Q + A combined content
+	// RawContent stores Question, Answer field stores Answer
+	if s.Answer != "" {
+		question := ""
+		if len(s.RawContent) > 0 && s.RawContent[0].Type == SliceContentTypeText && s.RawContent[0].Text != nil {
+			question = *s.RawContent[0].Text
+		}
+		if question != "" {
+			return "Q: " + question + "\nA: " + s.Answer
+		}
+		return "A: " + s.Answer
+	}
+
 	if len(s.RawContent) == 0 {
 		return ""
 	}

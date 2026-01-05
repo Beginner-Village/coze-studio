@@ -21,6 +21,7 @@ import { type BaseKnowledgeIDEProps } from './types';
 import { BaseKnowledgeTextIDE } from './text-ide';
 import { BaseKnowledgeTableIDE } from './table-ide';
 import { BaseKnowledgeImgIDE } from './img-ide';
+import { BaseKnowledgeQAIDE } from './qa-ide';
 
 export type { BaseKnowledgeIDEProps };
 
@@ -34,6 +35,10 @@ export const BaseKnowledgeIDE = (props: BaseKnowledgeIDEProps) => {
   }
   if (format_type === FormatType.Image) {
     return <BaseKnowledgeImgIDE {...props} />;
+  }
+  // QA format: uses QA-specific IDE with QA_DOC unit type in menu
+  if (format_type === FormatType.QA) {
+    return <BaseKnowledgeQAIDE {...props} />;
   }
   return null;
 };

@@ -348,6 +348,7 @@ export function getCreateDocumentParams({
   tableSettings,
   sourceType,
   updateRule,
+  formatType,
 }: {
   isAppend: boolean;
   unitList: UnitItem[];
@@ -355,6 +356,7 @@ export function getCreateDocumentParams({
   tableSettings: TableSettings;
   sourceType?: DocumentSource;
   updateRule?: UpdateRule;
+  formatType?: FormatType;
 }) {
   const documentSource = sourceType ?? DocumentSource.Document;
   const getSourceFileId = (unit: UnitItem) =>
@@ -381,7 +383,7 @@ export function getCreateDocumentParams({
 
   return {
     source_type: documentSource,
-    format_type: FormatType.Table,
+    format_type: formatType ?? FormatType.Table,
     document_bases: unitList.map(unit => ({
       name: '',
       source_info: {

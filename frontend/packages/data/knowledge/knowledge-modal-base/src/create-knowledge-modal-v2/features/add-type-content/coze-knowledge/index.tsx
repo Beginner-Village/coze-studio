@@ -95,6 +95,8 @@ export const CozeKnowledgeAddTypeContent = (params: AddTypeContentProps) => {
       setUnitType(UnitType.TABLE_DOC);
     } else if (currentFormatType === FormatType.Image) {
       setUnitType(UnitType.IMAGE_FILE);
+    } else if (currentFormatType === FormatType.QA) {
+      setUnitType(UnitType.QA_DOC);
     }
   }, [currentFormatType]);
 
@@ -103,7 +105,7 @@ export const CozeKnowledgeAddTypeContent = (params: AddTypeContentProps) => {
       return;
     }
     onImportKnowledgeTypeChange?.(unitType);
-  }, [unitType]);
+  }, [unitType, onImportKnowledgeTypeChange]);
 
   return (
     <div data-testid={KnowledgeE2e.CreateKnowledgeModal}>

@@ -36,10 +36,10 @@
     &-collapsed {
       overflow: hidden;
       display: -webkit-box;
+      -webkit-box-orient: vertical;
 
       text-overflow: ellipsis;
 
-      -webkit-box-orient: vertical;
       -webkit-line-clamp: 10;
     }
 
@@ -66,6 +66,29 @@
       .semi-tag-content {
         max-width: 120px;
       }
+    }
+  }
+
+  &-answer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #E5E5E5;
+
+    &-label {
+      margin-bottom: 6px;
+
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 16px;
+      color: #4D53E8;
+    }
+
+    &-content {
+      font-size: 13px;
+      line-height: 20px;
+      color: #1D1C23CC;
+      word-break: break-word;
+      white-space: pre-wrap;
     }
   }
 }

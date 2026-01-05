@@ -63,6 +63,7 @@ const E2E_NAME_MAP = {
   [FormatType.Image]: 'image',
   [FormatType.Table]: 'table',
   [FormatType.Text]: 'text',
+  [FormatType.QA]: 'qa',
 };
 
 export const Setting: React.FC<{ modelId: string }> = ({ modelId }) => {
@@ -163,6 +164,8 @@ export const DataSetAreaItem: FC<IDataSetAreaProps> = ({
         return FilterKnowledgeType.TEXT;
       case FormatType.Image:
         return FilterKnowledgeType.IMAGE;
+      case FormatType.QA:
+        return FilterKnowledgeType.QA;
       default:
         return undefined;
     }

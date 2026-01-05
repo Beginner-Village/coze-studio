@@ -93,14 +93,16 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		variables:            nil, // 不再直接注入变量到 persona
 	}
 
-	kr, err := newKnowledgeRetriever(ctx, &retrieverConfig{
-		knowledgeConfig: conf.Agent.Knowledge,
-	})
+	// Load model info first so it can be used for knowledge retrieval
+	modelInfo, err := loadModelInfo(ctx, conf.ModelMgr, ptr.From(conf.Agent.ModelInfo.ModelId), conf.Agent.SpaceID)
 	if err != nil {
 		return nil, err
 	}
 
-	modelInfo, err := loadModelInfo(ctx, conf.ModelMgr, ptr.From(conf.Agent.ModelInfo.ModelId), conf.Agent.SpaceID)
+	kr, err := newKnowledgeRetriever(ctx, &retrieverConfig{
+		knowledgeConfig: conf.Agent.Knowledge,
+		modelInfo:       modelInfo, // Pass model info for query rewrite and NL2SQL
+	})
 	if err != nil {
 		return nil, err
 	}

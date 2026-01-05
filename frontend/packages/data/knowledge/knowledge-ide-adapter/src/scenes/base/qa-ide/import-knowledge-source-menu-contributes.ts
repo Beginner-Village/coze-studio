@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-export { TableCustomModule } from './table-custom';
-export { TableLocalModule } from './table-local';
-export { TextCustomModule } from './text-custom';
-export { TextLocalModule } from './text-local';
-export { ImageLocalModule } from './image-local';
-export { QALocalModule } from './qa-local';
-export type {
-  ImportKnowledgeMenuSourceModuleProps,
-  ImportKnowledgeMenuSourceModule,
-} from './module';
-export {
+import {
+  QALocalModule,
   createImportKnowledgeMenuSourceFeatureRegistry,
-  type ImportKnowledgeMenuSourceFeatureType,
   type ImportKnowledgeMenuSourceRegistry,
-} from './registry';
+} from '@coze-data/knowledge-ide-base/features/import-knowledge-sources/menu';
+
+// QA format: only supports local file upload (CSV/JSON with Q/A pairs)
+export const importKnowledgeSourceMenuContributes: ImportKnowledgeMenuSourceRegistry =
+  (() => {
+    const importKnowledgeMenuSourceFeatureRegistry =
+      createImportKnowledgeMenuSourceFeatureRegistry(
+        'import-knowledge-source-qa-menu',
+      );
+    importKnowledgeMenuSourceFeatureRegistry.register({
+      type: 'qa-local',
+      module: QALocalModule,
+    });
+    return importKnowledgeMenuSourceFeatureRegistry;
+  })();

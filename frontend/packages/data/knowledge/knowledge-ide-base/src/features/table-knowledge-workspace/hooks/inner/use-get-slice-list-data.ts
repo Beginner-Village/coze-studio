@@ -19,12 +19,18 @@ import { useKnowledgeStore } from '@coze-data/knowledge-stores';
 import { REPORT_EVENTS as ReportEventNames } from '@coze-arch/report-events';
 import { I18n } from '@coze-arch/i18n';
 import { Toast } from '@coze-arch/coze-design';
+import { DocumentStatus } from '@coze-arch/bot-api/knowledge';
 
 import { useScrollListSliceReq } from '@/service';
 
 export const useGetSliceListData = () => {
   const documentList = useKnowledgeStore(state => state.documentList);
-  const curDocId = documentList?.[0]?.document_id;
+  // Filter to get only enabled documents (status = 1), then take the first one
+  // This ensures we show slices from a successfully processed document
+  const enabledDoc = documentList?.find(
+    doc => doc.status === DocumentStatus.Enable,
+  );
+  const curDocId = enabledDoc?.document_id ?? documentList?.[0]?.document_id;
   // load data
   const {
     data: sliceListData,

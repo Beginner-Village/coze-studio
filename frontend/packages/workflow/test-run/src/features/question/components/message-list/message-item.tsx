@@ -22,6 +22,7 @@ import { ContentType, MessageType } from '../../constants';
 import userAvatar from './user-avatar.png';
 import { TextMessage } from './text-message';
 import { OptionMessage } from './option-message';
+import { CardMessage } from './card-message';
 import { MessageLoading } from './message-loading';
 import botAvatar from './bot-avatar.png';
 
@@ -61,6 +62,9 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         )}
         {!loading && contentType === ContentType.Text && (
           <TextMessage message={message} />
+        )}
+        {!loading && contentType === ContentType.Card && (
+          <CardMessage message={message} />
         )}
       </div>
     </div>

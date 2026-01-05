@@ -48,12 +48,16 @@ export enum UnitType {
   TABLE_LARK = 'table_lark',
   /** Image format: local image, upload PNG, JPG, JPEG and other format images */
   IMAGE_FILE = 'image_file',
+  /** QA format: local QA file, upload CSV or JSON format QA pairs */
+  QA_DOC = 'qa_doc',
   /** table format */
   TABLE = 'table',
   /** text format */
   TEXT = 'text',
   /** image format */
   IMAGE = 'image',
+  /** QA format */
+  QA = 'qa',
 }
 
 /**

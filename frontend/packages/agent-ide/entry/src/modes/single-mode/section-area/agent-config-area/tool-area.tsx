@@ -120,7 +120,15 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
                 formatType={FormatType.Image}
                 desc={I18n.t('knowledge_photo_027')}
               />
-              
+
+              <DataSetArea
+                initRef={DataSetAreaRef}
+                toolKey={ToolKey.QA}
+                title={I18n.t('create-knowledge-qa-type')}
+                formatType={FormatType.QA}
+                desc={I18n.t('knowledge_qa_tooltip')}
+              />
+
               {/* External Knowledge */}
               <ExternalKnowledgeArea
                 toolKey={ToolKey.EXTERNAL_KNOWLEDGE}

@@ -335,6 +335,12 @@ func (k *knowledgeSVC) indexDocument(ctx context.Context, event *entity.Event) (
 			Status:      int32(model.SliceStatusProcessing),
 			FailReason:  "",
 		}
+
+		// QA format: extract answer from metadata (A is stored in DB, not embedded in vector)
+		if answer, ok := document.GetDocumentAnswer(src); ok {
+			sliceModel.Answer = answer
+		}
+
 		if doc.Type == knowledge.DocumentTypeTable {
 			sliceEntity, err := convertFn(src, doc.KnowledgeID, doc.ID, doc.CreatorID)
 			if err != nil {

@@ -19,6 +19,7 @@ export enum FilterKnowledgeType {
   TEXT = 'TEXT',
   TABLE = 'TABLE',
   IMAGE = 'IMAGE',
+  QA = 'QA',
 }
 
 export enum DocumentUpdateInterval {

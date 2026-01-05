@@ -111,6 +111,19 @@ export const useGetLibrarysData = () => {
             name: String(item.name),
           })),
       },
+      {
+        type: 'qa',
+        items: dataSetList
+          .filter(item => item.format_type === FormatType.QA)
+          .map(item => ({
+            ...item,
+            id: String(item.dataset_id),
+            type: 'qa',
+            icon_url: String(item.icon_url),
+            desc: String(item.description),
+            name: String(item.name),
+          })),
+      },
     ],
     [plugins, workflows, dataSetList],
   );

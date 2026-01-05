@@ -58,6 +58,10 @@ const getConfigV2 = () => ({
   [UnitType.IMAGE_FILE]: {
     [OptType.ADD]: ImageFileAddConfig,
   },
+  // QA format: reuse Table upload flow, backend will parse Q/A columns automatically
+  [UnitType.QA_DOC]: {
+    [OptType.ADD]: TableLocalAddConfig,
+  },
 });
 
 /**

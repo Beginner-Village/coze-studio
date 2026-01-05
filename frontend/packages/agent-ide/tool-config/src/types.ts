@@ -42,6 +42,7 @@ export const enum ToolKey {
   DOCUMENT = 'document',
   TABLE = 'table',
   PHOTO = 'photo',
+  QA = 'qa',
   SHORTCUT = 'shortcut',
   DEV_HOOKS = 'devHooks',
   USER_INPUT = 'userInput',

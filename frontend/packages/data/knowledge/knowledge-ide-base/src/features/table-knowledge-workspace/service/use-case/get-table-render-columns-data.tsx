@@ -66,6 +66,22 @@ const getTableCacheWidthMap = (tableKey: string) => {
 };
 
 /**
+ * Check if slice list is in QA format
+ * QA format: no table_meta, content is plain text (Q), answer field contains A
+ */
+const isQAFormat = (
+  metaData: TranSliceListParams['metaData'],
+  sliceList: TranSliceListParams['sliceList'],
+): boolean => {
+  // QA format has no table_meta and slices have answer field
+  if (metaData && metaData.length > 0) {
+    return false;
+  }
+  // Check if at least one slice has answer field
+  return sliceList.some(slice => slice.answer !== undefined);
+};
+
+/**
  * Slice data to the data type received by the TableView component
  */
 
@@ -90,115 +106,215 @@ export const getTableRenderColumnsData = ({
       ? (dom as HTMLElement).offsetWidth -
         (canEdit ? DIFF_WIDTH : READONLY_DIFF_WIDTH)
       : MAX_WIDTH;
+
+    // Detect QA format and handle it specially
+    const isQA = isQAFormat(metaData, sliceList);
+
+    // Transform slice data to table records
     const res: TableViewRecord[] = sliceList.map(slice => {
       const { char_count, hit_count, status } = slice;
-      const record = { char_count, hit_count, status };
-      const sliceArr = safeJSONParse(slice.content);
-      if (Array.isArray(sliceArr)) {
-        sliceArr.forEach(sliceData => {
-          record[sliceData.column_id] = sliceData.value;
-        });
+      const record: TableViewRecord = { char_count, hit_count, status };
+
+      if (isQA) {
+        // QA format: content is plain text Q, answer is A
+        record.question = slice.content || '';
+        record.answer = slice.answer || '';
+      } else {
+        // Table format: content is JSON array
+        const sliceArr = safeJSONParse(slice.content);
+        if (Array.isArray(sliceArr)) {
+          sliceArr.forEach(sliceData => {
+            record[sliceData.column_id] = sliceData.value;
+          });
+        }
       }
       return record;
     });
+
+    // Calculate column width
+    const columnCount = isQA ? 2 : metaData.length;
     const dataWidth =
-      maxWidth / metaData.length > MIN_WIDTH
-        ? maxWidth / metaData.length
-        : MIN_WIDTH;
-    const columns: TableViewColumns[] = metaData.map((meta, columnIndex) => ({
-      dataIndex: meta.id,
-      title: (
-        <div className="flex flex-row items-center">
-          <Typography.Text
-            className="cursor-pointer"
-            ellipsis={{
-              showTooltip: {
-                opts: { content: meta.column_name },
-              },
-            }}
-          >
-            {meta.column_name}
-          </Typography.Text>
-          {meta.is_semantic ? (
-            <Tag
-              size="mini"
-              color="green"
-              className="ml-2"
-              data-testid={KnowledgeE2e.TableLocalPreviewSemantic}
-            >
-              {I18n.t('knowledge_1226_001')}
-            </Tag>
-          ) : null}
-          {meta.column_type ? (
-            <ColumnTypeComp columnType={meta.column_type} />
-          ) : null}
-        </div>
-      ),
-      width: get(cacheWidthMap, meta.id || '') ?? dataWidth,
-      render: (text, record, index) => {
-        const isEditing =
-          columnIndex === 0 &&
-          index === sliceList.length - 1 &&
-          !!sliceList[index].addId;
-        if (meta.column_type === ColumnType.Image) {
-          const srcList = getSrcFromImg(text);
-          return (
-            <ImageRender
-              srcList={srcList}
-              onChange={(src, tosKey) => {
-                let val = '';
-                if (src || tosKey) {
-                  val = `<img src="${src ?? ''}" ${
-                    tosKey ? `data-tos-key="${tosKey}"` : ''
-                  }>`;
-                }
-                const newRecord = { ...record, [meta?.id as string]: val };
-                onUpdate?.(newRecord, index);
-              }}
-            />
-          );
-        }
-        // Highlighting violations
-        const isAudiFailed = record?.status === SliceStatus.AuditFailed;
-        const textRender = () => (
-          <div className={`w-full ${isAudiFailed ? 'text-red-500' : ''}`}>
-            <TextRender
-              dataIndex={meta.id}
-              value={text}
-              record={record}
-              index={index}
-              isEditing={isEditing}
-              editable={canEdit}
-              validator={{
-                validate: value => {
-                  if (meta.is_semantic) {
-                    return !value || value === '';
-                  }
-                  return false;
+      maxWidth / columnCount > MIN_WIDTH ? maxWidth / columnCount : MIN_WIDTH;
+
+    // Generate columns based on format type
+    let columns: TableViewColumns[];
+
+    if (isQA) {
+      // QA format: create Question (Q) and Answer (A) columns
+      const qaColumns = [
+        { id: 'question', name: I18n.t('knowledge_qa_question') || 'Q', is_semantic: true },
+        { id: 'answer', name: I18n.t('knowledge_qa_answer') || 'A', is_semantic: false },
+      ];
+
+      columns = qaColumns.map((col, columnIndex) => ({
+        dataIndex: col.id,
+        title: (
+          <div className="flex flex-row items-center">
+            <Typography.Text
+              className="cursor-pointer"
+              ellipsis={{
+                showTooltip: {
+                  opts: { content: col.name },
                 },
-                errorMsg: I18n.t('datasets_url_empty'),
               }}
-              onBlur={async (_text, updateRecord) =>
-                await onUpdate?.(updateRecord, index, _text as string)
-              }
-            />
-          </div>
-        );
-        if (isAudiFailed) {
-          return (
-            <Tooltip
-              content={I18n.t('knowledge_content_illegal_error_msg')}
-              trigger="hover"
-              position="top"
-              getPopupContainer={() => document.body}
             >
-              {textRender()}
-            </Tooltip>
+              {col.name}
+            </Typography.Text>
+            {col.is_semantic ? (
+              <Tag
+                size="mini"
+                color="green"
+                className="ml-2"
+                data-testid={KnowledgeE2e.TableLocalPreviewSemantic}
+              >
+                {I18n.t('knowledge_1226_001')}
+              </Tag>
+            ) : null}
+          </div>
+        ),
+        width: get(cacheWidthMap, col.id) ?? dataWidth,
+        render: (text, record, index) => {
+          const isEditing =
+            columnIndex === 0 &&
+            index === sliceList.length - 1 &&
+            !!sliceList[index].addId;
+          const isAudiFailed = record?.status === SliceStatus.AuditFailed;
+          const textRender = () => (
+            <div className={`w-full ${isAudiFailed ? 'text-red-500' : ''}`}>
+              <TextRender
+                dataIndex={col.id}
+                value={text}
+                record={record}
+                index={index}
+                isEditing={isEditing}
+                editable={canEdit}
+                validator={{
+                  validate: value => {
+                    if (col.is_semantic) {
+                      return !value || value === '';
+                    }
+                    return false;
+                  },
+                  errorMsg: I18n.t('datasets_url_empty'),
+                }}
+                onBlur={async (_text, updateRecord) =>
+                  await onUpdate?.(updateRecord, index, _text as string)
+                }
+              />
+            </div>
           );
-        }
-        return textRender();
-      },
-    }));
+          if (isAudiFailed) {
+            return (
+              <Tooltip
+                content={I18n.t('knowledge_content_illegal_error_msg')}
+                trigger="hover"
+                position="top"
+                getPopupContainer={() => document.body}
+              >
+                {textRender()}
+              </Tooltip>
+            );
+          }
+          return textRender();
+        },
+      }));
+    } else {
+      // Table format: use metaData to generate columns
+      columns = metaData.map((meta, columnIndex) => ({
+        dataIndex: meta.id,
+        title: (
+          <div className="flex flex-row items-center">
+            <Typography.Text
+              className="cursor-pointer"
+              ellipsis={{
+                showTooltip: {
+                  opts: { content: meta.column_name },
+                },
+              }}
+            >
+              {meta.column_name}
+            </Typography.Text>
+            {meta.is_semantic ? (
+              <Tag
+                size="mini"
+                color="green"
+                className="ml-2"
+                data-testid={KnowledgeE2e.TableLocalPreviewSemantic}
+              >
+                {I18n.t('knowledge_1226_001')}
+              </Tag>
+            ) : null}
+            {meta.column_type ? (
+              <ColumnTypeComp columnType={meta.column_type} />
+            ) : null}
+          </div>
+        ),
+        width: get(cacheWidthMap, meta.id || '') ?? dataWidth,
+        render: (text, record, index) => {
+          const isEditing =
+            columnIndex === 0 &&
+            index === sliceList.length - 1 &&
+            !!sliceList[index].addId;
+          if (meta.column_type === ColumnType.Image) {
+            const srcList = getSrcFromImg(text);
+            return (
+              <ImageRender
+                srcList={srcList}
+                onChange={(src, tosKey) => {
+                  let val = '';
+                  if (src || tosKey) {
+                    val = `<img src="${src ?? ''}" ${
+                      tosKey ? `data-tos-key="${tosKey}"` : ''
+                    }>`;
+                  }
+                  const newRecord = { ...record, [meta?.id as string]: val };
+                  onUpdate?.(newRecord, index);
+                }}
+              />
+            );
+          }
+          // Highlighting violations
+          const isAudiFailed = record?.status === SliceStatus.AuditFailed;
+          const textRender = () => (
+            <div className={`w-full ${isAudiFailed ? 'text-red-500' : ''}`}>
+              <TextRender
+                dataIndex={meta.id}
+                value={text}
+                record={record}
+                index={index}
+                isEditing={isEditing}
+                editable={canEdit}
+                validator={{
+                  validate: value => {
+                    if (meta.is_semantic) {
+                      return !value || value === '';
+                    }
+                    return false;
+                  },
+                  errorMsg: I18n.t('datasets_url_empty'),
+                }}
+                onBlur={async (_text, updateRecord) =>
+                  await onUpdate?.(updateRecord, index, _text as string)
+                }
+              />
+            </div>
+          );
+          if (isAudiFailed) {
+            return (
+              <Tooltip
+                content={I18n.t('knowledge_content_illegal_error_msg')}
+                trigger="hover"
+                position="top"
+                getPopupContainer={() => document.body}
+              >
+                {textRender()}
+              </Tooltip>
+            );
+          }
+          return textRender();
+        },
+      }));
+    }
     columns.push({
       title: '',
       className: 'not-resize-handle data-tags',

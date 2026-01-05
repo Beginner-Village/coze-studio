@@ -49,6 +49,12 @@ export const useCreateKnowledgeModalV2 = (
   const resourceNavigate = useDataNavigate();
 
   const [unitType, setUnitType] = useState<UnitType>(UnitType.TEXT_DOC);
+  // Use ref to store latest unitType value to avoid closure issues in onClick callbacks
+  const unitTypeRef = useRef<UnitType>(UnitType.TEXT_DOC);
+  const handleUnitTypeChange = (type: UnitType) => {
+    setUnitType(type);
+    unitTypeRef.current = type;
+  };
 
   const createDataset = async () => {
     await formRef.current?.formApi.validate();
@@ -90,7 +96,8 @@ export const useCreateKnowledgeModalV2 = (
             beforeCreate?.(false);
             const datasetId = await createDataset();
             if (onFinish) {
-              onFinish(datasetId || '', unitType, false);
+              // Use unitTypeRef.current to get the latest value (avoid closure issues)
+              onFinish(datasetId || '', unitTypeRef.current, false);
             } else {
               resourceNavigate.toResource?.('knowledge', datasetId);
             }
@@ -105,9 +112,10 @@ export const useCreateKnowledgeModalV2 = (
             beforeCreate?.(true);
             const datasetId = await createDataset();
             if (onFinish) {
-              onFinish(datasetId || '', unitType, true);
+              // Use unitTypeRef.current to get the latest value (avoid closure issues)
+              onFinish(datasetId || '', unitTypeRef.current, true);
             } else {
-              resourceNavigate.upload?.({ type: unitType });
+              resourceNavigate.upload?.({ type: unitTypeRef.current });
             }
           }}
         >
@@ -125,13 +133,15 @@ export const useCreateKnowledgeModalV2 = (
         className={styles['create-form']}
       >
         <CozeKnowledgeAddTypeContent
-          onImportKnowledgeTypeChange={setUnitType}
+          onImportKnowledgeTypeChange={handleUnitTypeChange}
           onSelectFormatTypeChange={setCurrentFormatType}
         />
       </Form>,
     ),
     open: () => {
       setCurrentFormatType(FormatType.Text);
+      setUnitType(UnitType.TEXT_DOC);
+      unitTypeRef.current = UnitType.TEXT_DOC;
       open();
     },
     close,

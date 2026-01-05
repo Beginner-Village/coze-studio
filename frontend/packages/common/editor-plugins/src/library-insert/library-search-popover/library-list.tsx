@@ -38,6 +38,7 @@ const LibraryTypeTextMap: Record<LibraryType, string> = {
   text: I18n.t('edit_block_api_knowledge_text'),
   image: I18n.t('edit_block_api_knowledge_image'),
   table: I18n.t('edit_block_api_knowledge_table'),
+  qa: I18n.t('create-knowledge-qa-type'),
 };
 export const LibraryList = ({
   librarys,

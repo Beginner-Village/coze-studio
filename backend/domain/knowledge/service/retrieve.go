@@ -668,6 +668,7 @@ func (k *knowledgeSVC) packResults(ctx context.Context, retrieveResult []*schema
 			ByteCount:    int64(len(slices[i].Content)),
 			SliceStatus:  knowledgeModel.SliceStatus(slices[i].Status),
 			CharCount:    int64(utf8.RuneCountInString(slices[i].Content)),
+			Answer:       slices[i].Answer, // QA format: return answer when question matches
 		}
 		docUri := documentMap[slices[i].DocumentID].URI
 		var docURL string
@@ -695,6 +696,14 @@ func (k *knowledgeSVC) packResults(ctx context.Context, retrieveResult []*schema
 			img := fmt.Sprintf(`<img src="" data-tos-key="%s">`, documentMap[slices[i].DocumentID].URI)
 			sliceEntity.RawContent = []*knowledgeModel.SliceContent{
 				{Type: knowledgeModel.SliceContentTypeText, Text: ptr.Of(k.formatSliceContent(ctx, img+slices[i].Content))},
+			}
+		case knowledgeModel.DocumentTypeQA:
+			// For QA format: Answer field is set above, RawContent stores the Question for reference
+			// The primary output is the Answer (handled by GetSliceContent)
+			if slices[i].Content != "" {
+				sliceEntity.RawContent = []*knowledgeModel.SliceContent{
+					{Type: knowledgeModel.SliceContentTypeText, Text: ptr.Of(slices[i].Content)},
+				}
 			}
 		default:
 		}

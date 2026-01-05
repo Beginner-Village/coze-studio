@@ -140,6 +140,8 @@ export interface SliceInfo {
   hit_count?: string;
   /** 字符数 */
   char_count?: string;
+  /** Answer content for QA format knowledge base */
+  answer?: string;
   /** token数 */
   token_count?: string;
   /** 序号 */

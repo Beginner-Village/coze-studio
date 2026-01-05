@@ -318,7 +318,7 @@ func (k *KnowledgeApplicationService) CreateDocument(ctx context.Context, req *d
 			Type:             convertDocumentTypeDataset2Entity(req.GetFormatType()),
 			RawContent:       req.GetDocumentBases()[i].GetSourceInfo().GetCustomContent(),
 			URI:              req.GetDocumentBases()[i].GetSourceInfo().GetTosURI(),
-			FileExtension:    parser.FileExtension(GetExtension(req.GetDocumentBases()[i].GetSourceInfo().GetTosURI())),
+			FileExtension:    parser.FileExtension(GetFileExtensionForFormat(req.GetDocumentBases()[i].GetSourceInfo().GetTosURI(), req.GetFormatType())),
 			Source:           docSource,
 			IsAppend:         req.GetIsAppend(),
 			ParsingStrategy:  convertParsingStrategy2Entity(req.GetParsingStrategy(), req.GetDocumentBases()[i].TableSheet, captionType, req.GetDocumentBases()[i].FilterStrategy),

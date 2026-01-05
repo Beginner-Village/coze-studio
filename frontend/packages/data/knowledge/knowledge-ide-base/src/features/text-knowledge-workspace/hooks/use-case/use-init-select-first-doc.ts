@@ -17,6 +17,7 @@
 import { useEffect } from 'react';
 
 import { useKnowledgeStore } from '@coze-data/knowledge-stores';
+import { DocumentStatus } from '@coze-arch/bot-api/knowledge';
 
 import { useDocumentManagement } from './use-document-management';
 
@@ -25,7 +26,13 @@ export const useInitSelectFirstDoc = () => {
   const { handleSelectDocument } = useDocumentManagement();
   useEffect(() => {
     if (documentList?.length) {
-      handleSelectDocument(documentList[0]?.document_id ?? '');
+      // Prefer enabled documents (status = 1) to show documents with slices
+      const enabledDoc = documentList.find(
+        doc => doc.status === DocumentStatus.Enable,
+      );
+      const docId =
+        enabledDoc?.document_id ?? documentList[0]?.document_id ?? '';
+      handleSelectDocument(docId);
     }
   }, [documentList]);
 };

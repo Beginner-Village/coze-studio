@@ -201,7 +201,7 @@ func convertSlice2Model(sliceEntity *entity.Slice) *dataset.SliceInfo {
 	if sliceEntity == nil {
 		return nil
 	}
-	return &dataset.SliceInfo{
+	sliceInfo := &dataset.SliceInfo{
 		SliceID:    sliceEntity.ID,
 		Content:    convertSliceContent(sliceEntity),
 		Status:     convertSliceStatus2Model(sliceEntity.SliceStatus),
@@ -211,6 +211,11 @@ func convertSlice2Model(sliceEntity *entity.Slice) *dataset.SliceInfo {
 		DocumentID: sliceEntity.DocumentID,
 		ChunkInfo:  "",
 	}
+	// QA format: populate answer field for QA knowledge base
+	if sliceEntity.Answer != "" {
+		sliceInfo.Answer = &sliceEntity.Answer
+	}
+	return sliceInfo
 }
 
 func convertSliceContent(s *entity.Slice) string {
@@ -527,6 +532,22 @@ func GetExtension(uri string) string {
 	}
 	return ""
 }
+
+// GetFileExtensionForFormat returns the appropriate file extension based on format type
+// For QA format, csv becomes qa_csv and json becomes qa_json to route to QA-specific parsers
+func GetFileExtensionForFormat(uri string, formatType dataset.FormatType) string {
+	ext := GetExtension(uri)
+	if formatType == dataset.FormatType_QA {
+		switch ext {
+		case "csv":
+			return "qa_csv"
+		case "json":
+			return "qa_json"
+		}
+	}
+	return ext
+}
+
 func convertCaptionType2Entity(ct *dataset.CaptionType) *parser.ImageAnnotationType {
 	if ct == nil {
 		return nil
@@ -601,6 +622,8 @@ func convertDocumentTypeEntity2Dataset(formatType model.DocumentType) dataset.Fo
 		return dataset.FormatType_Table
 	case model.DocumentTypeImage:
 		return dataset.FormatType_Image
+	case model.DocumentTypeQA:
+		return dataset.FormatType_QA
 	default:
 		return dataset.FormatType_Text
 	}
@@ -614,6 +637,8 @@ func convertDocumentTypeDataset2Entity(formatType dataset.FormatType) model.Docu
 		return model.DocumentTypeTable
 	case dataset.FormatType_Image:
 		return model.DocumentTypeImage
+	case dataset.FormatType_QA:
+		return model.DocumentTypeQA
 	default:
 		return model.DocumentTypeUnknown
 	}
@@ -761,6 +786,8 @@ func getIconURI(tp dataset.FormatType) string {
 		return upload.TableKnowledgeDefaultIcon
 	case dataset.FormatType_Image:
 		return upload.ImageKnowledgeDefaultIcon
+	case dataset.FormatType_QA:
+		return upload.QAKnowledgeDefaultIcon
 	default:
 		return upload.TextKnowledgeDefaultIcon
 	}
@@ -774,6 +801,8 @@ func convertFormatType2Entity(tp dataset.FormatType) model.DocumentType {
 		return model.DocumentTypeTable
 	case dataset.FormatType_Image:
 		return model.DocumentTypeImage
+	case dataset.FormatType_QA:
+		return model.DocumentTypeQA
 	default:
 		return model.DocumentTypeUnknown
 	}

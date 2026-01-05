@@ -22,4 +22,5 @@ export enum MessageType {
 export enum ContentType {
   Text = 'text',
   Option = 'option',
+  Card = 'card',
 }

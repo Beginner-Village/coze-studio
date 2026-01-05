@@ -163,6 +163,8 @@ export interface KnowledgeRecallSlice {
   };
   score: number;
   slice: string;
+  // QA format: answer content returned when question matches
+  answer?: string;
 }
 
 export interface VerboseContentData {

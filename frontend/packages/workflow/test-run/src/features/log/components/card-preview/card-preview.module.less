@@ -111,3 +111,58 @@
     color: var(--coz-fg-secondary, #4e5969);
   }
 }
+
+.card-error-container {
+  padding: 16px;
+  border-radius: 8px;
+  background-color: var(--coz-bg-error-dim, #fff1f0);
+  border: 1px solid var(--coz-stroke-error, #ffccc7);
+}
+
+.card-error-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.card-error-icon {
+  font-size: 18px;
+  color: var(--coz-fg-error, #f5222d);
+}
+
+.card-error-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--coz-fg-error, #f5222d);
+}
+
+.card-error-message {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--coz-fg-secondary, #4e5969);
+  word-break: break-word;
+}
+
+.card-error-details {
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: var(--coz-bg-tertiary, #f2f3f5);
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+  color: var(--coz-fg-tertiary, #86909c);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.card-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--coz-fg-tertiary, #86909c);
+  font-size: 13px;
+}
