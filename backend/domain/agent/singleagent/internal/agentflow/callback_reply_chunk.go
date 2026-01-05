@@ -109,6 +109,15 @@ func (r *replyChunkCallback) OnStart(ctx context.Context, info *callbacks.RunInf
 	// logs.CtxInfof(ctx, "info-OnStart, info=%v, input=%v", conv.DebugJsonToStr(info), conv.DebugJsonToStr(input))
 
 	switch info.Component {
+	case components.ComponentOfChatModel:
+		// 添加调试日志：捕获发送到 ChatModel 的消息
+		if cbInput, ok := input.(*model.CallbackInput); ok && cbInput != nil {
+			logs.CtxInfof(ctx, "[DEBUG-ChatModel] OnStart name=%s, messages count=%d", info.Name, len(cbInput.Messages))
+			for i, msg := range cbInput.Messages {
+				logs.CtxInfof(ctx, "[DEBUG-ChatModel] Message[%d]: Role=%s, Content(len=%d)=%q, ToolCallID=%s, MultiContent=%v",
+					i, msg.Role, len(msg.Content), truncateContent(msg.Content, 200), msg.ToolCallID, msg.MultiContent)
+			}
+		}
 	case compose.ComponentOfToolsNode:
 		if info.Name != keyOfReActAgentToolsNode {
 			return ctx
@@ -398,4 +407,12 @@ func convSuggestionNodeCallbackOutput(output callbacks.CallbackInput) []*schema.
 	}
 
 	return sg
+}
+
+// truncateContent truncates content to maxLen characters for logging
+func truncateContent(content string, maxLen int) string {
+	if len(content) <= maxLen {
+		return content
+	}
+	return content[:maxLen] + "..."
 }

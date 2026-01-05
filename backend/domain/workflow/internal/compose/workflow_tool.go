@@ -175,6 +175,14 @@ func (i *invokableWorkflow) InvokableRun(ctx context.Context, argumentsInJSON st
 		contentStr = strings.TrimSuffix(contentStr, nodes.KeyIsFinished)
 	}
 
+	// 修复：当工作流返回空字符串时，使用占位内容避免 API 调用错误
+	// Qwen 等模型 API 要求 content 字段为非空字符串
+	// 注意：只处理真正的空字符串 ""，保留空格等空白字符
+	if contentStr == "" {
+		contentStr = "[工作流执行完成，无输出内容]"
+		logs.Infof("[WorkflowTool] Empty content from workflow, using placeholder: %s", contentStr)
+	}
+
 	return contentStr, nil
 }
 
@@ -319,6 +327,14 @@ func (s *streamableWorkflow) StreamableRun(ctx context.Context, argumentsInJSON 
 
 		if strings.HasSuffix(contentStr, nodes.KeyIsFinished) {
 			contentStr = strings.TrimSuffix(contentStr, nodes.KeyIsFinished)
+		}
+
+		// 修复：当工作流返回空字符串时，使用占位内容避免 API 调用错误
+		// Qwen 等模型 API 要求 content 字段为非空字符串
+		// 注意：只处理真正的空字符串 ""，保留空格等空白字符
+		if contentStr == "" {
+			contentStr = "[工作流执行完成，无输出内容]"
+			logs.Infof("[WorkflowTool] Empty content from workflow stream, using placeholder: %s", contentStr)
 		}
 
 		return contentStr, nil

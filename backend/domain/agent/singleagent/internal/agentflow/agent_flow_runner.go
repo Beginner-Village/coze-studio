@@ -274,7 +274,68 @@ func (r *AgentRunner) preHandlerHistory(history []*schema.Message) []*schema.Mes
 		}
 		hm = append(hm, msg)
 	}
+
+	// 修复：验证并修复消息序列，确保每个带有 tool_calls 的 assistant 消息
+	// 后面都有对应的 tool 响应消息，否则 Qwen 等模型会报错
+	hm = r.validateAndFixToolCallSequence(hm)
+
 	return hm
+}
+
+// validateAndFixToolCallSequence 验证并修复 tool_calls 消息序列
+// Qwen/OpenAI API 要求：assistant 消息的 tool_calls 必须有对应的 tool 响应消息
+func (r *AgentRunner) validateAndFixToolCallSequence(messages []*schema.Message) []*schema.Message {
+	if len(messages) == 0 {
+		return messages
+	}
+
+	var result []*schema.Message
+
+	for i := 0; i < len(messages); i++ {
+		msg := messages[i]
+		result = append(result, msg)
+
+		// 检查是否是带有 tool_calls 的 assistant 消息
+		if msg.Role == schema.Assistant && len(msg.ToolCalls) > 0 {
+			// 收集所有需要响应的 tool_call_id
+			pendingToolCallIDs := make(map[string]string) // id -> function name
+			for _, tc := range msg.ToolCalls {
+				if tc.ID != "" {
+					pendingToolCallIDs[tc.ID] = tc.Function.Name
+				}
+			}
+
+			// 检查后续消息是否有对应的 tool 响应
+			j := i + 1
+			for j < len(messages) {
+				nextMsg := messages[j]
+				if nextMsg.Role == schema.Tool && nextMsg.ToolCallID != "" {
+					delete(pendingToolCallIDs, nextMsg.ToolCallID)
+				} else if nextMsg.Role == schema.User || nextMsg.Role == schema.Assistant {
+					// 遇到 user 或 assistant 消息，停止检查
+					break
+				}
+				j++
+			}
+
+			// 如果有未响应的 tool_calls，插入占位符 tool 消息
+			if len(pendingToolCallIDs) > 0 {
+				logs.Warnf("[AgentRunner] Found %d tool_calls without responses, inserting placeholders", len(pendingToolCallIDs))
+			}
+			for toolCallID, funcName := range pendingToolCallIDs {
+				logs.Warnf("[AgentRunner] Inserting placeholder for missing tool response: toolCallID=%s, funcName=%s", toolCallID, funcName)
+				placeholderToolMsg := &schema.Message{
+					Role:       schema.Tool,
+					Content:    "[工具调用结果丢失，请重新发起请求]",
+					ToolCallID: toolCallID,
+					ToolName:   funcName,
+				}
+				result = append(result, placeholderToolMsg)
+			}
+		}
+	}
+
+	return result
 }
 
 func (r *AgentRunner) isSupportMultiContent() bool {
