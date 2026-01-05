@@ -3765,6 +3765,8 @@
   "workflow_testrun_card_render_error": "卡片渲染失败",
   "workflow_testrun_card_render_error_title": "卡片渲染错误",
   "workflow_testrun_card_loading": "加载卡片中...",
+  "workflow_testrun_card_load_failed": "卡片加载失败，请检查网络连接或卡片配置",
+  "workflow_testrun_card_timeout": "卡片加载超时，请检查卡片服务是否可用",
   "workflow_chatflow_card_error_title": "卡片错误",
   "workflow_chatflow_card_render_error": "卡片渲染错误",
   "workflow_chatflow_card_loading": "加载卡片中...",

@@ -28,6 +28,7 @@ const DEFAULT_IFRAME_HEIGHT = 400;
 const MIN_HEIGHT_THRESHOLD = 100;
 const HEIGHT_PADDING = 20;
 const JSON_INDENT = 2;
+const LOAD_TIMEOUT_MS = 10000; // 10秒超时
 const DEFAULT_CARD_URL =
   'https://agent.finmall.com/agent-h5-web/card/index.html';
 
@@ -203,6 +204,34 @@ export const CardPreview: FC<CardPreviewProps> = ({ data, className }) => {
       }
     };
 
+    // iframe加载失败处理
+    const handleIframeError = () => {
+      setIsLoading(false);
+      setRenderError(
+        I18n.t(
+          'workflow_testrun_card_load_failed',
+          {},
+          '卡片加载失败，请检查网络连接或卡片配置',
+        ),
+      );
+      console.error('[CardPreview] iframe load error');
+    };
+
+    // 超时处理
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+        setRenderError(
+          I18n.t(
+            'workflow_testrun_card_timeout',
+            {},
+            '卡片加载超时，请检查卡片服务是否可用',
+          ),
+        );
+        console.error('[CardPreview] iframe load timeout');
+      }
+    }, LOAD_TIMEOUT_MS);
+
     // 监听来自 iframe 的消息（用于跨域高度获取和错误处理）
     const handleMessage = (event: MessageEvent) => {
       // 验证消息来源
@@ -243,7 +272,11 @@ export const CardPreview: FC<CardPreviewProps> = ({ data, className }) => {
           messageData.error ||
           messageData.data?.message ||
           messageData.data?.error ||
-          I18n.t('workflow_testrun_card_render_error', {}, 'Card render failed');
+          I18n.t(
+            'workflow_testrun_card_render_error',
+            {},
+            'Card render failed',
+          );
         setRenderError(errorMsg);
         console.error('[CardPreview] Render error from iframe:', errorMsg);
       }
@@ -255,13 +288,16 @@ export const CardPreview: FC<CardPreviewProps> = ({ data, className }) => {
     };
 
     iframe.addEventListener('load', handleIframeLoad);
+    iframe.addEventListener('error', handleIframeError);
     window.addEventListener('message', handleMessage);
 
     return () => {
       iframe.removeEventListener('load', handleIframeLoad);
+      iframe.removeEventListener('error', handleIframeError);
       window.removeEventListener('message', handleMessage);
+      clearTimeout(timeoutId);
     };
-  }, [specialContent, viewMode]);
+  }, [specialContent, viewMode, isLoading]);
 
   if (!specialContent) {
     return null;
@@ -296,33 +332,43 @@ export const CardPreview: FC<CardPreviewProps> = ({ data, className }) => {
         {viewMode === 'iframe' ? (
           <>
             {/* 错误显示 */}
-            {renderError && (
+            {renderError ? (
               <div className={styles['card-error-container']}>
                 <div className={styles['card-error-header']}>
                   <IconCozWarningCircle className={styles['card-error-icon']} />
                   <span className={styles['card-error-title']}>
-                    {I18n.t('workflow_testrun_card_render_error_title', undefined, 'Card Render Error')}
+                    {I18n.t(
+                      'workflow_testrun_card_render_error_title',
+                      undefined,
+                      'Card Render Error',
+                    )}
                   </span>
                 </div>
                 <div className={styles['card-error-message']}>
                   {renderError}
                 </div>
-                {specialContent?.templateId && (
+                {specialContent?.templateId ? (
                   <div className={styles['card-error-details']}>
                     Template ID: {specialContent.templateId}
-                    {specialContent?.templateName && `\nTemplate Name: ${specialContent.templateName}`}
+                    {specialContent?.templateName
+                      ? `\nTemplate Name: ${specialContent.templateName}`
+                      : null}
                   </div>
-                )}
+                ) : null}
               </div>
-            )}
+            ) : null}
             {/* iframe 容器 */}
             {!renderError && (
               <div className={styles['card-iframe-container']}>
-                {isLoading && (
+                {isLoading ? (
                   <div className={styles['card-loading']}>
-                    {I18n.t('workflow_testrun_card_loading', undefined, 'Loading card...')}
+                    {I18n.t(
+                      'workflow_testrun_card_loading',
+                      undefined,
+                      'Loading card...',
+                    )}
                   </div>
-                )}
+                ) : null}
                 <iframe
                   ref={iframeRef}
                   src={generateIframeUrl()}

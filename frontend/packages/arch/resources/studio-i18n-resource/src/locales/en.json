@@ -3717,6 +3717,8 @@
   "workflow_testrun_card_render_error": "Card render failed",
   "workflow_testrun_card_render_error_title": "Card Render Error",
   "workflow_testrun_card_loading": "Loading card...",
+  "workflow_testrun_card_load_failed": "Card loading failed, please check network connection or card configuration",
+  "workflow_testrun_card_timeout": "Card loading timeout, please check if card service is available",
   "workflow_chatflow_card_error_title": "Card Error",
   "workflow_chatflow_card_render_error": "Card render error",
   "workflow_chatflow_card_loading": "Loading card...",

@@ -1027,7 +1027,7 @@ func (d databaseService) ExecuteSQL(ctx context.Context, req *ExecuteSQLRequest)
 		}
 	}
 
-	if resultSet != nil && resultSet.AffectedRows > 0 {
+	if resultSet != nil {
 		response.RowsAffected = &resultSet.AffectedRows
 	}
 

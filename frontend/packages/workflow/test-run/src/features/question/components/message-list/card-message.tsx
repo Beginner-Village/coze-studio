@@ -27,6 +27,7 @@ import styles from './card-message.module.less';
 const DEFAULT_IFRAME_HEIGHT = 300;
 const MIN_HEIGHT_THRESHOLD = 50;
 const HEIGHT_PADDING = 10;
+const LOAD_TIMEOUT_MS = 10000; // 10秒超时
 const DEFAULT_CARD_URL =
   'https://agent.finmall.com/agent-h5-web/card/index.html';
 
@@ -99,7 +100,9 @@ const generateIframeUrl = (): string => {
  * 卡片消息组件 - 用于 chatflow 聊天界面渲染卡片
  */
 export const CardMessage: React.FC<CardMessageProps> = ({ message }) => {
-  const [iframeHeight, setIframeHeight] = useState<number>(DEFAULT_IFRAME_HEIGHT);
+  const [iframeHeight, setIframeHeight] = useState<number>(
+    DEFAULT_IFRAME_HEIGHT,
+  );
   const [renderError, setRenderError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -117,7 +120,8 @@ export const CardMessage: React.FC<CardMessageProps> = ({ message }) => {
 
     const sendCardData = () => {
       const { templateId, kvMap, dataResponse } = cardData;
-      const data = kvMap && Object.keys(kvMap).length > 0 ? kvMap : dataResponse;
+      const data =
+        kvMap && Object.keys(kvMap).length > 0 ? kvMap : dataResponse;
 
       const messagePayload = {
         channel: 'agent',
@@ -134,7 +138,10 @@ export const CardMessage: React.FC<CardMessageProps> = ({ message }) => {
           JSON.stringify(messagePayload),
           targetOrigin,
         );
-        console.log('[CardMessage] Sent card data:', { templateId, targetOrigin });
+        console.log('[CardMessage] Sent card data:', {
+          templateId,
+          targetOrigin,
+        });
       }
     };
 
@@ -142,6 +149,32 @@ export const CardMessage: React.FC<CardMessageProps> = ({ message }) => {
       setIsLoading(false);
       sendCardData();
     };
+
+    // iframe加载失败处理
+    const handleIframeError = () => {
+      setIsLoading(false);
+      setRenderError(
+        I18n.t(
+          'workflow_testrun_card_load_failed',
+          {},
+          '卡片加载失败，请检查网络连接或卡片配置',
+        ),
+      );
+    };
+
+    // 超时处理
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+        setRenderError(
+          I18n.t(
+            'workflow_testrun_card_timeout',
+            {},
+            '卡片加载超时，请检查卡片服务是否可用',
+          ),
+        );
+      }
+    }, LOAD_TIMEOUT_MS);
 
     // 监听来自 iframe 的消息
     const handleMessage = (event: MessageEvent) => {
@@ -182,7 +215,11 @@ export const CardMessage: React.FC<CardMessageProps> = ({ message }) => {
           messageData.error ||
           messageData.data?.message ||
           messageData.data?.error ||
-          I18n.t('workflow_chatflow_card_render_error', {}, 'Card render error');
+          I18n.t(
+            'workflow_chatflow_card_render_error',
+            {},
+            'Card render error',
+          );
         setRenderError(errorMsg);
         console.error('[CardMessage] Render error from iframe:', errorMsg);
       }
@@ -194,13 +231,16 @@ export const CardMessage: React.FC<CardMessageProps> = ({ message }) => {
     };
 
     iframe.addEventListener('load', handleIframeLoad);
+    iframe.addEventListener('error', handleIframeError);
     window.addEventListener('message', handleMessage);
 
     return () => {
       iframe.removeEventListener('load', handleIframeLoad);
+      iframe.removeEventListener('error', handleIframeError);
       window.removeEventListener('message', handleMessage);
+      clearTimeout(timeoutId);
     };
-  }, [cardData]);
+  }, [cardData, isLoading]);
 
   if (!cardData) {
     return null;
@@ -216,14 +256,12 @@ export const CardMessage: React.FC<CardMessageProps> = ({ message }) => {
             {I18n.t('workflow_chatflow_card_error_title', {}, 'Card Error')}
           </span>
         </div>
-        <div className={styles['card-error-content']}>
-          {renderError}
-        </div>
-        {cardData.templateId && (
+        <div className={styles['card-error-content']}>{renderError}</div>
+        {cardData.templateId ? (
           <div className={styles['card-error-code']}>
             Template: {cardData.templateId}
           </div>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -231,11 +269,11 @@ export const CardMessage: React.FC<CardMessageProps> = ({ message }) => {
   return (
     <div className={styles['card-message']}>
       <div className={styles['card-iframe-container']}>
-        {isLoading && (
+        {isLoading ? (
           <div className={styles['card-loading']}>
             {I18n.t('workflow_chatflow_card_loading', {}, 'Loading card...')}
           </div>
-        )}
+        ) : null}
         <iframe
           ref={iframeRef}
           src={generateIframeUrl()}
