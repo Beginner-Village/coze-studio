@@ -360,6 +360,14 @@ func (d *databaseImpl) validateSpaceAccess(ctx context.Context, databaseID int64
 		return nil
 	}
 
+	// OpenAPI 场景：如果存在 API Key 认证，跳过空间成员检查
+	// 原因：API Key 创建者必须是空间成员，通过 API Key 调用的 Bot 已经隐式获得了对空间资源的访问授权
+	if apiKeyInfo := ctxutil.GetApiAuthFromCtx(ctx); apiKeyInfo != nil {
+		logs.CtxInfof(ctx, "validateSpaceAccess: skip check for OpenAPI request, apiKeyUserID=%d, requestUserID=%s, databaseID=%d",
+			apiKeyInfo.UserID, userIDStr, databaseID)
+		return nil
+	}
+
 	// 1. 获取数据库信息
 	dbResp, err := d.DomainSVC.MGetDatabase(ctx, &service.MGetDatabaseRequest{
 		Basics: []*model.DatabaseBasic{{ID: databaseID, TableType: tableType}},
