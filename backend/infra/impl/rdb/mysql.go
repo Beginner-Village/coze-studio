@@ -493,6 +493,9 @@ func (m *mysqlService) SelectData(ctx context.Context, req *rdb.SelectDataReques
 		total = int64(len(resultSet.Rows))
 	}
 
+	// Set AffectedRows to total for SELECT queries so rowNum can be returned correctly
+	resultSet.AffectedRows = total
+
 	return &rdb.SelectDataResponse{
 		ResultSet: resultSet,
 		Total:     total,
