@@ -107,6 +107,7 @@ func (sa *SingleAgentVersionDAO) singleAgentVersionPo2Do(po *model.SingleAgentVe
 			ExternalKnowledge: po.ExternalKnowledge,
 			Version:           po.Version,
 			MemoryToolConfig:  po.MemoryToolConfig,
+			BoundCards:        po.BoundCards,
 		},
 	}
 }
@@ -135,5 +136,6 @@ func (sa *SingleAgentVersionDAO) singleAgentVersionDo2Po(do *entity.SingleAgent)
 		ShortcutCommand:   do.ShortcutCommand,
 		ExternalKnowledge: do.ExternalKnowledge,
 		MemoryToolConfig:  do.MemoryToolConfig,
+		BoundCards:        do.BoundCards,
 	}
 }

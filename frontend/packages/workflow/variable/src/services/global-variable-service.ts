@@ -241,6 +241,71 @@ export class GlobalVariableService {
     }
   }
 
+  /**
+   * Load variables from schema when no API source is available.
+   * Creates placeholder variables from variable names extracted from workflow schema.
+   * This is a fallback when the workflow has no associated project/bot.
+   */
+  loadVariablesFromSchema(
+    variables: {
+      user?: string[];
+      app?: string[];
+      system?: string[];
+    },
+  ) {
+    const createPlaceholderProperties = (names: string[]): PropertyJSON[] => {
+      return names.map(name => ASTFactory.createProperty({
+        key: name,
+        meta: { readonly: false, placeholder: true },
+        // Use undefined type when actual type is unknown (fallback from schema extraction)
+        type: undefined,
+      }));
+    };
+
+    this.onBeforeLoadEmitter.fire();
+
+    // Set user variables
+    if (variables.user?.length) {
+      this.globalScope.ast.set(
+        GlobalVariableKey.User,
+        ASTFactory.createVariableDeclaration({
+          key: GlobalVariableKey.User,
+          type: ASTFactory.createObject({
+            properties: createPlaceholderProperties(variables.user),
+          }),
+        }),
+      );
+    }
+
+    // Set app variables
+    if (variables.app?.length) {
+      this.globalScope.ast.set(
+        GlobalVariableKey.App,
+        ASTFactory.createVariableDeclaration({
+          key: GlobalVariableKey.App,
+          type: ASTFactory.createObject({
+            properties: createPlaceholderProperties(variables.app),
+          }),
+        }),
+      );
+    }
+
+    // Set system variables
+    if (variables.system?.length) {
+      this.globalScope.ast.set(
+        GlobalVariableKey.System,
+        ASTFactory.createVariableDeclaration({
+          key: GlobalVariableKey.System,
+          type: ASTFactory.createObject({
+            properties: createPlaceholderProperties(variables.system),
+          }),
+        }),
+      );
+    }
+
+    this.onLoadedEmitter.fire();
+  }
+
   @preDestroy()
   dispose() {
     this.toDispose.dispose();

@@ -1,0 +1,463 @@
+/*
+ * Copyright 2025 coze-dev Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package internal
+
+import (
+	"encoding/json"
+
+	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_common"
+	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/entity"
+)
+
+// StreamCardMetaKey defines metadata keys for streaming card events
+type StreamCardMetaKey string
+
+const (
+	// MetaKeyYnetType is the message type key
+	MetaKeyYnetType StreamCardMetaKey = "ynet_type"
+	// MetaKeyCardID is the unique card identifier
+	MetaKeyCardID StreamCardMetaKey = "card_id"
+	// MetaKeyTemplateID is the card template identifier
+	MetaKeyTemplateID StreamCardMetaKey = "template_id"
+	// MetaKeyTemplateName is the card template name
+	MetaKeyTemplateName StreamCardMetaKey = "template_name"
+	// MetaKeyCardField is the current field name being updated
+	MetaKeyCardField StreamCardMetaKey = "card_field"
+)
+
+// StreamCardYnetType defines ynet_type values for card events
+type StreamCardYnetType string
+
+const (
+	// YnetTypeCardCreate indicates a new card is being created
+	YnetTypeCardCreate StreamCardYnetType = "card_create"
+	// YnetTypeCardDelta indicates a card field is being updated incrementally
+	YnetTypeCardDelta StreamCardYnetType = "card_delta"
+	// YnetTypeCardDone indicates a card has completed
+	YnetTypeCardDone StreamCardYnetType = "card_done"
+)
+
+// StreamCardOutput represents the output from card stream processing
+type StreamCardOutput struct {
+	// Type indicates the type of output: "text", "card_create", "card_delta", "card_done"
+	Type string
+	// Text is the text content for text output
+	Text string
+	// CardID is the unique card identifier
+	CardID string
+	// TemplateID is the card template ID (for card_create)
+	TemplateID string
+	// TemplateName is the card template name (for card_create)
+	TemplateName string
+	// Field is the field name (for card_delta)
+	Field string
+	// Delta is the incremental content (for card_delta)
+	Delta string
+}
+
+// StreamCardProcessor wraps StreamCardParser for integration with message pipeline
+type StreamCardProcessor struct {
+	parser  *StreamCardParser
+	enabled bool
+}
+
+// NewStreamCardProcessor creates a new stream card processor
+func NewStreamCardProcessor(enabled bool) *StreamCardProcessor {
+	return &StreamCardProcessor{
+		parser:  NewStreamCardParser(),
+		enabled: enabled,
+	}
+}
+
+// Process processes a text chunk and returns outputs
+func (p *StreamCardProcessor) Process(text string) []StreamCardOutput {
+	if !p.enabled {
+		// If card parsing is disabled, just return text as-is
+		if text != "" {
+			return []StreamCardOutput{{Type: "text", Text: text}}
+		}
+		return nil
+	}
+
+	events := p.parser.Feed(text)
+	return p.convertEvents(events)
+}
+
+// ProcessorFlush flushes any remaining buffered content
+func (p *StreamCardProcessor) ProcessorFlush() []StreamCardOutput {
+	if !p.enabled {
+		return nil
+	}
+
+	events := p.parser.Flush()
+	return p.convertEvents(events)
+}
+
+// ProcessorIsInCard returns true if currently parsing a card
+func (p *StreamCardProcessor) ProcessorIsInCard() bool {
+	return p.enabled && p.parser.IsInCard()
+}
+
+// ProcessorReset resets the processor state
+func (p *StreamCardProcessor) ProcessorReset() {
+	if p.enabled {
+		p.parser.Reset()
+	}
+}
+
+// convertEvents converts StreamEvent to StreamCardOutput
+func (p *StreamCardProcessor) convertEvents(events []StreamEvent) []StreamCardOutput {
+	var outputs []StreamCardOutput
+
+	for _, event := range events {
+		switch e := event.(type) {
+		case TextEvent:
+			outputs = append(outputs, StreamCardOutput{
+				Type: "text",
+				Text: e.Text,
+			})
+		case CardEvent:
+			switch e.Type {
+			case CardEventCreate:
+				outputs = append(outputs, StreamCardOutput{
+					Type:         string(YnetTypeCardCreate),
+					CardID:       e.CardID,
+					TemplateID:   e.TemplateID,
+					TemplateName: e.TemplateName,
+				})
+			case CardEventDelta:
+				outputs = append(outputs, StreamCardOutput{
+					Type:   string(YnetTypeCardDelta),
+					CardID: e.CardID,
+					Field:  e.Field,
+					Delta:  e.Delta,
+				})
+			case CardEventDone:
+				outputs = append(outputs, StreamCardOutput{
+					Type:   string(YnetTypeCardDone),
+					CardID: e.CardID,
+				})
+			}
+		}
+	}
+
+	return outputs
+}
+
+// BuildCardMetaData builds metadata map for a card output
+func BuildCardMetaData(output StreamCardOutput) map[string]string {
+	meta := make(map[string]string)
+
+	switch output.Type {
+	case string(YnetTypeCardCreate):
+		meta[string(MetaKeyYnetType)] = string(YnetTypeCardCreate)
+		meta[string(MetaKeyCardID)] = output.CardID
+		meta[string(MetaKeyTemplateID)] = output.TemplateID
+		meta[string(MetaKeyTemplateName)] = output.TemplateName
+
+	case string(YnetTypeCardDelta):
+		meta[string(MetaKeyYnetType)] = string(YnetTypeCardDelta)
+		meta[string(MetaKeyCardID)] = output.CardID
+		meta[string(MetaKeyCardField)] = output.Field
+
+	case string(YnetTypeCardDone):
+		meta[string(MetaKeyYnetType)] = string(YnetTypeCardDone)
+		meta[string(MetaKeyCardID)] = output.CardID
+	}
+
+	return meta
+}
+
+// StreamCardHandler handles streaming card events in the message pipeline
+// It buffers card_delta events and only emits them when field boundaries are crossed
+type StreamCardHandler struct {
+	processor *StreamCardProcessor
+	enabled   bool
+
+	// Buffering for card_delta events - only emit when field changes or card ends
+	pendingDeltaCardID string
+	pendingDeltaField  string
+	pendingDeltaBuffer string
+}
+
+// NewStreamCardHandler creates a new stream card handler
+func NewStreamCardHandler(boundCards []*bot_common.BoundCardInfo) *StreamCardHandler {
+	// Enable streaming card processing only if there are bound cards
+	enabled := len(boundCards) > 0
+
+	return &StreamCardHandler{
+		processor: NewStreamCardProcessor(enabled),
+		enabled:   enabled,
+	}
+}
+
+// IsEnabled returns true if streaming card processing is enabled
+func (h *StreamCardHandler) IsEnabled() bool {
+	return h.enabled
+}
+
+// flushPendingDelta flushes any buffered delta content as a single output
+func (h *StreamCardHandler) flushPendingDelta() *StreamCardHandlerOutput {
+	if h.pendingDeltaBuffer == "" || h.pendingDeltaField == "" || h.pendingDeltaCardID == "" {
+		return nil
+	}
+
+	output := &StreamCardHandlerOutput{
+		Type:  string(YnetTypeCardDelta),
+		Delta: h.pendingDeltaBuffer,
+		Meta: map[string]string{
+			string(MetaKeyYnetType):  string(YnetTypeCardDelta),
+			string(MetaKeyCardID):    h.pendingDeltaCardID,
+			string(MetaKeyCardField): h.pendingDeltaField,
+		},
+	}
+
+	// Clear the buffer
+	h.pendingDeltaCardID = ""
+	h.pendingDeltaField = ""
+	h.pendingDeltaBuffer = ""
+
+	return output
+}
+
+// ProcessContent processes streaming content and returns outputs with metadata
+// Returns: (outputs, shouldSkipOriginal)
+// - outputs: list of processed outputs (text or card events)
+// - shouldSkipOriginal: if true, caller should not send original content
+//
+// For card_delta events, this method buffers content and only emits when:
+// - A different field starts
+// - Card ends (card_done)
+// - Non-card content arrives
+func (h *StreamCardHandler) ProcessContent(content string) ([]StreamCardHandlerOutput, bool) {
+	if !h.enabled {
+		return nil, false // Let caller handle normally
+	}
+
+	outputs := h.processor.Process(content)
+	if len(outputs) == 0 {
+		return nil, true // Content is buffered in parser, skip original
+	}
+
+	var result []StreamCardHandlerOutput
+	for _, out := range outputs {
+		switch out.Type {
+		case string(YnetTypeCardDelta):
+			// Check if this is a different field - if so, flush previous buffer first
+			if h.pendingDeltaField != "" && h.pendingDeltaField != out.Field {
+				if flushed := h.flushPendingDelta(); flushed != nil {
+					result = append(result, *flushed)
+				}
+			}
+			// Accumulate delta content
+			h.pendingDeltaCardID = out.CardID
+			h.pendingDeltaField = out.Field
+			h.pendingDeltaBuffer += out.Delta
+
+		case string(YnetTypeCardCreate):
+			// Card create - emit directly
+			result = append(result, StreamCardHandlerOutput{
+				Type:    out.Type,
+				Content: out.Text,
+				Delta:   out.Delta,
+				Meta:    BuildCardMetaData(out),
+			})
+
+		case string(YnetTypeCardDone):
+			// Card done - flush any pending delta first, then emit card_done
+			if flushed := h.flushPendingDelta(); flushed != nil {
+				result = append(result, *flushed)
+			}
+			result = append(result, StreamCardHandlerOutput{
+				Type:    out.Type,
+				Content: out.Text,
+				Delta:   out.Delta,
+				Meta:    BuildCardMetaData(out),
+			})
+
+		case "text":
+			// Text content - flush any pending delta first, then emit text
+			if flushed := h.flushPendingDelta(); flushed != nil {
+				result = append(result, *flushed)
+			}
+			result = append(result, StreamCardHandlerOutput{
+				Type:    out.Type,
+				Content: out.Text,
+				Delta:   out.Delta,
+				Meta:    BuildCardMetaData(out),
+			})
+		}
+	}
+
+	return result, true
+}
+
+// Flush flushes any remaining buffered content
+func (h *StreamCardHandler) Flush() []StreamCardHandlerOutput {
+	if !h.enabled {
+		return nil
+	}
+
+	var result []StreamCardHandlerOutput
+
+	// Flush pending delta buffer first
+	if flushed := h.flushPendingDelta(); flushed != nil {
+		result = append(result, *flushed)
+	}
+
+	// Then flush the processor
+	outputs := h.processor.ProcessorFlush()
+	for _, out := range outputs {
+		result = append(result, StreamCardHandlerOutput{
+			Type:    out.Type,
+			Content: out.Text,
+			Delta:   out.Delta,
+			Meta:    BuildCardMetaData(out),
+		})
+	}
+
+	return result
+}
+
+// IsInCard returns true if currently parsing a card
+func (h *StreamCardHandler) IsInCard() bool {
+	return h.processor.ProcessorIsInCard()
+}
+
+// StreamCardHandlerOutput represents processed output from the handler
+type StreamCardHandlerOutput struct {
+	Type    string            // "text", "card_create", "card_delta", "card_done"
+	Content string            // Text content (for "text" type)
+	Delta   string            // Delta content (for "card_delta" type)
+	Meta    map[string]string // Metadata to add to the message
+}
+
+// ApplyToMessage applies the output to a ChunkMessageItem
+func (o *StreamCardHandlerOutput) ApplyToMessage(msg *entity.ChunkMessageItem) {
+	if msg.Ext == nil {
+		msg.Ext = make(map[string]string)
+	}
+
+	switch o.Type {
+	case "text":
+		msg.Content = o.Content
+	case string(YnetTypeCardCreate),
+		string(YnetTypeCardDelta),
+		string(YnetTypeCardDone):
+		// For card events, set content to delta and merge metadata
+		if o.Type == string(YnetTypeCardDelta) {
+			msg.Content = o.Delta
+		} else {
+			msg.Content = ""
+		}
+		for k, v := range o.Meta {
+			msg.Ext[k] = v
+		}
+	}
+}
+
+// GetOutputContent returns the content to use for the output
+func (o *StreamCardHandlerOutput) GetOutputContent() string {
+	if o.Type == "text" {
+		return o.Content
+	}
+	if o.Type == string(YnetTypeCardDelta) {
+		return o.Delta
+	}
+	return ""
+}
+
+// IsCardEvent returns true if this is a card event
+func (o *StreamCardHandlerOutput) IsCardEvent() bool {
+	return o.Type == string(YnetTypeCardCreate) ||
+		o.Type == string(YnetTypeCardDelta) ||
+		o.Type == string(YnetTypeCardDone)
+}
+
+// ShouldSend returns true if this output should be sent to the client
+func (o *StreamCardHandlerOutput) ShouldSend() bool {
+	// Always send card events
+	if o.IsCardEvent() {
+		return true
+	}
+	// Only send text if it has content
+	return o.Type == "text" && len(o.Content) > 0
+}
+
+// CardContentItem represents a single card content item for JSON output
+type CardContentItem struct {
+	DisplayResponseType string            `json:"displayResponseType"`
+	TemplateID          string            `json:"templateId"`
+	KvMap               map[string]string `json:"kvMap"`
+}
+
+// CardContentWrapper represents the wrapper structure for card content
+type CardContentWrapper struct {
+	ContentList []CardContentItem `json:"contentList"`
+}
+
+// HasCompletedCards returns true if there are any completed cards
+func (h *StreamCardHandler) HasCompletedCards() bool {
+	if !h.enabled {
+		return false
+	}
+	return h.processor.parser.HasCompletedCards()
+}
+
+// GetCompletedCards returns all completed cards
+func (h *StreamCardHandler) GetCompletedCards() []*CardState {
+	if !h.enabled {
+		return nil
+	}
+	return h.processor.parser.GetCompletedCards()
+}
+
+// BuildFinalContent builds the final JSON content for storage
+// This converts the parsed card data into SpecialAnswerContent-compatible format
+func (h *StreamCardHandler) BuildFinalContent() (string, error) {
+	if !h.enabled {
+		return "", nil
+	}
+
+	cards := h.processor.parser.GetCompletedCards()
+	if len(cards) == 0 {
+		return "", nil
+	}
+
+	// Build content list from completed cards
+	contentList := make([]CardContentItem, len(cards))
+	for i, card := range cards {
+		contentList[i] = CardContentItem{
+			DisplayResponseType: "TEMPLATE",
+			TemplateID:          card.TemplateID,
+			KvMap:               card.Fields,
+		}
+	}
+
+	// Create wrapper structure
+	wrapper := CardContentWrapper{
+		ContentList: contentList,
+	}
+
+	// Marshal to JSON
+	jsonBytes, err := json.Marshal(wrapper)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonBytes), nil
+}

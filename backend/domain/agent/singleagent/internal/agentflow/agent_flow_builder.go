@@ -60,6 +60,7 @@ type Config struct {
 
 const (
 	keyOfPersonRender           = "persona_render"
+	keyOfBoundCardsRender       = "bound_cards_render"
 	keyOfKnowledgeRetriever     = "knowledge_retriever"
 	keyOfKnowledgeRetrieverPack = "knowledge_retriever_pack"
 	keyOfPromptVariables        = "prompt_variables"
@@ -92,6 +93,9 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		persona:              persona,
 		variables:            nil, // 不再直接注入变量到 persona
 	}
+
+	// Create bound cards renderer
+	boundCardsRenderer := newBoundCardsRender(conf.Agent.BoundCards, nil)
 
 	// Load model info first so it can be used for knowledge retrieval
 	modelInfo, err := loadModelInfo(ctx, conf.ModelMgr, ptr.From(conf.Agent.ModelInfo.ModelId), conf.Agent.SpaceID)
@@ -301,6 +305,10 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		}),
 		compose.WithOutputKey(placeholderOfPersona))
 
+	_ = g.AddLambdaNode(keyOfBoundCardsRender,
+		compose.InvokableLambda[*AgentRequest, string](boundCardsRenderer.RenderBoundCards),
+		compose.WithOutputKey(placeholderOfBoundCards))
+
 	_ = g.AddLambdaNode(keyOfPromptVariables,
 		compose.InvokableLambda[*AgentRequest, map[string]any](promptVars.AssemblePromptVariables))
 
@@ -338,11 +346,13 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	}
 
 	_ = g.AddEdge(compose.START, keyOfPersonRender)
+	_ = g.AddEdge(compose.START, keyOfBoundCardsRender)
 	_ = g.AddEdge(compose.START, keyOfPromptVariables)
 	_ = g.AddEdge(compose.START, keyOfKnowledgeRetriever)
 	_ = g.AddEdge(compose.START, keyOfToolsPreRetriever)
 
 	_ = g.AddEdge(keyOfPersonRender, keyOfPromptTemplate)
+	_ = g.AddEdge(keyOfBoundCardsRender, keyOfPromptTemplate)
 	_ = g.AddEdge(keyOfPromptVariables, keyOfPromptTemplate)
 	_ = g.AddEdge(keyOfKnowledgeRetriever, keyOfKnowledgeRetrieverPack)
 	_ = g.AddEdge(keyOfKnowledgeRetrieverPack, keyOfPromptTemplate)

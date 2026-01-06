@@ -270,6 +270,13 @@ func (art *AgentRuntime) push(ctx context.Context, mainChan chan *entity.AgentRe
 			var usage *msgEntity.UsageExt
 			var isToolCalls = false
 			var modelAnswerMsg *msgEntity.Message
+
+			// Initialize streaming card handler if agent has bound cards
+			var cardHandler *StreamCardHandler
+			if art.AgentInfo != nil && len(art.AgentInfo.BoundCards) > 0 {
+				cardHandler = NewStreamCardHandler(art.AgentInfo.BoundCards)
+			}
+
 			for {
 				streamMsg, receErr := chunk.ModelAnswer.Recv()
 				if receErr != nil {
@@ -281,6 +288,20 @@ func (art *AgentRuntime) push(ctx context.Context, mainChan chan *entity.AgentRe
 						if modelAnswerMsg == nil {
 							break
 						}
+
+						// Flush any remaining card buffer content
+						if cardHandler != nil && cardHandler.IsEnabled() {
+							flushOutputs := cardHandler.Flush()
+							for _, out := range flushOutputs {
+								if out.ShouldSend() {
+									flushMsg := buildSendMsg(ctx, modelAnswerMsg, false, art)
+									out.ApplyToMessage(flushMsg)
+									fullContent.WriteString(out.GetOutputContent())
+									art.MessageEvent.SendMsgEvent(entity.RunEventMessageDelta, flushMsg, art.SW)
+								}
+							}
+						}
+
 						answer := buildSendMsg(ctx, modelAnswerMsg, false, art)
 						answer.Content = fullContent.String()
 						hfErr := mh.handlerAnswer(ctx, answer, usage, art, modelAnswerMsg)
@@ -336,10 +357,24 @@ func (art *AgentRuntime) push(ctx context.Context, mainChan chan *entity.AgentRe
 						}
 					}
 
-					sendAnswerMsg := buildSendMsg(ctx, modelAnswerMsg, false, art)
-					fullContent.WriteString(streamMsg.Content)
-					sendAnswerMsg.Content = streamMsg.Content
-					art.MessageEvent.SendMsgEvent(entity.RunEventMessageDelta, sendAnswerMsg, art.SW)
+					// Process content through streaming card handler if enabled
+					if cardHandler != nil && cardHandler.IsEnabled() {
+						outputs, _ := cardHandler.ProcessContent(streamMsg.Content)
+						for _, out := range outputs {
+							if out.ShouldSend() {
+								sendAnswerMsg := buildSendMsg(ctx, modelAnswerMsg, false, art)
+								out.ApplyToMessage(sendAnswerMsg)
+								fullContent.WriteString(out.GetOutputContent())
+								art.MessageEvent.SendMsgEvent(entity.RunEventMessageDelta, sendAnswerMsg, art.SW)
+							}
+						}
+					} else {
+						// Original behavior: send content directly
+						sendAnswerMsg := buildSendMsg(ctx, modelAnswerMsg, false, art)
+						fullContent.WriteString(streamMsg.Content)
+						sendAnswerMsg.Content = streamMsg.Content
+						art.MessageEvent.SendMsgEvent(entity.RunEventMessageDelta, sendAnswerMsg, art.SW)
+					}
 				}
 			}
 

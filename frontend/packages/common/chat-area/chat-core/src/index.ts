@@ -114,3 +114,15 @@ export { MessageType } from './message/types';
 
 export { Biz } from './chat-sdk/types/interface';
 export { ParsedEvent } from './channel/http-chunk/types';
+
+// Streaming Card State Manager
+export {
+  StreamingCardStateManager,
+  StreamingCardEventType,
+  StreamingCardStatus,
+  getStreamingCardStateManager,
+  isStreamingCardEvent,
+  buildCardDataForIframe,
+  type StreamingCardState,
+  type StreamingCardEventCallback,
+} from './message/streaming-card-state';

@@ -81,6 +81,12 @@ export interface MessageExtraInfo {
   /** Corresponding to timed task task_type, 1-preset task, 2-user task, 3-Plugin background task */
   task_type?: string;
   call_id?: string; // function_call and tool_response matching IDs
+  // Streaming card metadata fields
+  ynet_type?: string; // card event type: card_create, card_delta, card_done
+  card_id?: string; // unique card identifier
+  template_id?: string; // card template identifier
+  template_name?: string; // card template name
+  card_field?: string; // current card field being updated (for card_delta)
 }
 
 // Message structure returned by server level

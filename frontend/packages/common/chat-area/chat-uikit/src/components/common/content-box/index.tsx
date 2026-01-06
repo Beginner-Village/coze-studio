@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { type ReactNode, type FC } from 'react';
+import { type ReactNode, type FC, Fragment } from 'react';
 
 import {
   type IEventCallbacks,
@@ -36,10 +36,12 @@ import { MultimodalContent } from '../../contents/multimodal-content';
 import { ImageContent } from '../../contents/image-content';
 import { FileContent } from '../../contents/file-content';
 import { SpecialAnswerContent } from '../../contents/special-answer-content';
+import { StreamingCardContent } from '../../contents/streaming-card-content';
 import { isImage } from '../../../utils/is-image';
 import { defaultEnable } from '../../../utils/default-enable';
 import { isSpecialAnswerMessage, extractContentList } from '../../../utils/special-answer';
 import { MESSAGE_TYPE_VALID_IN_TEXT_LIST } from '../../../constants/content-box';
+import { useStreamingCardsForMessage } from '../../../hooks/use-streaming-card';
 
 export interface EnhancedContentConfig {
   rule: (params: {
@@ -115,6 +117,21 @@ export const ContentBox: FC<IContentBoxProps> = props => {
     isContentLoading,
     enhancedContentConfigList,
   } = props;
+
+  // Get streaming cards for this message
+  const streamingCards = useStreamingCardsForMessage(message.message_id);
+  const hasStreamingCards = streamingCards.length > 0;
+
+  // Debug: Log streaming cards status
+  if (message.role === 'assistant' && message.content_type === ContentType.Text) {
+    console.log('[ContentBox] Checking streaming cards for message:', {
+      message_id: message.message_id,
+      hasStreamingCards,
+      cardCount: streamingCards.length,
+      cards: streamingCards.map(c => ({ cardId: c.cardId, status: c.status })),
+    });
+  }
+
   /**
    * Content Enable Configuration Start
    */
@@ -136,6 +153,24 @@ export const ContentBox: FC<IContentBoxProps> = props => {
     config.rule({ contentType: message.content_type, contentConfigs, message }),
   );
 
+  // Render streaming cards if available
+  const renderStreamingCards = () => {
+    if (!hasStreamingCards) {
+      return null;
+    }
+    return (
+      <Fragment>
+        {streamingCards.map(card => (
+          <StreamingCardContent
+            key={card.cardId}
+            cardId={card.cardId}
+            messageId={message.message_id}
+          />
+        ))}
+      </Fragment>
+    );
+  };
+
   if (enhancedContentConfig) {
     return enhancedContentConfig.render({
       message,
@@ -155,35 +190,47 @@ export const ContentBox: FC<IContentBoxProps> = props => {
       MESSAGE_TYPE_VALID_IN_TEXT_LIST.includes(message.type) &&
       isTextEnable
     ) {
-      return message.role === 'user' ? (
-        <PlainTextContent
-          isContentLoading={isContentLoading}
-          content={message.content}
-          getBotInfo={getBotInfo}
-          mentioned={message.mention_list.at(0)}
+      // For user messages, just render plain text
+      if (message.role === 'user') {
+        return (
+          <PlainTextContent
+            isContentLoading={isContentLoading}
+            content={message.content}
+            getBotInfo={getBotInfo}
+            mentioned={message.mention_list.at(0)}
+          />
+        );
+      }
+
+      // For assistant messages, check for streaming cards first
+      if (hasStreamingCards) {
+        return (
+          <Fragment>
+            {renderStreamingCards()}
+          </Fragment>
+        );
+      }
+
+      // 检查是否为特殊的answer消息
+      return isSpecialAnswerMessage(message) ? (
+        <SpecialAnswerContent
+          message={message}
+          contentList={extractContentList(message)}
+          readonly={readonly}
+          onImageClick={onImageClick}
+          onLinkClick={onLinkClick}
+          enableAutoSizeImage={enableAutoSizeImage}
+          mdBoxProps={mdBoxProps}
         />
       ) : (
-        // 检查是否为特殊的answer消息
-        isSpecialAnswerMessage(message) ? (
-          <SpecialAnswerContent
-            message={message}
-            contentList={extractContentList(message)}
-            readonly={readonly}
-            onImageClick={onImageClick}
-            onLinkClick={onLinkClick}
-            enableAutoSizeImage={enableAutoSizeImage}
-            mdBoxProps={mdBoxProps}
-          />
-        ) : (
-          <TextContent
-            message={message}
-            readonly={readonly}
-            onImageClick={onImageClick}
-            onLinkClick={onLinkClick}
-            enableAutoSizeImage={enableAutoSizeImage}
-            mdBoxProps={mdBoxProps}
-          />
-        )
+        <TextContent
+          message={message}
+          readonly={readonly}
+          onImageClick={onImageClick}
+          onLinkClick={onLinkClick}
+          enableAutoSizeImage={enableAutoSizeImage}
+          mdBoxProps={mdBoxProps}
+        />
       );
     }
   }

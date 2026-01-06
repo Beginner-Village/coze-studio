@@ -30,6 +30,7 @@ import { memoryToolConfig } from './memory-tool-config';
 import { layoutInfoConfig } from './layout-info';
 import { knowledgeConfig } from './knowledge';
 import { chatBackgroundConfig } from './chat-background';
+import { boundCardsConfig } from './bound-cards';
 
 export const registers: HostedObserverConfig<
   BotSkillStore,
@@ -47,4 +48,5 @@ export const registers: HostedObserverConfig<
   workflowsConfig,
   voicesInfoConfig,
   memoryToolConfig,
+  boundCardsConfig,
 ];

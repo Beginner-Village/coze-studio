@@ -81,6 +81,7 @@ type SingleAgent struct {
 	LayoutInfo              *bot_common.LayoutInfo
 	ShortcutCommand         []string
 	MemoryToolConfig        *bot_common.MemoryToolConfig
+	BoundCards              []*bot_common.BoundCardInfo
 }
 
 type InterruptEventType int64

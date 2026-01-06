@@ -442,10 +442,20 @@ func (w *ApplicationService) GetCanvasInfo(ctx context.Context, req *workflow.Ge
 		}
 	}()
 
-	if req.GetSpaceID() != strconv.FormatInt(consts.TemplateSpaceID, 10) {
-		if err := checkUserSpace(ctx, ctxutil.MustGetUIDFromCtx(ctx), mustParseInt64(req.GetSpaceID())); err != nil {
+	currentUserID := ctxutil.MustGetUIDFromCtx(ctx)
+	spaceID := mustParseInt64(req.GetSpaceID())
+
+	// Check space permission and determine edit capability
+	var canEdit bool
+	if spaceID == consts.TemplateSpaceID {
+		canEdit = false // Template space is always read-only
+	} else {
+		spacePerm, err := checkUserSpacePermission(ctx, currentUserID, spaceID)
+		if err != nil {
 			return nil, err
 		}
+		// Creator or space admin can edit
+		canEdit = spacePerm.CanEdit
 	}
 
 	wf, err := GetWorkflowDomainSVC().Get(ctx, &vo.GetPolicy{
@@ -454,6 +464,11 @@ func (w *ApplicationService) GetCanvasInfo(ctx context.Context, req *workflow.Ge
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// Creator always has edit permission
+	if wf.CreatorID == currentUserID {
+		canEdit = true
 	}
 
 	devStatus := workflow.WorkFlowDevStatus_CanNotSubmit
@@ -512,6 +527,7 @@ func (w *ApplicationService) GetCanvasInfo(ctx context.Context, req *workflow.Ge
 			SubmitCommitID: wf.CommitID,
 			DraftCommitID:  wf.CommitID,
 			Type:           vcsType,
+			CanEdit:        canEdit,
 		},
 		WorkflowVersion: wf.LatestPublishedVersion,
 	}

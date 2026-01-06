@@ -785,13 +785,42 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 				 firstAnswerMsg = toolAsAnswerMsg
 			 }
 
+			 // Initialize streaming card handler if agent has bound cards
+			 var toolAsAnswerCardHandler *internal.StreamCardHandler
+			 if rtDependence.agentInfo != nil && len(rtDependence.agentInfo.BoundCards) > 0 {
+				 toolAsAnswerCardHandler = internal.NewStreamCardHandler(rtDependence.agentInfo.BoundCards)
+			 }
+
 			 for {
 				 streamMsg, receErr := chunk.ToolAsAnswer.Recv()
 				 if receErr != nil {
 					 if errors.Is(receErr, io.EOF) {
 
+						 // Flush any remaining card buffer content
+						 if toolAsAnswerCardHandler != nil && toolAsAnswerCardHandler.IsEnabled() {
+							 flushOutputs := toolAsAnswerCardHandler.Flush()
+							 for _, out := range flushOutputs {
+								 if out.ShouldSend() {
+									 flushMsg := c.buildSendMsg(ctx, toolAsAnswerMsg, false, rtDependence)
+									 out.ApplyToMessage(flushMsg)
+									 fullContent.WriteString(out.GetOutputContent())
+									 c.runEvent.SendMsgEvent(entity.RunEventMessageDelta, flushMsg, sw)
+								 }
+							 }
+						 }
+
 						 answer := c.buildSendMsg(ctx, toolAsAnswerMsg, false, rtDependence)
-						 answer.Content = fullContent.String()
+						 // Use JSON format for storage if there are completed cards
+						 if toolAsAnswerCardHandler != nil && toolAsAnswerCardHandler.HasCompletedCards() {
+							 finalContent, jsonErr := toolAsAnswerCardHandler.BuildFinalContent()
+							 if jsonErr == nil && finalContent != "" {
+								 answer.Content = finalContent
+							 } else {
+								 answer.Content = fullContent.String()
+							 }
+						 } else {
+							 answer.Content = fullContent.String()
+						 }
 						 hfErr := c.handlerAnswer(ctx, answer, sw, usage, rtDependence, toolAsAnswerMsg)
 						 if hfErr != nil {
 							 err = hfErr
@@ -806,10 +835,25 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 				 if streamMsg != nil && streamMsg.ResponseMeta != nil {
 					 usage = c.handlerUsage(streamMsg.ResponseMeta)
 				 }
-				 sendMsg := c.buildSendMsg(ctx, toolAsAnswerMsg, false, rtDependence)
-				 fullContent.WriteString(streamMsg.Content)
-				 sendMsg.Content = streamMsg.Content
-				 c.runEvent.SendMsgEvent(entity.RunEventMessageDelta, sendMsg, sw)
+
+				 // Process content through streaming card handler if enabled
+				 if toolAsAnswerCardHandler != nil && toolAsAnswerCardHandler.IsEnabled() {
+					 outputs, _ := toolAsAnswerCardHandler.ProcessContent(streamMsg.Content)
+					 for _, out := range outputs {
+						 if out.ShouldSend() {
+							 sendMsg := c.buildSendMsg(ctx, toolAsAnswerMsg, false, rtDependence)
+							 out.ApplyToMessage(sendMsg)
+							 fullContent.WriteString(out.GetOutputContent())
+							 c.runEvent.SendMsgEvent(entity.RunEventMessageDelta, sendMsg, sw)
+						 }
+					 }
+				 } else {
+					 // Original behavior: send content directly
+					 sendMsg := c.buildSendMsg(ctx, toolAsAnswerMsg, false, rtDependence)
+					 fullContent.WriteString(streamMsg.Content)
+					 sendMsg.Content = streamMsg.Content
+					 c.runEvent.SendMsgEvent(entity.RunEventMessageDelta, sendMsg, sw)
+				 }
 			 }
 
 		 case message.MessageTypeAnswer:
@@ -817,6 +861,13 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 			 var usage *msgEntity.UsageExt
 			 var isToolCalls = false
 			 var modelAnswerMsg *msgEntity.Message
+
+			 // Initialize streaming card handler if agent has bound cards
+			 var cardHandler *internal.StreamCardHandler
+			 if rtDependence.agentInfo != nil && len(rtDependence.agentInfo.BoundCards) > 0 {
+				 cardHandler = internal.NewStreamCardHandler(rtDependence.agentInfo.BoundCards)
+			 }
+
 			 for {
 				 streamMsg, receErr := chunk.ModelAnswer.Recv()
 				 if receErr != nil {
@@ -828,8 +879,32 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 						 if modelAnswerMsg == nil {
 							 break
 						 }
+
+						 // Flush any remaining card buffer content
+						 if cardHandler != nil && cardHandler.IsEnabled() {
+							 flushOutputs := cardHandler.Flush()
+							 for _, out := range flushOutputs {
+								 if out.ShouldSend() {
+									 flushMsg := c.buildSendMsg(ctx, modelAnswerMsg, false, rtDependence)
+									 out.ApplyToMessage(flushMsg)
+									 fullContent.WriteString(out.GetOutputContent())
+									 c.runEvent.SendMsgEvent(entity.RunEventMessageDelta, flushMsg, sw)
+								 }
+							 }
+						 }
+
 						 answer := c.buildSendMsg(ctx, modelAnswerMsg, false, rtDependence)
-						 answer.Content = fullContent.String()
+						 // Use JSON format for storage if there are completed cards
+						 if cardHandler != nil && cardHandler.HasCompletedCards() {
+							 finalContent, jsonErr := cardHandler.BuildFinalContent()
+							 if jsonErr == nil && finalContent != "" {
+								 answer.Content = finalContent
+							 } else {
+								 answer.Content = fullContent.String()
+							 }
+						 } else {
+							 answer.Content = fullContent.String()
+						 }
 						 hfErr := c.handlerAnswer(ctx, answer, sw, usage, rtDependence, modelAnswerMsg)
 						 if hfErr != nil {
 							 err = hfErr
@@ -881,10 +956,24 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 						 }
 					 }
 
-					 sendAnswerMsg := c.buildSendMsg(ctx, modelAnswerMsg, false, rtDependence)
-					 fullContent.WriteString(streamMsg.Content)
-					 sendAnswerMsg.Content = streamMsg.Content
-					 c.runEvent.SendMsgEvent(entity.RunEventMessageDelta, sendAnswerMsg, sw)
+					 // Process content through streaming card handler if enabled
+					 if cardHandler != nil && cardHandler.IsEnabled() {
+						 outputs, _ := cardHandler.ProcessContent(streamMsg.Content)
+						 for _, out := range outputs {
+							 if out.ShouldSend() {
+								 sendAnswerMsg := c.buildSendMsg(ctx, modelAnswerMsg, false, rtDependence)
+								 out.ApplyToMessage(sendAnswerMsg)
+								 fullContent.WriteString(out.GetOutputContent())
+								 c.runEvent.SendMsgEvent(entity.RunEventMessageDelta, sendAnswerMsg, sw)
+							 }
+						 }
+					 } else {
+						 // Original behavior: send content directly
+						 sendAnswerMsg := c.buildSendMsg(ctx, modelAnswerMsg, false, rtDependence)
+						 fullContent.WriteString(streamMsg.Content)
+						 sendAnswerMsg.Content = streamMsg.Content
+						 c.runEvent.SendMsgEvent(entity.RunEventMessageDelta, sendAnswerMsg, sw)
+					 }
 				 }
 			 }
 

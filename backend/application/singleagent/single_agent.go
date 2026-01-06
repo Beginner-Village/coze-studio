@@ -392,6 +392,11 @@ func (s *SingleAgentApplicationService) applyAgentUpdates(target *entity.SingleA
 		target.MemoryToolConfig = patch.MemoryToolConfig
 	}
 
+	// Add BoundCards handling for card binding feature
+	if patch.BoundCards != nil {
+		target.BoundCards = patch.BoundCards
+	}
+
 	return target, nil
 }
 
@@ -449,6 +454,7 @@ func (s *SingleAgentApplicationService) singleAgentDraftDo2Vo(ctx context.Contex
 		ExternalKnowledge:       do.ExternalKnowledge,
 		Version:                 do.Version,
 		MemoryToolConfig:        do.MemoryToolConfig,
+		BoundCards:              do.BoundCards,
 	}
 
 	if do.VariablesMetaID != nil {

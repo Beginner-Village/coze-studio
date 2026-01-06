@@ -214,6 +214,12 @@ func buildExt(extra map[string]string) *message.ExtraInfo {
 		ExecuteDisplayName:  extra["execute_display_name"],
 		TaskType:            extra["task_type"],
 		ReferFormat:         extra["refer_format"],
+		// Streaming card metadata fields
+		YnetType:     extra["ynet_type"],
+		CardID:       extra["card_id"],
+		TemplateID:   extra["template_id"],
+		TemplateName: extra["template_name"],
+		CardField:    extra["card_field"],
 	}
 }
 func buildErrMsg(ackChunk *entity.ChunkMessageItem, err *entity.RunError, id int64) []byte {

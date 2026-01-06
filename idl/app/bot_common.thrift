@@ -481,7 +481,8 @@ struct BotInfo {
     34: LayoutInfo         LayoutInfo       (api.body="layout_info")                                        , // Orchestration information for workflow patterns
     35: BusinessType       BusinessType     (api.body="business_type"),
     36: optional ExternalKnowledge ExternalKnowledge (api.body="external_knowledge"),                          // External Knowledge configuration for RAGFlow integration
-    37: optional MemoryToolConfig  MemoryToolConfig  (api.body="memory_tool_config")                          // Memory tool configuration (setKeywordMemory, getKeywordMemory, etc.)
+    37: optional MemoryToolConfig  MemoryToolConfig  (api.body="memory_tool_config"),                          // Memory tool configuration (setKeywordMemory, getKeywordMemory, etc.)
+    38: optional list<BoundCardInfo> BoundCards      (api.body="bound_cards")                                  // Bound cards for agent prompt injection
 }
 
 // External Knowledge structures for RAGFlow integration
@@ -645,6 +646,7 @@ struct BotInfoForUpdate {
     33: optional LayoutInfo               LayoutInfo(api.body="layout_info")                           // Orchestration information for workflow patterns
     34: optional ExternalKnowledge        ExternalKnowledge (api.body="external_knowledge")           // External Knowledge configuration for RAGFlow integration
     35: optional MemoryToolConfig         MemoryToolConfig  (api.body="memory_tool_config")           // Memory tool configuration
+    36: optional list<BoundCardInfo>      BoundCards        (api.body="bound_cards")                  // Bound cards for agent prompt injection
 }
 
 struct AgentForUpdate {
@@ -931,4 +933,29 @@ enum ReferenceUpdateType {
 enum ReferenceInfoStatus {
     HasUpdates = 1 // 1: Updates are available
     IsDelete   = 2 // 2: Deleted
+}
+
+// Card parameter for bound cards
+struct CardParam {
+    1: optional string param_name (api.body="param_name"),       // Parameter name
+    2: optional string param_type (api.body="param_type"),       // Parameter type
+    3: optional bool required (api.body="required"),             // Whether required
+    4: optional string desc (api.body="desc"),                   // Parameter description
+    5: optional list<CardParam> children (api.body="children"),  // Nested parameters
+}
+
+// Card parameter mapping configuration
+struct CardParamMapping {
+    1: optional string param_name (api.body="param_name"),       // Card parameter name
+    2: optional string variable_name (api.body="variable_name"), // Mapped agent variable name
+}
+
+// Bound card information for agent
+struct BoundCardInfo {
+    1: optional string card_id (api.body="card_id"),                      // Card ID (string to avoid JS precision loss)
+    2: optional string card_name (api.body="card_name"),                  // Card name
+    3: optional string code (api.body="code"),                            // Card code/identifier
+    4: optional string card_pic_url (api.body="card_pic_url"),            // Card preview image URL
+    5: optional list<CardParam> param_list (api.body="param_list"),       // Card parameter list
+    6: optional list<CardParamMapping> param_mapping (api.body="param_mapping"), // Parameter mapping configuration
 }

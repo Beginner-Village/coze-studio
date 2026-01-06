@@ -74,6 +74,7 @@ func init() {
 	_ = compose.RegisterSerializableType[*entity.InterruptEvent]("interrupt_event")
 	_ = compose.RegisterSerializableType[workflow2.EventType]("workflow_event_type")
 	_ = compose.RegisterSerializableType[*model.TokenUsage]("model_token_usage")
+	_ = compose.RegisterSerializableType[model.PromptTokenDetails]("model_prompt_token_details")
 	_ = compose.RegisterSerializableType[*nodes.NestedWorkflowState]("composite_state")
 	_ = compose.RegisterSerializableType[*compose.InterruptInfo]("interrupt_info")
 	_ = compose.RegisterSerializableType[*schema2.SourceInfo]("source_info")

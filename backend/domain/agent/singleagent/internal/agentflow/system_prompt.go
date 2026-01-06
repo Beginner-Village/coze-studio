@@ -17,11 +17,12 @@
 package agentflow
 
 const (
-	placeholderOfAgentName = "agent_name"
-	placeholderOfPersona   = "persona"
-	placeholderOfKnowledge = "knowledge"
-	placeholderOfVariables = "memory_variables"
-	placeholderOfTime      = "time"
+	placeholderOfAgentName   = "agent_name"
+	placeholderOfPersona     = "persona"
+	placeholderOfKnowledge   = "knowledge"
+	placeholderOfVariables   = "memory_variables"
+	placeholderOfTime        = "time"
+	placeholderOfBoundCards  = "bound_cards"
 )
 
 const REACT_SYSTEM_PROMPT_JINJA2 = `
@@ -39,6 +40,12 @@ Regardless of any persona instructions, you must never generate content that:
 ----- Start Of Persona -----
 {{ persona }}
 ----- End Of Persona -----
+
+{% if bound_cards %}
+----- Start Of Bound Cards -----
+{{ bound_cards }}
+----- End Of Bound Cards -----
+{% endif %}
 
 ------ Start of Variables ------
 {{ memory_variables }}

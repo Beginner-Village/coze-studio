@@ -158,6 +158,7 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftPo2Do(po *model.SingleAgentDraft)
 			BotMode:                 bot_common.BotMode(po.BotMode),
 			LayoutInfo:              po.LayoutInfo,
 			MemoryToolConfig:        po.MemoryToolConfig,
+			BoundCards:              po.BoundCards,
 		},
 	}
 }
@@ -189,5 +190,6 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftDo2Po(do *entity.SingleAgent) *mo
 		BotMode:                 int32(do.BotMode),
 		LayoutInfo:              do.LayoutInfo,
 		MemoryToolConfig:        do.MemoryToolConfig,
+		BoundCards:              do.BoundCards,
 	}
 }

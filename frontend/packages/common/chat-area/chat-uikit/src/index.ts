@@ -22,6 +22,13 @@ export { getFileExtensionAndName } from './utils/file-name';
 export { MessageBoxTheme } from './components/common/message-box/type';
 
 export { useStateWithLocalCache } from './hooks/use-state-with-local-cache';
+export {
+  useStreamingCard,
+  useStreamingCardsForMessage,
+  useHasStreamingCards,
+  useIsStreaming,
+  useStreamingCardActions,
+} from './hooks/use-streaming-card';
 
 export {
   UIKitCustomComponentsProvider,

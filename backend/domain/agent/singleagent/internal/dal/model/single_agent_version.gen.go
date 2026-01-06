@@ -57,6 +57,7 @@ type SingleAgentVersion struct {
 	ShortcutCommand         []string                          `gorm:"column:shortcut_command;comment:shortcut command;serializer:json" json:"shortcut_command"`                     // shortcut command
 	LayoutInfo              *bot_common.LayoutInfo            `gorm:"column:layout_info;comment:chatflow layout info;serializer:json" json:"layout_info"`                           // chatflow layout info
 	MemoryToolConfig        *bot_common.MemoryToolConfig      `gorm:"column:memory_tool_config;comment:Memory Tool Configuration;serializer:json" json:"memory_tool_config"`         // Memory Tool Configuration
+	BoundCards              []*bot_common.BoundCardInfo       `gorm:"column:bound_cards;comment:Bound Cards for Prompt Injection;serializer:json" json:"bound_cards"`                 // Bound Cards for Prompt Injection
 }
 
 // TableName SingleAgentVersion's table name

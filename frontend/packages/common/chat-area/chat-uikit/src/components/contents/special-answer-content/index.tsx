@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-import { useState, useRef, useEffect, type FC } from 'react';
-import { Button } from '@coze-arch/coze-design';
+import { useState, useRef, useEffect, useCallback, type FC } from 'react';
 import { type IBaseContentProps } from '@coze-common/chat-uikit-shared';
 
 import { TextContent } from '../text-content';
 import './index.less';
 
+export interface SpecialContentItem {
+  displayResponseType?: string;
+  templateId?: string;
+  kvMap?: Record<string, any>;
+  dataResponse?: Record<string, any>;
+}
+
 export interface SpecialAnswerContentProps extends IBaseContentProps {
-  contentList?: Array<{
-    displayResponseType?: string;
-    templateId?: string;
-    kvMap?: Record<string, any>;
-    dataResponse?: Record<string, any>;
-  }>;
+  contentList?: SpecialContentItem[];
 }
 
 declare global {
@@ -47,195 +48,42 @@ const generateEventId = (): string => {
 };
 
 /**
- * 特殊answer消息组件，用于处理包含displayResponseType的消息
- * 支持原生显示和iframe嵌套显示两种模式
+ * 单个卡片组件 - 用于渲染单张卡片的 iframe
  */
-export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
-  const { message, contentList, ...restProps } = props;
-  const [viewMode, setViewMode] = useState<'iframe' | 'native'>('iframe'); // 默认显示卡片
-  const [iframeHeight, setIframeHeight] = useState<number>(600); // 默认高度，使用手机比例
+const SingleCardContent: FC<{
+  content: SpecialContentItem;
+  index: number;
+}> = ({ content, index }) => {
+  const [iframeHeight, setIframeHeight] = useState<number>(600);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // 检查是否有displayResponseType内容
-  const specialContent = contentList?.find(item => item.displayResponseType);
-
-  // 监听iframe加载完成，发送卡片数据并处理高度调整
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    // 只在 iframe 模式下且有特殊内容时才处理
-    if (!iframe || !specialContent || viewMode !== 'iframe') {
-      console.log('⏭️ 跳过 iframe 事件设置:', {
-        hasIframe: !!iframe,
-        hasContent: !!specialContent,
-        viewMode,
-      });
-      return;
-    }
-
-    // 计算目标 Origin
-    const cardUrl =
-      window.APP_CONFIG?.CARD_URL ||
-      'https://agent.finmall.com/agent-h5-web/card/index.html';
-    let targetOrigin = '';
-    try {
-      if (cardUrl.startsWith('http')) {
-        targetOrigin = new URL(cardUrl).origin;
-      } else {
-        targetOrigin = window.location.origin;
-      }
-    } catch (e) {
-      console.warn('⚠️ 解析 Card URL 失败，使用当前 Origin:', e);
+  // 计算目标 Origin
+  const cardUrl =
+    window.APP_CONFIG?.CARD_URL ||
+    'https://agent.finmall.com/agent-h5-web/card/index.html';
+  let targetOrigin = '';
+  try {
+    if (cardUrl.startsWith('http')) {
+      targetOrigin = new URL(cardUrl).origin;
+    } else {
       targetOrigin = window.location.origin;
     }
-
-    console.log('🔧 设置 iframe 事件监听器...', {
-      src: iframe.src,
-      targetOrigin,
-    });
-
-    const sendCardData = () => {
-      try {
-        // 准备卡片数据
-        const { templateId, kvMap, dataResponse } = specialContent;
-        const cardData =
-          kvMap && Object.keys(kvMap).length > 0 ? kvMap : dataResponse;
-
-        console.log('📦 准备发送卡片数据:', {
-          templateId,
-          hasKvMap: !!kvMap,
-          hasDataResponse: !!dataResponse,
-          cardDataKeys: Object.keys(cardData || {}),
-        });
-
-        // 构建 postMessage 消息结构
-        const messagePayload = {
-          channel: 'agent', // 固定标识
-          eventId: generateEventId(), // 时间戳 + 自增整数
-          event: 'card', // 渲染卡片消息
-          data: {
-            code: templateId || '', // 卡片模板ID
-            data: cardData || {}, // 卡片数据
-          },
-        };
-
-        // 序列化为 JSON 字符串后发送
-        const messageString = JSON.stringify(messagePayload);
-
-        // 通过 postMessage 发送卡片数据到 iframe
-        if (iframe.contentWindow) {
-          iframe.contentWindow.postMessage(messageString, targetOrigin);
-
-          console.log('📤 发送卡片数据到 iframe:', {
-            eventId: messagePayload.eventId,
-            templateId,
-            targetOrigin,
-            dataSize: messageString.length,
-          });
-          console.log('📋 完整消息:', messagePayload);
-        } else {
-          console.warn('⚠️ iframe.contentWindow 不可用');
-        }
-
-        // 尝试获取iframe内容的高度（仅限同域情况）
-        try {
-          const iframeDocument =
-            iframe.contentDocument || iframe.contentWindow?.document;
-          if (iframeDocument) {
-            const body = iframeDocument.body;
-            const html = iframeDocument.documentElement;
-            const height = Math.max(
-              body?.scrollHeight || 0,
-              body?.offsetHeight || 0,
-              html?.clientHeight || 0,
-              html?.scrollHeight || 0,
-              html?.offsetHeight || 0,
-            );
-
-            if (height > 100) {
-              setIframeHeight(height + 20);
-              console.log('📐 同域iframe，自动调整高度:', height + 20);
-            }
-          } else {
-            console.log('🔒 跨域iframe，等待通过 postMessage 调整高度');
-          }
-        } catch (crossOriginError) {
-          // 跨域访问被阻止，这是正常的
-          console.log('🔒 跨域iframe，无法直接获取高度（正常现象）');
-        }
-      } catch (error) {
-        console.error('❌ 发送卡片数据或调整高度失败:', error);
-      }
-    };
-
-    const handleIframeLoad = () => {
-      console.log('✅ iframe load 事件触发', { src: iframe.src });
-      sendCardData();
-    };
-
-    // 监听来自iframe的消息（用于跨域高度获取）
-    const handleMessage = (event: MessageEvent) => {
-      // 验证消息来源（安全考虑）
-      if (event.origin !== targetOrigin) {
-        // 如果是同域，origin 可能是 null (本地文件) 或 与 window.location.origin 相同
-        // 这里主要防止恶意站点的消息
-        // 对于相对路径（同域），我们允许 event.origin === window.location.origin
-        if (
-          targetOrigin === window.location.origin &&
-          event.origin === window.location.origin
-        ) {
-          // pass
-        } else {
-          return;
-        }
-      }
-
-      if (
-        event.data &&
-        typeof event.data === 'object' &&
-        event.data.type === 'resize'
-      ) {
-        const newHeight = event.data.height;
-        if (typeof newHeight === 'number' && newHeight > 100) {
-          setIframeHeight(newHeight + 20);
-          console.log('📐 通过postMessage调整iframe高度:', newHeight + 20);
-        }
-      }
-    };
-
-    // 绑定事件监听器
-    iframe.addEventListener('load', handleIframeLoad);
-    window.addEventListener('message', handleMessage);
-
-    return () => {
-      console.log('🧹 清理 iframe 事件监听器');
-      iframe.removeEventListener('load', handleIframeLoad);
-      window.removeEventListener('message', handleMessage);
-    };
-  }, [specialContent, viewMode]);
-
-  if (!specialContent) {
-    // 如果没有特殊内容，回退到普通文本组件
-    return <TextContent message={message} {...restProps} />;
+  } catch (e) {
+    targetOrigin = window.location.origin;
   }
 
-  // 生成iframe URL（仅包含 spaceId 参数，卡片数据通过 postMessage 传递）
-  const generateIframeUrl = () => {
+  // 生成iframe URL
+  const generateIframeUrl = useCallback(() => {
     const baseUrl =
       window.APP_CONFIG?.CARD_URL ||
       'https://agent.finmall.com/agent-h5-web/card/index.html';
 
-    // 从 URL 中提取 spaceId 参数
-    // 支持两种格式：/space/{space_id}/... 或 ?space_id=xxx
     let spaceId = '';
-
     try {
-      // 方式1：从路径参数中提取（如 /space/123456/agent）
       const pathMatch = window.location.pathname.match(/\/space\/([^\/]+)/);
       if (pathMatch && pathMatch[1]) {
         spaceId = pathMatch[1];
       }
-
-      // 方式2：从查询参数中提取（作为备选）
       if (!spaceId) {
         const urlParams = new URLSearchParams(window.location.search);
         spaceId = urlParams.get('space_id') || urlParams.get('spaceId') || '';
@@ -244,20 +92,110 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
       console.warn('⚠️ 无法从 URL 获取 spaceId:', error);
     }
 
-    if (spaceId) {
-      const iframeUrl = `${baseUrl}?spaceId=${spaceId}`;
-      console.log(
-        '🔗 iframe链接（含spaceId）:',
-        iframeUrl,
-        '| spaceId:',
-        spaceId,
-      );
-      return iframeUrl;
+    return spaceId ? `${baseUrl}?spaceId=${spaceId}` : baseUrl;
+  }, []);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe || !content) {
+      return;
     }
 
-    console.log('🔗 iframe链接（无spaceId）:', baseUrl);
-    return baseUrl;
-  };
+    const sendCardData = () => {
+      try {
+        const { templateId, kvMap, dataResponse } = content;
+        const cardData =
+          kvMap && Object.keys(kvMap).length > 0 ? kvMap : dataResponse;
+
+        console.log(`📦 [Card ${index}] 准备发送卡片数据:`, {
+          templateId,
+          cardDataKeys: Object.keys(cardData || {}),
+        });
+
+        const messagePayload = {
+          channel: 'agent',
+          eventId: generateEventId(),
+          event: 'card',
+          data: {
+            code: templateId || '',
+            data: cardData || {},
+          },
+        };
+
+        const messageString = JSON.stringify(messagePayload);
+
+        if (iframe.contentWindow) {
+          iframe.contentWindow.postMessage(messageString, targetOrigin);
+          console.log(`📤 [Card ${index}] 发送卡片数据到 iframe:`, {
+            templateId,
+            targetOrigin,
+          });
+        }
+      } catch (error) {
+        console.error(`❌ [Card ${index}] 发送卡片数据失败:`, error);
+      }
+    };
+
+    const handleIframeLoad = () => {
+      console.log(`✅ [Card ${index}] iframe load 事件触发`);
+      sendCardData();
+    };
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== targetOrigin && event.origin !== window.location.origin) {
+        return;
+      }
+      if (event.data?.type === 'resize' && typeof event.data.height === 'number') {
+        setIframeHeight(event.data.height + 20);
+      }
+    };
+
+    iframe.addEventListener('load', handleIframeLoad);
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      iframe.removeEventListener('load', handleIframeLoad);
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [content, targetOrigin, index]);
+
+  return (
+    <div className="single-card-iframe" style={{ marginBottom: '12px' }}>
+      <iframe
+        ref={iframeRef}
+        src={generateIframeUrl()}
+        width="100%"
+        height={`${iframeHeight}px`}
+        frameBorder="0"
+        title={`Card Content ${index}`}
+        sandbox="allow-scripts allow-same-origin allow-forms"
+      />
+    </div>
+  );
+};
+
+/**
+ * 特殊answer消息组件，用于处理包含displayResponseType的消息
+ * 支持原生显示和iframe嵌套显示两种模式
+ * 支持多张卡片渲染
+ */
+export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
+  const { message, contentList, ...restProps } = props;
+  const [viewMode, setViewMode] = useState<'iframe' | 'native'>('iframe');
+
+  // 获取所有有 displayResponseType 的内容（支持多张卡片）
+  const specialContents = contentList?.filter(item => item.displayResponseType) || [];
+
+  console.log('🃏 SpecialAnswerContent 渲染:', {
+    totalItems: contentList?.length || 0,
+    specialCardsCount: specialContents.length,
+    templateIds: specialContents.map(c => c.templateId),
+  });
+
+  if (specialContents.length === 0) {
+    // 如果没有特殊内容，回退到普通文本组件
+    return <TextContent message={message} {...restProps} />;
+  }
 
   return (
     <div className="special-answer-content">
@@ -268,25 +206,24 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
             {/* 显示原始消息内容 */}
             <TextContent message={message} {...restProps} />
 
-            {/* 显示特殊内容的JSON数据（调试用） */}
+            {/* 显示所有特殊内容的JSON数据（调试用） */}
             <div className="special-answer-data">
               <details>
-                <summary>原始数据</summary>
-                <pre>{JSON.stringify(specialContent, null, 2)}</pre>
+                <summary>原始数据 ({specialContents.length} 张卡片)</summary>
+                <pre>{JSON.stringify(specialContents, null, 2)}</pre>
               </details>
             </div>
           </div>
         ) : (
           <div className="special-answer-iframe">
-            <iframe
-              ref={iframeRef}
-              src={generateIframeUrl()}
-              width="100%"
-              height={`${iframeHeight}px`}
-              frameBorder="0"
-              title="Special Answer Content"
-              sandbox="allow-scripts allow-same-origin allow-forms"
-            />
+            {/* 渲染所有卡片 */}
+            {specialContents.map((content, index) => (
+              <SingleCardContent
+                key={`${content.templateId}-${index}`}
+                content={content}
+                index={index}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -299,7 +236,7 @@ export const SpecialAnswerContent: FC<SpecialAnswerContentProps> = props => {
             onClick={() => setViewMode('iframe')}
             title="卡片显示"
           >
-            卡片
+            卡片 ({specialContents.length})
           </div>
           <div className="toggle-divider"></div>
           <div

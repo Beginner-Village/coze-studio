@@ -68,3 +68,4 @@ export {
 export { PublishPlatformSetting } from './publish-platform-setting';
 import PublishPlatformDescription from './publish-platform-description';
 export { PublishPlatformDescription };
+export { CardBindingArea } from './card-binding-area';

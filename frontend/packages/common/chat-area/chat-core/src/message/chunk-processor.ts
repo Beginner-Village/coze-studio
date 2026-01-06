@@ -32,6 +32,10 @@ import {
   type AnswerFinishVerboseData,
   FinishReasonType,
 } from './types';
+import {
+  getStreamingCardStateManager,
+  isStreamingCardEvent,
+} from './streaming-card-state';
 
 export class StreamBufferHelper {
   // One-time streaming pull message message cache
@@ -131,6 +135,7 @@ export class ChunkProcessor {
     this.streamBuffer.pushChunk(chunk);
     flow(
       this.preProcessChunk.bind(this),
+      this.processStreamingCardEvent.bind(this),
       this.concatChunkMessage.bind(this),
       this.assembleDebugMessage.bind(this),
     )(chunk, options) as Message<ContentType>;
@@ -296,6 +301,46 @@ export class ChunkProcessor {
               .value
           : message.content,
     };
+  }
+
+  /**
+   * Process streaming card events
+   * Handles card_create, card_delta, card_done events from extra_info.ynet_type
+   */
+  private processStreamingCardEvent(
+    message: Message<ContentType>,
+  ): Message<ContentType> {
+    const extraInfo = message.extra_info;
+
+    // Debug: Log all message extra_info to track card events
+    if (extraInfo && (extraInfo.ynet_type || extraInfo.card_id)) {
+      console.log('[ChunkProcessor] Detected potential card event:', {
+        message_id: message.message_id,
+        ynet_type: extraInfo.ynet_type,
+        card_id: extraInfo.card_id,
+        template_id: extraInfo.template_id,
+        template_name: extraInfo.template_name,
+        card_field: extraInfo.card_field,
+        content_preview: message.content?.substring(0, 100),
+      });
+    }
+
+    // Skip if not a streaming card event
+    if (!extraInfo || !isStreamingCardEvent(extraInfo)) {
+      return message;
+    }
+
+    console.log('[ChunkProcessor] Processing streaming card event:', {
+      message_id: message.message_id,
+      ynet_type: extraInfo.ynet_type,
+      card_id: extraInfo.card_id,
+    });
+
+    // Get the streaming card state manager and process the event
+    const cardManager = getStreamingCardStateManager();
+    cardManager.processCardEvent(message.message_id, extraInfo, message.content);
+
+    return message;
   }
 
   /**

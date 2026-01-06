@@ -65,7 +65,29 @@ import {
   type DatabaseList,
   type TableMemoryItem,
   type VoicesInfo,
+  type BoundCardInfo,
+  type CardParam,
+  type CardParamMapping,
 } from '../../types/skill';
+
+// 后端卡片数据结构（在IDL定义之前使用临时类型）
+interface BoundCardDTO {
+  card_id?: string;
+  card_name?: string;
+  code?: string;
+  card_pic_url?: string;
+  param_list?: Array<{
+    param_name?: string;
+    param_type?: string;
+    required?: boolean;
+    desc?: string;
+    children?: unknown[];
+  }>;
+  param_mapping?: Array<{
+    param_name?: string;
+    variable_name?: string;
+  }>;
+}
 import {
   DEFAULT_BOT_NODE_SUGGESTION_CONFIG,
   DEFAULT_KNOWLEDGE_CONFIG,
@@ -310,6 +332,30 @@ export const transformDto2Vo = {
     workflow_id: layoutInfoFromService?.workflow_id,
     plugin_id: layoutInfoFromService?.plugin_id,
   }),
+
+  // 卡片绑定数据转换
+  boundCards: (data?: BoundCardDTO[]): BoundCardInfo[] =>
+    data?.map(card => ({
+      cardId: card.card_id ?? '',
+      cardName: card.card_name ?? '',
+      code: card.code ?? '',
+      cardPicUrl: card.card_pic_url,
+      paramList: card.param_list?.map(
+        (p): CardParam => ({
+          paramName: p.param_name ?? '',
+          paramType: p.param_type ?? 'string',
+          required: p.required ?? false,
+          desc: p.desc,
+          children: p.children as CardParam[] | undefined,
+        }),
+      ),
+      paramMapping: card.param_mapping?.map(
+        (m): CardParamMapping => ({
+          paramName: m.param_name ?? '',
+          variableName: m.variable_name ?? '',
+        }),
+      ),
+    })) ?? [],
 };
 
 export const transformVo2Dto = {
@@ -434,4 +480,24 @@ export const transformVo2Dto = {
     mode?: number;
   }): BotInfoForUpdate['memory_tool_config'] =>
     config ? { mode: config.mode } : undefined,
+
+  // 卡片绑定数据转换
+  boundCards: (boundCards: BoundCardInfo[]): BoundCardDTO[] =>
+    boundCards.map(card => ({
+      card_id: card.cardId,
+      card_name: card.cardName,
+      code: card.code,
+      card_pic_url: card.cardPicUrl,
+      param_list: card.paramList?.map(p => ({
+        param_name: p.paramName,
+        param_type: p.paramType,
+        required: p.required,
+        desc: p.desc,
+        children: p.children,
+      })),
+      param_mapping: card.paramMapping?.map(m => ({
+        param_name: m.paramName,
+        variable_name: m.variableName,
+      })),
+    })),
 };

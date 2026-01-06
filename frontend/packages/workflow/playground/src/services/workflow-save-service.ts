@@ -390,20 +390,132 @@ export class WorkflowSaveService {
         workflowJSON,
       );
 
-      if (!relatedBot?.id || !relatedBot?.type) {
-        return;
+      if (relatedBot?.id && relatedBot?.type) {
+        return this.globalVariableService.loadGlobalVariables(
+          relatedBot?.type,
+          relatedBot?.id,
+        );
       }
 
-      return this.globalVariableService.loadGlobalVariables(
-        relatedBot?.type,
-        relatedBot?.id,
-      );
+      // Fallback: use bindBizID or projectId from workflow info when relatedBot is not available
+      // This ensures read-only users can still see bound variables
+      const { bindBizID, projectId } = this.globalState;
+
+      // If workflow is bound to a bot, use bindBizID
+      if (bindBizID) {
+        return this.globalVariableService.loadGlobalVariables('bot', bindBizID);
+      }
+
+      // Otherwise, use projectId
+      if (projectId) {
+        return this.globalVariableService.loadGlobalVariables(
+          'project',
+          projectId,
+        );
+      }
+
+      // Final fallback: extract variables from schema
+      // This ensures variables referenced in the workflow are visible even without a bound project/bot
+      if (workflowJSON) {
+        const extractedVariables = this.extractGlobalVariablesFromSchema(workflowJSON);
+        if (extractedVariables.user?.length || extractedVariables.app?.length || extractedVariables.system?.length) {
+          return this.globalVariableService.loadVariablesFromSchema(extractedVariables);
+        }
+      }
+
+      return;
     }
 
     return this.globalVariableService.loadGlobalVariables(
       'project',
       this.globalState.projectId,
     );
+  }
+
+  /**
+   * Extract global variable references from workflow schema.
+   * Scans all nodes for references to global_variable_user, global_variable_app, and global_variable_system.
+   */
+  private extractGlobalVariablesFromSchema(workflowJSON: WorkflowJSON): {
+    user?: string[];
+    app?: string[];
+    system?: string[];
+  } {
+    const userVariables = new Set<string>();
+    const appVariables = new Set<string>();
+    const systemVariables = new Set<string>();
+
+    const extractFromValue = (value: unknown): void => {
+      if (!value) return;
+
+      if (typeof value === 'string') {
+        // Check for variable references in string format
+        // e.g., "{{global_variable_user.bankUserId}}"
+        const matches = value.matchAll(/\{\{(global_variable_user|global_variable_app|global_variable_system)\.(\w+)/g);
+        for (const match of matches) {
+          const [, source, varName] = match;
+          if (source === 'global_variable_user') {
+            userVariables.add(varName);
+          } else if (source === 'global_variable_app') {
+            appVariables.add(varName);
+          } else if (source === 'global_variable_system') {
+            systemVariables.add(varName);
+          }
+        }
+        return;
+      }
+
+      if (typeof value === 'object') {
+        // Check for variable reference objects
+        // e.g., { "source": "global_variable_user", "path": ["bankUserId"] }
+        const obj = value as Record<string, unknown>;
+        if (obj.source && obj.path && Array.isArray(obj.path) && obj.path.length > 0) {
+          const source = obj.source as string;
+          const varName = obj.path[0] as string;
+          if (source === 'global_variable_user') {
+            userVariables.add(varName);
+          } else if (source === 'global_variable_app') {
+            appVariables.add(varName);
+          } else if (source === 'global_variable_system') {
+            systemVariables.add(varName);
+          }
+        }
+
+        // Recursively scan nested objects and arrays
+        if (Array.isArray(value)) {
+          value.forEach(extractFromValue);
+        } else {
+          Object.values(obj).forEach(extractFromValue);
+        }
+      }
+    };
+
+    // Scan all nodes
+    const scanNodes = (nodes: unknown[]): void => {
+      for (const node of nodes) {
+        if (node && typeof node === 'object') {
+          const nodeObj = node as Record<string, unknown>;
+          // Scan node data
+          if (nodeObj.data) {
+            extractFromValue(nodeObj.data);
+          }
+          // Scan nested blocks (for loop nodes, etc.)
+          if (nodeObj.blocks && Array.isArray(nodeObj.blocks)) {
+            scanNodes(nodeObj.blocks);
+          }
+        }
+      }
+    };
+
+    if (workflowJSON.nodes) {
+      scanNodes(workflowJSON.nodes);
+    }
+
+    return {
+      user: userVariables.size > 0 ? Array.from(userVariables) : undefined,
+      app: appVariables.size > 0 ? Array.from(appVariables) : undefined,
+      system: systemVariables.size > 0 ? Array.from(systemVariables) : undefined,
+    };
   }
 
   /**

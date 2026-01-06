@@ -40,6 +40,7 @@ import { getPluginApisFilterExample } from '../../utils/plugin-apis';
 import {
   type VoicesInfo,
   type BotSuggestionConfig,
+  type BoundCardInfo,
   type DatabaseInfo,
   type DatabaseList,
   type EnabledPluginApi,
@@ -68,6 +69,7 @@ import {
 export const getDefaultBotSkillStore = (): BotSkillStore => ({
   pluginApis: [],
   workflows: [],
+  boundCards: [],
   knowledge: {
     dataSetList: [],
     dataSetInfo: DEFAULT_KNOWLEDGE_CONFIG(),
@@ -106,6 +108,8 @@ export interface BotSkillStore {
   pluginApis: EnabledPluginApi[];
   /** Selected workflow */
   workflows: WorkFlowItemType[];
+  /** Bound cards for prompt injection */
+  boundCards: BoundCardInfo[];
   /** Knowledge Allocation */
   knowledge: KnowledgeConfig;
   // endregion
@@ -165,6 +169,7 @@ export interface BotSkillAction {
   setBotSkillByImmer: (update: (state: BotSkillStore) => void) => void;
   updateSkillPluginApis: (pluginApis: PluginApi[]) => void;
   updateSkillWorkflows: (workflows: WorkFlowItemType[]) => void;
+  updateBoundCards: (boundCards: BoundCardInfo[]) => void;
   updateSkillKnowledgeDatasetList: (
     dataSetList: KnowledgeConfig['dataSetList'],
   ) => void;
@@ -205,6 +210,7 @@ export const useBotSkillStore = create<BotSkillStore & BotSkillAction>()(
         }));
       },
       updateSkillWorkflows: workflows => set(s => ({ ...s, workflows })),
+      updateBoundCards: boundCards => set(s => ({ ...s, boundCards })),
       updateSkillKnowledgeDatasetList: dataSetList =>
         set(
           produce<BotSkillStore>(s => {
@@ -285,6 +291,7 @@ export const useBotSkillStore = create<BotSkillStore & BotSkillAction>()(
             botInfo?.workflow_info_list,
             optionData?.workflow_detail_map,
           ),
+          boundCards: transformDto2Vo.boundCards(botInfo?.bound_cards),
           knowledge: transformDto2Vo.knowledge(
             botInfo?.knowledge,
             optionData?.knowledge_detail_map,

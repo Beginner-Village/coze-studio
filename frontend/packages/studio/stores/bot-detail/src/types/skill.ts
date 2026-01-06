@@ -255,3 +255,28 @@ export interface FileboxConfig {
 export interface VoicesInfo {
   defaultUserInputType: DefaultUserInputType | undefined;
 }
+
+// 卡片参数定义
+export interface CardParam {
+  paramName: string;
+  paramType: string;
+  required: boolean;
+  desc?: string;
+  children?: CardParam[];
+}
+
+// 卡片参数映射
+export interface CardParamMapping {
+  paramName: string; // 卡片参数名
+  variableName: string; // 映射的智能体变量名
+}
+
+// 绑定的卡片信息
+export interface BoundCardInfo {
+  cardId: string;
+  cardName: string;
+  code: string;
+  cardPicUrl?: string;
+  paramList?: CardParam[];
+  paramMapping?: CardParamMapping[]; // 参数映射配置
+}
