@@ -49,11 +49,15 @@ struct ExtraInfo {
     21: string refer_format //Agent app uses reference format
     22: string call_id,
     // Streaming card metadata fields
-    23: string ynet_type,      // card event type: card_create, card_delta, card_done
+    23: string ynet_type,      // card event type: card_group_start, card_group_end, card_create, card_delta, card_done
     24: string card_id,        // unique card identifier
     25: string template_id,    // card template identifier
     26: string template_name,  // card template name
     27: string card_field,     // current card field being updated (for card_delta)
+    // Card group metadata fields
+    28: string group_id,       // card group identifier (for card_group_start/end and card_create)
+    29: string card_layout,    // layout type: horizontal, vertical, waterfall (for card_group_start)
+    30: string card_columns,   // number of columns as string (for card_group_start)
 }
 
 struct MsgParticipantInfo{

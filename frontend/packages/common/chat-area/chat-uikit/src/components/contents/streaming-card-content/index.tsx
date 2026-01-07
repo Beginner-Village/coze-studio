@@ -58,7 +58,7 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
   const { cardId, messageId, onCardComplete } = props;
 
   const [cardState, setCardState] = useState<StreamingCardState | null>(null);
-  const [iframeHeight, setIframeHeight] = useState<number>(300);
+  const [iframeHeight, setIframeHeight] = useState<number>(120); // Lower default height
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const lastSentDataRef = useRef<string>('');
@@ -114,11 +114,27 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
   const sendCardDataToIframe = useCallback(() => {
     const iframe = iframeRef.current;
     if (!iframe || !iframe.contentWindow || !cardState || !iframeLoaded) {
+      console.log('[StreamingCard] Skipping send - not ready:', {
+        hasIframe: !!iframe,
+        hasContentWindow: !!iframe?.contentWindow,
+        hasCardState: !!cardState,
+        iframeLoaded,
+      });
       return;
     }
 
-    const cardData = buildCardDataForIframe(cardState);
-    const dataString = JSON.stringify(cardData);
+    // Use same format as special-answer-content for compatibility
+    const messagePayload = {
+      channel: 'agent',
+      eventId: generateEventId(),
+      event: 'card',
+      data: {
+        code: cardState.templateId || '',
+        data: cardState.fields || {},
+      },
+    };
+
+    const dataString = JSON.stringify(messagePayload);
 
     // Skip if data hasn't changed
     if (dataString === lastSentDataRef.current) {
@@ -126,29 +142,20 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
     }
     lastSentDataRef.current = dataString;
 
-    const messagePayload = {
-      channel: 'agent',
-      eventId: generateEventId(),
-      event: 'card',
-      data: {
-        code: cardState.templateId,
-        data: cardState.fields,
-        streaming: cardState.status === StreamingCardStatus.STREAMING,
-        complete: cardState.status === StreamingCardStatus.COMPLETE,
-      },
-    };
-
     const targetOrigin = getTargetOrigin();
 
     try {
-      iframe.contentWindow.postMessage(JSON.stringify(messagePayload), targetOrigin);
-      console.log('[StreamingCard] Sent data to iframe:', {
+      iframe.contentWindow.postMessage(dataString, targetOrigin);
+      console.log('[StreamingCard] 📤 Sent data to iframe:', {
         cardId: cardState.cardId,
-        fields: Object.keys(cardState.fields),
+        templateId: cardState.templateId,
+        fields: cardState.fields,
+        fieldKeys: Object.keys(cardState.fields),
         status: cardState.status,
+        targetOrigin,
       });
     } catch (error) {
-      console.error('[StreamingCard] Failed to send data to iframe:', error);
+      console.error('[StreamingCard] ❌ Failed to send data to iframe:', error);
     }
   }, [cardState, iframeLoaded, getTargetOrigin]);
 
@@ -163,14 +170,42 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
   const handleIframeLoad = useCallback(() => {
     console.log('[StreamingCard] Iframe loaded');
     setIframeLoaded(true);
-  }, []);
+
+    // Send data immediately and retry a few times to ensure delivery
+    const iframe = iframeRef.current;
+    if (iframe && iframe.contentWindow && cardState) {
+      const sendData = () => {
+        const messagePayload = {
+          channel: 'agent',
+          eventId: generateEventId(),
+          event: 'card',
+          data: {
+            code: cardState.templateId || '',
+            data: cardState.fields || {},
+          },
+        };
+        const targetOrigin = getTargetOrigin();
+        iframe.contentWindow?.postMessage(JSON.stringify(messagePayload), targetOrigin);
+        console.log('[StreamingCard] 📤 Initial data sent on load:', {
+          templateId: cardState.templateId,
+          fieldKeys: Object.keys(cardState.fields || {}),
+        });
+      };
+
+      // Send immediately
+      sendData();
+      // Retry after short delays to handle race conditions
+      setTimeout(sendData, 100);
+      setTimeout(sendData, 500);
+    }
+  }, [cardState, getTargetOrigin]);
 
   // Handle messages from iframe (for height adjustment)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const targetOrigin = getTargetOrigin();
 
-      // Security check for origin
+      // Security check for origin - allow same origin and card URL origin
       if (
         event.origin !== targetOrigin &&
         event.origin !== window.location.origin
@@ -178,15 +213,38 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
         return;
       }
 
-      // Handle resize messages
-      if (
-        event.data &&
-        typeof event.data === 'object' &&
-        event.data.type === 'resize'
-      ) {
-        const newHeight = event.data.height;
-        if (typeof newHeight === 'number' && newHeight > 100) {
-          setIframeHeight(newHeight + 20);
+      // Parse message data if it's a string
+      let messageData = event.data;
+      if (typeof messageData === 'string') {
+        try {
+          messageData = JSON.parse(messageData);
+        } catch {
+          return;
+        }
+      }
+
+      // Handle resize messages - support multiple formats
+      if (messageData && typeof messageData === 'object') {
+        // Format 1: { type: 'resize', height: number }
+        if (messageData.type === 'resize' && typeof messageData.height === 'number') {
+          const newHeight = messageData.height;
+          if (newHeight > 50) {
+            setIframeHeight(newHeight + 16);
+          }
+        }
+        // Format 2: { event: 'resize', data: { height: number } }
+        else if (messageData.event === 'resize' && messageData.data?.height) {
+          const newHeight = messageData.data.height;
+          if (typeof newHeight === 'number' && newHeight > 50) {
+            setIframeHeight(newHeight + 16);
+          }
+        }
+        // Format 3: { channel: 'agent', event: 'cardHeight', data: { height: number } }
+        else if (messageData.channel === 'agent' && messageData.event === 'cardHeight') {
+          const newHeight = messageData.data?.height;
+          if (typeof newHeight === 'number' && newHeight > 50) {
+            setIframeHeight(newHeight + 16);
+          }
         }
       }
     };

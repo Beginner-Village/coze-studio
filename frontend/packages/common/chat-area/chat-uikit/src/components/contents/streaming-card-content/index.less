@@ -95,12 +95,13 @@
 
 .streaming-card-iframe-container {
   position: relative;
-  min-height: 200px;
+  min-height: 80px; // Reduced from 200px for better auto-fit
 
   iframe {
     display: block;
     border: none;
     width: 100%;
+    min-height: 80px;
   }
 
   .iframe-loading-overlay {

@@ -27,9 +27,11 @@ import (
 type CardEventType string
 
 const (
-	CardEventCreate CardEventType = "card_create" // Create a new card
-	CardEventDelta  CardEventType = "card_delta"  // Update card field incrementally
-	CardEventDone   CardEventType = "card_done"   // Card is complete
+	CardEventCreate     CardEventType = "card_create"      // Create a new card
+	CardEventDelta      CardEventType = "card_delta"       // Update card field incrementally
+	CardEventDone       CardEventType = "card_done"        // Card is complete
+	CardEventGroupStart CardEventType = "card_group_start" // Start a card group
+	CardEventGroupEnd   CardEventType = "card_group_end"   // End a card group
 )
 
 // StreamEvent represents an event emitted by the stream parser
@@ -56,6 +58,16 @@ type CardEvent struct {
 
 func (CardEvent) isStreamEvent() {}
 
+// GroupEvent represents a card group event
+type GroupEvent struct {
+	Type    CardEventType
+	GroupID string
+	Layout  string // horizontal, vertical, waterfall
+	Columns int    // Number of columns
+}
+
+func (GroupEvent) isStreamEvent() {}
+
 // CardState tracks the state of a card being parsed
 type CardState struct {
 	ID           string
@@ -74,27 +86,42 @@ const (
 	StateInCard                      // Inside a card, reading field values
 )
 
+// GroupState tracks the state of a group being parsed
+type GroupState struct {
+	ID      string
+	Layout  string
+	Columns int
+}
+
 // StreamCardParser parses streaming LLM output and extracts card events
 type StreamCardParser struct {
 	mu           sync.Mutex
 	state        ParserState
 	buffer       strings.Builder
 	currentCard  *CardState
+	currentGroup *GroupState
 	currentField string
 	cardIDGen    func() string
+	groupIDGen   func() string
 }
 
 // NewStreamCardParser creates a new stream card parser
 func NewStreamCardParser() *StreamCardParser {
 	return &StreamCardParser{
-		state:     StateIdle,
-		cardIDGen: defaultCardIDGen,
+		state:      StateIdle,
+		cardIDGen:  defaultCardIDGen,
+		groupIDGen: defaultGroupIDGen,
 	}
 }
 
 // defaultCardIDGen generates a unique card ID
 func defaultCardIDGen() string {
 	return fmt.Sprintf("card_%d", time.Now().UnixNano())
+}
+
+// defaultGroupIDGen generates a unique group ID
+func defaultGroupIDGen() string {
+	return fmt.Sprintf("group_%d", time.Now().UnixNano())
 }
 
 // SetCardIDGenerator sets a custom card ID generator
@@ -218,6 +245,50 @@ func (p *StreamCardParser) parseTag(tag string) []StreamEvent {
 	inner := strings.TrimPrefix(tag, "<<")
 	inner = strings.TrimSuffix(inner, ">>")
 
+	// Check for group start: <<GROUP:layout:columns>> e.g., <<GROUP:horizontal:2>>
+	if strings.HasPrefix(inner, "GROUP:") {
+		parts := strings.SplitN(inner[6:], ":", 2)
+		layout := "horizontal"
+		columns := 2
+		if len(parts) >= 1 {
+			layout = parts[0]
+		}
+		if len(parts) >= 2 {
+			if n, err := fmt.Sscanf(parts[1], "%d", &columns); err != nil || n != 1 {
+				columns = 2
+			}
+		}
+
+		// Create new group state
+		p.currentGroup = &GroupState{
+			ID:      p.groupIDGen(),
+			Layout:  layout,
+			Columns: columns,
+		}
+		p.state = StateIdle // Stay in idle to allow card parsing
+
+		events = append(events, GroupEvent{
+			Type:    CardEventGroupStart,
+			GroupID: p.currentGroup.ID,
+			Layout:  layout,
+			Columns: columns,
+		})
+		return events
+	}
+
+	// Check for group end: <</GROUP>>
+	if inner == "/GROUP" {
+		if p.currentGroup != nil {
+			events = append(events, GroupEvent{
+				Type:    CardEventGroupEnd,
+				GroupID: p.currentGroup.ID,
+			})
+			p.currentGroup = nil
+		}
+		p.state = StateIdle
+		return events
+	}
+
 	// Check for card start: <<CARD:template_id:template_name>>
 	if strings.HasPrefix(inner, "CARD:") {
 		parts := strings.SplitN(inner[5:], ":", 2)
@@ -258,6 +329,7 @@ func (p *StreamCardParser) parseTag(tag string) []StreamEvent {
 			p.currentCard = nil
 			p.currentField = ""
 		}
+		// If in a group, stay in idle to allow next card; otherwise go to idle
 		p.state = StateIdle
 		return events
 	}
@@ -297,6 +369,15 @@ func (p *StreamCardParser) Flush() []StreamEvent {
 		p.currentCard = nil
 	}
 
+	// If a group is still open, emit group end event
+	if p.currentGroup != nil {
+		events = append(events, GroupEvent{
+			Type:    CardEventGroupEnd,
+			GroupID: p.currentGroup.ID,
+		})
+		p.currentGroup = nil
+	}
+
 	p.state = StateIdle
 	p.currentField = ""
 
@@ -311,6 +392,7 @@ func (p *StreamCardParser) Reset() {
 	p.state = StateIdle
 	p.buffer.Reset()
 	p.currentCard = nil
+	p.currentGroup = nil
 	p.currentField = ""
 }
 

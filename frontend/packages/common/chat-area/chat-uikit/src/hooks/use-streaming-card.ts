@@ -18,6 +18,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 import {
   type StreamingCardState,
+  type StreamingGroupState,
   StreamingCardStatus,
   getStreamingCardStateManager,
 } from '@coze-common/chat-core';
@@ -160,6 +161,64 @@ export function useIsStreaming(messageId?: string): boolean {
   }, [messageId]);
 
   return isStreaming;
+}
+
+/**
+ * Hook to get all streaming groups for a message
+ * @param messageId The message ID
+ * @returns Array of group states
+ */
+export function useStreamingGroupsForMessage(
+  messageId: string | undefined,
+): StreamingGroupState[] {
+  const [groups, setGroups] = useState<StreamingGroupState[]>([]);
+
+  useEffect(() => {
+    if (!messageId) {
+      setGroups([]);
+      return;
+    }
+
+    const manager = getStreamingCardStateManager();
+
+    // Get initial groups
+    const initialGroups = manager.getGroupsForMessage(messageId);
+    setGroups(initialGroups);
+
+    // Subscribe to group updates
+    const unsubscribe = manager.subscribeToGroups((groupId, state) => {
+      setGroups(prevGroups => {
+        // Find and update existing group, or add new group
+        const existingIndex = prevGroups.findIndex(g => g.groupId === groupId);
+
+        // Check if this group belongs to our message
+        const messageGroups = manager.getGroupsForMessage(messageId);
+        const belongsToMessage = messageGroups.some(g => g.groupId === groupId);
+
+        if (!belongsToMessage) {
+          // Remove group if it doesn't belong anymore
+          if (existingIndex >= 0) {
+            return prevGroups.filter(g => g.groupId !== groupId);
+          }
+          return prevGroups;
+        }
+
+        if (existingIndex >= 0) {
+          // Update existing group
+          const newGroups = [...prevGroups];
+          newGroups[existingIndex] = { ...state };
+          return newGroups;
+        } else {
+          // Add new group
+          return [...prevGroups, { ...state }];
+        }
+      });
+    });
+
+    return unsubscribe;
+  }, [messageId]);
+
+  return groups;
 }
 
 /**

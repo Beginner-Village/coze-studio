@@ -48,8 +48,10 @@ func (b *boundCardsRender) RenderBoundCards(ctx context.Context, req *AgentReque
 	}
 
 	if b.outputMode == CardOutputModeStreaming {
+		fmt.Printf("[BoundCards] Using STREAMING format, %d cards\n", len(b.boundCards))
 		return b.renderStreamingFormat(ctx, req)
 	}
+	fmt.Printf("[BoundCards] Using JSON format, %d cards\n", len(b.boundCards))
 	return b.renderJSONFormat(ctx, req)
 }
 
@@ -58,8 +60,9 @@ func (b *boundCardsRender) renderStreamingFormat(ctx context.Context, req *Agent
 	var sb strings.Builder
 
 	sb.WriteString("**可用卡片**\n")
-	sb.WriteString("当需要以结构化卡片形式展示内容时，请使用以下标记格式输出：\n\n")
+	sb.WriteString("当需要以结构化卡片形式展示内容时，请**直接输出**以下标记格式（不要用代码块包裹）：\n\n")
 
+	// List all available cards with their parameters and example
 	for i, card := range b.boundCards {
 		cardName := ""
 		if card.CardName != nil {
@@ -102,40 +105,35 @@ func (b *boundCardsRender) renderStreamingFormat(ctx context.Context, req *Agent
 			}
 		}
 
-		// Generate streaming format example
-		sb.WriteString("\n输出格式示例：\n```\n")
+		// Generate streaming format example for each card (NO code block!)
+		sb.WriteString("\n输出格式：\n")
 		sb.WriteString(fmt.Sprintf("<<CARD:%s:%s>>\n", code, cardName))
-
 		if card.ParamList != nil && len(card.ParamList) > 0 {
 			for _, param := range card.ParamList {
 				paramName := ""
 				if param.ParamName != nil {
 					paramName = *param.ParamName
 				}
-
-				// Get example value
 				exampleValue := b.getMappedVariableValue(card, paramName, req)
 				if exampleValue == "" {
 					exampleValue = fmt.Sprintf("<%s的值>", paramName)
 				}
-
 				sb.WriteString(fmt.Sprintf("<<%s>>%s\n", paramName, exampleValue))
 			}
 		}
-
-		sb.WriteString("<</CARD>>\n")
-		sb.WriteString("```\n\n")
+		sb.WriteString("<</CARD>>\n\n")
 	}
 
-	// Important notes for streaming format
-	sb.WriteString("**格式说明**：\n")
-	sb.WriteString("1. 卡片开始标记：`<<CARD:卡片代码:卡片名称>>`\n")
-	sb.WriteString("2. 字段标记：`<<字段名>>` 后紧跟字段值\n")
-	sb.WriteString("3. 卡片结束标记：`<</CARD>>`\n")
-	sb.WriteString("4. 字段值可以包含任意文本，直到下一个 `<<` 出现\n")
-	sb.WriteString("5. 可以在卡片前后添加普通文字说明\n\n")
+	// Add GROUP layout documentation if multiple cards
+	if len(b.boundCards) >= 2 {
+		sb.WriteString("**卡片组布局**（多卡片并排显示）：\n")
+		sb.WriteString("<<GROUP:horizontal:列数>>\n")
+		sb.WriteString("  <<CARD:...>>...<</CARD>>\n")
+		sb.WriteString("  <<CARD:...>>...<</CARD>>\n")
+		sb.WriteString("<</GROUP>>\n\n")
+	}
 
-	sb.WriteString("**重要提示**：当需要使用卡片展示内容时，请严格按照上述标记格式输出。\n")
+	sb.WriteString("**⚠️ 重要**：直接输出标记，**绝对不要**用```代码块包裹！\n")
 
 	return sb.String(), nil
 }

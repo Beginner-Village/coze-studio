@@ -1,167 +1,205 @@
+/*
+ * Copyright 2025 coze-dev Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 .special-answer-content {
   position: relative;
-  flex-shrink: 0; // 防止被压缩
-  width: 375px; // 手机屏幕宽度比例
-  
-  .answer-footer {
+  width: 100%; // Full width instead of fixed 375px
+
+  .raw-content-section {
+    margin-bottom: 16px;
+  }
+}
+
+// Single card wrapper - matches streaming-card-content style
+.single-card-wrapper {
+  position: relative;
+  border: 1px solid var(--semi-color-border, #e0e0e0);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--semi-color-bg-2, #ffffff);
+  margin: 8px 0;
+
+  // Card header with template name
+  .single-card-header {
     display: flex;
-    justify-content: center;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--semi-color-bg-1, #f8f9fa);
+    border-bottom: 1px solid var(--semi-color-border, #e0e0e0);
 
-    margin-top: 12px;
-    padding-top: 8px;
-
-    border-top: 1px solid #f0f0f0;
-    
-    .view-mode-toggle {
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-
-      max-width: 150px; // 适合手机宽度的切换器
-
-      background-color: #fff;
-      border: 1px solid #e0e0e0;
-      border-radius: 4px;
-      
-      .toggle-option {
-        cursor: pointer;
-        user-select: none;
-
-        display: flex;
-        flex: 1; // 左右均分
-        align-items: center;
-        justify-content: center;
-
-        padding: 6px 12px; // 缩小padding
-
-        font-size: 12px; // 缩小字体
-        font-weight: 500;
-        color: #666;
-
-        background-color: #fff;
-
-        transition: all 0.2s ease;
-        
-        &.left {
-          border-radius: 0;
-        }
-        
-        &.right {
-          border-radius: 0;
-        }
-        
-        &:hover {
-          color: #1890ff;
-          background-color: #f8f9fa;
-        }
-        
-        &.active {
-          color: white;
-          background-color: #1890ff;
-          
-          &:hover {
-            background-color: #096dd9;
-          }
-        }
-      }
-      
-      .toggle-divider {
-        flex-shrink: 0;
-        width: 1px;
-        height: 24px; // 缩小分割线高度
-        background-color: #e0e0e0;
-      }
+    .card-name {
+      font-weight: 500;
+      font-size: 14px;
+      color: var(--semi-color-text-0, #1c1c1c);
     }
   }
-  
-  .answer-content {
+
+  // Card iframe container
+  .single-card-iframe-container {
     position: relative;
-    width: 100%; // 确保容器宽度一致
-  }
+    min-height: 80px; // Reduced from 500px to match streaming-card
 
-  .special-answer-native {
-    overflow: hidden; // 防止内容溢出
-    display: block; // 确保是block元素
-
-    box-sizing: border-box; // 包含padding在宽度内
-    width: 343px; // 固定宽度（375px - 32px padding）
-    min-height: 500px; // 适合手机比例的高度
-    padding: 16px;
-
-    word-wrap: break-word; // 强制换行
-
-    background-color: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    
-    // 严格限制所有内部元素
-    * {
-      max-width: 100% !important;
-      word-break: break-word !important;
-      overflow-wrap: break-word !important;
-    }
-    
-    .special-answer-data {
-      margin-top: 16px;
-      
-      details {
-        max-width: 100%; // 限制details宽度
-        padding: 8px;
-
-        background-color: #f9f9f9;
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-        
-        summary {
-          cursor: pointer;
-          padding: 4px 0;
-          font-weight: 500;
-          
-          &:hover {
-            color: #1890ff;
-          }
-        }
-        
-        pre {
-          overflow-x: auto;
-
-          max-width: 100%; // 限制pre宽度
-          margin: 8px 0 0;
-          padding: 8px;
-
-          font-size: 12px;
-          line-height: 1.4;
-          word-break: break-all; // 强制换行
-          white-space: pre-wrap; // 保持格式同时允许换行
-
-          background-color: #fff;
-          border: 1px solid #d9d9d9;
-          border-radius: 4px;
-        }
-      }
-    }
-  }
-
-  .special-answer-iframe {
-    overflow: hidden;
-
-    box-sizing: border-box;
-    width: 375px; // 手机屏幕宽度比例
-
-    background-color: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    
     iframe {
       display: block;
-
-      width: 100%;
-      min-height: 500px; // 手机比例的最小高度
-
-      background-color: #fff;
       border: none;
+      width: 100%;
+      min-height: 80px;
+    }
 
-      transition: height 0.3s ease; // 添加高度变化的平滑动画
+    .iframe-loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.9);
+      z-index: 1;
+      color: var(--semi-color-text-2, #666666);
+      font-size: 14px;
+    }
+  }
+}
+
+// Debug section (development only)
+.special-answer-debug {
+  padding: 8px 12px;
+  border: 1px solid var(--semi-color-border, #e0e0e0);
+  border-radius: 4px;
+  margin-top: 8px;
+  background: var(--semi-color-bg-1, #f8f9fa);
+
+  summary {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--semi-color-text-2, #666666);
+    user-select: none;
+
+    &:hover {
+      color: var(--semi-color-text-0, #1c1c1c);
+    }
+  }
+
+  pre {
+    margin: 8px 0 0;
+    padding: 8px;
+    background: var(--semi-color-bg-0, #ffffff);
+    border: 1px solid var(--semi-color-border, #e0e0e0);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--semi-color-text-1, #333333);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+}
+
+// ========== Card Group Styles ==========
+.card-group {
+  width: 100%;
+  margin: 8px 0;
+
+  // Cards container
+  .card-group-cards {
+    display: flex;
+    gap: 12px;
+  }
+
+  // Single card item wrapper
+  .card-group-item {
+    min-width: 0; // Allow flex items to shrink below content size
+
+    .single-card-wrapper {
+      margin-bottom: 0; // Remove margin when in group
+    }
+  }
+
+  // ========== Horizontal Layout ==========
+  &.layout-horizontal {
+    .card-group-cards {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .card-group-item {
+      flex: 1 1 auto;
+    }
+
+    // Column variants
+    &.columns-1 .card-group-item {
+      flex: 0 0 100%;
+    }
+
+    &.columns-2 .card-group-item {
+      flex: 0 0 calc(50% - 6px);
+      max-width: calc(50% - 6px);
+    }
+
+    &.columns-3 .card-group-item {
+      flex: 0 0 calc(33.333% - 8px);
+      max-width: calc(33.333% - 8px);
+    }
+
+    &.columns-4 .card-group-item {
+      flex: 0 0 calc(25% - 9px);
+      max-width: calc(25% - 9px);
+    }
+  }
+
+  // ========== Vertical Layout ==========
+  &.layout-vertical {
+    .card-group-cards {
+      flex-direction: column;
+    }
+
+    .card-group-item {
+      width: 100%;
+    }
+  }
+
+  // ========== Waterfall/Masonry Layout ==========
+  &.layout-waterfall {
+    .card-group-cards {
+      display: block;
+      column-gap: 12px;
+    }
+
+    .card-group-item {
+      break-inside: avoid;
+      margin-bottom: 12px;
+    }
+
+    // Column variants for waterfall
+    &.columns-1 .card-group-cards {
+      column-count: 1;
+    }
+
+    &.columns-2 .card-group-cards {
+      column-count: 2;
+    }
+
+    &.columns-3 .card-group-cards {
+      column-count: 3;
+    }
+
+    &.columns-4 .card-group-cards {
+      column-count: 4;
     }
   }
 }

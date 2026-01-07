@@ -18,6 +18,8 @@ package internal
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_common"
 	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/entity"
@@ -37,12 +39,22 @@ const (
 	MetaKeyTemplateName StreamCardMetaKey = "template_name"
 	// MetaKeyCardField is the current field name being updated
 	MetaKeyCardField StreamCardMetaKey = "card_field"
+	// MetaKeyGroupID is the card group identifier
+	MetaKeyGroupID StreamCardMetaKey = "group_id"
+	// MetaKeyCardLayout is the layout type for card group
+	MetaKeyCardLayout StreamCardMetaKey = "card_layout"
+	// MetaKeyCardColumns is the number of columns for card group
+	MetaKeyCardColumns StreamCardMetaKey = "card_columns"
 )
 
 // StreamCardYnetType defines ynet_type values for card events
 type StreamCardYnetType string
 
 const (
+	// YnetTypeCardGroupStart indicates a card group is starting
+	YnetTypeCardGroupStart StreamCardYnetType = "card_group_start"
+	// YnetTypeCardGroupEnd indicates a card group has ended
+	YnetTypeCardGroupEnd StreamCardYnetType = "card_group_end"
 	// YnetTypeCardCreate indicates a new card is being created
 	YnetTypeCardCreate StreamCardYnetType = "card_create"
 	// YnetTypeCardDelta indicates a card field is being updated incrementally
@@ -51,9 +63,21 @@ const (
 	YnetTypeCardDone StreamCardYnetType = "card_done"
 )
 
+// CardLayout defines the layout types for card groups
+type CardLayout string
+
+const (
+	// CardLayoutHorizontal arranges cards horizontally
+	CardLayoutHorizontal CardLayout = "horizontal"
+	// CardLayoutVertical arranges cards vertically (default)
+	CardLayoutVertical CardLayout = "vertical"
+	// CardLayoutWaterfall arranges cards in waterfall/masonry style
+	CardLayoutWaterfall CardLayout = "waterfall"
+)
+
 // StreamCardOutput represents the output from card stream processing
 type StreamCardOutput struct {
-	// Type indicates the type of output: "text", "card_create", "card_delta", "card_done"
+	// Type indicates the type of output: "text", "card_create", "card_delta", "card_done", "card_group_start", "card_group_end"
 	Type string
 	// Text is the text content for text output
 	Text string
@@ -67,6 +91,12 @@ type StreamCardOutput struct {
 	Field string
 	// Delta is the incremental content (for card_delta)
 	Delta string
+	// GroupID is the unique group identifier (for group events and card_create when card belongs to a group)
+	GroupID string
+	// Layout is the layout type for card group (for card_group_start)
+	Layout string
+	// Columns is the number of columns for card group (for card_group_start)
+	Columns int
 }
 
 // StreamCardProcessor wraps StreamCardParser for integration with message pipeline
@@ -138,6 +168,7 @@ func (p *StreamCardProcessor) convertEvents(events []StreamEvent) []StreamCardOu
 					CardID:       e.CardID,
 					TemplateID:   e.TemplateID,
 					TemplateName: e.TemplateName,
+					GroupID:      e.GroupID,
 				})
 			case CardEventDelta:
 				outputs = append(outputs, StreamCardOutput{
@@ -152,6 +183,21 @@ func (p *StreamCardProcessor) convertEvents(events []StreamEvent) []StreamCardOu
 					CardID: e.CardID,
 				})
 			}
+		case GroupEvent:
+			switch e.Type {
+			case GroupEventStart:
+				outputs = append(outputs, StreamCardOutput{
+					Type:    string(YnetTypeCardGroupStart),
+					GroupID: e.GroupID,
+					Layout:  e.Layout,
+					Columns: e.Columns,
+				})
+			case GroupEventEnd:
+				outputs = append(outputs, StreamCardOutput{
+					Type:    string(YnetTypeCardGroupEnd),
+					GroupID: e.GroupID,
+				})
+			}
 		}
 	}
 
@@ -163,11 +209,24 @@ func BuildCardMetaData(output StreamCardOutput) map[string]string {
 	meta := make(map[string]string)
 
 	switch output.Type {
+	case string(YnetTypeCardGroupStart):
+		meta[string(MetaKeyYnetType)] = string(YnetTypeCardGroupStart)
+		meta[string(MetaKeyGroupID)] = output.GroupID
+		meta[string(MetaKeyCardLayout)] = output.Layout
+		meta[string(MetaKeyCardColumns)] = fmt.Sprintf("%d", output.Columns)
+
+	case string(YnetTypeCardGroupEnd):
+		meta[string(MetaKeyYnetType)] = string(YnetTypeCardGroupEnd)
+		meta[string(MetaKeyGroupID)] = output.GroupID
+
 	case string(YnetTypeCardCreate):
 		meta[string(MetaKeyYnetType)] = string(YnetTypeCardCreate)
 		meta[string(MetaKeyCardID)] = output.CardID
 		meta[string(MetaKeyTemplateID)] = output.TemplateID
 		meta[string(MetaKeyTemplateName)] = output.TemplateName
+		if output.GroupID != "" {
+			meta[string(MetaKeyGroupID)] = output.GroupID
+		}
 
 	case string(YnetTypeCardDelta):
 		meta[string(MetaKeyYnetType)] = string(YnetTypeCardDelta)
@@ -192,6 +251,9 @@ type StreamCardHandler struct {
 	pendingDeltaCardID string
 	pendingDeltaField  string
 	pendingDeltaBuffer string
+
+	// Track raw text content for final output (text outside card tags)
+	rawTextContent strings.Builder
 }
 
 // NewStreamCardHandler creates a new stream card handler
@@ -256,6 +318,30 @@ func (h *StreamCardHandler) ProcessContent(content string) ([]StreamCardHandlerO
 	var result []StreamCardHandlerOutput
 	for _, out := range outputs {
 		switch out.Type {
+		case string(YnetTypeCardGroupStart):
+			// Group start - flush any pending delta first, then emit group_start
+			if flushed := h.flushPendingDelta(); flushed != nil {
+				result = append(result, *flushed)
+			}
+			result = append(result, StreamCardHandlerOutput{
+				Type:    out.Type,
+				Content: "",
+				Delta:   "",
+				Meta:    BuildCardMetaData(out),
+			})
+
+		case string(YnetTypeCardGroupEnd):
+			// Group end - flush any pending delta first, then emit group_end
+			if flushed := h.flushPendingDelta(); flushed != nil {
+				result = append(result, *flushed)
+			}
+			result = append(result, StreamCardHandlerOutput{
+				Type:    out.Type,
+				Content: "",
+				Delta:   "",
+				Meta:    BuildCardMetaData(out),
+			})
+
 		case string(YnetTypeCardDelta):
 			// Check if this is a different field - if so, flush previous buffer first
 			if h.pendingDeltaField != "" && h.pendingDeltaField != out.Field {
@@ -294,6 +380,8 @@ func (h *StreamCardHandler) ProcessContent(content string) ([]StreamCardHandlerO
 			if flushed := h.flushPendingDelta(); flushed != nil {
 				result = append(result, *flushed)
 			}
+			// Accumulate raw text content for final output
+			h.rawTextContent.WriteString(out.Text)
 			result = append(result, StreamCardHandlerOutput{
 				Type:    out.Type,
 				Content: out.Text,
@@ -355,10 +443,12 @@ func (o *StreamCardHandlerOutput) ApplyToMessage(msg *entity.ChunkMessageItem) {
 	switch o.Type {
 	case "text":
 		msg.Content = o.Content
-	case string(YnetTypeCardCreate),
+	case string(YnetTypeCardGroupStart),
+		string(YnetTypeCardGroupEnd),
+		string(YnetTypeCardCreate),
 		string(YnetTypeCardDelta),
 		string(YnetTypeCardDone):
-		// For card events, set content to delta and merge metadata
+		// For card and group events, set content to delta and merge metadata
 		if o.Type == string(YnetTypeCardDelta) {
 			msg.Content = o.Delta
 		} else {
@@ -381,9 +471,11 @@ func (o *StreamCardHandlerOutput) GetOutputContent() string {
 	return ""
 }
 
-// IsCardEvent returns true if this is a card event
+// IsCardEvent returns true if this is a card or group event
 func (o *StreamCardHandlerOutput) IsCardEvent() bool {
-	return o.Type == string(YnetTypeCardCreate) ||
+	return o.Type == string(YnetTypeCardGroupStart) ||
+		o.Type == string(YnetTypeCardGroupEnd) ||
+		o.Type == string(YnetTypeCardCreate) ||
 		o.Type == string(YnetTypeCardDelta) ||
 		o.Type == string(YnetTypeCardDone)
 }
@@ -402,12 +494,24 @@ func (o *StreamCardHandlerOutput) ShouldSend() bool {
 type CardContentItem struct {
 	DisplayResponseType string            `json:"displayResponseType"`
 	TemplateID          string            `json:"templateId"`
+	CardID              string            `json:"cardId,omitempty"`  // Unique card identifier for group association
 	KvMap               map[string]string `json:"kvMap"`
+	GroupID             string            `json:"groupId,omitempty"` // ID of the group this card belongs to
+}
+
+// CardGroupItem represents a card group for JSON output
+type CardGroupItem struct {
+	GroupID string   `json:"groupId"`
+	Layout  string   `json:"layout"`  // "horizontal", "vertical", "waterfall"
+	Columns int      `json:"columns"` // Number of columns
+	CardIDs []string `json:"cardIds"` // IDs of cards in this group
 }
 
 // CardContentWrapper represents the wrapper structure for card content
 type CardContentWrapper struct {
 	ContentList []CardContentItem `json:"contentList"`
+	Groups      []CardGroupItem   `json:"groups,omitempty"`     // Optional group layout information
+	RawContent  string            `json:"rawContent,omitempty"` // Original text content (non-card content)
 }
 
 // HasCompletedCards returns true if there are any completed cards
@@ -424,6 +528,22 @@ func (h *StreamCardHandler) GetCompletedCards() []*CardState {
 		return nil
 	}
 	return h.processor.parser.GetCompletedCards()
+}
+
+// HasCompletedGroups returns true if there are any completed groups
+func (h *StreamCardHandler) HasCompletedGroups() bool {
+	if !h.enabled {
+		return false
+	}
+	return h.processor.parser.HasCompletedGroups()
+}
+
+// GetCompletedGroups returns all completed groups
+func (h *StreamCardHandler) GetCompletedGroups() []*GroupState {
+	if !h.enabled {
+		return nil
+	}
+	return h.processor.parser.GetCompletedGroups()
 }
 
 // BuildFinalContent builds the final JSON content for storage
@@ -444,13 +564,35 @@ func (h *StreamCardHandler) BuildFinalContent() (string, error) {
 		contentList[i] = CardContentItem{
 			DisplayResponseType: "TEMPLATE",
 			TemplateID:          card.TemplateID,
+			CardID:              card.ID, // Include card ID for group association
 			KvMap:               card.Fields,
+			GroupID:             card.GroupID,
 		}
 	}
+
+	// Build groups list from completed groups
+	groups := h.processor.parser.GetCompletedGroups()
+	var groupList []CardGroupItem
+	if len(groups) > 0 {
+		groupList = make([]CardGroupItem, len(groups))
+		for i, group := range groups {
+			groupList[i] = CardGroupItem{
+				GroupID: group.ID,
+				Layout:  group.Layout,
+				Columns: group.Columns,
+				CardIDs: group.CardIDs,
+			}
+		}
+	}
+
+	// Get accumulated raw text content (text outside card tags)
+	rawContent := strings.TrimSpace(h.rawTextContent.String())
 
 	// Create wrapper structure
 	wrapper := CardContentWrapper{
 		ContentList: contentList,
+		Groups:      groupList,
+		RawContent:  rawContent,
 	}
 
 	// Marshal to JSON

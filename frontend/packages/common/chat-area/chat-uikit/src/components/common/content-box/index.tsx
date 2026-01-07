@@ -37,11 +37,12 @@ import { ImageContent } from '../../contents/image-content';
 import { FileContent } from '../../contents/file-content';
 import { SpecialAnswerContent } from '../../contents/special-answer-content';
 import { StreamingCardContent } from '../../contents/streaming-card-content';
+import { StreamingCardGroup } from '../../contents/streaming-card-group';
 import { isImage } from '../../../utils/is-image';
 import { defaultEnable } from '../../../utils/default-enable';
-import { isSpecialAnswerMessage, extractContentList } from '../../../utils/special-answer';
+import { isSpecialAnswerMessage, extractContentList, extractGroups, extractRawContent, cleanCardTagsFromContent } from '../../../utils/special-answer';
 import { MESSAGE_TYPE_VALID_IN_TEXT_LIST } from '../../../constants/content-box';
-import { useStreamingCardsForMessage } from '../../../hooks/use-streaming-card';
+import { useStreamingCardsForMessage, useStreamingGroupsForMessage } from '../../../hooks/use-streaming-card';
 
 export interface EnhancedContentConfig {
   rule: (params: {
@@ -118,17 +119,22 @@ export const ContentBox: FC<IContentBoxProps> = props => {
     enhancedContentConfigList,
   } = props;
 
-  // Get streaming cards for this message
+  // Get streaming cards and groups for this message
   const streamingCards = useStreamingCardsForMessage(message.message_id);
+  const streamingGroups = useStreamingGroupsForMessage(message.message_id);
   const hasStreamingCards = streamingCards.length > 0;
+  const hasStreamingGroups = streamingGroups.length > 0;
 
-  // Debug: Log streaming cards status
+  // Debug: Log streaming cards and groups status
   if (message.role === 'assistant' && message.content_type === ContentType.Text) {
     console.log('[ContentBox] Checking streaming cards for message:', {
       message_id: message.message_id,
       hasStreamingCards,
+      hasStreamingGroups,
       cardCount: streamingCards.length,
-      cards: streamingCards.map(c => ({ cardId: c.cardId, status: c.status })),
+      groupCount: streamingGroups.length,
+      cards: streamingCards.map(c => ({ cardId: c.cardId, status: c.status, groupId: c.groupId })),
+      groups: streamingGroups.map(g => ({ groupId: g.groupId, layout: g.layout, columns: g.columns, cardIds: g.cardIds })),
     });
   }
 
@@ -154,13 +160,33 @@ export const ContentBox: FC<IContentBoxProps> = props => {
   );
 
   // Render streaming cards if available
+  // Groups are rendered using StreamingCardGroup component for proper layout
+  // Standalone cards (not in any group) are rendered individually
   const renderStreamingCards = () => {
-    if (!hasStreamingCards) {
+    if (!hasStreamingCards && !hasStreamingGroups) {
       return null;
     }
+
+    // Find cards that are not in any group (standalone cards)
+    const groupedCardIds = new Set(
+      streamingGroups.flatMap(group => group.cardIds)
+    );
+    const standaloneCards = streamingCards.filter(
+      card => !card.groupId && !groupedCardIds.has(card.cardId)
+    );
+
     return (
       <Fragment>
-        {streamingCards.map(card => (
+        {/* Render groups with their cards */}
+        {streamingGroups.map(group => (
+          <StreamingCardGroup
+            key={group.groupId}
+            groupId={group.groupId}
+            messageId={message.message_id}
+          />
+        ))}
+        {/* Render standalone cards (those not in any group) */}
+        {standaloneCards.map(card => (
           <StreamingCardContent
             key={card.cardId}
             cardId={card.cardId}
@@ -202,20 +228,41 @@ export const ContentBox: FC<IContentBoxProps> = props => {
         );
       }
 
-      // For assistant messages, check for streaming cards first
+      // For assistant messages, check for streaming cards
+      // Render both text content and streaming cards together
       if (hasStreamingCards) {
+        // Create a modified message with card tags cleaned from content
+        const cleanedContent = cleanCardTagsFromContent(message.content || '');
+        const messageWithCleanedContent = cleanedContent
+          ? { ...message, content: cleanedContent }
+          : null;
+
         return (
           <Fragment>
+            {/* Render text content (the non-card part of the message) */}
+            {messageWithCleanedContent && cleanedContent && (
+              <TextContent
+                message={messageWithCleanedContent}
+                readonly={readonly}
+                onImageClick={onImageClick}
+                onLinkClick={onLinkClick}
+                enableAutoSizeImage={enableAutoSizeImage}
+                mdBoxProps={mdBoxProps}
+              />
+            )}
+            {/* Render streaming cards below the text */}
             {renderStreamingCards()}
           </Fragment>
         );
       }
 
-      // 检查是否为特殊的answer消息
+      // 检查是否为特殊的answer消息（历史记录中的卡片）
       return isSpecialAnswerMessage(message) ? (
         <SpecialAnswerContent
           message={message}
           contentList={extractContentList(message)}
+          groups={extractGroups(message)}
+          rawContent={extractRawContent(message)}
           readonly={readonly}
           onImageClick={onImageClick}
           onLinkClick={onLinkClick}

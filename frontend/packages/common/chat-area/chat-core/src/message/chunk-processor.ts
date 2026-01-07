@@ -346,10 +346,26 @@ export class ChunkProcessor {
   /**
    * incremental message stitching
    * 1. For incremental messages, you need to splice the previous message
+   * 2. Skip card events - their content should NOT be concatenated to message.content
    */
   private concatChunkMessage(
     message: Message<ContentType>,
   ): Message<ContentType> {
+    const extraInfo = message.extra_info;
+
+    // Skip content concatenation for card events
+    // Card content is managed separately by the streaming card state manager
+    if (extraInfo && isStreamingCardEvent(extraInfo)) {
+      // For card events, we still need to track the message but with empty content
+      // to avoid accumulating card delta values into the message content
+      const messageWithoutCardContent = {
+        ...message,
+        content: '', // Don't accumulate card content
+      };
+      this.streamBuffer.concatContentAndUpdateMessage(messageWithoutCardContent);
+      return message;
+    }
+
     this.streamBuffer.concatContentAndUpdateMessage(message);
 
     return message;

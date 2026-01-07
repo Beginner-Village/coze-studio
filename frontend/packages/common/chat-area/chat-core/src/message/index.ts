@@ -29,9 +29,13 @@ export {
   StreamingCardStateManager,
   StreamingCardEventType,
   StreamingCardStatus,
+  StreamingGroupStatus,
+  CardGroupLayout,
   getStreamingCardStateManager,
   isStreamingCardEvent,
   buildCardDataForIframe,
   type StreamingCardState,
+  type StreamingGroupState,
   type StreamingCardEventCallback,
+  type StreamingGroupEventCallback,
 } from './streaming-card-state';

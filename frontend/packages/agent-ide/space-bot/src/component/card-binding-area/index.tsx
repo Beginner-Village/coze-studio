@@ -438,55 +438,64 @@ export const CardBindingArea: React.FC = () => {
     }
   }, [search, isModalVisible, loadCardList]);
 
-  // 生成提示词预览
+  // 生成提示词预览（流式标签格式）
   const promptPreview = useMemo(() => {
     const cards = boundCards || [];
     if (cards.length === 0) return '';
 
-    let prompt = '**可用卡片**\n当需要以结构化卡片形式展示内容时，请使用以下JSON格式输出：\n\n';
+    let prompt = '**可用卡片**\n当需要以结构化卡片形式展示内容时，请使用以下标记格式输出：\n\n';
 
     cards.forEach((card, index) => {
       prompt += `### ${index + 1}. ${card.cardName}\n`;
       prompt += `卡片代码: \`${card.code}\`\n`;
-
-      // Build dataResponse example
-      const dataResponseExample: Record<string, string> = {};
 
       if (card.paramList && card.paramList.length > 0) {
         prompt += '参数说明：\n';
         card.paramList.forEach(param => {
           const requiredMark = param.required ? ' (必填)' : '';
           prompt += `- \`${param.paramName}\` (${param.paramType}): ${param.desc || ''}${requiredMark}\n`;
-
-          // Add to example
-          const mappedVar = card.paramMapping?.find(
-            m => m.paramName === param.paramName,
-          );
-          dataResponseExample[param.paramName] = mappedVar
-            ? `{{${mappedVar.variableName}}}`
-            : `<${param.paramName}的值>`;
         });
       }
 
-      // Generate JSON example
-      const jsonExample = {
-        contentList: [
-          {
-            displayResponseType: 'TEMPLATE',
-            rawContent: {},
-            templateId: card.code,
-            templateName: card.cardName,
-            kvMap: {},
-            dataResponse: dataResponseExample,
-          },
-        ],
-      };
+      // Generate streaming format example
+      prompt += '\n输出格式示例：\n```\n';
+      prompt += `<<CARD:${card.code}:${card.cardName}>>\n`;
 
-      prompt += `\n输出格式示例：\n\`\`\`json\n${JSON.stringify(jsonExample, null, 2)}\n\`\`\`\n\n`;
+      if (card.paramList && card.paramList.length > 0) {
+        card.paramList.forEach(param => {
+          const mappedVar = card.paramMapping?.find(
+            m => m.paramName === param.paramName,
+          );
+          const exampleValue = mappedVar
+            ? `{{${mappedVar.variableName}}}`
+            : `<${param.paramName}的值>`;
+          prompt += `<<${param.paramName}>>${exampleValue}\n`;
+        });
+      }
+
+      prompt += '<</CARD>>\n```\n\n';
     });
 
-    prompt +=
-      '**重要提示**：当需要使用卡片展示内容时，请严格按照上述JSON格式输出，确保 `displayResponseType` 为 `TEMPLATE`，`templateId` 为对应的卡片代码。';
+    // Add GROUP layout documentation if multiple cards
+    if (cards.length >= 2) {
+      prompt += '**卡片组布局**（多卡片并排显示）：\n';
+      prompt += '```\n<<GROUP:horizontal:2>>\n';
+      cards.slice(0, 2).forEach((card, i) => {
+        prompt += `<<CARD:${card.code}:${card.cardName}>>\n`;
+        if (card.paramList && card.paramList.length > 0) {
+          card.paramList.forEach(param => {
+            prompt += `<<${param.paramName}>>示例值${i + 1}\n`;
+          });
+        }
+        prompt += '<</CARD>>\n';
+      });
+      prompt += '<</GROUP>>\n```\n\n';
+    }
+
+    prompt += '**⚠️ 重要提示**：\n';
+    prompt += '1. 当需要使用卡片展示内容时，请严格按照上述标记格式输出\n';
+    prompt += '2. GROUP 标记内**必须**包含完整的 CARD 内容，不能为空\n';
+    prompt += '3. 每个 CARD 内**必须**包含所有必填字段';
 
     return prompt;
   }, [boundCards]);

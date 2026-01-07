@@ -25,6 +25,8 @@ import { type MessageExtraInfo } from './types';
 
 // Card event types from backend
 export enum StreamingCardEventType {
+  GROUP_START = 'card_group_start',
+  GROUP_END = 'card_group_end',
   CREATE = 'card_create',
   DELTA = 'card_delta',
   DONE = 'card_done',
@@ -38,6 +40,19 @@ export enum StreamingCardStatus {
   ERROR = 'error', // Error occurred
 }
 
+// Group status during streaming
+export enum StreamingGroupStatus {
+  ACTIVE = 'active', // Group is active, receiving cards
+  COMPLETE = 'complete', // Group is complete
+}
+
+// Layout types for card groups
+export enum CardGroupLayout {
+  HORIZONTAL = 'horizontal',
+  VERTICAL = 'vertical',
+  WATERFALL = 'waterfall',
+}
+
 // Single card state
 export interface StreamingCardState {
   cardId: string;
@@ -49,12 +64,30 @@ export interface StreamingCardState {
   createdAt: number;
   updatedAt: number;
   error?: string;
+  groupId?: string; // ID of the group this card belongs to (if any)
 }
 
-// Event listener callback
+// Card group state
+export interface StreamingGroupState {
+  groupId: string;
+  layout: CardGroupLayout;
+  columns: number;
+  status: StreamingGroupStatus;
+  cardIds: string[]; // IDs of cards in this group
+  createdAt: number;
+  updatedAt: number;
+}
+
+// Event listener callback for card events
 export type StreamingCardEventCallback = (
   cardId: string,
   state: StreamingCardState,
+) => void;
+
+// Event listener callback for group events
+export type StreamingGroupEventCallback = (
+  groupId: string,
+  state: StreamingGroupState,
 ) => void;
 
 /**
@@ -65,8 +98,12 @@ export type StreamingCardEventCallback = (
  */
 export class StreamingCardStateManager {
   private cards: Map<string, StreamingCardState> = new Map();
+  private groups: Map<string, StreamingGroupState> = new Map();
   private messageCardMap: Map<string, Set<string>> = new Map(); // message_id -> card_ids
+  private messageGroupMap: Map<string, Set<string>> = new Map(); // message_id -> group_ids
+  private currentGroupId: string | null = null; // Track current active group
   private listeners: Set<StreamingCardEventCallback> = new Set();
+  private groupListeners: Set<StreamingGroupEventCallback> = new Set();
 
   /**
    * Process a message with card metadata
@@ -78,12 +115,39 @@ export class StreamingCardStateManager {
     messageId: string,
     extraInfo: MessageExtraInfo,
     content: string,
-  ): StreamingCardState | null {
-    const { ynet_type, card_id, template_id, template_name, card_field } =
-      extraInfo;
+  ): StreamingCardState | StreamingGroupState | null {
+    const {
+      ynet_type,
+      card_id,
+      template_id,
+      template_name,
+      card_field,
+      group_id,
+      card_layout,
+      card_columns,
+    } = extraInfo;
 
-    // Skip if not a card event
-    if (!ynet_type || !card_id) {
+    // Skip if not a card or group event
+    if (!ynet_type) {
+      return null;
+    }
+
+    // Handle group events
+    if (ynet_type === StreamingCardEventType.GROUP_START && group_id) {
+      return this.handleGroupStart(
+        messageId,
+        group_id,
+        (card_layout as CardGroupLayout) || CardGroupLayout.VERTICAL,
+        parseInt(card_columns || '1', 10),
+      );
+    }
+
+    if (ynet_type === StreamingCardEventType.GROUP_END && group_id) {
+      return this.handleGroupEnd(group_id);
+    }
+
+    // Handle card events - require card_id
+    if (!card_id) {
       return null;
     }
 
@@ -96,6 +160,7 @@ export class StreamingCardStateManager {
           card_id,
           template_id || '',
           template_name || '',
+          group_id, // Pass group_id from card_create event metadata
         );
         break;
 
@@ -117,15 +182,87 @@ export class StreamingCardStateManager {
   }
 
   /**
+   * Handle card_group_start event
+   */
+  private handleGroupStart(
+    messageId: string,
+    groupId: string,
+    layout: CardGroupLayout,
+    columns: number,
+  ): StreamingGroupState {
+    const now = Date.now();
+
+    const state: StreamingGroupState = {
+      groupId,
+      layout,
+      columns: columns > 0 ? columns : 1,
+      status: StreamingGroupStatus.ACTIVE,
+      cardIds: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.groups.set(groupId, state);
+    this.currentGroupId = groupId;
+
+    // Track message -> group mapping
+    if (!this.messageGroupMap.has(messageId)) {
+      this.messageGroupMap.set(messageId, new Set());
+    }
+    this.messageGroupMap.get(messageId)!.add(groupId);
+
+    console.log(`[StreamingCard] Group started: ${groupId}`, {
+      layout,
+      columns,
+    });
+
+    this.notifyGroupListeners(groupId, state);
+    return state;
+  }
+
+  /**
+   * Handle card_group_end event
+   */
+  private handleGroupEnd(groupId: string): StreamingGroupState | null {
+    const state = this.groups.get(groupId);
+
+    if (!state) {
+      console.warn(
+        `[StreamingCard] Received group_end for unknown group: ${groupId}`,
+      );
+      return null;
+    }
+
+    state.status = StreamingGroupStatus.COMPLETE;
+    state.updatedAt = Date.now();
+
+    // Clear current group if it matches
+    if (this.currentGroupId === groupId) {
+      this.currentGroupId = null;
+    }
+
+    console.log(`[StreamingCard] Group complete: ${groupId}`, {
+      cardCount: state.cardIds.length,
+    });
+
+    this.notifyGroupListeners(groupId, state);
+    return state;
+  }
+
+  /**
    * Handle card_create event
+   * @param groupId Group ID from card_create event metadata (preferred) or falls back to currentGroupId
    */
   private handleCardCreate(
     messageId: string,
     cardId: string,
     templateId: string,
     templateName: string,
+    groupId?: string,
   ): StreamingCardState {
     const now = Date.now();
+    // Prefer groupId from event metadata, fall back to currentGroupId
+    const effectiveGroupId = groupId || this.currentGroupId || undefined;
 
     const state: StreamingCardState = {
       cardId,
@@ -135,9 +272,46 @@ export class StreamingCardStateManager {
       fields: {},
       createdAt: now,
       updatedAt: now,
+      groupId: effectiveGroupId,
     };
 
     this.cards.set(cardId, state);
+
+    // If there's a group (from metadata or current), add this card to it
+    if (effectiveGroupId) {
+      const groupState = this.groups.get(effectiveGroupId);
+      if (groupState) {
+        // Only add if not already present
+        if (!groupState.cardIds.includes(cardId)) {
+          groupState.cardIds.push(cardId);
+          groupState.updatedAt = now;
+        }
+      } else {
+        // Group state doesn't exist yet - create it implicitly
+        // This handles the case where card_create arrives before card_group_start
+        console.log(
+          `[StreamingCard] Creating implicit group for card: ${cardId}, groupId: ${effectiveGroupId}`,
+        );
+        const implicitGroupState: StreamingGroupState = {
+          groupId: effectiveGroupId,
+          layout: CardGroupLayout.HORIZONTAL, // Default to horizontal layout
+          columns: 2, // Default to 2 columns
+          status: StreamingGroupStatus.ACTIVE,
+          cardIds: [cardId],
+          createdAt: now,
+          updatedAt: now,
+        };
+        this.groups.set(effectiveGroupId, implicitGroupState);
+
+        // Track message -> group mapping
+        if (!this.messageGroupMap.has(messageId)) {
+          this.messageGroupMap.set(messageId, new Set());
+        }
+        this.messageGroupMap.get(messageId)!.add(effectiveGroupId);
+
+        this.notifyGroupListeners(effectiveGroupId, implicitGroupState);
+      }
+    }
 
     // Track message -> card mapping
     if (!this.messageCardMap.has(messageId)) {
@@ -148,6 +322,7 @@ export class StreamingCardStateManager {
     console.log(`[StreamingCard] Created card: ${cardId}`, {
       templateId,
       templateName,
+      groupId: state.groupId,
     });
 
     this.notifyListeners(cardId, state);
@@ -288,6 +463,77 @@ export class StreamingCardStateManager {
   }
 
   /**
+   * Subscribe to group state changes
+   */
+  subscribeToGroups(callback: StreamingGroupEventCallback): () => void {
+    this.groupListeners.add(callback);
+    return () => {
+      this.groupListeners.delete(callback);
+    };
+  }
+
+  /**
+   * Notify all group listeners of group state change
+   */
+  private notifyGroupListeners(
+    groupId: string,
+    state: StreamingGroupState,
+  ): void {
+    this.groupListeners.forEach(listener => {
+      try {
+        listener(groupId, state);
+      } catch (error) {
+        console.error('[StreamingCard] Group listener error:', error);
+      }
+    });
+  }
+
+  /**
+   * Get group state by ID
+   */
+  getGroup(groupId: string): StreamingGroupState | undefined {
+    return this.groups.get(groupId);
+  }
+
+  /**
+   * Get all groups for a message
+   */
+  getGroupsForMessage(messageId: string): StreamingGroupState[] {
+    const groupIds = this.messageGroupMap.get(messageId);
+    if (!groupIds) {
+      return [];
+    }
+
+    return Array.from(groupIds)
+      .map(id => this.groups.get(id))
+      .filter((state): state is StreamingGroupState => state !== undefined);
+  }
+
+  /**
+   * Check if a message has streaming groups
+   */
+  hasStreamingGroups(messageId: string): boolean {
+    return (
+      this.messageGroupMap.has(messageId) &&
+      this.messageGroupMap.get(messageId)!.size > 0
+    );
+  }
+
+  /**
+   * Get cards belonging to a specific group
+   */
+  getCardsForGroup(groupId: string): StreamingCardState[] {
+    const group = this.groups.get(groupId);
+    if (!group) {
+      return [];
+    }
+
+    return group.cardIds
+      .map(cardId => this.cards.get(cardId))
+      .filter((state): state is StreamingCardState => state !== undefined);
+  }
+
+  /**
    * Clear cards for a specific message
    */
   clearCardsForMessage(messageId: string): void {
@@ -301,11 +547,14 @@ export class StreamingCardStateManager {
   }
 
   /**
-   * Clear all card states
+   * Clear all card and group states
    */
   clearAll(): void {
     this.cards.clear();
+    this.groups.clear();
     this.messageCardMap.clear();
+    this.messageGroupMap.clear();
+    this.currentGroupId = null;
   }
 
   /**
@@ -327,11 +576,24 @@ export function getStreamingCardStateManager(): StreamingCardStateManager {
 }
 
 /**
- * Check if extra_info indicates a streaming card event
+ * Check if extra_info indicates a streaming card or group event
  */
 export function isStreamingCardEvent(extraInfo: MessageExtraInfo): boolean {
+  if (!extraInfo.ynet_type) {
+    return false;
+  }
+
+  // Check for group events (require group_id)
+  if (
+    [StreamingCardEventType.GROUP_START, StreamingCardEventType.GROUP_END].includes(
+      extraInfo.ynet_type as StreamingCardEventType,
+    )
+  ) {
+    return !!extraInfo.group_id;
+  }
+
+  // Check for card events (require card_id)
   return (
-    !!extraInfo.ynet_type &&
     !!extraInfo.card_id &&
     [
       StreamingCardEventType.CREATE,

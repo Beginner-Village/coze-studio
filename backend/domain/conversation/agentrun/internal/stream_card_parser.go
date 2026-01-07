@@ -18,6 +18,7 @@ package internal
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +31,14 @@ const (
 	CardEventCreate CardEventType = "card_create" // Create a new card
 	CardEventDelta  CardEventType = "card_delta"  // Update card field incrementally
 	CardEventDone   CardEventType = "card_done"   // Card is complete
+)
+
+// GroupEventType defines the type of card group streaming event
+type GroupEventType string
+
+const (
+	GroupEventStart GroupEventType = "group_start" // Start a card group
+	GroupEventEnd   GroupEventType = "group_end"   // End a card group
 )
 
 // StreamEvent represents an event emitted by the stream parser
@@ -50,11 +59,22 @@ type CardEvent struct {
 	CardID       string
 	TemplateID   string // Only for CardEventCreate
 	TemplateName string // Only for CardEventCreate
+	GroupID      string // Only for CardEventCreate - ID of the group this card belongs to
 	Field        string // Only for CardEventDelta
 	Delta        string // Only for CardEventDelta (incremental content)
 }
 
 func (CardEvent) isStreamEvent() {}
+
+// GroupEvent represents a card group event for layout control
+type GroupEvent struct {
+	Type    GroupEventType
+	GroupID string
+	Layout  string // Only for GroupEventStart: "horizontal", "vertical", "waterfall"
+	Columns int    // Only for GroupEventStart: number of columns (e.g., 2)
+}
+
+func (GroupEvent) isStreamEvent() {}
 
 // CardState tracks the state of a card being parsed
 type CardState struct {
@@ -62,6 +82,15 @@ type CardState struct {
 	TemplateID   string
 	TemplateName string
 	Fields       map[string]string
+	GroupID      string // ID of the group this card belongs to (empty if not in a group)
+}
+
+// GroupState tracks the state of a card group being parsed
+type GroupState struct {
+	ID      string
+	Layout  string // "horizontal", "vertical", "waterfall"
+	Columns int    // Number of columns for layout
+	CardIDs []string
 }
 
 // ParserState represents the state of the stream parser
@@ -76,26 +105,35 @@ const (
 
 // StreamCardParser parses streaming LLM output and extracts card events
 type StreamCardParser struct {
-	mu             sync.Mutex
-	state          ParserState
-	buffer         strings.Builder
-	currentCard    *CardState
-	currentField   string
-	cardIDGen      func() string
-	completedCards []*CardState // Store completed cards for final content generation
+	mu              sync.Mutex
+	state           ParserState
+	buffer          strings.Builder
+	currentCard     *CardState
+	currentField    string
+	cardIDGen       func() string
+	groupIDGen      func() string
+	completedCards  []*CardState  // Store completed cards for final content generation
+	currentGroup    *GroupState   // Current group being parsed
+	completedGroups []*GroupState // Store completed groups for final content generation
 }
 
 // NewStreamCardParser creates a new stream card parser
 func NewStreamCardParser() *StreamCardParser {
 	return &StreamCardParser{
-		state:     StateIdle,
-		cardIDGen: defaultCardIDGen,
+		state:      StateIdle,
+		cardIDGen:  defaultCardIDGen,
+		groupIDGen: defaultGroupIDGen,
 	}
 }
 
 // defaultCardIDGen generates a unique card ID
 func defaultCardIDGen() string {
 	return fmt.Sprintf("card_%d", time.Now().UnixNano())
+}
+
+// defaultGroupIDGen generates a unique group ID
+func defaultGroupIDGen() string {
+	return fmt.Sprintf("group_%d", time.Now().UnixNano())
 }
 
 // SetCardIDGenerator sets a custom card ID generator
@@ -260,6 +298,64 @@ func (p *StreamCardParser) parseTag(tag string) []StreamEvent {
 	inner := strings.TrimPrefix(tag, "<<")
 	inner = strings.TrimSuffix(inner, ">>")
 
+	// Check for group start: <<GROUP:layout:columns>>
+	// Example: <<GROUP:horizontal:2>> or <<GROUP:waterfall:3>>
+	if strings.HasPrefix(inner, "GROUP:") {
+		parts := strings.SplitN(inner[6:], ":", 2)
+		layout := "vertical" // Default layout
+		columns := 1         // Default columns
+		if len(parts) >= 1 {
+			layout = parts[0]
+		}
+		if len(parts) >= 2 {
+			if cols, err := strconv.Atoi(parts[1]); err == nil && cols > 0 {
+				columns = cols
+			}
+		}
+
+		// Create new group state
+		p.currentGroup = &GroupState{
+			ID:      p.groupIDGen(),
+			Layout:  layout,
+			Columns: columns,
+			CardIDs: make([]string, 0),
+		}
+
+		events = append(events, GroupEvent{
+			Type:    GroupEventStart,
+			GroupID: p.currentGroup.ID,
+			Layout:  layout,
+			Columns: columns,
+		})
+		// CRITICAL: Must return to StateIdle so subsequent CARD tags can be parsed correctly
+		p.state = StateIdle
+		return events
+	}
+
+	// Check for group end: <</GROUP>>
+	if inner == "/GROUP" {
+		if p.currentGroup != nil {
+			// Save completed group
+			completedGroup := &GroupState{
+				ID:      p.currentGroup.ID,
+				Layout:  p.currentGroup.Layout,
+				Columns: p.currentGroup.Columns,
+				CardIDs: make([]string, len(p.currentGroup.CardIDs)),
+			}
+			copy(completedGroup.CardIDs, p.currentGroup.CardIDs)
+			p.completedGroups = append(p.completedGroups, completedGroup)
+
+			events = append(events, GroupEvent{
+				Type:    GroupEventEnd,
+				GroupID: p.currentGroup.ID,
+			})
+			p.currentGroup = nil
+		}
+		// Return to StateIdle after GROUP ends
+		p.state = StateIdle
+		return events
+	}
+
 	// Check for card start: <<CARD:template_id:template_name>>
 	if strings.HasPrefix(inner, "CARD:") {
 		parts := strings.SplitN(inner[5:], ":", 2)
@@ -277,6 +373,13 @@ func (p *StreamCardParser) parseTag(tag string) []StreamEvent {
 				TemplateName: templateName,
 				Fields:       make(map[string]string),
 			}
+
+			// If we're in a group, associate the card with the group
+			if p.currentGroup != nil {
+				p.currentCard.GroupID = p.currentGroup.ID
+				p.currentGroup.CardIDs = append(p.currentGroup.CardIDs, p.currentCard.ID)
+			}
+
 			p.currentField = ""
 			p.state = StateInCard
 
@@ -285,6 +388,7 @@ func (p *StreamCardParser) parseTag(tag string) []StreamEvent {
 				CardID:       p.currentCard.ID,
 				TemplateID:   templateID,
 				TemplateName: templateName,
+				GroupID:      p.currentCard.GroupID,
 			})
 		}
 		return events
@@ -299,6 +403,7 @@ func (p *StreamCardParser) parseTag(tag string) []StreamEvent {
 				TemplateID:   p.currentCard.TemplateID,
 				TemplateName: p.currentCard.TemplateName,
 				Fields:       make(map[string]string),
+				GroupID:      p.currentCard.GroupID,
 			}
 			for k, v := range p.currentCard.Fields {
 				completedCard.Fields[k] = v
@@ -351,6 +456,15 @@ func (p *StreamCardParser) Flush() []StreamEvent {
 		p.currentCard = nil
 	}
 
+	// If a group is still open, emit end event
+	if p.currentGroup != nil {
+		events = append(events, GroupEvent{
+			Type:    GroupEventEnd,
+			GroupID: p.currentGroup.ID,
+		})
+		p.currentGroup = nil
+	}
+
 	p.state = StateIdle
 	p.currentField = ""
 
@@ -366,6 +480,7 @@ func (p *StreamCardParser) Reset() {
 	p.buffer.Reset()
 	p.currentCard = nil
 	p.currentField = ""
+	p.currentGroup = nil
 }
 
 // GetCurrentCard returns the current card being parsed (if any)
@@ -383,6 +498,7 @@ func (p *StreamCardParser) GetCurrentCard() *CardState {
 		TemplateID:   p.currentCard.TemplateID,
 		TemplateName: p.currentCard.TemplateName,
 		Fields:       make(map[string]string),
+		GroupID:      p.currentCard.GroupID,
 	}
 	for k, v := range p.currentCard.Fields {
 		cardCopy.Fields[k] = v
@@ -410,6 +526,7 @@ func (p *StreamCardParser) GetCompletedCards() []*CardState {
 			TemplateID:   card.TemplateID,
 			TemplateName: card.TemplateName,
 			Fields:       make(map[string]string),
+			GroupID:      card.GroupID,
 		}
 		for k, v := range card.Fields {
 			cardCopy.Fields[k] = v
@@ -424,4 +541,58 @@ func (p *StreamCardParser) HasCompletedCards() bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return len(p.completedCards) > 0
+}
+
+// GetCurrentGroup returns the current group being parsed (if any)
+func (p *StreamCardParser) GetCurrentGroup() *GroupState {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.currentGroup == nil {
+		return nil
+	}
+
+	// Return a copy
+	groupCopy := &GroupState{
+		ID:      p.currentGroup.ID,
+		Layout:  p.currentGroup.Layout,
+		Columns: p.currentGroup.Columns,
+		CardIDs: make([]string, len(p.currentGroup.CardIDs)),
+	}
+	copy(groupCopy.CardIDs, p.currentGroup.CardIDs)
+	return groupCopy
+}
+
+// IsInGroup returns true if parser is currently inside a group
+func (p *StreamCardParser) IsInGroup() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.currentGroup != nil
+}
+
+// GetCompletedGroups returns all completed groups
+func (p *StreamCardParser) GetCompletedGroups() []*GroupState {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// Return a copy of completed groups
+	groups := make([]*GroupState, len(p.completedGroups))
+	for i, group := range p.completedGroups {
+		groupCopy := &GroupState{
+			ID:      group.ID,
+			Layout:  group.Layout,
+			Columns: group.Columns,
+			CardIDs: make([]string, len(group.CardIDs)),
+		}
+		copy(groupCopy.CardIDs, group.CardIDs)
+		groups[i] = groupCopy
+	}
+	return groups
+}
+
+// HasCompletedGroups returns true if there are any completed groups
+func (p *StreamCardParser) HasCompletedGroups() bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return len(p.completedGroups) > 0
 }

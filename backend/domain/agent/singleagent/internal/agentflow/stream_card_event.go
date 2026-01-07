@@ -16,6 +16,8 @@
 
 package agentflow
 
+import "fmt"
+
 // StreamCardMetaKey defines metadata keys for streaming card events
 type StreamCardMetaKey string
 
@@ -30,12 +32,22 @@ const (
 	MetaKeyTemplateName StreamCardMetaKey = "template_name"
 	// MetaKeyCardField is the current field name being updated
 	MetaKeyCardField StreamCardMetaKey = "card_field"
+	// MetaKeyGroupID is the unique group identifier
+	MetaKeyGroupID StreamCardMetaKey = "group_id"
+	// MetaKeyLayout is the layout type for card group
+	MetaKeyLayout StreamCardMetaKey = "layout"
+	// MetaKeyColumns is the number of columns for card group
+	MetaKeyColumns StreamCardMetaKey = "columns"
 )
 
 // StreamCardYnetType defines ynet_type values for card events
 type StreamCardYnetType string
 
 const (
+	// YnetTypeCardGroupStart indicates a card group is starting
+	YnetTypeCardGroupStart StreamCardYnetType = "card_group_start"
+	// YnetTypeCardGroupEnd indicates a card group has ended
+	YnetTypeCardGroupEnd StreamCardYnetType = "card_group_end"
 	// YnetTypeCardCreate indicates a new card is being created
 	YnetTypeCardCreate StreamCardYnetType = "card_create"
 	// YnetTypeCardDelta indicates a card field is being updated incrementally
@@ -46,7 +58,7 @@ const (
 
 // StreamCardOutput represents the output from card stream processing
 type StreamCardOutput struct {
-	// Type indicates the type of output: "text", "card_create", "card_delta", "card_done"
+	// Type indicates the type of output: "text", "card_create", "card_delta", "card_done", "card_group_start", "card_group_end"
 	Type string
 	// Text is the text content for text output
 	Text string
@@ -60,6 +72,12 @@ type StreamCardOutput struct {
 	Field string
 	// Delta is the incremental content (for card_delta)
 	Delta string
+	// GroupID is the unique group identifier (for card_group_start/end)
+	GroupID string
+	// Layout is the layout type for card group (for card_group_start)
+	Layout string
+	// Columns is the number of columns for card group (for card_group_start)
+	Columns int
 }
 
 // StreamCardProcessor wraps StreamCardParser for integration with message pipeline
@@ -145,6 +163,21 @@ func (p *StreamCardProcessor) convertEvents(events []StreamEvent) []StreamCardOu
 					CardID: e.CardID,
 				})
 			}
+		case GroupEvent:
+			switch e.Type {
+			case CardEventGroupStart:
+				outputs = append(outputs, StreamCardOutput{
+					Type:    string(YnetTypeCardGroupStart),
+					GroupID: e.GroupID,
+					Layout:  e.Layout,
+					Columns: e.Columns,
+				})
+			case CardEventGroupEnd:
+				outputs = append(outputs, StreamCardOutput{
+					Type:    string(YnetTypeCardGroupEnd),
+					GroupID: e.GroupID,
+				})
+			}
 		}
 	}
 
@@ -156,6 +189,16 @@ func BuildCardMetaData(output StreamCardOutput) map[string]string {
 	meta := make(map[string]string)
 
 	switch output.Type {
+	case string(YnetTypeCardGroupStart):
+		meta[string(MetaKeyYnetType)] = string(YnetTypeCardGroupStart)
+		meta[string(MetaKeyGroupID)] = output.GroupID
+		meta[string(MetaKeyLayout)] = output.Layout
+		meta[string(MetaKeyColumns)] = fmt.Sprintf("%d", output.Columns)
+
+	case string(YnetTypeCardGroupEnd):
+		meta[string(MetaKeyYnetType)] = string(YnetTypeCardGroupEnd)
+		meta[string(MetaKeyGroupID)] = output.GroupID
+
 	case string(YnetTypeCardCreate):
 		meta[string(MetaKeyYnetType)] = string(YnetTypeCardCreate)
 		meta[string(MetaKeyCardID)] = output.CardID

@@ -296,14 +296,26 @@ func (art *AgentRuntime) push(ctx context.Context, mainChan chan *entity.AgentRe
 								if out.ShouldSend() {
 									flushMsg := buildSendMsg(ctx, modelAnswerMsg, false, art)
 									out.ApplyToMessage(flushMsg)
-									fullContent.WriteString(out.GetOutputContent())
+									// Only accumulate text content, not card content
+									if out.Type == "text" {
+										fullContent.WriteString(out.GetOutputContent())
+									}
 									art.MessageEvent.SendMsgEvent(entity.RunEventMessageDelta, flushMsg, art.SW)
 								}
 							}
 						}
 
 						answer := buildSendMsg(ctx, modelAnswerMsg, false, art)
-						answer.Content = fullContent.String()
+						// If there are completed cards, use BuildFinalContent to get proper JSON structure
+						if cardHandler != nil && cardHandler.HasCompletedCards() {
+							if cardContent, err := cardHandler.BuildFinalContent(); err == nil && cardContent != "" {
+								answer.Content = cardContent
+							} else {
+								answer.Content = fullContent.String()
+							}
+						} else {
+							answer.Content = fullContent.String()
+						}
 						hfErr := mh.handlerAnswer(ctx, answer, usage, art, modelAnswerMsg)
 						if hfErr != nil {
 							if e, ok := hfErr.(error); ok {
@@ -364,7 +376,11 @@ func (art *AgentRuntime) push(ctx context.Context, mainChan chan *entity.AgentRe
 							if out.ShouldSend() {
 								sendAnswerMsg := buildSendMsg(ctx, modelAnswerMsg, false, art)
 								out.ApplyToMessage(sendAnswerMsg)
-								fullContent.WriteString(out.GetOutputContent())
+								// Only accumulate text content to fullContent, not card delta content
+								// Card content will be handled separately via BuildFinalContent()
+								if out.Type == "text" {
+									fullContent.WriteString(out.GetOutputContent())
+								}
 								art.MessageEvent.SendMsgEvent(entity.RunEventMessageDelta, sendAnswerMsg, art.SW)
 							}
 						}

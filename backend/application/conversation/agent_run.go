@@ -220,6 +220,10 @@ func buildExt(extra map[string]string) *message.ExtraInfo {
 		TemplateID:   extra["template_id"],
 		TemplateName: extra["template_name"],
 		CardField:    extra["card_field"],
+		// Card group metadata fields
+		GroupID:     extra["group_id"],
+		CardLayout:  extra["card_layout"],
+		CardColumns: extra["card_columns"],
 	}
 }
 func buildErrMsg(ackChunk *entity.ChunkMessageItem, err *entity.RunError, id int64) []byte {

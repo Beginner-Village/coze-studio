@@ -20,5 +20,6 @@ export * from './plain-text-content';
 export * from './simple-function-content';
 export * from './special-answer-content';
 export * from './streaming-card-content';
+export * from './streaming-card-group';
 export * from './suggestion-content';
 export * from './text-content';

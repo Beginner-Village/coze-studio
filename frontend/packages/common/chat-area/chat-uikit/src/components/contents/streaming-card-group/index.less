@@ -1,0 +1,183 @@
+/*
+ * Copyright 2025 coze-dev Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.streaming-card-group {
+  width: 100%;
+  margin: 8px 0;
+
+  // Debug header - only shown in development
+  .streaming-card-group-header {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 8px;
+    padding: 4px 8px;
+    background: #f5f5f5;
+    border-radius: 4px;
+  }
+
+  // Cards container
+  .streaming-card-group-cards {
+    display: flex;
+    gap: 12px;
+  }
+
+  // Single card item wrapper
+  .streaming-card-group-item {
+    min-width: 0; // Allow flex items to shrink below content size
+  }
+
+  // ========== Horizontal Layout ==========
+  &.layout-horizontal {
+    .streaming-card-group-cards {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .streaming-card-group-item {
+      flex: 1 1 auto;
+    }
+
+    // Column variants
+    &.columns-1 .streaming-card-group-item {
+      flex: 0 0 100%;
+    }
+
+    &.columns-2 .streaming-card-group-item {
+      flex: 0 0 calc(50% - 6px);
+      max-width: calc(50% - 6px);
+    }
+
+    &.columns-3 .streaming-card-group-item {
+      flex: 0 0 calc(33.333% - 8px);
+      max-width: calc(33.333% - 8px);
+    }
+
+    &.columns-4 .streaming-card-group-item {
+      flex: 0 0 calc(25% - 9px);
+      max-width: calc(25% - 9px);
+    }
+  }
+
+  // ========== Vertical Layout ==========
+  &.layout-vertical {
+    .streaming-card-group-cards {
+      flex-direction: column;
+    }
+
+    .streaming-card-group-item {
+      width: 100%;
+    }
+  }
+
+  // ========== Waterfall/Masonry Layout ==========
+  &.layout-waterfall {
+    .streaming-card-group-cards {
+      display: block;
+      column-gap: 12px;
+    }
+
+    .streaming-card-group-item {
+      break-inside: avoid;
+      margin-bottom: 12px;
+    }
+
+    // Column variants for waterfall
+    &.columns-1 .streaming-card-group-cards {
+      column-count: 1;
+    }
+
+    &.columns-2 .streaming-card-group-cards {
+      column-count: 2;
+    }
+
+    &.columns-3 .streaming-card-group-cards {
+      column-count: 3;
+    }
+
+    &.columns-4 .streaming-card-group-cards {
+      column-count: 4;
+    }
+  }
+
+  // ========== Status Styles ==========
+  &.streaming {
+    .streaming-card-group-cards {
+      // Add subtle animation while streaming
+      animation: group-pulse 2s ease-in-out infinite;
+    }
+  }
+
+  &.complete {
+    // Remove animation when complete
+    .streaming-card-group-cards {
+      animation: none;
+    }
+  }
+}
+
+// Subtle pulse animation for streaming state
+@keyframes group-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .streaming-card-group {
+    &.layout-horizontal {
+      // On mobile, reduce columns
+      &.columns-3 .streaming-card-group-item,
+      &.columns-4 .streaming-card-group-item {
+        flex: 0 0 calc(50% - 6px);
+        max-width: calc(50% - 6px);
+      }
+    }
+
+    &.layout-waterfall {
+      &.columns-3 .streaming-card-group-cards,
+      &.columns-4 .streaming-card-group-cards {
+        column-count: 2;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .streaming-card-group {
+    &.layout-horizontal {
+      // On small mobile, single column
+      &.columns-2 .streaming-card-group-item,
+      &.columns-3 .streaming-card-group-item,
+      &.columns-4 .streaming-card-group-item {
+        flex: 0 0 100%;
+        max-width: 100%;
+      }
+    }
+
+    &.layout-waterfall {
+      &.columns-2 .streaming-card-group-cards,
+      &.columns-3 .streaming-card-group-cards,
+      &.columns-4 .streaming-card-group-cards {
+        column-count: 1;
+      }
+    }
+  }
+}
