@@ -116,6 +116,7 @@ type StreamCardParser struct {
 	completedCards  []*CardState  // Store completed cards for final content generation
 	currentGroup    *GroupState   // Current group being parsed
 	completedGroups []*GroupState // Store completed groups for final content generation
+	justEndedGroup  bool          // Flag to ignore whitespace after group ends
 }
 
 // NewStreamCardParser creates a new stream card parser
@@ -230,6 +231,26 @@ func (p *StreamCardParser) handleIdle(char rune) []StreamEvent {
 		p.state = StateMaybeTag
 		p.buffer.WriteRune(char)
 		return nil
+	}
+
+	isWhitespace := char == ' ' || char == '\t' || char == '\n' || char == '\r'
+
+	// If inside a group (but not inside a card), ignore whitespace characters
+	// These are just formatting artifacts from LLM output (indentation, newlines between cards)
+	if p.currentGroup != nil && p.currentCard == nil {
+		if isWhitespace {
+			return nil // Ignore whitespace inside group
+		}
+	}
+
+	// If just ended a group, ignore whitespace until we see meaningful content or next tag
+	// This handles whitespace between consecutive groups
+	if p.justEndedGroup {
+		if isWhitespace {
+			return nil // Ignore whitespace after group end
+		}
+		// Non-whitespace content, reset flag
+		p.justEndedGroup = false
 	}
 
 	// Normal text, emit directly
@@ -452,6 +473,9 @@ func (p *StreamCardParser) parseTag(tag string) []StreamEvent {
 			CardIDs: make([]string, 0),
 		}
 
+		// Reset justEndedGroup flag since we're starting a new group
+		p.justEndedGroup = false
+
 		events = append(events, GroupEvent{
 			Type:    GroupEventStart,
 			GroupID: p.currentGroup.ID,
@@ -482,6 +506,8 @@ func (p *StreamCardParser) parseTag(tag string) []StreamEvent {
 			})
 			p.currentGroup = nil
 		}
+		// Set flag to ignore whitespace after group ends
+		p.justEndedGroup = true
 		// Return to StateIdle after GROUP ends
 		p.state = StateIdle
 		return events
