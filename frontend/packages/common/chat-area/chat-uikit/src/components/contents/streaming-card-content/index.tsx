@@ -213,6 +213,13 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
         return;
       }
 
+      // IMPORTANT: Check if message comes from THIS iframe, not other iframes
+      // This prevents height messages from other cards affecting this card
+      const iframe = iframeRef.current;
+      if (!iframe || event.source !== iframe.contentWindow) {
+        return;
+      }
+
       // Parse message data if it's a string
       let messageData = event.data;
       if (typeof messageData === 'string') {

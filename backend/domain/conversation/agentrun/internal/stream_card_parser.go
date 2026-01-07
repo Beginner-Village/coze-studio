@@ -97,10 +97,11 @@ type GroupState struct {
 type ParserState int
 
 const (
-	StateIdle     ParserState = iota // Normal text mode
-	StateMaybeTag                    // Encountered '<', might be a tag
-	StateInTag                       // Confirmed '<<', reading tag content
-	StateInCard                      // Inside a card, reading field values
+	StateIdle          ParserState = iota // Normal text mode
+	StateMaybeTag                         // Encountered '<', might be a tag
+	StateInTag                            // Confirmed '<<', reading tag content
+	StateInCard                           // Inside a card, reading field values
+	StateInSingleTag                      // Inside a card, reading single-bracket tag <field_name>
 )
 
 // StreamCardParser parses streaming LLM output and extracts card events
@@ -215,6 +216,9 @@ func (p *StreamCardParser) processChar(char rune) []StreamEvent {
 
 	case StateInCard:
 		events = p.handleInCard(char)
+
+	case StateInSingleTag:
+		events = p.handleInSingleTag(char)
 	}
 
 	return events
@@ -235,13 +239,23 @@ func (p *StreamCardParser) handleIdle(char rune) []StreamEvent {
 // handleMaybeTag processes characters when we might be starting a tag
 func (p *StreamCardParser) handleMaybeTag(char rune) []StreamEvent {
 	if char == '<' {
-		// Confirmed '<<' - this is a tag start
+		// Confirmed '<<' - this is a double-bracket tag start
 		p.state = StateInTag
 		p.buffer.WriteRune(char)
 		return nil
 	}
 
-	// Not a tag, emit buffered '<' and current char as text
+	// Not a double-bracket tag
+	// If we're inside a card, try to parse single-bracket field tag <field_name>
+	if p.currentCard != nil {
+		// Start collecting potential single-bracket field tag
+		// Buffer already has '<', now add the current char
+		p.buffer.WriteRune(char)
+		p.state = StateInSingleTag
+		return nil
+	}
+
+	// Outside card, emit buffered '<' and current char as text
 	text := p.buffer.String() + string(char)
 	p.buffer.Reset()
 	p.state = StateIdle
@@ -288,6 +302,123 @@ func (p *StreamCardParser) handleInCard(char rune) []StreamEvent {
 	}
 
 	return nil
+}
+
+// handleInSingleTag processes characters while reading single-bracket tag <field_name>
+// This is used inside a card to support LLM outputs that use single brackets for field names
+func (p *StreamCardParser) handleInSingleTag(char rune) []StreamEvent {
+	// Check for tag completion
+	if char == '>' {
+		// Tag is complete, extract the content
+		content := p.buffer.String()
+		p.buffer.Reset()
+
+		// Remove '<' prefix to get the tag name
+		// Buffer contains "<NAME" after '<' + 'N' + 'A' + 'M' + 'E'
+		if len(content) > 1 && content[0] == '<' {
+			tagName := content[1:]
+
+			// Check if this is a closing tag </CARD> - handle it specially
+			if tagName == "/CARD" {
+				// This is the end of the card
+				var events []StreamEvent
+				if p.currentCard != nil {
+					// Save completed card
+					completedCard := &CardState{
+						ID:           p.currentCard.ID,
+						TemplateID:   p.currentCard.TemplateID,
+						TemplateName: p.currentCard.TemplateName,
+						Fields:       make(map[string]string),
+						GroupID:      p.currentCard.GroupID,
+					}
+					for k, v := range p.currentCard.Fields {
+						completedCard.Fields[k] = v
+					}
+					p.completedCards = append(p.completedCards, completedCard)
+
+					events = append(events, CardEvent{
+						Type:   CardEventDone,
+						CardID: p.currentCard.ID,
+					})
+					p.currentCard = nil
+					p.currentField = ""
+				}
+				p.state = StateIdle
+				return events
+			}
+
+			// Validate tag name (alphanumeric, underscore, allowed for field names)
+			if isValidFieldName(tagName) {
+				// This is a valid field tag, set currentField
+				p.currentField = tagName
+				if _, ok := p.currentCard.Fields[p.currentField]; !ok {
+					p.currentCard.Fields[p.currentField] = ""
+				}
+				p.state = StateInCard
+				return nil
+			}
+		}
+
+		// Not a valid field tag, output as card delta content
+		// Include the full tag text as field content
+		text := content + string(char) // content + '>'
+		p.state = StateInCard
+
+		if p.currentField != "" && p.currentCard != nil {
+			p.currentCard.Fields[p.currentField] += text
+			return []StreamEvent{
+				CardEvent{
+					Type:   CardEventDelta,
+					CardID: p.currentCard.ID,
+					Field:  p.currentField,
+					Delta:  text,
+				},
+			}
+		}
+		return nil
+	}
+
+	// Check for nested '<' which indicates this might be a double-bracket tag
+	if char == '<' {
+		// This could be the start of <<TAG>>
+		// Flush buffer as field content and handle the new '<'
+		content := p.buffer.String()
+		p.buffer.Reset()
+		p.buffer.WriteRune(char)
+		p.state = StateMaybeTag
+
+		// Output buffered content as field delta
+		if p.currentField != "" && p.currentCard != nil && len(content) > 0 {
+			p.currentCard.Fields[p.currentField] += content
+			return []StreamEvent{
+				CardEvent{
+					Type:   CardEventDelta,
+					CardID: p.currentCard.ID,
+					Field:  p.currentField,
+					Delta:  content,
+				},
+			}
+		}
+		return nil
+	}
+
+	// Continue collecting tag content
+	p.buffer.WriteRune(char)
+	return nil
+}
+
+// isValidFieldName checks if a string is a valid field name
+// Valid field names contain only letters, digits, and underscores
+func isValidFieldName(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	for _, r := range name {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 // parseTag parses a complete tag and returns appropriate events
