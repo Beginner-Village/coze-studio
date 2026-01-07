@@ -589,8 +589,10 @@ func buildARSM2ApiMessage(chunk *entity.AgentRunResponse) []byte {
 			chunkMessage.MetaData["message_title"] = "执行中"
 		}
 	} else if isCardMessage(chunkMessage.Content) {
-		// 情况2：卡片消息（包含contentList的JSON） -> tool_message类型
-		chunkMessage.MetaData["ynet_type"] = "tool_message"
+		// 情况2：卡片消息（包含contentList的JSON） -> card_output类型
+		// 这是流式卡片事件的最终汇总，用于消息存储和非流式场景兼容
+		// 注意：这不是工具调用，只是卡片数据的完整输出
+		chunkMessage.MetaData["ynet_type"] = "card_output"
 		// 如果没有message_title，生成一个默认值
 		if _, exists := chunkMessage.MetaData["message_title"]; !exists {
 			chunkMessage.MetaData["message_title"] = "输出"
