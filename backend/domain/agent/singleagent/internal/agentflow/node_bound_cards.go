@@ -128,12 +128,17 @@ func (b *boundCardsRender) renderStreamingFormat(ctx context.Context, req *Agent
 	if len(b.boundCards) >= 2 {
 		sb.WriteString("**卡片组布局**（多卡片并排显示）：\n")
 		sb.WriteString("<<GROUP:horizontal:列数>>\n")
-		sb.WriteString("  <<CARD:...>>...<</CARD>>\n")
-		sb.WriteString("  <<CARD:...>>...<</CARD>>\n")
+		sb.WriteString("<<CARD:...>>...<</CARD>>\n")
+		sb.WriteString("<<CARD:...>>...<</CARD>>\n")
 		sb.WriteString("<</GROUP>>\n\n")
+		sb.WriteString("支持的布局类型：`horizontal`（水平）、`vertical`（垂直）、`waterfall`（瀑布流）\n")
+		sb.WriteString("列数可选：1、2、3、4\n\n")
 	}
 
-	sb.WriteString("**⚠️ 重要**：直接输出标记，**绝对不要**用```代码块包裹！\n")
+	sb.WriteString("**⚠️ 重要规则**：\n")
+	sb.WriteString("1. 直接输出标记，**绝对不要**用```代码块包裹！\n")
+	sb.WriteString("2. GROUP和CARD标签之间、多个CARD标签之间，**禁止输出任何纯文本、换行或空格**！\n")
+	sb.WriteString("3. 纯文本说明必须放在所有卡片/分组的**前面或后面**，不能穿插在中间。\n")
 
 	return sb.String(), nil
 }
