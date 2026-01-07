@@ -39,12 +39,26 @@ const (
 	MetaKeyTemplateName StreamCardMetaKey = "template_name"
 	// MetaKeyCardField is the current field name being updated
 	MetaKeyCardField StreamCardMetaKey = "card_field"
+	// MetaKeyCardValue is the field value for card_delta events
+	MetaKeyCardValue StreamCardMetaKey = "card_value"
+	// MetaKeyCardOp is the operation type for card_delta events: "add" for array elements, "set" for simple values
+	MetaKeyCardOp StreamCardMetaKey = "card_op"
 	// MetaKeyGroupID is the card group identifier
 	MetaKeyGroupID StreamCardMetaKey = "group_id"
 	// MetaKeyCardLayout is the layout type for card group
 	MetaKeyCardLayout StreamCardMetaKey = "card_layout"
 	// MetaKeyCardColumns is the number of columns for card group
 	MetaKeyCardColumns StreamCardMetaKey = "card_columns"
+)
+
+// CardOp defines operation types for card_delta events
+type CardOp string
+
+const (
+	// CardOpAdd appends value to an array field
+	CardOpAdd CardOp = "add"
+	// CardOpSet sets/replaces a field value
+	CardOpSet CardOp = "set"
 )
 
 // StreamCardYnetType defines ynet_type values for card events
@@ -232,6 +246,8 @@ func BuildCardMetaData(output StreamCardOutput) map[string]string {
 		meta[string(MetaKeyYnetType)] = string(YnetTypeCardDelta)
 		meta[string(MetaKeyCardID)] = output.CardID
 		meta[string(MetaKeyCardField)] = output.Field
+		// Put card value in meta_data, remove trailing newlines/whitespace
+		meta[string(MetaKeyCardValue)] = strings.TrimRight(output.Delta, "\n\r\t ")
 
 	case string(YnetTypeCardDone):
 		meta[string(MetaKeyYnetType)] = string(YnetTypeCardDone)
@@ -272,11 +288,33 @@ func (h *StreamCardHandler) IsEnabled() bool {
 	return h.enabled
 }
 
-// flushPendingDelta flushes any buffered delta content as a single output
-func (h *StreamCardHandler) flushPendingDelta() *StreamCardHandlerOutput {
+// flushPendingDelta flushes any buffered delta content as one or more outputs
+// If the buffer contains multiple newline-separated JSON objects (array elements),
+// each object is emitted as a separate "add" operation
+func (h *StreamCardHandler) flushPendingDelta() []*StreamCardHandlerOutput {
 	if h.pendingDeltaBuffer == "" || h.pendingDeltaField == "" || h.pendingDeltaCardID == "" {
 		return nil
 	}
+
+	trimmedValue := strings.TrimRight(h.pendingDeltaBuffer, "\n\r\t ")
+
+	// Check if value contains multiple newline-separated JSON objects
+	// Pattern: {...}\n{...} indicates array elements that should each be "add"
+	if strings.Contains(trimmedValue, "}\n{") {
+		outputs := h.splitAndEmitArrayElements(trimmedValue)
+		if len(outputs) > 0 {
+			// Clear the buffer
+			h.pendingDeltaCardID = ""
+			h.pendingDeltaField = ""
+			h.pendingDeltaBuffer = ""
+			return outputs
+		}
+	}
+
+	// Single value - determine card_op based on value format:
+	// - If value starts with '{' and is a valid JSON object, use "add" (array element)
+	// - Otherwise use "set" (simple value)
+	cardOp := determineCardOp(trimmedValue)
 
 	output := &StreamCardHandlerOutput{
 		Type:  string(YnetTypeCardDelta),
@@ -285,6 +323,8 @@ func (h *StreamCardHandler) flushPendingDelta() *StreamCardHandlerOutput {
 			string(MetaKeyYnetType):  string(YnetTypeCardDelta),
 			string(MetaKeyCardID):    h.pendingDeltaCardID,
 			string(MetaKeyCardField): h.pendingDeltaField,
+			string(MetaKeyCardValue): trimmedValue,
+			string(MetaKeyCardOp):    string(cardOp),
 		},
 	}
 
@@ -293,7 +333,109 @@ func (h *StreamCardHandler) flushPendingDelta() *StreamCardHandlerOutput {
 	h.pendingDeltaField = ""
 	h.pendingDeltaBuffer = ""
 
-	return output
+	return []*StreamCardHandlerOutput{output}
+}
+
+// splitAndEmitArrayElements splits newline-separated JSON objects into multiple "add" outputs
+func (h *StreamCardHandler) splitAndEmitArrayElements(value string) []*StreamCardHandlerOutput {
+	var outputs []*StreamCardHandlerOutput
+
+	lines := strings.Split(value, "\n")
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		if trimmedLine == "" {
+			continue
+		}
+
+		// Validate that this line is a JSON object
+		if strings.HasPrefix(trimmedLine, "{") && strings.HasSuffix(trimmedLine, "}") {
+			var obj map[string]interface{}
+			if err := json.Unmarshal([]byte(trimmedLine), &obj); err == nil {
+				// Valid JSON object - emit as "add" operation
+				outputs = append(outputs, &StreamCardHandlerOutput{
+					Type:  string(YnetTypeCardDelta),
+					Delta: trimmedLine,
+					Meta: map[string]string{
+						string(MetaKeyYnetType):  string(YnetTypeCardDelta),
+						string(MetaKeyCardID):    h.pendingDeltaCardID,
+						string(MetaKeyCardField): h.pendingDeltaField,
+						string(MetaKeyCardValue): trimmedLine,
+						string(MetaKeyCardOp):    string(CardOpAdd),
+					},
+				})
+			}
+		}
+	}
+
+	return outputs
+}
+
+// tryFlushCompletedObjects checks the buffer for complete JSON objects ending with "}\n"
+// and flushes them immediately for true streaming behavior.
+// This allows array elements to be sent as soon as they are complete.
+func (h *StreamCardHandler) tryFlushCompletedObjects() []*StreamCardHandlerOutput {
+	if h.pendingDeltaBuffer == "" || h.pendingDeltaField == "" || h.pendingDeltaCardID == "" {
+		return nil
+	}
+
+	var outputs []*StreamCardHandlerOutput
+
+	// Look for complete JSON objects followed by newline: {...}\n
+	// Each such object can be emitted immediately as an "add" operation
+	for {
+		// Find the pattern "}\n" which indicates end of a JSON object in array context
+		idx := strings.Index(h.pendingDeltaBuffer, "}\n")
+		if idx == -1 {
+			break
+		}
+
+		// Extract the potential JSON object (everything up to and including "}")
+		potentialJSON := strings.TrimSpace(h.pendingDeltaBuffer[:idx+1])
+
+		// Check if this is a valid JSON object
+		if strings.HasPrefix(potentialJSON, "{") {
+			var obj map[string]interface{}
+			if err := json.Unmarshal([]byte(potentialJSON), &obj); err == nil {
+				// Valid JSON object - emit as "add" operation
+				outputs = append(outputs, &StreamCardHandlerOutput{
+					Type:  string(YnetTypeCardDelta),
+					Delta: potentialJSON,
+					Meta: map[string]string{
+						string(MetaKeyYnetType):  string(YnetTypeCardDelta),
+						string(MetaKeyCardID):    h.pendingDeltaCardID,
+						string(MetaKeyCardField): h.pendingDeltaField,
+						string(MetaKeyCardValue): potentialJSON,
+						string(MetaKeyCardOp):    string(CardOpAdd),
+					},
+				})
+
+				// Remove the flushed content from buffer (including the newline)
+				h.pendingDeltaBuffer = h.pendingDeltaBuffer[idx+2:]
+				continue
+			}
+		}
+
+		// Not a valid JSON object, stop looking
+		break
+	}
+
+	return outputs
+}
+
+// determineCardOp determines the operation type based on value format
+func determineCardOp(value string) CardOp {
+	trimmed := strings.TrimSpace(value)
+
+	// If value starts with '{' and is valid JSON object, it's an array element (add)
+	if strings.HasPrefix(trimmed, "{") {
+		var obj map[string]interface{}
+		if err := json.Unmarshal([]byte(trimmed), &obj); err == nil {
+			return CardOpAdd
+		}
+	}
+
+	// Otherwise it's a simple value (set)
+	return CardOpSet
 }
 
 // ProcessContent processes streaming content and returns outputs with metadata
@@ -320,7 +462,7 @@ func (h *StreamCardHandler) ProcessContent(content string) ([]StreamCardHandlerO
 		switch out.Type {
 		case string(YnetTypeCardGroupStart):
 			// Group start - flush any pending delta first, then emit group_start
-			if flushed := h.flushPendingDelta(); flushed != nil {
+			for _, flushed := range h.flushPendingDelta() {
 				result = append(result, *flushed)
 			}
 			result = append(result, StreamCardHandlerOutput{
@@ -332,7 +474,7 @@ func (h *StreamCardHandler) ProcessContent(content string) ([]StreamCardHandlerO
 
 		case string(YnetTypeCardGroupEnd):
 			// Group end - flush any pending delta first, then emit group_end
-			if flushed := h.flushPendingDelta(); flushed != nil {
+			for _, flushed := range h.flushPendingDelta() {
 				result = append(result, *flushed)
 			}
 			result = append(result, StreamCardHandlerOutput{
@@ -345,7 +487,7 @@ func (h *StreamCardHandler) ProcessContent(content string) ([]StreamCardHandlerO
 		case string(YnetTypeCardDelta):
 			// Check if this is a different field - if so, flush previous buffer first
 			if h.pendingDeltaField != "" && h.pendingDeltaField != out.Field {
-				if flushed := h.flushPendingDelta(); flushed != nil {
+				for _, flushed := range h.flushPendingDelta() {
 					result = append(result, *flushed)
 				}
 			}
@@ -353,6 +495,14 @@ func (h *StreamCardHandler) ProcessContent(content string) ([]StreamCardHandlerO
 			h.pendingDeltaCardID = out.CardID
 			h.pendingDeltaField = out.Field
 			h.pendingDeltaBuffer += out.Delta
+
+			// Check if we have a complete JSON object that can be flushed immediately
+			// This enables true streaming for array elements: emit each object as soon as it's complete
+			if completedObjects := h.tryFlushCompletedObjects(); len(completedObjects) > 0 {
+				for _, flushed := range completedObjects {
+					result = append(result, *flushed)
+				}
+			}
 
 		case string(YnetTypeCardCreate):
 			// Card create - emit directly
@@ -365,7 +515,7 @@ func (h *StreamCardHandler) ProcessContent(content string) ([]StreamCardHandlerO
 
 		case string(YnetTypeCardDone):
 			// Card done - flush any pending delta first, then emit card_done
-			if flushed := h.flushPendingDelta(); flushed != nil {
+			for _, flushed := range h.flushPendingDelta() {
 				result = append(result, *flushed)
 			}
 			result = append(result, StreamCardHandlerOutput{
@@ -377,7 +527,7 @@ func (h *StreamCardHandler) ProcessContent(content string) ([]StreamCardHandlerO
 
 		case "text":
 			// Text content - flush any pending delta first, then emit text
-			if flushed := h.flushPendingDelta(); flushed != nil {
+			for _, flushed := range h.flushPendingDelta() {
 				result = append(result, *flushed)
 			}
 			// Accumulate raw text content for final output
@@ -403,7 +553,7 @@ func (h *StreamCardHandler) Flush() []StreamCardHandlerOutput {
 	var result []StreamCardHandlerOutput
 
 	// Flush pending delta buffer first
-	if flushed := h.flushPendingDelta(); flushed != nil {
+	for _, flushed := range h.flushPendingDelta() {
 		result = append(result, *flushed)
 	}
 
@@ -448,12 +598,9 @@ func (o *StreamCardHandlerOutput) ApplyToMessage(msg *entity.ChunkMessageItem) {
 		string(YnetTypeCardCreate),
 		string(YnetTypeCardDelta),
 		string(YnetTypeCardDone):
-		// For card and group events, set content to delta and merge metadata
-		if o.Type == string(YnetTypeCardDelta) {
-			msg.Content = o.Delta
-		} else {
-			msg.Content = ""
-		}
+		// For card and group events, set content to empty and merge metadata
+		// card_delta value is now in meta_data.card_value, not in content/answer
+		msg.Content = ""
 		for k, v := range o.Meta {
 			msg.Ext[k] = v
 		}
@@ -465,9 +612,7 @@ func (o *StreamCardHandlerOutput) GetOutputContent() string {
 	if o.Type == "text" {
 		return o.Content
 	}
-	if o.Type == string(YnetTypeCardDelta) {
-		return o.Delta
-	}
+	// card_delta value is now in meta_data.card_value, not in content
 	return ""
 }
 

@@ -38,4 +38,9 @@ export {
   type StreamingGroupState,
   type StreamingCardEventCallback,
   type StreamingGroupEventCallback,
+  // CardStream payload types for sendMessage('cardstream', payload)
+  type CardStreamPayload,
+  type CardStreamGroup,
+  type CardStreamItem,
+  type CardStreamPayloadCallback,
 } from './streaming-card-state';

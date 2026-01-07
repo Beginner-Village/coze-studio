@@ -321,7 +321,7 @@ export class ChunkProcessor {
         template_id: extraInfo.template_id,
         template_name: extraInfo.template_name,
         card_field: extraInfo.card_field,
-        content_preview: message.content?.substring(0, 100),
+        card_value: extraInfo.card_value, // card_delta value now in meta_data
       });
     }
 
@@ -330,10 +330,15 @@ export class ChunkProcessor {
       return message;
     }
 
-    console.log('[ChunkProcessor] Processing streaming card event:', {
+    console.log('[ChunkProcessor] 🎴 Processing streaming card event:', {
       message_id: message.message_id,
       ynet_type: extraInfo.ynet_type,
       card_id: extraInfo.card_id,
+      template_id: extraInfo.template_id,
+      template_name: extraInfo.template_name,
+      card_field: extraInfo.card_field,
+      card_value: extraInfo.card_value?.substring(0, 100), // Truncate for readability
+      card_op: extraInfo.card_op,
     });
 
     // Get the streaming card state manager and process the event

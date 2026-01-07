@@ -70,19 +70,22 @@ import {
   type CardParamMapping,
 } from '../../types/skill';
 
+// 后端卡片参数结构（支持递归嵌套）
+interface BoundCardParamDTO {
+  param_name?: string;
+  param_type?: string;
+  required?: boolean;
+  desc?: string;
+  children?: BoundCardParamDTO[];
+}
+
 // 后端卡片数据结构（在IDL定义之前使用临时类型）
 interface BoundCardDTO {
   card_id?: string;
   card_name?: string;
   code?: string;
   card_pic_url?: string;
-  param_list?: Array<{
-    param_name?: string;
-    param_type?: string;
-    required?: boolean;
-    desc?: string;
-    children?: unknown[];
-  }>;
+  param_list?: BoundCardParamDTO[];
   param_mapping?: Array<{
     param_name?: string;
     variable_name?: string;
@@ -340,15 +343,7 @@ export const transformDto2Vo = {
       cardName: card.card_name ?? '',
       code: card.code ?? '',
       cardPicUrl: card.card_pic_url,
-      paramList: card.param_list?.map(
-        (p): CardParam => ({
-          paramName: p.param_name ?? '',
-          paramType: p.param_type ?? 'string',
-          required: p.required ?? false,
-          desc: p.desc,
-          children: p.children as CardParam[] | undefined,
-        }),
-      ),
+      paramList: card.param_list?.map(transformCardParamDto2Vo),
       paramMapping: card.param_mapping?.map(
         (m): CardParamMapping => ({
           paramName: m.param_name ?? '',
@@ -357,6 +352,17 @@ export const transformDto2Vo = {
       ),
     })) ?? [],
 };
+
+// 递归转换卡片参数（后端 -> 前端格式）
+function transformCardParamDto2Vo(p: BoundCardParamDTO): CardParam {
+  return {
+    paramName: p.param_name ?? '',
+    paramType: p.param_type ?? 'string',
+    required: p.required ?? false,
+    desc: p.desc,
+    children: p.children?.map(transformCardParamDto2Vo),
+  };
+}
 
 export const transformVo2Dto = {
   plugin: (plugins: EnabledPluginApi[]): BotInfoForUpdate['plugin_info_list'] =>
@@ -488,16 +494,21 @@ export const transformVo2Dto = {
       card_name: card.cardName,
       code: card.code,
       card_pic_url: card.cardPicUrl,
-      param_list: card.paramList?.map(p => ({
-        param_name: p.paramName,
-        param_type: p.paramType,
-        required: p.required,
-        desc: p.desc,
-        children: p.children,
-      })),
+      param_list: card.paramList?.map(transformCardParamVo2Dto),
       param_mapping: card.paramMapping?.map(m => ({
         param_name: m.paramName,
         variable_name: m.variableName,
       })),
     })),
 };
+
+// 递归转换卡片参数（前端 -> 后端格式）
+function transformCardParamVo2Dto(p: CardParam): BoundCardParamDTO {
+  return {
+    param_name: p.paramName,
+    param_type: p.paramType,
+    required: p.required,
+    desc: p.desc,
+    children: p.children?.map(transformCardParamVo2Dto),
+  };
+}

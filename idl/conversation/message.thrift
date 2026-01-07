@@ -54,10 +54,13 @@ struct ExtraInfo {
     25: string template_id,    // card template identifier
     26: string template_name,  // card template name
     27: string card_field,     // current card field being updated (for card_delta)
+    // card_delta specific fields
+    28: string card_value,     // card field value (for card_delta, moved from content/answer)
+    29: string card_op,        // operation type for card_delta: "add" for array elements, "set" for simple values
     // Card group metadata fields
-    28: string group_id,       // card group identifier (for card_group_start/end and card_create)
-    29: string card_layout,    // layout type: horizontal, vertical, waterfall (for card_group_start)
-    30: string card_columns,   // number of columns as string (for card_group_start)
+    30: string group_id,       // card group identifier (for card_group_start/end and card_create)
+    31: string card_layout,    // layout type: horizontal, vertical, waterfall (for card_group_start)
+    32: string card_columns,   // number of columns as string (for card_group_start)
 }
 
 struct MsgParticipantInfo{

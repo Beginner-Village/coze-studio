@@ -19,10 +19,19 @@ import { Spin } from '@coze-arch/coze-design';
 
 import {
   type StreamingCardState,
+  type CardStreamPayload,
   StreamingCardStatus,
   getStreamingCardStateManager,
   buildCardDataForIframe,
 } from '@coze-common/chat-core';
+
+// Message type for cardstream communication with iframe
+interface CardStreamMessage {
+  channel: 'agent';
+  eventId: string;
+  event: 'cardstream';
+  data: CardStreamPayload;
+}
 
 import './index.less';
 
@@ -49,6 +58,72 @@ const generateEventId = (): string => {
 };
 
 /**
+ * Parse JSON string values in fields to actual objects/arrays
+ * Handles multiple formats:
+ * 1. Single JSON object: "{...}"
+ * 2. Single JSON array: "[...]"
+ * 3. Newline-separated JSON objects: "{...}\n{...}\n" -> [{...}, {...}]
+ *
+ * This ensures iframe receives data in the same format as special-answer-content
+ * @param fields Record<string, string> from StreamingCardState
+ * @returns Record<string, unknown> with parsed JSON values
+ */
+const parseFieldValues = (fields: Record<string, string>): Record<string, unknown> => {
+  const parsed: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(fields)) {
+    if (!value) {
+      parsed[key] = value;
+      continue;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      parsed[key] = value;
+      continue;
+    }
+
+    // Case 1: Single JSON array "[...]"
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        parsed[key] = JSON.parse(trimmed);
+        continue;
+      } catch {
+        // Fall through to other cases
+      }
+    }
+
+    // Case 2: Newline-separated JSON objects -> parse as array
+    // Format: "{...}\n{...}\n" from card_delta add operations
+    if (trimmed.includes('\n') && trimmed.startsWith('{')) {
+      try {
+        const lines = trimmed.split('\n').filter(line => line.trim());
+        const items = lines.map(line => JSON.parse(line.trim()));
+        parsed[key] = items;
+        continue;
+      } catch {
+        // Fall through to single object parsing
+      }
+    }
+
+    // Case 3: Single JSON object "{...}"
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        parsed[key] = JSON.parse(trimmed);
+        continue;
+      } catch {
+        // Keep original value
+      }
+    }
+
+    // Default: keep original string value
+    parsed[key] = value;
+  }
+
+  return parsed;
+};
+
+/**
  * Streaming Card Content Component
  *
  * Renders a card that updates in real-time as streaming data arrives.
@@ -58,7 +133,7 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
   const { cardId, messageId, onCardComplete } = props;
 
   const [cardState, setCardState] = useState<StreamingCardState | null>(null);
-  const [iframeHeight, setIframeHeight] = useState<number>(120); // Lower default height
+  const [iframeHeight, setIframeHeight] = useState<number>(320); // Default height for card display
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const lastSentDataRef = useRef<string>('');
@@ -123,6 +198,10 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
       return;
     }
 
+    // Parse JSON string values to actual objects/arrays for iframe compatibility
+    // This matches the format used by special-answer-content
+    const parsedFields = parseFieldValues(cardState.fields || {});
+
     // Use same format as special-answer-content for compatibility
     const messagePayload = {
       channel: 'agent',
@@ -130,7 +209,7 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
       event: 'card',
       data: {
         code: cardState.templateId || '',
-        data: cardState.fields || {},
+        data: parsedFields,
       },
     };
 
@@ -149,8 +228,10 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
       console.log('[StreamingCard] 📤 Sent data to iframe:', {
         cardId: cardState.cardId,
         templateId: cardState.templateId,
-        fields: cardState.fields,
+        rawFields: cardState.fields,
+        parsedFields: parsedFields,
         fieldKeys: Object.keys(cardState.fields),
+        parsedFieldTypes: Object.entries(parsedFields).map(([k, v]) => [k, typeof v, Array.isArray(v)]),
         status: cardState.status,
         targetOrigin,
       });
@@ -166,6 +247,77 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
     }
   }, [cardState, iframeLoaded, sendCardDataToIframe]);
 
+  // Send cardstream message to iframe
+  // Format: sendMessage('cardstream', {groups: []})
+  const sendCardStreamToIframe = useCallback((payload: CardStreamPayload) => {
+    const iframe = iframeRef.current;
+    if (!iframe || !iframe.contentWindow || !iframeLoaded) {
+      console.log('[StreamingCard] Skipping cardstream send - not ready');
+      return;
+    }
+
+    const messagePayload: CardStreamMessage = {
+      channel: 'agent',
+      eventId: generateEventId(),
+      event: 'cardstream',
+      data: payload,
+    };
+
+    const targetOrigin = getTargetOrigin();
+
+    try {
+      iframe.contentWindow.postMessage(JSON.stringify(messagePayload), targetOrigin);
+      console.log('[StreamingCard] 📤 Sent cardstream to iframe:', {
+        messageId,
+        groupCount: payload.groups.length,
+        groups: payload.groups.map(g => ({
+          id: g.id,
+          code: g.code,
+          columns: g.data.columns,
+          childCount: g.children.length,
+          children: g.children.map(c => ({
+            id: c.id,
+            code: c.code,
+            dataKeys: Object.keys(c.data),
+          })),
+        })),
+        targetOrigin,
+      });
+    } catch (error) {
+      console.error('[StreamingCard] ❌ Failed to send cardstream to iframe:', error);
+    }
+  }, [iframeLoaded, getTargetOrigin, messageId]);
+
+  // Subscribe to cardstream updates and send to iframe
+  useEffect(() => {
+    if (!iframeLoaded) {
+      return;
+    }
+
+    const manager = getStreamingCardStateManager();
+
+    // Subscribe to cardstream payload updates
+    const unsubscribe = manager.subscribeToCardStream((updatedMessageId, payload) => {
+      // Only send updates for this message
+      if (updatedMessageId === messageId) {
+        console.log('[StreamingCard] 🔄 Received cardstream update for message:', {
+          messageId: updatedMessageId,
+          groupCount: payload.groups.length,
+        });
+        sendCardStreamToIframe(payload);
+      }
+    });
+
+    // Send initial cardstream payload if there are groups
+    const initialPayload = manager.buildGroupsPayload(messageId);
+    if (initialPayload.groups.length > 0) {
+      console.log('[StreamingCard] 📤 Sending initial cardstream payload');
+      sendCardStreamToIframe(initialPayload);
+    }
+
+    return unsubscribe;
+  }, [messageId, iframeLoaded, sendCardStreamToIframe]);
+
   // Handle iframe load event
   const handleIframeLoad = useCallback(() => {
     console.log('[StreamingCard] Iframe loaded');
@@ -175,13 +327,16 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
     const iframe = iframeRef.current;
     if (iframe && iframe.contentWindow && cardState) {
       const sendData = () => {
+        // Parse JSON string values to actual objects/arrays for iframe compatibility
+        const parsedFields = parseFieldValues(cardState.fields || {});
+
         const messagePayload = {
           channel: 'agent',
           eventId: generateEventId(),
           event: 'card',
           data: {
             code: cardState.templateId || '',
-            data: cardState.fields || {},
+            data: parsedFields,
           },
         };
         const targetOrigin = getTargetOrigin();
@@ -189,6 +344,7 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
         console.log('[StreamingCard] 📤 Initial data sent on load:', {
           templateId: cardState.templateId,
           fieldKeys: Object.keys(cardState.fields || {}),
+          parsedFieldTypes: Object.entries(parsedFields).map(([k, v]) => [k, typeof v, Array.isArray(v)]),
         });
       };
 
@@ -284,12 +440,20 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
       console.warn('[StreamingCard] Failed to extract spaceId from URL');
     }
 
-    if (spaceId) {
-      return `${baseUrl}?spaceId=${spaceId}&streaming=true`;
-    }
+    const iframeUrl = spaceId
+      ? `${baseUrl}?spaceId=${spaceId}&streaming=true`
+      : `${baseUrl}?streaming=true`;
 
-    return `${baseUrl}?streaming=true`;
-  }, []);
+    console.log('[StreamingCard] 🔗 Generated iframe URL:', {
+      cardId,
+      templateId: cardState?.templateId,
+      baseUrl,
+      spaceId,
+      iframeUrl,
+    });
+
+    return iframeUrl;
+  }, [cardId, cardState?.templateId]);
 
   // Render loading state
   if (!cardState) {
@@ -308,28 +472,13 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
     <div
       className={`streaming-card-content ${isStreaming ? 'streaming' : ''} ${isComplete ? 'complete' : ''}`}
     >
-      {/* Card header with status indicator */}
-      <div className="streaming-card-header">
-        <div className="card-info">
-          <span className="card-name">{cardState.templateName || 'Card'}</span>
-          {cardState.currentField && isStreaming && (
-            <span className="current-field">
-              Updating: {cardState.currentField}
-            </span>
-          )}
+      {/* Card header - only show during streaming, hide when complete */}
+      {isStreaming && (
+        <div className="streaming-card-header streaming-only">
+          <Spin size="small" />
+          <span className="streaming-text">Streaming...</span>
         </div>
-        <div className="card-status">
-          {isStreaming && (
-            <span className="status-indicator streaming">
-              <Spin size="small" />
-              <span>Streaming...</span>
-            </span>
-          )}
-          {isComplete && (
-            <span className="status-indicator complete">Complete</span>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Card iframe */}
       <div className="streaming-card-iframe-container">

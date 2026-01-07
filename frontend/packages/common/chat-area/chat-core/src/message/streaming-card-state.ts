@@ -90,6 +90,132 @@ export type StreamingGroupEventCallback = (
   state: StreamingGroupState,
 ) => void;
 
+// ===== CardStream Payload Types (for sendMessage('cardstream', payload)) =====
+
+/**
+ * Single card item in the cardstream payload
+ * Used for rendering cards within groups
+ */
+export interface CardStreamItem {
+  id: string;                    // Card ID
+  code: string;                  // Card template code (templateId)
+  data: Record<string, unknown>; // Card data (accumulated fields)
+}
+
+/**
+ * Card group in the cardstream payload
+ * Contains layout configuration and child cards
+ */
+export interface CardStreamGroup {
+  id: string;                    // Group ID
+  code: string;                  // Layout type: 'Vertical' | 'Horizontal' | 'Waterfall'
+  data: {
+    columns?: number;            // Number of columns (for grid layouts)
+    [key: string]: unknown;      // Additional layout configuration
+  };
+  children: CardStreamItem[];    // Child cards in this group
+}
+
+/**
+ * CardStream payload structure
+ * Sent via sendMessage('cardstream', payload)
+ */
+export interface CardStreamPayload {
+  groups: CardStreamGroup[];
+}
+
+// Event listener callback for cardstream payload updates (full state)
+export type CardStreamPayloadCallback = (
+  messageId: string,
+  payload: CardStreamPayload,
+) => void;
+
+// ===== Incremental CardStream Event Types =====
+
+/**
+ * Incremental event types for streaming updates
+ */
+export type CardStreamEventType =
+  | 'group_start'
+  | 'group_end'
+  | 'card_create'
+  | 'card_delta'
+  | 'card_done';
+
+/**
+ * Base interface for incremental events
+ */
+interface CardStreamEventBase {
+  type: CardStreamEventType;
+}
+
+/**
+ * Group start event
+ */
+export interface CardStreamGroupStartEvent extends CardStreamEventBase {
+  type: 'group_start';
+  group: {
+    id: string;
+    code: string;
+    data: { columns?: number; [key: string]: unknown };
+  };
+}
+
+/**
+ * Group end event
+ */
+export interface CardStreamGroupEndEvent extends CardStreamEventBase {
+  type: 'group_end';
+  groupId: string;
+}
+
+/**
+ * Card create event
+ */
+export interface CardStreamCardCreateEvent extends CardStreamEventBase {
+  type: 'card_create';
+  groupId: string | null;
+  card: CardStreamItem;
+}
+
+/**
+ * Card delta event - incremental field update
+ */
+export interface CardStreamCardDeltaEvent extends CardStreamEventBase {
+  type: 'card_delta';
+  cardId: string;
+  field: string;
+  value: unknown;
+  op: 'set' | 'add';
+}
+
+/**
+ * Card done event
+ */
+export interface CardStreamCardDoneEvent extends CardStreamEventBase {
+  type: 'card_done';
+  cardId: string;
+  data: Record<string, unknown>;
+}
+
+/**
+ * Union type for all incremental events
+ */
+export type CardStreamIncrementalEvent =
+  | CardStreamGroupStartEvent
+  | CardStreamGroupEndEvent
+  | CardStreamCardCreateEvent
+  | CardStreamCardDeltaEvent
+  | CardStreamCardDoneEvent;
+
+/**
+ * Callback for incremental cardstream events
+ */
+export type CardStreamIncrementalCallback = (
+  messageId: string,
+  event: CardStreamIncrementalEvent,
+) => void;
+
 /**
  * StreamingCardStateManager
  *
@@ -104,6 +230,8 @@ export class StreamingCardStateManager {
   private currentGroupId: string | null = null; // Track current active group
   private listeners: Set<StreamingCardEventCallback> = new Set();
   private groupListeners: Set<StreamingGroupEventCallback> = new Set();
+  private cardstreamListeners: Set<CardStreamPayloadCallback> = new Set();
+  private incrementalListeners: Set<CardStreamIncrementalCallback> = new Set();
 
   /**
    * Process a message with card metadata
@@ -122,6 +250,8 @@ export class StreamingCardStateManager {
       template_id,
       template_name,
       card_field,
+      card_value,
+      card_op,
       group_id,
       card_layout,
       card_columns,
@@ -143,7 +273,7 @@ export class StreamingCardStateManager {
     }
 
     if (ynet_type === StreamingCardEventType.GROUP_END && group_id) {
-      return this.handleGroupEnd(group_id);
+      return this.handleGroupEnd(messageId, group_id);
     }
 
     // Handle card events - require card_id
@@ -165,7 +295,9 @@ export class StreamingCardStateManager {
         break;
 
       case StreamingCardEventType.DELTA:
-        state = this.handleCardDelta(card_id, card_field || '', content);
+        // card_value is now in meta_data instead of content/answer
+        // card_op determines if we should append to array (add) or set value (set)
+        state = this.handleCardDelta(card_id, card_field || '', card_value || '', card_op || 'set');
         break;
 
       case StreamingCardEventType.DONE:
@@ -176,6 +308,11 @@ export class StreamingCardStateManager {
         console.warn(
           `[StreamingCardStateManager] Unknown ynet_type: ${ynet_type}`,
         );
+    }
+
+    // Notify cardstream listeners after any card/group event
+    if (state) {
+      this.notifyCardStreamListeners(messageId);
     }
 
     return state;
@@ -217,13 +354,24 @@ export class StreamingCardStateManager {
     });
 
     this.notifyGroupListeners(groupId, state);
+
+    // Send incremental event
+    this.notifyIncrementalListeners(messageId, {
+      type: 'group_start',
+      group: {
+        id: groupId,
+        code: this.layoutToCode(layout),
+        data: { columns: state.columns },
+      },
+    });
+
     return state;
   }
 
   /**
    * Handle card_group_end event
    */
-  private handleGroupEnd(groupId: string): StreamingGroupState | null {
+  private handleGroupEnd(messageId: string, groupId: string): StreamingGroupState | null {
     const state = this.groups.get(groupId);
 
     if (!state) {
@@ -246,6 +394,13 @@ export class StreamingCardStateManager {
     });
 
     this.notifyGroupListeners(groupId, state);
+
+    // Send incremental event
+    this.notifyIncrementalListeners(messageId, {
+      type: 'group_end',
+      groupId,
+    });
+
     return state;
   }
 
@@ -326,16 +481,30 @@ export class StreamingCardStateManager {
     });
 
     this.notifyListeners(cardId, state);
+
+    // Send incremental event
+    this.notifyIncrementalListeners(messageId, {
+      type: 'card_create',
+      groupId: effectiveGroupId || null,
+      card: {
+        id: cardId,
+        code: templateId,
+        data: {},
+      },
+    });
+
     return state;
   }
 
   /**
-   * Handle card_delta event - accumulate field data
+   * Handle card_delta event - process field data
+   * @param cardOp Operation type: "add" for array elements, "set" for simple values
    */
   private handleCardDelta(
     cardId: string,
     field: string,
     content: string,
+    cardOp: 'add' | 'set' = 'set',
   ): StreamingCardState | null {
     const state = this.cards.get(cardId);
 
@@ -351,16 +520,92 @@ export class StreamingCardStateManager {
     state.currentField = field;
     state.updatedAt = Date.now();
 
-    // Accumulate field content
+    // Handle field content based on operation type
     if (field) {
-      if (!state.fields[field]) {
-        state.fields[field] = '';
+      if (cardOp === 'add') {
+        // For "add" operation, append to array
+        // Parse existing value as array, or create new array
+        let existingArray: unknown[] = [];
+        if (state.fields[field]) {
+          try {
+            const parsed = JSON.parse(state.fields[field]);
+            if (Array.isArray(parsed)) {
+              existingArray = parsed;
+            }
+          } catch {
+            // Not valid JSON array, start fresh
+            existingArray = [];
+          }
+        }
+
+        // Parse and append new value
+        try {
+          const newValue = JSON.parse(content);
+          existingArray.push(newValue);
+          state.fields[field] = JSON.stringify(existingArray);
+        } catch {
+          // If content is not valid JSON, append as string to array
+          existingArray.push(content);
+          state.fields[field] = JSON.stringify(existingArray);
+        }
+      } else {
+        // For "set" operation, replace field value (backend sends complete value)
+        // Check if content contains multiple JSON objects separated by newlines
+        // This happens for array fields where backend buffers multiple items
+        const processedContent = this.processFieldContent(content);
+        state.fields[field] = processedContent;
       }
-      state.fields[field] += content;
     }
 
     this.notifyListeners(cardId, state);
     return state;
+  }
+
+  /**
+   * Process field content to handle special formats
+   * - Newline-separated JSON objects are converted to JSON array
+   * - Single JSON objects are returned as-is
+   * - Plain text is returned as-is
+   */
+  private processFieldContent(content: string): string {
+    if (!content) {
+      return content;
+    }
+
+    const trimmedContent = content.trim();
+
+    // Check if content contains multiple JSON objects separated by newlines
+    // Pattern: {obj1}\n{obj2} or {obj1}\n{obj2}\n{obj3}...
+    if (trimmedContent.includes('}\n{')) {
+      try {
+        // Split by newlines and parse each JSON object
+        const lines = trimmedContent.split('\n').filter(line => line.trim());
+        const jsonObjects: unknown[] = [];
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (trimmedLine.startsWith('{') && trimmedLine.endsWith('}')) {
+            try {
+              const parsed = JSON.parse(trimmedLine);
+              jsonObjects.push(parsed);
+            } catch {
+              // Not valid JSON, skip
+              console.warn('[StreamingCard] Failed to parse JSON line:', trimmedLine);
+            }
+          }
+        }
+
+        // If we successfully parsed multiple objects, return as JSON array
+        if (jsonObjects.length > 0) {
+          return JSON.stringify(jsonObjects);
+        }
+      } catch (e) {
+        console.warn('[StreamingCard] Failed to process multi-line JSON:', e);
+      }
+    }
+
+    // Return content as-is for single values
+    return trimmedContent;
   }
 
   /**
@@ -562,6 +807,201 @@ export class StreamingCardStateManager {
    */
   getCardCount(): number {
     return this.cards.size;
+  }
+
+  // ===== CardStream Payload Methods =====
+
+  /**
+   * Build the groups payload for sendMessage('cardstream', payload)
+   * Converts internal state to the format expected by the container
+   *
+   * Output structure:
+   * {
+   *   groups: [
+   *     {
+   *       id: 'group-1',
+   *       code: 'Vertical',        // Layout type
+   *       data: { columns: 2 },    // Layout config
+   *       children: [
+   *         { id: 'card-1', code: 'templateId', data: {...} },
+   *         { id: 'card-2', code: 'templateId', data: {...} }
+   *       ]
+   *     }
+   *   ]
+   * }
+   */
+  buildGroupsPayload(messageId: string): CardStreamPayload {
+    const groups: CardStreamGroup[] = [];
+    const processedCardIds = new Set<string>();
+
+    // Get all groups for this message
+    const messageGroups = this.getGroupsForMessage(messageId);
+
+    // Process grouped cards
+    for (const group of messageGroups) {
+      const children: CardStreamItem[] = [];
+
+      for (const cardId of group.cardIds) {
+        const card = this.cards.get(cardId);
+        if (card) {
+          children.push(this.buildCardStreamItem(card));
+          processedCardIds.add(cardId);
+        }
+      }
+
+      groups.push({
+        id: group.groupId,
+        code: this.layoutToCode(group.layout),
+        data: {
+          columns: group.columns,
+        },
+        children,
+      });
+    }
+
+    // Process ungrouped cards (cards without a group)
+    const messageCards = this.getCardsForMessage(messageId);
+    const ungroupedCards = messageCards.filter(
+      card => !processedCardIds.has(card.cardId),
+    );
+
+    if (ungroupedCards.length > 0) {
+      // Create a default group for ungrouped cards
+      const defaultGroupId = `default-${messageId}`;
+      const children: CardStreamItem[] = ungroupedCards.map(card =>
+        this.buildCardStreamItem(card),
+      );
+
+      groups.push({
+        id: defaultGroupId,
+        code: 'Vertical', // Default layout for ungrouped cards
+        data: {
+          columns: 1,
+        },
+        children,
+      });
+    }
+
+    return { groups };
+  }
+
+  /**
+   * Build a CardStreamItem from a StreamingCardState
+   */
+  private buildCardStreamItem(card: StreamingCardState): CardStreamItem {
+    // Parse JSON string fields back to objects
+    const parsedData: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(card.fields)) {
+      try {
+        // Try to parse as JSON
+        parsedData[key] = JSON.parse(value);
+      } catch {
+        // If not valid JSON, use the raw string value
+        parsedData[key] = value;
+      }
+    }
+
+    return {
+      id: card.cardId,
+      code: card.templateId,
+      data: parsedData,
+    };
+  }
+
+  /**
+   * Convert CardGroupLayout enum to code string
+   */
+  private layoutToCode(layout: CardGroupLayout): string {
+    switch (layout) {
+      case CardGroupLayout.HORIZONTAL:
+        return 'Horizontal';
+      case CardGroupLayout.VERTICAL:
+        return 'Vertical';
+      case CardGroupLayout.WATERFALL:
+        return 'Waterfall';
+      default:
+        return 'Vertical';
+    }
+  }
+
+  /**
+   * Subscribe to cardstream payload updates (full state)
+   * Called after any card/group event with the full groups payload
+   */
+  subscribeToCardStream(callback: CardStreamPayloadCallback): () => void {
+    this.cardstreamListeners.add(callback);
+    return () => {
+      this.cardstreamListeners.delete(callback);
+    };
+  }
+
+  /**
+   * Subscribe to incremental cardstream events
+   * Called with each individual event (group_start, card_create, card_delta, etc.)
+   */
+  subscribeToIncremental(callback: CardStreamIncrementalCallback): () => void {
+    this.incrementalListeners.add(callback);
+    return () => {
+      this.incrementalListeners.delete(callback);
+    };
+  }
+
+  /**
+   * Notify all cardstream listeners with the updated payload (full state)
+   */
+  private notifyCardStreamListeners(messageId: string): void {
+    if (this.cardstreamListeners.size === 0) {
+      return;
+    }
+
+    const payload = this.buildGroupsPayload(messageId);
+
+    console.log('[StreamingCard] CardStream payload update:', {
+      messageId,
+      groupCount: payload.groups.length,
+      groups: payload.groups.map(g => ({
+        id: g.id,
+        code: g.code,
+        childCount: g.children.length,
+      })),
+    });
+
+    this.cardstreamListeners.forEach(listener => {
+      try {
+        listener(messageId, payload);
+      } catch (error) {
+        console.error('[StreamingCard] CardStream listener error:', error);
+      }
+    });
+  }
+
+  /**
+   * Notify all incremental listeners with a single event
+   */
+  private notifyIncrementalListeners(
+    messageId: string,
+    event: CardStreamIncrementalEvent,
+  ): void {
+    if (this.incrementalListeners.size === 0) {
+      return;
+    }
+
+    console.log('[StreamingCard] 📤 Incremental event:', {
+      messageId,
+      type: event.type,
+      ...(event.type === 'card_delta' ? { cardId: event.cardId, field: event.field, op: event.op } : {}),
+      ...(event.type === 'card_create' ? { cardId: event.card.id, groupId: event.groupId } : {}),
+      ...(event.type === 'group_start' ? { groupId: event.group.id } : {}),
+    });
+
+    this.incrementalListeners.forEach(listener => {
+      try {
+        listener(messageId, event);
+      } catch (error) {
+        console.error('[StreamingCard] Incremental listener error:', error);
+      }
+    });
   }
 }
 

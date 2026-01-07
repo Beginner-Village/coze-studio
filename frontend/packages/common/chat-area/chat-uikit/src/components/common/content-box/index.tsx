@@ -127,14 +127,27 @@ export const ContentBox: FC<IContentBoxProps> = props => {
 
   // Debug: Log streaming cards and groups status
   if (message.role === 'assistant' && message.content_type === ContentType.Text) {
-    console.log('[ContentBox] Checking streaming cards for message:', {
+    console.log('[ContentBox] 🎴 Checking streaming cards for message:', {
       message_id: message.message_id,
       hasStreamingCards,
       hasStreamingGroups,
       cardCount: streamingCards.length,
       groupCount: streamingGroups.length,
-      cards: streamingCards.map(c => ({ cardId: c.cardId, status: c.status, groupId: c.groupId })),
-      groups: streamingGroups.map(g => ({ groupId: g.groupId, layout: g.layout, columns: g.columns, cardIds: g.cardIds })),
+      cards: streamingCards.map(c => ({
+        cardId: c.cardId,
+        templateId: c.templateId,
+        status: c.status,
+        groupId: c.groupId,
+        fieldCount: Object.keys(c.fields || {}).length,
+      })),
+      groups: streamingGroups.map(g => ({
+        groupId: g.groupId,
+        layout: g.layout,
+        columns: g.columns,
+        cardIds: g.cardIds,
+      })),
+      extra_info_ynet_type: message.extra_info?.ynet_type,
+      extra_info_card_id: message.extra_info?.card_id,
     });
   }
 

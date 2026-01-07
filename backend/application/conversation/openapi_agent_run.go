@@ -588,22 +588,20 @@ func buildARSM2ApiMessage(chunk *entity.AgentRunResponse) []byte {
 		if _, exists := chunkMessage.MetaData["message_title"]; !exists {
 			chunkMessage.MetaData["message_title"] = "执行中"
 		}
-	} else if isCardMessage(chunkMessage.Content) {
-		// 情况2：卡片消息（包含contentList的JSON） -> card_output类型
-		// 这是流式卡片事件的最终汇总，用于消息存储和非流式场景兼容
-		// 注意：这不是工具调用，只是卡片数据的完整输出
-		chunkMessage.MetaData["ynet_type"] = "card_output"
-		// 如果没有message_title，生成一个默认值
-		if _, exists := chunkMessage.MetaData["message_title"]; !exists {
-			chunkMessage.MetaData["message_title"] = "输出"
-		}
+	} else if isNonStreamingCardMessage(chunkMessage.Content) {
+		// 情况2：非流式卡片消息（普通JSON格式，不含groups/rawContent） -> tool_message类型
+		// 流式卡片的汇总消息（包含groups/rawContent）已通过SSE事件渲染，不需要再返回
+		chunkMessage.MetaData["ynet_type"] = "tool_message"
 	}
+	// 注意：流式卡片的汇总消息（isStreamingCardMessage返回true）不设置ynet_type，
+	// 因为前端已经通过流式事件(card_create/card_delta/card_done)渲染了卡片
 
 	mCM, _ := json.Marshal(chunkMessage)
 	return mCM
 }
 
 // isCardMessage 判断是否为卡片消息（包含contentList的JSON）
+// 用于在delta消息处理时跳过卡片消息
 func isCardMessage(content string) bool {
 	// 检查是否包含contentList字段（卡片消息的标志）
 	if !strings.Contains(content, "contentList") {
@@ -619,6 +617,37 @@ func isCardMessage(content string) bool {
 	// 检查是否包含contentList数组
 	_, hasContentList := data["contentList"]
 	return hasContentList
+}
+
+// isNonStreamingCardMessage 判断是否为非流式卡片消息（普通JSON格式）
+// 返回true表示这是一个需要用tool_message类型返回的普通卡片消息
+// 返回false表示这是流式卡片的汇总消息（包含groups/rawContent），应该被过滤
+func isNonStreamingCardMessage(content string) bool {
+	// 检查是否包含contentList字段（卡片消息的标志）
+	if !strings.Contains(content, "contentList") {
+		return false
+	}
+
+	// 尝试解析为JSON，确认结构正确
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(content), &data); err != nil {
+		return false
+	}
+
+	// 检查是否包含contentList数组
+	_, hasContentList := data["contentList"]
+	if !hasContentList {
+		return false
+	}
+
+	// 检查是否是流式卡片的汇总消息
+	// 流式卡片输出的JSON包含groups或rawContent字段（由BuildFinalContent生成）
+	_, hasGroups := data["groups"]
+	_, hasRawContent := data["rawContent"]
+
+	// 如果包含groups或rawContent，说明是流式卡片的汇总消息，应该过滤
+	// 只有不包含这些字段的普通JSON卡片才返回true
+	return !hasGroups && !hasRawContent
 }
 
 func buildARSM2ApiChatMessage(chunk *entity.AgentRunResponse) []byte {

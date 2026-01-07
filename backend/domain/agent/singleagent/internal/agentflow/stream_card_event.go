@@ -16,7 +16,11 @@
 
 package agentflow
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
 
 // StreamCardMetaKey defines metadata keys for streaming card events
 type StreamCardMetaKey string
@@ -32,12 +36,26 @@ const (
 	MetaKeyTemplateName StreamCardMetaKey = "template_name"
 	// MetaKeyCardField is the current field name being updated
 	MetaKeyCardField StreamCardMetaKey = "card_field"
+	// MetaKeyCardValue is the field value for card_delta events
+	MetaKeyCardValue StreamCardMetaKey = "card_value"
+	// MetaKeyCardOp is the operation type for card_delta events: "add" for array elements, "set" for simple values
+	MetaKeyCardOp StreamCardMetaKey = "card_op"
 	// MetaKeyGroupID is the unique group identifier
 	MetaKeyGroupID StreamCardMetaKey = "group_id"
 	// MetaKeyLayout is the layout type for card group
 	MetaKeyLayout StreamCardMetaKey = "layout"
 	// MetaKeyColumns is the number of columns for card group
 	MetaKeyColumns StreamCardMetaKey = "columns"
+)
+
+// CardOp defines operation types for card_delta events
+type CardOp string
+
+const (
+	// CardOpAdd appends value to an array field
+	CardOpAdd CardOp = "add"
+	// CardOpSet sets/replaces a field value
+	CardOpSet CardOp = "set"
 )
 
 // StreamCardYnetType defines ynet_type values for card events
@@ -209,6 +227,11 @@ func BuildCardMetaData(output StreamCardOutput) map[string]string {
 		meta[string(MetaKeyYnetType)] = string(YnetTypeCardDelta)
 		meta[string(MetaKeyCardID)] = output.CardID
 		meta[string(MetaKeyCardField)] = output.Field
+		// Put card value in meta_data, remove trailing newlines/whitespace
+		trimmedValue := strings.TrimRight(output.Delta, "\n\r\t ")
+		meta[string(MetaKeyCardValue)] = trimmedValue
+		// Determine card_op based on value format
+		meta[string(MetaKeyCardOp)] = string(determineCardOp(trimmedValue))
 
 	case string(YnetTypeCardDone):
 		meta[string(MetaKeyYnetType)] = string(YnetTypeCardDone)
@@ -216,4 +239,20 @@ func BuildCardMetaData(output StreamCardOutput) map[string]string {
 	}
 
 	return meta
+}
+
+// determineCardOp determines the operation type based on value format
+func determineCardOp(value string) CardOp {
+	trimmed := strings.TrimSpace(value)
+
+	// If value starts with '{' and is valid JSON object, it's an array element (add)
+	if strings.HasPrefix(trimmed, "{") {
+		var obj map[string]interface{}
+		if err := json.Unmarshal([]byte(trimmed), &obj); err == nil {
+			return CardOpAdd
+		}
+	}
+
+	// Otherwise it's a simple value (set)
+	return CardOpSet
 }

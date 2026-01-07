@@ -220,6 +220,9 @@ func buildExt(extra map[string]string) *message.ExtraInfo {
 		TemplateID:   extra["template_id"],
 		TemplateName: extra["template_name"],
 		CardField:    extra["card_field"],
+		// card_delta specific fields
+		CardValue: extra["card_value"],
+		CardOp:    extra["card_op"],
 		// Card group metadata fields
 		GroupID:     extra["group_id"],
 		CardLayout:  extra["card_layout"],

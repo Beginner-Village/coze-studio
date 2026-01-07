@@ -59,13 +59,88 @@ const generateEventId = (): string => {
 };
 
 /**
+ * Parse JSON string values in fields to actual objects/arrays
+ * Handles multiple formats:
+ * 1. Single JSON object: "{...}"
+ * 2. Single JSON array: "[...]"
+ * 3. Newline-separated JSON objects: "{...}\n{...}\n" -> [{...}, {...}]
+ *
+ * This ensures iframe receives data in the same format as streaming-card-content
+ * @param fields Record from kvMap or dataResponse
+ * @returns Record with parsed JSON values
+ */
+const parseFieldValues = (
+  fields: Record<string, any>,
+): Record<string, unknown> => {
+  const parsed: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(fields)) {
+    // Handle null/undefined
+    if (value === null || value === undefined) {
+      parsed[key] = value;
+      continue;
+    }
+
+    // If not a string, keep as is
+    if (typeof value !== 'string') {
+      parsed[key] = value;
+      continue;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      parsed[key] = value;
+      continue;
+    }
+
+    // Case 1: Single JSON array "[...]"
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        parsed[key] = JSON.parse(trimmed);
+        continue;
+      } catch {
+        // Fall through to other cases
+      }
+    }
+
+    // Case 2: Newline-separated JSON objects -> parse as array
+    // Format: "{...}\n{...}\n" from card_delta add operations
+    if (trimmed.includes('\n') && trimmed.startsWith('{')) {
+      try {
+        const lines = trimmed.split('\n').filter(line => line.trim());
+        const items = lines.map(line => JSON.parse(line.trim()));
+        parsed[key] = items;
+        continue;
+      } catch {
+        // Fall through to single object parsing
+      }
+    }
+
+    // Case 3: Single JSON object "{...}"
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        parsed[key] = JSON.parse(trimmed);
+        continue;
+      } catch {
+        // Keep original value
+      }
+    }
+
+    // Default: keep original string value
+    parsed[key] = value;
+  }
+
+  return parsed;
+};
+
+/**
  * 单个卡片组件 - 用于渲染单张卡片的 iframe
  */
 const SingleCardContent: FC<{
   content: SpecialContentItem;
   index: number;
 }> = ({ content, index }) => {
-  const [iframeHeight, setIframeHeight] = useState<number>(120); // Reduced from 600 to match streaming-card
+  const [iframeHeight, setIframeHeight] = useState<number>(320); // Match streaming-card default height
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -116,12 +191,23 @@ const SingleCardContent: FC<{
     const sendCardData = () => {
       try {
         const { templateId, kvMap, dataResponse } = content;
-        const cardData =
+        const rawCardData =
           kvMap && Object.keys(kvMap).length > 0 ? kvMap : dataResponse;
+
+        // Parse JSON string values to actual objects/arrays
+        // This handles array fields stored as newline-separated JSON strings
+        const cardData = rawCardData ? parseFieldValues(rawCardData) : {};
 
         console.log(`📦 [Card ${index}] 准备发送卡片数据:`, {
           templateId,
-          cardDataKeys: Object.keys(cardData || {}),
+          rawCardDataKeys: Object.keys(rawCardData || {}),
+          parsedCardDataKeys: Object.keys(cardData),
+          // Log types of parsed values for debugging
+          parsedFieldTypes: Object.entries(cardData).map(([k, v]) => [
+            k,
+            typeof v,
+            Array.isArray(v),
+          ]),
         });
 
         const messagePayload = {
@@ -130,7 +216,7 @@ const SingleCardContent: FC<{
           event: 'card',
           data: {
             code: templateId || '',
-            data: cardData || {},
+            data: cardData,
           },
         };
 
@@ -215,11 +301,7 @@ const SingleCardContent: FC<{
 
   return (
     <div className="single-card-wrapper">
-      {/* Card header with template name */}
-      <div className="single-card-header">
-        <span className="card-name">{content.templateId || 'Card'}</span>
-      </div>
-      {/* Card iframe container */}
+      {/* Card iframe container - no header */}
       <div className="single-card-iframe-container">
         <iframe
           ref={iframeRef}

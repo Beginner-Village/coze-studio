@@ -92,6 +92,35 @@ async function fetchCardList(params: {
   return { cardList, totalNums: data.body?.totalNums || '0' };
 }
 
+// 卡片参数接口（支持递归嵌套）- 前置定义供 transformParam 使用
+interface CardParam {
+  paramName: string;
+  paramType: string;
+  required: boolean;
+  desc?: string;
+  children?: CardParam[];
+}
+
+// External API param structure
+interface ExternalParam {
+  paramName?: string;
+  paramType?: string;
+  isRequired?: string;
+  paramDesc?: string;
+  children?: ExternalParam[];
+}
+
+// Recursively transform external param to internal format
+function transformParam(param: ExternalParam): CardParam {
+  return {
+    paramName: param.paramName || '',
+    paramType: param.paramType || 'string',
+    required: param.isRequired === '1',
+    desc: param.paramDesc,
+    children: param.children?.map(transformParam),
+  };
+}
+
 async function fetchCardDetail(params: {
   cardId: string;
   sassWorkspaceId: string;
@@ -130,15 +159,8 @@ async function fetchCardDetail(params: {
     cardName: body.cardName || '',
     code: body.code || '',
     cardPicUrl: body.cardPicUrl,
-    paramList: body.paramList?.map(
-      (param: { paramName?: string; paramType?: string; isRequired?: string; paramDesc?: string; children?: unknown[] }) => ({
-        paramName: param.paramName || '',
-        paramType: param.paramType || 'string',
-        required: param.isRequired === '1',
-        desc: param.paramDesc,
-        children: param.children,
-      }),
-    ),
+    // Recursively transform params to internal format
+    paramList: body.paramList?.map(transformParam),
   };
 
   return { cardDetail };
@@ -150,13 +172,7 @@ interface CardInfo {
   cardName: string;
   code: string;
   cardPicUrl?: string;
-  paramList?: Array<{
-    paramName: string;
-    paramType: string;
-    required: boolean;
-    desc?: string;
-    children?: unknown[];
-  }>;
+  paramList?: CardParam[];
 }
 
 // 参数映射接口
@@ -438,12 +454,104 @@ export const CardBindingArea: React.FC = () => {
     }
   }, [search, isModalVisible, loadCardList]);
 
+  // 递归生成参数描述（支持嵌套结构）
+  const writeParamDescriptionRecursive = useCallback(
+    (params: CardParam[], depth: number = 0): string => {
+      const indent = '  '.repeat(depth);
+      let result = '';
+
+      params.forEach(param => {
+        const requiredMark = param.required ? ' (必填)' : '';
+        result += `${indent}- \`${param.paramName}\` (${param.paramType}): ${param.desc || ''}${requiredMark}\n`;
+
+        // 递归处理 children
+        if (param.children && param.children.length > 0) {
+          if (param.paramType === 'array') {
+            result += `${indent}  数组元素结构：\n`;
+          } else if (param.paramType === 'object') {
+            result += `${indent}  对象属性：\n`;
+          }
+          result += writeParamDescriptionRecursive(param.children, depth + 1);
+        }
+      });
+
+      return result;
+    },
+    [],
+  );
+
+  // 生成嵌套JSON示例
+  const generateNestedJSONExample = useCallback(
+    (params: CardParam[]): string => {
+      const obj: Record<string, unknown> = {};
+      params.forEach(param => {
+        if (param.children && param.children.length > 0) {
+          if (param.paramType === 'array') {
+            obj[param.paramName] = `[${param.paramName}元素]`;
+          } else {
+            obj[param.paramName] = generateNestedJSONExample(param.children);
+          }
+        } else {
+          obj[param.paramName] = `<${param.paramName}值>`;
+        }
+      });
+      return JSON.stringify(obj).replace(/"/g, '');
+    },
+    [],
+  );
+
+  // 递归生成输出格式示例
+  const writeParamOutputExample = useCallback(
+    (
+      params: CardParam[],
+      paramMapping?: { paramName: string; variableName: string }[],
+    ): string => {
+      let result = '';
+
+      params.forEach(param => {
+        const mappedVar = paramMapping?.find(
+          m => m.paramName === param.paramName,
+        );
+
+        if (
+          param.paramType === 'array' &&
+          param.children &&
+          param.children.length > 0
+        ) {
+          // 数组类型：生成完整JSON对象示例（generateNestedJSONExample 已包含外层大括号）
+          const exampleJSON = generateNestedJSONExample(param.children);
+          result += `<<${param.paramName}>>${exampleJSON}\n`;
+          result += `<<${param.paramName}>>${exampleJSON}\n`;
+          result += `... (可继续添加更多${param.paramName}元素)\n`;
+        } else if (
+          param.paramType === 'object' &&
+          param.children &&
+          param.children.length > 0
+        ) {
+          // 对象类型：生成完整JSON对象示例（generateNestedJSONExample 已包含外层大括号）
+          const exampleJSON = generateNestedJSONExample(param.children);
+          result += `<<${param.paramName}>>${exampleJSON}\n`;
+        } else {
+          // 简单类型
+          const exampleValue = mappedVar
+            ? `{{${mappedVar.variableName}}}`
+            : `<${param.paramName}的值>`;
+          result += `<<${param.paramName}>>${exampleValue}\n`;
+        }
+      });
+
+      return result;
+    },
+    [generateNestedJSONExample],
+  );
+
   // 生成提示词预览（流式标签格式）
   const promptPreview = useMemo(() => {
     const cards = boundCards || [];
     if (cards.length === 0) return '';
 
-    let prompt = '**可用卡片**\n当需要以结构化卡片形式展示内容时，请使用以下标记格式输出：\n\n';
+    let prompt =
+      '**可用卡片**\n当需要以结构化卡片形式展示内容时，请使用以下标记格式输出：\n\n';
 
     cards.forEach((card, index) => {
       prompt += `### ${index + 1}. ${card.cardName}\n`;
@@ -451,10 +559,8 @@ export const CardBindingArea: React.FC = () => {
 
       if (card.paramList && card.paramList.length > 0) {
         prompt += '参数说明：\n';
-        card.paramList.forEach(param => {
-          const requiredMark = param.required ? ' (必填)' : '';
-          prompt += `- \`${param.paramName}\` (${param.paramType}): ${param.desc || ''}${requiredMark}\n`;
-        });
+        // 使用递归函数生成参数描述
+        prompt += writeParamDescriptionRecursive(card.paramList, 0);
       }
 
       // Generate streaming format example
@@ -462,15 +568,8 @@ export const CardBindingArea: React.FC = () => {
       prompt += `<<CARD:${card.code}:${card.cardName}>>\n`;
 
       if (card.paramList && card.paramList.length > 0) {
-        card.paramList.forEach(param => {
-          const mappedVar = card.paramMapping?.find(
-            m => m.paramName === param.paramName,
-          );
-          const exampleValue = mappedVar
-            ? `{{${mappedVar.variableName}}}`
-            : `<${param.paramName}的值>`;
-          prompt += `<<${param.paramName}>>${exampleValue}\n`;
-        });
+        // 使用递归函数生成输出示例
+        prompt += writeParamOutputExample(card.paramList, card.paramMapping);
       }
 
       prompt += '<</CARD>>\n```\n\n';
@@ -480,12 +579,10 @@ export const CardBindingArea: React.FC = () => {
     if (cards.length >= 2) {
       prompt += '**卡片组布局**（多卡片并排显示）：\n';
       prompt += '```\n<<GROUP:horizontal:2>>\n';
-      cards.slice(0, 2).forEach((card, i) => {
+      cards.slice(0, 2).forEach(card => {
         prompt += `<<CARD:${card.code}:${card.cardName}>>\n`;
         if (card.paramList && card.paramList.length > 0) {
-          card.paramList.forEach(param => {
-            prompt += `<<${param.paramName}>>示例值${i + 1}\n`;
-          });
+          prompt += writeParamOutputExample(card.paramList, card.paramMapping);
         }
         prompt += '<</CARD>>\n';
       });
@@ -495,10 +592,15 @@ export const CardBindingArea: React.FC = () => {
     prompt += '**⚠️ 重要提示**：\n';
     prompt += '1. 当需要使用卡片展示内容时，请严格按照上述标记格式输出\n';
     prompt += '2. GROUP 标记内**必须**包含完整的 CARD 内容，不能为空\n';
-    prompt += '3. 每个 CARD 内**必须**包含所有必填字段';
+    prompt +=
+      '3. 每个 CARD 内**必须**包含所有必填字段\n';
+    prompt +=
+      '4. **数组字段**：每个数组元素单独用一行`<<字段名>>{完整JSON对象}`输出\n';
+    prompt +=
+      '5. **嵌套对象**：对象类型字段用`<<字段名>>{完整JSON对象}`格式输出';
 
     return prompt;
-  }, [boundCards]);
+  }, [boundCards, writeParamDescriptionRecursive, writeParamOutputExample]);
 
   return (
     <>

@@ -16,6 +16,7 @@
 
 .streaming-card-group {
   width: 100%;
+  min-width: 400px; // Ensure enough width for 2-column layout
   margin: 8px 0;
 
   // Debug header - only shown in development
@@ -50,9 +51,10 @@
       flex: 1 1 auto;
     }
 
-    // Column variants
+    // Column variants - always use fixed widths for consistent layout
     &.columns-1 .streaming-card-group-item {
       flex: 0 0 100%;
+      max-width: 100%;
     }
 
     &.columns-2 .streaming-card-group-item {

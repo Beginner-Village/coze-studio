@@ -19,7 +19,6 @@ import { useState, useEffect, type FC } from 'react';
 import {
   type StreamingGroupState,
   StreamingGroupStatus,
-  CardGroupLayout,
   getStreamingCardStateManager,
 } from '@coze-common/chat-core';
 
@@ -37,6 +36,7 @@ export interface StreamingCardGroupProps {
  * Streaming Card Group Component
  *
  * Renders a group of cards with specified layout (horizontal, vertical, waterfall).
+ * Each card has its own iframe.
  * Handles real-time updates as cards are added to the group during streaming.
  */
 export const StreamingCardGroup: FC<StreamingCardGroupProps> = props => {
@@ -127,7 +127,7 @@ export const StreamingCardGroup: FC<StreamingCardGroupProps> = props => {
         </div>
       )}
 
-      {/* Cards container with layout */}
+      {/* Cards container with layout - each card has its own iframe */}
       <div className="streaming-card-group-cards">
         {groupState.cardIds.map((cardId, index) => (
           <div

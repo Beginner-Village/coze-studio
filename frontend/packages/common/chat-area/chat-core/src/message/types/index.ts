@@ -87,6 +87,8 @@ export interface MessageExtraInfo {
   template_id?: string; // card template identifier
   template_name?: string; // card template name
   card_field?: string; // current card field being updated (for card_delta)
+  card_value?: string; // card field value (for card_delta, moved from content/answer)
+  card_op?: 'add' | 'set'; // operation type for card_delta: "add" for array elements, "set" for simple values
   // Card group metadata fields
   group_id?: string; // unique group identifier (for card_group_start, card_group_end)
   card_layout?: string; // layout type: horizontal, vertical, waterfall (for card_group_start)

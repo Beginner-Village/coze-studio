@@ -16,6 +16,7 @@
 
 .streaming-card-content {
   position: relative;
+  width: 100%;
   border: 1px solid var(--semi-color-border, #e0e0e0);
   border-radius: 8px;
   overflow: hidden;
@@ -50,10 +51,19 @@
 .streaming-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
+  justify-content: flex-start;
+  padding: 6px 12px;
   background: var(--semi-color-bg-1, #f8f9fa);
   border-bottom: 1px solid var(--semi-color-border, #e0e0e0);
+  gap: 8px;
+
+  // Simplified streaming-only header style
+  &.streaming-only {
+    .streaming-text {
+      font-size: 12px;
+      color: var(--semi-color-primary, #0066ff);
+    }
+  }
 
   .card-info {
     display: flex;
