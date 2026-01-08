@@ -45,7 +45,6 @@ import (
 	msgEntity "github.com/coze-dev/coze-studio/backend/domain/conversation/message/entity"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
 	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
 	"github.com/coze-dev/coze-studio/backend/pkg/logs"
 	"github.com/coze-dev/coze-studio/backend/pkg/safego"
@@ -68,6 +67,10 @@ import (
 	 startTime     time.Time
 
 	 usage *agentrun.Usage
+
+	 // 用于计算每次工具调用的实际耗时，而不是累计时间
+	 llmStartTime     time.Time // LLM 开始思考的时间（对话开始或上次工具响应的时间）
+	 lastFuncCallTime time.Time // 上次 function_call 发送的时间，用于计算工具执行时间
  }
 
  type Components struct {
@@ -189,11 +192,16 @@ import (
 	 mainChan := make(chan *entity.AgentRespEvent, 100)
 
 	 // 将历史消息和输入转换为 schema.Message 格式
-	 // 过滤掉verbose消息，这些是内部状态消息不应发送给LLM
+	 // 过滤掉内部状态消息，这些不应发送给LLM
 	var historySchema []*schema.Message
 	for _, msg := range historyMsg {
 		// 跳过verbose消息（包括generate_answer_finish）
 		if msg.MessageType == message.MessageTypeVerbose {
+			continue
+		}
+		// 跳过knowledge消息 - 知识库检索结果已通过系统提示词注入，
+		// 不应作为聊天历史发送给大模型，否则会导致大模型模仿JSON格式输出
+		if msg.MessageType == message.MessageTypeKnowledge {
 			continue
 		}
 
@@ -382,7 +390,15 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 	 }
 	 buildExt := map[string]string{}
 
+	 // 累计时间（从对话开始）- 用于不需要区分的场景
 	 timeCost := fmt.Sprintf("%.1f", float64(time.Since(rtDependence.startTime).Milliseconds())/1000.00)
+
+	 // 🔥 计算 LLM 思考时间：从上次工具响应到现在（首次调用则从开始时间算起）
+	 llmStartTime := rtDependence.llmStartTime
+	 if llmStartTime.IsZero() {
+		 llmStartTime = rtDependence.startTime // 首次调用，从对话开始计算
+	 }
+	 llmTimeCost := fmt.Sprintf("%.1f", float64(time.Since(llmStartTime).Milliseconds())/1000.00)
 
 	 switch messageType {
 	 case message.MessageTypeQuestion:
@@ -407,12 +423,21 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 		 msg.ContentType = message.ContentTypeText
 		 msg.Content = chunk.ToolsMessage[0].Content
 
-		 buildExt[string(msgEntity.MessageExtKeyTimeCost)] = timeCost
+		 // 🔥 计算工具执行时间 = 当前时间 - function_call 发送时间
+		 toolTimeCost := timeCost // 默认使用累计时间
+		 if !rtDependence.lastFuncCallTime.IsZero() {
+			 toolTimeCost = fmt.Sprintf("%.1f", float64(time.Since(rtDependence.lastFuncCallTime).Milliseconds())/1000.00)
+		 }
+		 buildExt[string(msgEntity.MessageExtKeyTimeCost)] = toolTimeCost
+
 		 modelContent := chunk.ToolsMessage[0]
 		 mc, err := json.Marshal(modelContent)
 		 if err == nil {
 			 msg.ModelContent = string(mc)
 		 }
+
+		 // 🔥 更新 llmStartTime，为下一次 LLM 思考计时
+		 rtDependence.llmStartTime = time.Now()
 
 	 case message.MessageTypeKnowledge:
 		 msg.Role = schema.Assistant
@@ -446,13 +471,17 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 			 }
 			 buildExt[string(msgEntity.MessageExtKeyPlugin)] = toolCall.Function.Name
 			 buildExt[string(msgEntity.MessageExtKeyToolName)] = toolCall.Function.Name
-			 buildExt[string(msgEntity.MessageExtKeyTimeCost)] = timeCost
+			 // 🔥 使用 LLM 思考时间，而不是累计时间
+			 buildExt[string(msgEntity.MessageExtKeyTimeCost)] = llmTimeCost
 
 			 modelContent := chunk.FuncCall
 			 mc, err := json.Marshal(modelContent)
 			 if err == nil {
 				 msg.ModelContent = string(mc)
 			 }
+
+			 // 🔥 记录 function_call 发送时间，用于计算后续工具执行时间
+			 rtDependence.lastFuncCallTime = time.Now()
 		 }
 	 case message.MessageTypeFlowUp:
 		 msg.Role = schema.Assistant
@@ -589,13 +618,21 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 	 return cm, nil
  }
 
- func (c *runImpl) pull(_ context.Context, mainChan chan *entity.AgentRespEvent, events *schema.StreamReader[*crossagent.AgentEvent]) {
+ func (c *runImpl) pull(ctx context.Context, mainChan chan *entity.AgentRespEvent, events *schema.StreamReader[*crossagent.AgentEvent]) {
 	 defer func() {
+		 logs.CtxInfof(ctx, "[PULL-DEBUG] closing mainChan")
 		 close(mainChan)
 	 }()
 
 	 for {
+		 logs.CtxInfof(ctx, "[PULL-DEBUG] waiting for events.Recv()...")
 		 rm, re := events.Recv()
+		 logs.CtxInfof(ctx, "[PULL-DEBUG] events.Recv() returned, eventType=%v, err=%v", func() string {
+			 if rm != nil {
+				 return string(rm.EventType)
+			 }
+			 return "nil"
+		 }(), re)
 		 if re != nil {
 			 errChunk := &entity.AgentRespEvent{
 				 Err: re,
@@ -627,7 +664,9 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 			 ToolAsAnswer:  rm.ToolAsChatModelAnswer,
 		 }
 
+		 logs.CtxInfof(ctx, "[PULL-DEBUG] sending event to mainChan, type=%v", eventType)
 		 mainChan <- respChunk
+		 logs.CtxInfof(ctx, "[PULL-DEBUG] sent event to mainChan, type=%v", eventType)
 	 }
  }
 
@@ -653,7 +692,7 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 		 if !ok || chunk == nil {
 			 return
 		 }
-		 logs.CtxInfof(ctx, "hanlder event:%v,err:%v", conv.DebugJsonToStr(chunk), chunk.Err)
+		 logs.CtxInfof(ctx, "[PUSH-DEBUG] received event from mainChan, event_type=%v, has_stream=%v", chunk.EventType, chunk.ModelAnswer != nil || chunk.ToolAsAnswer != nil || chunk.ToolMidAnswer != nil)
 		 if chunk.Err != nil {
 			 if errors.Is(chunk.Err, io.EOF) {
 				 if !isSendFinishAnswer {
@@ -857,6 +896,7 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 			 }
 
 		 case message.MessageTypeAnswer:
+			 logs.CtxInfof(ctx, "[PUSH-DEBUG] START processing MessageTypeAnswer, will block until stream EOF")
 			 fullContent := bytes.NewBuffer([]byte{})
 			 var usage *msgEntity.UsageExt
 			 var isToolCalls = false
@@ -870,10 +910,13 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 
 			 for {
 				 streamMsg, receErr := chunk.ModelAnswer.Recv()
+				 logs.CtxInfof(ctx, "[PUSH-DEBUG] ModelAnswer.Recv() returned, hasMsg=%v, err=%v, isToolCalls=%v", streamMsg != nil, receErr, streamMsg != nil && len(streamMsg.ToolCalls) > 0)
 				 if receErr != nil {
 					 if errors.Is(receErr, io.EOF) {
+						 logs.CtxInfof(ctx, "[PUSH-DEBUG] MessageTypeAnswer stream EOF, isToolCalls=%v, modelAnswerMsg=%v", isToolCalls, modelAnswerMsg != nil)
 
 						 if isToolCalls {
+							 logs.CtxInfof(ctx, "[PUSH-DEBUG] END MessageTypeAnswer (tool_calls, skipping answer)")
 							 break
 						 }
 						 if modelAnswerMsg == nil {

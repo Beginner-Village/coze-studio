@@ -440,7 +440,13 @@ func transMessageToSchemaMessage(ctx context.Context, msgs []*message.Message, i
 		if msgOne.ModelContent == "" {
 			continue
 		}
+		// 跳过内部状态消息，不应发送给LLM
 		if msgOne.MessageType == message.MessageTypeVerbose || msgOne.MessageType == message.MessageTypeFlowUp {
+			continue
+		}
+		// 跳过knowledge消息 - 知识库检索结果已通过系统提示词注入，
+		// 不应作为聊天历史发送给大模型，否则会导致大模型模仿JSON格式输出
+		if msgOne.MessageType == message.MessageTypeKnowledge {
 			continue
 		}
 		var sm *schema.Message
