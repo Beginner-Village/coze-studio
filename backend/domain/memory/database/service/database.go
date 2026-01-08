@@ -127,6 +127,8 @@ type DeleteDatabaseRecordRequest struct {
 	ConnectorID *int64
 	UserID      int64
 	Records     []map[string]string
+	// SkipRowLevelFilter 跳过行级过滤（当调用方已通过空间权限验证时使用）
+	SkipRowLevelFilter bool
 }
 
 type ListDatabaseRecordRequest struct {
@@ -137,6 +139,8 @@ type ListDatabaseRecordRequest struct {
 
 	Limit  int
 	Offset int
+	// SkipRowLevelFilter 跳过行级过滤（当调用方已通过空间权限验证时使用）
+	SkipRowLevelFilter bool
 }
 
 type ListDatabaseRecordResponse struct {

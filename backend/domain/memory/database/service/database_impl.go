@@ -708,7 +708,8 @@ func (d databaseService) DeleteDatabaseRecord(ctx context.Context, req *DeleteDa
 		},
 	}
 
-	if tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite {
+	// 只有当未跳过行级过滤且为受限读写模式时，才添加用户过滤条件
+	if !req.SkipRowLevelFilter && tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite {
 		cond := &rdb.Condition{
 			Field:    database.DefaultUidColName,
 			Operator: entity3.OperatorEqual,
@@ -774,8 +775,9 @@ func (d databaseService) ListDatabaseRecord(ctx context.Context, req *ListDataba
 			Conditions: []*rdb.Condition{cond},
 		}
 	}
+	// 只有当未跳过行级过滤且为受限读写模式时，才添加用户过滤条件
 	if req.TableType == table.TableType_DraftTable {
-		if tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite {
+		if !req.SkipRowLevelFilter && tableInfo.RwMode == table.BotTableRWMode_LimitedReadWrite {
 			cond := &rdb.Condition{
 				Field:    database.DefaultUidColName,
 				Operator: entity3.OperatorEqual,

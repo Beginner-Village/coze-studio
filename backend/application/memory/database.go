@@ -298,6 +298,8 @@ func (d *DatabaseApplicationService) ListDatabaseRecords(ctx context.Context, re
 		Limit:      int(req.Limit),
 		Offset:     int(req.Offset),
 		UserID:     *uid,
+		// 已通过 ValidateReadAccess 检查空间权限，允许查看空间内所有数据
+		SkipRowLevelFilter: true,
 	}
 	// FilterCriterion, NotFilterByUserID, OrderByList not use
 
@@ -360,6 +362,8 @@ func (d *DatabaseApplicationService) UpdateDatabaseRecords(ctx context.Context, 
 			TableType:  req.GetTableType(),
 			Records:    req.GetRecordDataDelete(),
 			UserID:     *uid,
+			// 已通过 ValidateAccess 检查空间权限，允许删除空间内所有数据
+			SkipRowLevelFilter: true,
 		})
 		if err != nil {
 			return nil, err
