@@ -81,6 +81,11 @@ func (dao *MessageDAO) List(ctx context.Context, listMeta *entity.ListMeta) ([]*
 		})...))
 	}
 
+	// 按section_id过滤消息，实现清理上下文功能
+	if listMeta.SectionID > 0 {
+		do = do.Where(m.SectionID.Eq(listMeta.SectionID))
+	}
+
 	if listMeta.Limit > 0 {
 		do = do.Limit(int(listMeta.Limit) + 1)
 	}

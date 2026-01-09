@@ -69,6 +69,7 @@ func (c *ConversationApplicationService) GetMessageList(ctx context.Context, mr 
 
 	mListMessages, err := c.MessageDomainSVC.List(ctx, &entity.ListMeta{
 		ConversationID: currentConversation.ID,
+		SectionID:      currentConversation.SectionID, // 按当前section过滤，实现清理上下文功能
 		AgentID:        agentID,
 		Limit:          int(mr.Count),
 		Cursor:         cursor,

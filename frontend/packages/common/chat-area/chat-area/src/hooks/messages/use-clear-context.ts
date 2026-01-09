@@ -53,6 +53,7 @@ export const useClearContext = () => {
   const { setLatestSectionId } = useSectionIdStore();
   const { loadEagerly } = useLoadMoreClient();
   const addMessages = useMessagesStore(state => state.addMessages);
+  const clearMessage = useMessagesStore(state => state.clearMessage);
   const chatActionLockService = useChatActionLockService();
   const stopResponding = useStopResponding();
   const chatCore = useGlobalInitStore(state => state.getChatCore());
@@ -111,6 +112,8 @@ export const useClearContext = () => {
       }
 
       const { new_section_id, new_section_message_list } = res;
+      // 清空旧消息列表，使用新的 section_id
+      clearMessage();
       setLatestSectionId(new_section_id);
       clearSuggestions();
 

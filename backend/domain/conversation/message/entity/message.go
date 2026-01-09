@@ -24,6 +24,7 @@ type Message = message.Message
 
 type ListMeta struct {
 	ConversationID int64                  `json:"conversation_id"`
+	SectionID      int64                  `json:"section_id"` // 用于过滤特定section的消息
 	RunID          []*int64               `json:"run_id"`
 	UserID         string                 `json:"user_id"`
 	AgentID        int64                  `json:"agent_id"`

@@ -169,6 +169,18 @@ func (art *AgentRuntime) push(ctx context.Context, mainChan chan *entity.AgentRe
 				streamMsg, receErr := chunk.ToolMidAnswer.Recv()
 				if receErr != nil {
 					if errors.Is(receErr, io.EOF) {
+						// 流结束时，如果还有未发送的内容，发送最终消息
+						if fullMidAnswerContent.Len() > 0 && toolMidAnswerMsg != nil {
+							sendMidAnswerMsg := buildSendMsg(ctx, toolMidAnswerMsg, false, art)
+							sendMidAnswerMsg.Content = fullMidAnswerContent.String()
+							hfErr := mh.handlerAnswer(ctx, sendMidAnswerMsg, usage, art, toolMidAnswerMsg)
+							if hfErr != nil {
+								if e, ok := hfErr.(error); ok {
+									err = e
+								}
+								return
+							}
+						}
 						break
 					}
 					err = receErr

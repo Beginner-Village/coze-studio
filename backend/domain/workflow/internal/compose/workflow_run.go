@@ -41,12 +41,13 @@ import (
 )
 
 type WorkflowRunner struct {
-	basic        *entity.WorkflowBasic
-	input        string
-	resumeReq    *entity.ResumeRequest
-	schema       *schema2.WorkflowSchema
-	streamWriter *schema.StreamWriter[*entity.Message]
-	config       model.ExecuteConfig
+	basic            *entity.WorkflowBasic
+	input            string
+	resumeReq        *entity.ResumeRequest
+	schema           *schema2.WorkflowSchema
+	streamWriter     *schema.StreamWriter[*entity.Message]
+	ownsStreamWriter bool // true if workflow owns the stream and should close it
+	config           model.ExecuteConfig
 
 	executeID      int64
 	eventChan      chan *execute.Event
@@ -57,6 +58,7 @@ type workflowRunOptions struct {
 	input              string
 	resumeReq          *entity.ResumeRequest
 	streamWriter       *schema.StreamWriter[*entity.Message]
+	ownsStreamWriter   bool // true if workflow owns the stream and should close it
 	rootTokenCollector *execute.TokenCollector
 }
 
@@ -72,25 +74,42 @@ func WithResumeReq(resumeReq *entity.ResumeRequest) WorkflowRunnerOption {
 		opts.resumeReq = resumeReq
 	}
 }
+// WithStreamWriter sets the stream writer for intermediate messages.
+// By default, the workflow does NOT own the stream and will NOT close it.
+// Use WithOwnedStreamWriter if the workflow should close the stream when done.
 func WithStreamWriter(sw *schema.StreamWriter[*entity.Message]) WorkflowRunnerOption {
 	return func(opts *workflowRunOptions) {
 		opts.streamWriter = sw
+		opts.ownsStreamWriter = false // External/shared stream, workflow should not close it
+	}
+}
+
+// WithOwnedStreamWriter sets the stream writer and marks it as owned by the workflow.
+// The workflow will close the stream when execution completes.
+// Use this when the stream is created specifically for this workflow execution.
+func WithOwnedStreamWriter(sw *schema.StreamWriter[*entity.Message]) WorkflowRunnerOption {
+	return func(opts *workflowRunOptions) {
+		opts.streamWriter = sw
+		opts.ownsStreamWriter = true // Workflow owns this stream and should close it
 	}
 }
 
 func NewWorkflowRunner(b *entity.WorkflowBasic, sc *schema2.WorkflowSchema, config model.ExecuteConfig, opts ...WorkflowRunnerOption) *WorkflowRunner {
-	options := &workflowRunOptions{}
+	options := &workflowRunOptions{
+		ownsStreamWriter: false, // Default: don't close stream (safe default, use WithOwnedStreamWriter to enable)
+	}
 	for _, opt := range opts {
 		opt(options)
 	}
 
 	return &WorkflowRunner{
-		basic:        b,
-		input:        options.input,
-		resumeReq:    options.resumeReq,
-		schema:       sc,
-		streamWriter: options.streamWriter,
-		config:       config,
+		basic:            b,
+		input:            options.input,
+		resumeReq:        options.resumeReq,
+		schema:           sc,
+		streamWriter:     options.streamWriter,
+		ownsStreamWriter: options.ownsStreamWriter,
+		config:           config,
 	}
 }
 
@@ -102,14 +121,15 @@ func (r *WorkflowRunner) Prepare(ctx context.Context) (
 	error,
 ) {
 	var (
-		err       error
-		executeID int64
-		repo      = wf.GetRepository()
-		resumeReq = r.resumeReq
-		wb        = r.basic
-		sc        = r.schema
-		sw        = r.streamWriter
-		config    = r.config
+		err              error
+		executeID        int64
+		repo             = wf.GetRepository()
+		resumeReq        = r.resumeReq
+		wb               = r.basic
+		sc               = r.schema
+		sw               = r.streamWriter
+		ownsStreamWriter = r.ownsStreamWriter
+		config           = r.config
 	)
 
 	if r.resumeReq == nil {
@@ -277,7 +297,9 @@ func (r *WorkflowRunner) Prepare(ctx context.Context) (
 			}
 		}()
 		defer func() {
-			if sw != nil {
+			// Only close the stream if workflow owns it (not externally provided)
+			// External streams (e.g., from agent's WithMessagePipe) should be managed by the caller
+			if sw != nil && ownsStreamWriter {
 				sw.Close()
 			}
 		}()

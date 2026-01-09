@@ -103,6 +103,23 @@ func ChatV3(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	// 检查是否为非流式模式
+	// Stream 默认为 true，只有显式设置为 false 时才使用非流式
+	if req.Stream != nil && !*req.Stream {
+		// 非流式模式
+		resp, err := conversation.ConversationOpenAPISVC.OpenapiAgentRunNoStream(ctx, &req)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, &run.ErrorData{
+				Code: errno.ErrConversationAgentRunError,
+				Msg:  err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, resp)
+		return
+	}
+
+	// 流式模式（默认）
 	// Session key will be retrieved from database when needed by external knowledge tool
 
 	c.SetStatusCode(http.StatusOK)

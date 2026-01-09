@@ -74,6 +74,7 @@ func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (
 	var composeOpts []compose.Option
 	var pipeMsgOpt compose.Option
 	var workflowMsgSr *schema.StreamReader[*crossworkflow.WorkflowMessage]
+	var workflowMsgSw *schema.StreamWriter[*crossworkflow.WorkflowMessage] // StreamWriter to close when agent finishes
 	if r.containWfTool {
 		cfReq := crossworkflow.ExecuteConfig{
 			AgentID:         &req.Identity.AgentID,
@@ -89,7 +90,7 @@ func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (
 		}
 		wfConfig := crossworkflow.DefaultSVC().WithExecuteConfig(cfReq)
 		composeOpts = append(composeOpts, wfConfig)
-		pipeMsgOpt, workflowMsgSr = crossworkflow.DefaultSVC().WithMessagePipe()
+		pipeMsgOpt, workflowMsgSr, workflowMsgSw = crossworkflow.DefaultSVC().WithMessagePipe()
 		composeOpts = append(composeOpts, pipeMsgOpt)
 	}
 
@@ -121,6 +122,10 @@ func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (
 
 				sw.Send(nil, errors.New("internal server error"))
 			}
+			// Close workflow message stream writer first, so processWfMidAnswerStream can exit
+			if workflowMsgSw != nil {
+				workflowMsgSw.Close()
+			}
 			sw.Close()
 		}()
 		_, _ = r.runner.Stream(ctx, req, composeOpts...)
@@ -129,19 +134,27 @@ func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (
 	return sr, nil
 }
 
-func (r *AgentRunner) processWfMidAnswerStream(_ context.Context, sw *schema.StreamWriter[*entity.AgentEvent], wfStream *schema.StreamReader[*crossworkflow.WorkflowMessage]) {
+func (r *AgentRunner) processWfMidAnswerStream(ctx context.Context, sw *schema.StreamWriter[*entity.AgentEvent], wfStream *schema.StreamReader[*crossworkflow.WorkflowMessage]) {
 	streamInitialized := false
 	var srT *schema.StreamReader[*schema.Message]
 	var swT *schema.StreamWriter[*schema.Message]
+	workflowCallCount := 0
+
+	logs.CtxInfof(ctx, "[WfMidAnswer] Starting workflow mid-answer stream processor")
+
 	defer func() {
 		if swT != nil {
+			logs.CtxInfof(ctx, "[WfMidAnswer] Closing remaining stream in defer")
 			swT.Close()
 		}
+		logs.CtxInfof(ctx, "[WfMidAnswer] Stream processor finished, total workflow calls: %d", workflowCallCount)
 	}()
+
 	for {
 		msg, err := wfStream.Recv()
 
 		if err == io.EOF {
+			logs.CtxInfof(ctx, "[WfMidAnswer] Workflow stream EOF")
 			break
 		}
 		if msg == nil || msg.DataMessage == nil {
@@ -153,27 +166,39 @@ func (r *AgentRunner) processWfMidAnswerStream(_ context.Context, sw *schema.Str
 			msg.DataMessage.NodeType != crossworkflow.NodeTypeAgent {
 			continue
 		}
+
 		if !streamInitialized {
 			streamInitialized = true
+			workflowCallCount++
 			srT, swT = schema.Pipe[*schema.Message](5)
+			logs.CtxInfof(ctx, "[WfMidAnswer] 📤 Creating new tool_mid_answer stream #%d", workflowCallCount)
 			sw.Send(&entity.AgentEvent{
 				EventType:     singleagent.EventTypeOfToolMidAnswer,
 				ToolMidAnswer: srT,
 			}, nil)
 		}
+
+		extra := make(map[string]any)
+		extra["workflow_node_name"] = msg.NodeTitle
+		isFinish := msg.DataMessage.Last
+		if isFinish {
+			extra["is_finish"] = true
+		}
+
 		swT.Send(&schema.Message{
 			Role:    msg.DataMessage.Role,
 			Content: msg.DataMessage.Content,
-			Extra: func(msg *crossworkflow.WorkflowMessage) map[string]any {
-
-				extra := make(map[string]any)
-				extra["workflow_node_name"] = msg.NodeTitle
-				if msg.DataMessage.Last {
-					extra["is_finish"] = true
-				}
-				return extra
-			}(msg),
+			Extra:   extra,
 		}, nil)
+
+		// 🔥 关键修复：当工作流完成时，立即关闭当前流
+		// 这样 push() 函数可以立即收到 EOF，不会阻塞等待整个 agent 结束
+		if isFinish {
+			logs.CtxInfof(ctx, "[WfMidAnswer] ✅ Workflow #%d finished, closing stream immediately", workflowCallCount)
+			swT.Close()
+			swT = nil
+			streamInitialized = false
+		}
 	}
 }
 

@@ -515,12 +515,13 @@ func (mr *MockServiceMockRecorder) WithExecuteConfig(cfg any) *gomock.Call {
 }
 
 // WithMessagePipe mocks base method.
-func (m *MockService) WithMessagePipe() (compose.Option, *schema.StreamReader[*entity.Message]) {
+func (m *MockService) WithMessagePipe() (compose.Option, *schema.StreamReader[*entity.Message], *schema.StreamWriter[*entity.Message]) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WithMessagePipe")
 	ret0, _ := ret[0].(compose.Option)
 	ret1, _ := ret[1].(*schema.StreamReader[*entity.Message])
-	return ret0, ret1
+	ret2, _ := ret[2].(*schema.StreamWriter[*entity.Message])
+	return ret0, ret1, ret2
 }
 
 // WithMessagePipe indicates an expected call of WithMessagePipe.

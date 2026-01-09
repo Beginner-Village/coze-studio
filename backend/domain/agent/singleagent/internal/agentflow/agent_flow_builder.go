@@ -231,10 +231,16 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 			ToolCallingModel: chatModel,
 			ToolsConfig: compose.ToolsNodeConfig{
 				Tools: agentTools,
+				// 强制顺序执行工具，确保正确的 ReAct 流程：
+				// 每个工具调用完成后立即返回结果，然后模型基于结果决定下一步
+				// 而不是并行执行所有工具后一起返回
+				ExecuteSequentially: true,
 			},
 			ToolReturnDirectly: returnDirectlyTools,
 			ModelNodeName:      keyOfReActAgentChatModel,
 			ToolsNodeName:      keyOfReActAgentToolsNode,
+			// 增加最大步数限制，默认是12，增加到30以支持更复杂的工具调用场景
+			MaxStep: 30,
 		}
 		
 		// 根据模型类型自适应选择StreamToolCallChecker

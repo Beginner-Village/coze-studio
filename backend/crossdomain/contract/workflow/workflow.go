@@ -45,7 +45,7 @@ type Workflow interface {
 
 	StreamResume(ctx context.Context, req *entity.ResumeRequest, config workflowModel.ExecuteConfig) (*schema.StreamReader[*entity.Message], error)
 
-	WithMessagePipe() (compose.Option, *schema.StreamReader[*entity.Message])
+	WithMessagePipe() (compose.Option, *schema.StreamReader[*entity.Message], *schema.StreamWriter[*entity.Message])
 	InitApplicationDefaultConversationTemplate(ctx context.Context, spaceID int64, appID int64, userID int64) error
 }
 

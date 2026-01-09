@@ -77,7 +77,7 @@ func (i *impl) InitApplicationDefaultConversationTemplate(ctx context.Context, s
 	return i.DomainSVC.InitApplicationDefaultConversationTemplate(ctx, spaceID, appID, userID)
 }
 
-func (i *impl) WithMessagePipe() (compose.Option, *schema.StreamReader[*entity.Message]) {
+func (i *impl) WithMessagePipe() (compose.Option, *schema.StreamReader[*entity.Message], *schema.StreamWriter[*entity.Message]) {
 	return i.DomainSVC.WithMessagePipe()
 }
 

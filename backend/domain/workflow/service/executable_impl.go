@@ -495,7 +495,7 @@ func (i *impl) StreamExecute(ctx context.Context, config workflowModel.ExecuteCo
 	sr, sw := schema.Pipe[*entity.Message](10)
 
 	cancelCtx, executeID, opts, _, err := compose.NewWorkflowRunner(wfEntity.GetBasic(), workflowSC, config,
-		compose.WithInput(inStr), compose.WithStreamWriter(sw)).Prepare(ctx)
+		compose.WithInput(inStr), compose.WithOwnedStreamWriter(sw)).Prepare(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -945,7 +945,7 @@ func (i *impl) StreamResume(ctx context.Context, req *entity.ResumeRequest, conf
 	sr, sw := schema.Pipe[*entity.Message](10)
 
 	cancelCtx, _, opts, _, err := compose.NewWorkflowRunner(wfEntity.GetBasic(), workflowSC, config,
-		compose.WithResumeReq(req), compose.WithStreamWriter(sw)).Prepare(ctx)
+		compose.WithResumeReq(req), compose.WithOwnedStreamWriter(sw)).Prepare(ctx)
 	if err != nil {
 		return nil, err
 	}

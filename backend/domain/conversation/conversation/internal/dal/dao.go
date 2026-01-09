@@ -64,7 +64,11 @@ func (dao *ConversationDAO) Create(ctx context.Context, msg *entity.Conversation
 }
 
 func (dao *ConversationDAO) GetByID(ctx context.Context, id int64) (*entity.Conversation, error) {
-	poData, err := dao.query.Conversation.WithContext(ctx).Debug().Where(dao.query.Conversation.ID.Eq(id)).First()
+	// 添加 Status 过滤条件，避免查询到已删除的会话
+	poData, err := dao.query.Conversation.WithContext(ctx).Debug().
+		Where(dao.query.Conversation.ID.Eq(id)).
+		Where(dao.query.Conversation.Status.Eq(int32(conversation.ConversationStatusNormal))).
+		First()
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil

@@ -67,11 +67,15 @@ func GetExecuteConfig(opts ...tool.Option) workflowModel.ExecuteConfig {
 	return opt.exeCfg
 }
 
-// WithMessagePipe returns an Option which is meant to be passed to the tool workflow, as well as a StreamReader to read the messages from the tool workflow.
-// This Option will apply to ALL workflow tools to be executed by eino's ToolsNode. The workflow tools will emit messages to this stream.
-// The caller can receive from the returned StreamReader to get the messages from the tool workflow.
-func WithMessagePipe() (compose.Option, *schema.StreamReader[*entity.Message]) {
+// WithMessagePipe returns an Option which is meant to be passed to the tool workflow,
+// a StreamReader to read the messages from the tool workflow, and a StreamWriter that
+// the caller should close when all tool invocations are done.
+// This Option will apply to ALL workflow tools to be executed by eino's ToolsNode.
+// The workflow tools will emit messages to this stream.
+// IMPORTANT: The caller is responsible for closing the returned StreamWriter when done,
+// otherwise the StreamReader will block forever waiting for EOF.
+func WithMessagePipe() (compose.Option, *schema.StreamReader[*entity.Message], *schema.StreamWriter[*entity.Message]) {
 	sr, sw := schema.Pipe[*entity.Message](10)
 	opt := compose.WithToolsNodeOption(compose.WithToolOption(WithIntermediateStreamWriter(sw)))
-	return opt, sr
+	return opt, sr, sw
 }

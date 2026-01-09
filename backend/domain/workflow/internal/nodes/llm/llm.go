@@ -1139,7 +1139,7 @@ func (l *LLM) prepare(ctx context.Context, _ map[string]any, opts ...nodes.NodeO
 
 	llmOpts := nodes.GetImplSpecificOptions(&llmOptions{}, opts...)
 	if llmOpts.toolWorkflowSW != nil {
-		toolMsgOpt, toolMsgSR := execute.WithMessagePipe()
+		toolMsgOpt, toolMsgSR, toolMsgSW := execute.WithMessagePipe()
 		composeOpts = append(composeOpts, toolMsgOpt)
 
 		safego.Go(ctx, func() {
@@ -1159,6 +1159,13 @@ func (l *LLM) prepare(ctx context.Context, _ map[string]any, opts ...nodes.NodeO
 				llmOpts.toolWorkflowSW.Send(msg, nil)
 			}
 		})
+
+		// Close the tool message stream writer when context is done
+		// This ensures the above goroutine can exit when the LLM node finishes
+		go func() {
+			<-ctx.Done()
+			toolMsgSW.Close()
+		}()
 	}
 
 	resolvedSources, err := nodes.ResolveStreamSources(ctx, l.fullSources)

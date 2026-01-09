@@ -62,6 +62,7 @@ type replyChunkCallback struct {
 	sw                  *schema.StreamWriter[*entity.AgentEvent]
 	executeID           string
 	returnDirectlyTools map[string]struct{}
+	maxStepsHandled     bool // 标记是否已处理过 max steps 错误，避免重复发送消息
 }
 
 func (r *replyChunkCallback) OnError(ctx context.Context, info *callbacks.RunInfo, err error) context.Context {
@@ -94,6 +95,29 @@ func (r *replyChunkCallback) OnError(ctx context.Context, info *callbacks.RunInf
 			}
 			r.sw.Send(interruptEvent, nil)
 
+		} else if errors.Is(err, compose.ErrExceedMaxSteps) {
+			// 当达到最大步数限制时，发送友好的回复消息而不是错误
+			// 使用标志避免重复发送（OnError可能在不同层级被多次触发）
+			if r.maxStepsHandled {
+				logs.CtxInfof(ctx, "[AgentRunError] | exceeds max steps already handled, skip duplicate, component=%v, name=%v", info.Component, info.Name)
+				return ctx
+			}
+			r.maxStepsHandled = true
+
+			logs.CtxWarnf(ctx, "[AgentRunError] | exceeds max steps, component=%v, name=%v", info.Component, info.Name)
+
+			// 创建一个流式回复，告知用户任务太复杂
+			sr, sw := schema.Pipe[*schema.Message](1)
+			sw.Send(&schema.Message{
+				Role:    schema.Assistant,
+				Content: "抱歉，这个任务涉及的步骤较多，已达到处理上限。请尝试将任务拆分为更小的部分，或者简化您的请求后重试。",
+			}, nil)
+			sw.Close()
+
+			r.sw.Send(&entity.AgentEvent{
+				EventType:       singleagent.EventTypeOfChatModelAnswer,
+				ChatModelAnswer: sr,
+			}, nil)
 		} else {
 			logs.CtxErrorf(ctx, "[AgentRunError] | node execute failed, component=%v, name=%v, err=%v",
 				info.Component, info.Name, err)
@@ -122,11 +146,32 @@ func (r *replyChunkCallback) OnStart(ctx context.Context, info *callbacks.RunInf
 		if info.Name != keyOfReActAgentToolsNode {
 			return ctx
 		}
-		ae := &entity.AgentEvent{
-			EventType: singleagent.EventTypeOfFuncCall,
-			FuncCall:  convToolsNodeCallbackInput(input),
+		msg := convToolsNodeCallbackInput(input)
+		if msg != nil && len(msg.ToolCalls) > 0 {
+			// 为每个 tool_call 单独发送 FuncCall 事件
+			// 这样前端可以逐个显示工具调用，而不是等所有工具调用完成后一起显示
+			for _, tc := range msg.ToolCalls {
+				logs.CtxInfof(ctx, "[CALLBACK-DEBUG] SENDING FuncCall event for tool=%v", tc.Function.Name)
+				singleCallMsg := &schema.Message{
+					Role:      msg.Role,
+					ToolCalls: []schema.ToolCall{tc},
+				}
+				ae := &entity.AgentEvent{
+					EventType: singleagent.EventTypeOfFuncCall,
+					FuncCall:  singleCallMsg,
+				}
+				r.sw.Send(ae, nil)
+				logs.CtxInfof(ctx, "[CALLBACK-DEBUG] SENT FuncCall event for tool=%v", tc.Function.Name)
+			}
+		} else {
+			// 兼容没有 ToolCalls 的情况
+			logs.CtxInfof(ctx, "[CALLBACK-DEBUG] SENDING FuncCall event (no tool_calls)")
+			ae := &entity.AgentEvent{
+				EventType: singleagent.EventTypeOfFuncCall,
+				FuncCall:  msg,
+			}
+			r.sw.Send(ae, nil)
 		}
-		r.sw.Send(ae, nil)
 	}
 
 	return ctx
@@ -188,13 +233,15 @@ func (r *replyChunkCallback) OnEnd(ctx context.Context, info *callbacks.RunInfo,
 func (r *replyChunkCallback) OnEndWithStreamOutput(ctx context.Context, info *callbacks.RunInfo,
 	output *schema.StreamReader[callbacks.CallbackOutput],
 ) context.Context {
-	logs.CtxInfof(ctx, "info-OnEndWithStreamOutput, info=%v, output=%v", conv.DebugJsonToStr(info), conv.DebugJsonToStr(output))
+	logs.CtxInfof(ctx, "[CALLBACK-DEBUG] OnEndWithStreamOutput, component=%v, name=%v", info.Component, info.Name)
 	switch info.Component {
 	case compose.ComponentOfGraph, components.ComponentOfChatModel:
 		if info.Name != keyOfReActAgentChatModel && info.Name != keyOfLLM {
+			logs.CtxInfof(ctx, "[CALLBACK-DEBUG] Skipping non-ReAct ChatModel, closing stream, name=%v", info.Name)
 			output.Close()
 			return ctx
 		}
+		logs.CtxInfof(ctx, "[CALLBACK-DEBUG] SENDING ChatModelAnswer event for name=%v", info.Name)
 		sr := schema.StreamReaderWithConvert(output, func(t callbacks.CallbackOutput) (*schema.Message, error) {
 			cbOut := model.ConvCallbackOutput(t)
 			return cbOut.Message, nil
@@ -204,18 +251,28 @@ func (r *replyChunkCallback) OnEndWithStreamOutput(ctx context.Context, info *ca
 			EventType:       singleagent.EventTypeOfChatModelAnswer,
 			ChatModelAnswer: sr,
 		}, nil)
+		logs.CtxInfof(ctx, "[CALLBACK-DEBUG] SENT ChatModelAnswer event for name=%v", info.Name)
 		return ctx
 	case compose.ComponentOfToolsNode:
-		toolsMessage, err := r.concatToolsNodeOutput(ctx, output)
+		// 改进：为每个工具单独发送结果事件，而不是等所有工具完成后批量发送
+		logs.CtxInfof(ctx, "[CALLBACK-DEBUG] START concatToolsNodeOutput for ToolsNode")
+		toolsMessages, err := r.concatToolsNodeOutput(ctx, output)
+		logs.CtxInfof(ctx, "[CALLBACK-DEBUG] END concatToolsNodeOutput, got %d messages, err=%v", len(toolsMessages), err)
 		if err != nil {
 			r.sw.Send(nil, err)
 			return ctx
 		}
 
-		r.sw.Send(&entity.AgentEvent{
-			EventType:    singleagent.EventTypeOfToolsMessage,
-			ToolsMessage: toolsMessage,
-		}, nil)
+		// 为每个工具单独发送 ToolsMessage 事件，实现实时推送
+		for i, toolMsg := range toolsMessages {
+			if toolMsg != nil {
+				logs.CtxInfof(ctx, "[CALLBACK-DEBUG] SENDING ToolsMessage event [%d/%d] toolName=%v", i+1, len(toolsMessages), toolMsg.ToolName)
+				r.sw.Send(&entity.AgentEvent{
+					EventType:    singleagent.EventTypeOfToolsMessage,
+					ToolsMessage: []*schema.Message{toolMsg},
+				}, nil)
+			}
+		}
 		return ctx
 	default:
 		return ctx

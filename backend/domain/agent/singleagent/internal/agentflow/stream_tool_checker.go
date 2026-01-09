@@ -136,102 +136,68 @@ func qwenCompatibleToolCallChecker(ctx context.Context, sr *schema.StreamReader[
 }
 
 // adaptiveToolCallChecker 自适应的工具调用检查器
-// 根据不同的场景和模型特点，动态调整检查策略
+// 关键改进：读取整个流直到 EOF，确保不会错过任何 tool_calls
+// eino 框架要求 checker 必须关闭流，所以我们需要完整消费流
 func adaptiveToolCallChecker(ctx context.Context, sr *schema.StreamReader[*schema.Message]) (bool, error) {
 	defer sr.Close()
 
-	// 收集前面若干个chunks的信息
-	type chunkInfo struct {
-		hasContent   bool
-		hasToolCalls bool
-		content      string
-	}
-	
-	chunks := make([]chunkInfo, 0, 30)
-	totalContent := strings.Builder{}
-	
-	logs.CtxInfof(ctx, "[AdaptiveChecker] Starting adaptive tool call check")
+	logs.CtxInfof(ctx, "[AdaptiveChecker] Starting adaptive tool call check (reading entire stream)")
 
-	// 读取最多30个chunks或直到流结束（增加到30个以捕获更多信息）
-	for i := 0; i < 30; i++ {
+	chunkCount := 0
+	totalContent := strings.Builder{}
+	hasToolCalls := false
+
+	// 🔥 关键改进：读取整个流直到 EOF，不再限制 chunks 数量
+	for {
 		msg, err := sr.Recv()
 		if err == io.EOF {
+			logs.CtxInfof(ctx, "[AdaptiveChecker] Stream EOF after %d chunks", chunkCount)
 			break
 		}
 		if err != nil {
-			logs.CtxErrorf(ctx, "[AdaptiveChecker] Error reading stream: %v", err)
+			logs.CtxErrorf(ctx, "[AdaptiveChecker] Error reading stream at chunk %d: %v", chunkCount, err)
 			return false, err
 		}
 
-		info := chunkInfo{
-			hasContent:   len(msg.Content) > 0,
-			hasToolCalls: len(msg.ToolCalls) > 0,
-			content:      msg.Content,
-		}
-		chunks = append(chunks, info)
-		
-		if info.hasContent {
+		chunkCount++
+
+		// 记录每个 chunk 的内容用于调试
+		if len(msg.Content) > 0 {
 			totalContent.WriteString(msg.Content)
+			// 每 10 个 chunks 打印一次进度
+			if chunkCount%10 == 0 {
+				logs.CtxInfof(ctx, "[AdaptiveChecker] Progress: chunk %d, content length: %d", chunkCount, totalContent.Len())
+			}
 		}
 
-		// 如果找到工具调用，立即返回
-		if info.hasToolCalls {
-			logs.CtxInfof(ctx, "[AdaptiveChecker] Found tool calls in chunk %d", i+1)
-			return true, nil
-		}
-
-		// 不要过早退出！让模型有足够的时间生成工具调用
-		// 删除早期退出逻辑
-	}
-
-	// 分析收集到的chunks
-	hasAnyContent := false
-	for _, chunk := range chunks {
-		if chunk.hasContent {
-			hasAnyContent = true
-			break
+		// 检查是否有工具调用
+		if len(msg.ToolCalls) > 0 {
+			logs.CtxInfof(ctx, "[AdaptiveChecker] ✅ Found tool calls in chunk %d!", chunkCount)
+			for i, tc := range msg.ToolCalls {
+				logs.CtxInfof(ctx, "[AdaptiveChecker] ToolCall[%d]: ID=%s, Name=%s", i, tc.ID, tc.Function.Name)
+			}
+			hasToolCalls = true
+			// 继续读取完整个流，确保流被完全消费
+			// 不能提前返回，因为流需要被完全消费
 		}
 	}
 
-	if !hasAnyContent {
-		logs.CtxInfof(ctx, "[AdaptiveChecker] No content found in %d chunks", len(chunks))
-		return false, nil
-	}
-
-	// 最终判断：基于内容分析
+	// 流读取完成后，做最终判断
 	finalContent := totalContent.String()
-	logs.CtxInfof(ctx, "[AdaptiveChecker] Final analysis of %d chunks, content length: %d", 
-		len(chunks), len(finalContent))
+	logs.CtxInfof(ctx, "[AdaptiveChecker] Stream completed: %d chunks, content length: %d, hasToolCalls: %v",
+		chunkCount, len(finalContent), hasToolCalls)
 
-	// 🔥 关键改进：检查内容是否暗示还有更多工具需要调用
-	continueIndicators := []string{
-		"接下来", "然后", "继续", "下一步", "现在让我", "现在我将",
-		"Next", "Then", "Now let me", "Now I will", "Following",
-		"接着", "再", "第二", "其次",
-	}
-	
-	for _, indicator := range continueIndicators {
-		if strings.Contains(finalContent, indicator) {
-			logs.CtxInfof(ctx, "[AdaptiveChecker] Content suggests more tools need to be called (found: %s)", indicator)
-			// 🔥 这里是关键：即使没有明确的工具调用，如果内容暗示需要继续，也返回false让循环继续
-			return false, nil
-		}
+	if hasToolCalls {
+		logs.CtxInfof(ctx, "[AdaptiveChecker] ✅ Returning true - tool calls detected")
+		return true, nil
 	}
 
-	// 检查是否是最终答案（表示所有工具都已调用完成）
-	finalAnswerPatterns := []string{
-		"根据搜索结果", "综上所述", "总结来说", "以上是",
-		"Based on the search results", "In summary", "To summarize",
-		"查询到的信息显示", "我搜索到的信息",
+	// 如果没有检测到 tool_calls，打印内容预览用于调试
+	contentPreview := finalContent
+	if len(contentPreview) > 500 {
+		contentPreview = contentPreview[:500] + "..."
 	}
-	
-	for _, pattern := range finalAnswerPatterns {
-		if strings.Contains(finalContent, pattern) {
-			logs.CtxInfof(ctx, "[AdaptiveChecker] Content appears to be final answer, stopping tool calls")
-			return false, nil
-		}
-	}
+	logs.CtxInfof(ctx, "[AdaptiveChecker] ❌ No tool calls found. Content preview: %s", contentPreview)
 
-	logs.CtxInfof(ctx, "[AdaptiveChecker] No clear indication of tool calls or continuation")
 	return false, nil
 }
