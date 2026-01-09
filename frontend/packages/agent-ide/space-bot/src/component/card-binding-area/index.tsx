@@ -39,6 +39,17 @@ import {
 } from '@coze-agent-ide/tool';
 import { useBotSkillStore } from '@coze-studio/bot-detail-store/bot-skill';
 
+// URL 转换函数 - 将 @minio 等特殊前缀转换为可访问的路径
+const replaceUrl = (url: string | undefined): string => {
+  if (!url) {
+    return '';
+  }
+  return url
+    .replace('@minio/public-cbbiz', '/filestore/dev-public-cbbiz')
+    .replace('@filestore', '/filestore')
+    .replace('@minio', '/filestore');
+};
+
 // API 函数 - 直接调用外部卡片服务
 async function fetchCardList(params: {
   sassWorkspaceId: string;
@@ -618,9 +629,9 @@ export const CardBindingArea: React.FC = () => {
                 className="p-3 border rounded-lg hover:bg-gray-50 transition-colors group relative bg-white"
               >
                 <div className="flex items-start">
-                  {card.cardPicUrl ? (
+                  {replaceUrl(card.cardPicUrl) ? (
                     <img
-                      src={card.cardPicUrl}
+                      src={replaceUrl(card.cardPicUrl)}
                       alt={card.cardName}
                       className="w-8 h-8 rounded object-cover mr-3 flex-shrink-0"
                     />
@@ -744,9 +755,9 @@ export const CardBindingArea: React.FC = () => {
                         <IconCozCheckMarkFill className="text-blue-500 text-lg" />
                       </div>
                     )}
-                    {card.cardPicUrl ? (
+                    {replaceUrl(card.cardPicUrl) ? (
                       <img
-                        src={card.cardPicUrl}
+                        src={replaceUrl(card.cardPicUrl)}
                         alt={card.cardName}
                         className="w-full h-24 object-cover rounded mb-2"
                       />
