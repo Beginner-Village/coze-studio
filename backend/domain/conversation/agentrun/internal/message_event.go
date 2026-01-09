@@ -238,9 +238,23 @@ func (mh *MessageEventHandler) handlerAnswer(ctx context.Context, msg *entity.Ch
 		msg.Ext[string(msgEntity.MessageExtKeyTimeCost)] = fmt.Sprintf("%.1f", float64(time.Since(rtDependence.GetStartTime()).Milliseconds())/1000.00)
 	}
 
+	// 提取用于大模型上下文的内容
+	// 如果是流式卡片JSON格式，提取rawContent作为ModelContent，避免污染上下文
+	modelContentText := msg.Content
+	var cardWrapper CardContentWrapper
+	if err := json.Unmarshal([]byte(msg.Content), &cardWrapper); err == nil {
+		// 是卡片JSON格式，使用rawContent作为ModelContent
+		if cardWrapper.RawContent != "" {
+			modelContentText = cardWrapper.RawContent
+		} else if len(cardWrapper.ContentList) > 0 {
+			// 如果没有rawContent但有卡片内容，使用空字符串避免发送JSON给大模型
+			modelContentText = ""
+		}
+	}
+
 	buildModelContent := &schema.Message{
 		Role:    schema.Assistant,
-		Content: msg.Content,
+		Content: modelContentText,
 	}
 
 	mc, err := json.Marshal(buildModelContent)
