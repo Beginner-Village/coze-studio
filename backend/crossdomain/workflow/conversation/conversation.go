@@ -194,8 +194,15 @@ func (c *ConversationRepository) GetMessagesByRunIDs(ctx context.Context, req *c
 		return nil, err
 	}
 	// only returns messages of type user/assistant/system role type
+	// and excludes internal status messages (verbose/flowup) that should not be sent to LLM
 	messages := make([]*message.Message, 0, len(responseMessages))
 	for _, m := range responseMessages {
+		// 跳过内部状态消息，不应发送给LLM
+		// verbose消息包含 generate_answer_finish 等内部状态
+		// flowup消息是追问建议等
+		if m.MessageType == message.MessageTypeVerbose || m.MessageType == message.MessageTypeFlowUp {
+			continue
+		}
 		if m.Role == schema.User || m.Role == schema.System || m.Role == schema.Assistant {
 			messages = append(messages, m)
 		}

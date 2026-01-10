@@ -168,9 +168,11 @@ func (pl *promptTpl) render(ctx context.Context, vs map[string]any,
 			}, nil
 		}
 	} else {
+		// 修复：检查 len(userMessage.MultiContent) == 0 而不是 userMessage.MultiContent == nil
+		// 因为 JSON 反序列化时，"multi_content": [] 会生成空数组而不是 nil
 		if (!pl.hasMultiModal || len(supportedModals) == 0) &&
 			(len(pl.associateUserInputFields) == 0 ||
-				(len(pl.associateUserInputFields) > 0 && (userMessage == nil || userMessage.MultiContent == nil))) {
+				(len(pl.associateUserInputFields) > 0 && (userMessage == nil || len(userMessage.MultiContent) == 0))) {
 			var opts []nodes.RenderOption
 			if len(pl.reservedKeys) > 0 {
 				opts = append(opts, nodes.WithReservedKey(pl.reservedKeys...))
@@ -184,7 +186,6 @@ func (pl *promptTpl) render(ctx context.Context, vs map[string]any,
 				Content: r,
 			}, nil
 		}
-
 	}
 
 	multiParts := make([]schema.ChatMessagePart, 0, len(pl.parts))
@@ -312,6 +313,12 @@ func (pl *promptTpl) render(ctx context.Context, vs map[string]any,
 		}
 	}
 
+	// 修复：当 multiParts 为空数组时，设为 nil
+	// 避免 go-openai MarshalJSON 时报错 "can't use both Content and MultiContent"
+	if len(multiParts) == 0 {
+		multiParts = nil
+	}
+
 	return &schema.Message{
 		Role:         pl.role,
 		MultiContent: multiParts,
@@ -405,8 +412,40 @@ func (p *promptsWithChatHistory) Format(ctx context.Context, vs map[string]any, 
 		finalMessages = append(finalMessages, baseMessages[0])
 		baseMessages = baseMessages[1:]
 	}
+
+	// 修复：清理 historyMessages 中空的 MultiContent 数组
+	// 避免 go-openai MarshalJSON 时报错 "can't use both Content and MultiContent"
+	for _, msg := range historyMessages {
+		if msg.Content != "" && len(msg.MultiContent) == 0 && msg.MultiContent != nil {
+			msg.MultiContent = nil
+		}
+	}
+
+	// 修复：清理 baseMessages 中空的 MultiContent 数组
+	for _, msg := range baseMessages {
+		if msg.Content != "" && len(msg.MultiContent) == 0 && msg.MultiContent != nil {
+			msg.MultiContent = nil
+		}
+	}
+
+	// 修复：为空内容的消息填充占位符
+	// 当 Content 为空字符串且 MultiContent 也为空时，go-openai 的 MarshalJSON 会用 omitempty 省略 content 字段
+	// 这会导致 API 报错: "Invalid type for 'messages.[0].content': expected one of a string or array of objects, but got an object instead"
+	for _, msg := range historyMessages {
+		if msg.Content == "" && len(msg.MultiContent) == 0 {
+			msg.Content = "..."
+		}
+	}
+
 	finalMessages = append(finalMessages, historyMessages...)
 	finalMessages = append(finalMessages, baseMessages...)
+
+	// 修复：对所有 finalMessages 进行最终清理，确保没有空的 MultiContent 数组
+	for _, msg := range finalMessages {
+		if msg.Content != "" && len(msg.MultiContent) == 0 && msg.MultiContent != nil {
+			msg.MultiContent = nil
+		}
+	}
 
 	return finalMessages, nil
 }

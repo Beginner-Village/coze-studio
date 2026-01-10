@@ -66,10 +66,15 @@ func (art *AgentRuntime) ChatflowRun(ctx context.Context, imagex imagex.ImageX) 
 	// - IsDraft=false (发布模式): 使用 Release 模式，访问 OnlineTable
 	executeMode := ternary.IFElse(art.GetRunMeta().IsDraft, crossworkflow.ExecuteModeDebug, crossworkflow.ExecuteModeRelease)
 
+	// 将 UserID 从 string 转换为 int64，用于 Operator 字段
+	// Operator 字段在 prefetchChatHistory 中用于查询聊天历史记录
+	userID, _ := strconv.ParseInt(art.GetRunMeta().UserID, 10, 64)
+
 	executeConfig := crossworkflow.ExecuteConfig{
 		ID:           wfID,
 		ConnectorID:  art.GetRunMeta().ConnectorID,
 		ConnectorUID: art.GetRunMeta().UserID,
+		Operator:     userID, // 修复：添加 Operator 字段，与 ChatFlow 直接运行保持一致
 		AgentID:      ptr.Of(art.GetRunMeta().AgentID),
 		Mode:         executeMode,
 		BizType:      crossworkflow.BizTypeAgent,
