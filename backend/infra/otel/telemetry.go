@@ -18,10 +18,12 @@ package otel
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/coze-dev/coze-studio/backend/pkg/logs"
@@ -44,6 +46,8 @@ const (
 	defaultSvcName  = "coze-studio"
 	defaultSample   = 1.0
 	defaultTimeout  = 5 * time.Second
+
+	wsAttrKey = "cozeloop.workspace_id"
 )
 
 // Init configures the global OTEL TracerProvider, returning a shutdown function when enabled.
@@ -55,16 +59,18 @@ func Init(ctx context.Context) (func(context.Context) error, error) {
 	}
 
 	endpoint := strings.TrimSpace(os.Getenv(envEndpoint))
-	workspace := strings.TrimSpace(os.Getenv(envWorkspace))
+	fallbackWS := strings.TrimSpace(os.Getenv(envWorkspace))
 	token := strings.TrimSpace(os.Getenv(envToken))
-	if endpoint == "" || workspace == "" || token == "" {
-		logs.Warnf("otel: missing endpoint/workspace/token, telemetry not started")
+	if endpoint == "" || token == "" {
+		logs.Warnf("otel: missing endpoint/token, telemetry not started")
 		return nil, nil
 	}
 
-	exporter, err := buildExporter(ctx, endpoint, workspace, token)
-	if err != nil {
-		return nil, err
+	exporter := &dynamicWSExporter{
+		endpoint:   endpoint,
+		token:      token,
+		fallbackWS: fallbackWS,
+		exporters:  make(map[string]sdktrace.SpanExporter),
 	}
 
 	res, err := buildResource(ctx)
@@ -81,13 +87,100 @@ func Init(ctx context.Context) (func(context.Context) error, error) {
 
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	logs.Infof("otel: telemetry initialized, exporting to %s", endpoint)
+	logs.Infof("otel: telemetry initialized, exporting to %s (dynamic workspace routing enabled)", endpoint)
 
 	return func(shutdownCtx context.Context) error {
 		ctxWithTimeout, cancel := context.WithTimeout(shutdownCtx, defaultTimeout)
 		defer cancel()
-		return tp.Shutdown(ctxWithTimeout)
+		shutdownErr := tp.Shutdown(ctxWithTimeout)
+		exporter.Shutdown(ctxWithTimeout)
+		return shutdownErr
 	}, nil
+}
+
+// dynamicWSExporter routes spans to the correct workspace by reading
+// the "cozeloop.workspace_id" span attribute and creating per-workspace OTLP exporters.
+type dynamicWSExporter struct {
+	mu         sync.Mutex
+	exporters  map[string]sdktrace.SpanExporter
+	endpoint   string
+	token      string
+	fallbackWS string
+}
+
+func (d *dynamicWSExporter) ExportSpans(ctx context.Context, spans []sdktrace.ReadOnlySpan) error {
+	if len(spans) > 0 {
+		logs.Infof("otel: ExportSpans called with %d spans", len(spans))
+		for i, s := range spans {
+			if i < 3 { // log first 3 spans for debugging
+				logs.Infof("otel:   span[%d] name=%s ws=%s", i, s.Name(), d.extractWorkspaceID(s))
+			}
+		}
+	}
+
+	grouped := make(map[string][]sdktrace.ReadOnlySpan)
+	for _, s := range spans {
+		ws := d.extractWorkspaceID(s)
+		grouped[ws] = append(grouped[ws], s)
+	}
+
+	var errs []error
+	for ws, batch := range grouped {
+		exp, err := d.getOrCreateExporter(ctx, ws)
+		if err != nil {
+			logs.Warnf("otel: failed to create exporter for workspace %s: %v", ws, err)
+			errs = append(errs, err)
+			continue
+		}
+		logs.Infof("otel: exporting %d spans to workspace %s", len(batch), ws)
+		if err := exp.ExportSpans(ctx, batch); err != nil {
+			logs.Warnf("otel: failed to export spans for workspace %s: %v", ws, err)
+			errs = append(errs, err)
+		} else {
+			logs.Infof("otel: successfully exported %d spans to workspace %s", len(batch), ws)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (d *dynamicWSExporter) Shutdown(ctx context.Context) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	var errs []error
+	for ws, exp := range d.exporters {
+		if err := exp.Shutdown(ctx); err != nil {
+			errs = append(errs, err)
+		}
+		delete(d.exporters, ws)
+	}
+	return errors.Join(errs...)
+}
+
+func (d *dynamicWSExporter) extractWorkspaceID(s sdktrace.ReadOnlySpan) string {
+	for _, attr := range s.Attributes() {
+		if string(attr.Key) == wsAttrKey {
+			v := attr.Value.AsString()
+			if v != "" && v != "0" {
+				return v
+			}
+		}
+	}
+	return d.fallbackWS
+}
+
+func (d *dynamicWSExporter) getOrCreateExporter(ctx context.Context, ws string) (sdktrace.SpanExporter, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if exp, ok := d.exporters[ws]; ok {
+		return exp, nil
+	}
+	exp, err := buildExporter(ctx, d.endpoint, ws, d.token)
+	if err != nil {
+		return nil, err
+	}
+	d.exporters[ws] = exp
+	logs.Infof("otel: created exporter for workspace %s", ws)
+	return exp, nil
 }
 
 func buildExporter(ctx context.Context, endpoint, workspace, token string) (sdktrace.SpanExporter, error) {

@@ -29,9 +29,11 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
-var (
-	workflowTracer = otel.Tracer("github.com/coze-dev/coze-studio/backend/domain/workflow/execute")
-)
+const workflowTracerName = "github.com/coze-dev/coze-studio/backend/domain/workflow/execute"
+
+func workflowTracer() oteltrace.Tracer {
+	return otel.Tracer(workflowTracerName)
+}
 
 const (
 	tracePayloadLimit     = 4096
@@ -73,6 +75,13 @@ func startWorkflowSpan(ctx context.Context, c *Context, handler *WorkflowHandler
 		version = wfBasic.Version
 	}
 
+	// For cozeloop.workspace_id, always use root workflow's SpaceID to ensure
+	// all spans in the same trace belong to the same workspace
+	rootSpaceID := spaceID
+	if c.RootCtx != nil && c.RootCtx.RootWorkflowBasic != nil {
+		rootSpaceID = c.RootCtx.RootWorkflowBasic.SpaceID
+	}
+
 	spanName := normalizedWorkflowName(wfBasic)
 	if workflowKind == "subworkflow" && c.RootCtx.RootWorkflowBasic != nil {
 		spanName = fmt.Sprintf(
@@ -82,14 +91,14 @@ func startWorkflowSpan(ctx context.Context, c *Context, handler *WorkflowHandler
 		)
 	}
 
-	ctxWithSpan, span := workflowTracer.Start(ctx, spanName, oteltrace.WithSpanKind(oteltrace.SpanKindInternal))
+	ctxWithSpan, span := workflowTracer().Start(ctx, spanName, oteltrace.WithSpanKind(oteltrace.SpanKindInternal))
 
 	attrs := []attribute.KeyValue{
 		attribute.Int64("execute_id", executeID),
 		attribute.Int64("root_execute_id", c.RootCtx.RootExecuteID),
 		attribute.Int64("id", workflowID),
 		attribute.String("version", version),
-		attribute.Int64("cozeloop.workspace_id", spaceID),
+		attribute.String("cozeloop.workspace_id", fmt.Sprintf("%d", rootSpaceID)),
 		attribute.String("kind", workflowKind),
 		attribute.String("execute_mode", string(c.RootCtx.ExeCfg.Mode)),
 		attribute.String("task_type", string(c.RootCtx.ExeCfg.TaskType)),
@@ -198,13 +207,20 @@ func startNodeSpan(ctx context.Context, c *Context, nodeType entity.NodeType, re
 	}
 
 	spanName := nodeName
-	ctxWithSpan, span := workflowTracer.Start(ctx, spanName, oteltrace.WithSpanKind(oteltrace.SpanKindInternal))
+	ctxWithSpan, span := workflowTracer().Start(ctx, spanName, oteltrace.WithSpanKind(oteltrace.SpanKindInternal))
+
+	// Propagate workspace_id to node spans for dynamic OTLP routing
+	spaceID := int64(0)
+	if c.RootCtx != nil && c.RootCtx.RootWorkflowBasic != nil {
+		spaceID = c.RootCtx.RootWorkflowBasic.SpaceID
+	}
 
 	attrs := []attribute.KeyValue{
 		attribute.Int64("execute_id", c.RootCtx.RootExecuteID),
 		attribute.String("node.id", nodeKey),
 		attribute.String("node.name", nodeName),
 		attribute.String("node.type", string(nodeType)),
+		attribute.String("cozeloop.workspace_id", fmt.Sprintf("%d", spaceID)),
 	}
 
 	if c.NodeCtx != nil {
@@ -248,11 +264,12 @@ func startNodeSpan(ctx context.Context, c *Context, nodeType entity.NodeType, re
 	if nodeType == entity.NodeTypeLLM {
 		clearLLMCallMetadata(c)
 		callSpanName := fmt.Sprintf("workflow.node.%s.llm", nodeKey)
-		callCtx, callSpan := workflowTracer.Start(ctxWithSpan, callSpanName, oteltrace.WithSpanKind(oteltrace.SpanKindInternal))
+		callCtx, callSpan := workflowTracer().Start(ctxWithSpan, callSpanName, oteltrace.WithSpanKind(oteltrace.SpanKindInternal))
 		callAttrs := []attribute.KeyValue{
 			attribute.Int64("node.execute_id", c.NodeCtx.NodeExecuteID),
 			attribute.String("node.id", nodeKey),
 			attribute.String("cozeloop.span_type", spanTypeModel),
+			attribute.String("cozeloop.workspace_id", fmt.Sprintf("%d", spaceID)),
 		}
 		if nodeName != "" {
 			callAttrs = append(callAttrs, attribute.String("node.name", nodeName))
@@ -406,7 +423,7 @@ func spanTypeForNode(nodeType entity.NodeType) string {
 	case entity.NodeTypePlugin, entity.NodeTypeMcp, entity.NodeTypeHTTPRequester:
 		return spanTypePlugin
 	case entity.NodeTypeSubWorkflow:
-		return spanTypeWorkflow
+		return spanTypeFunction
 	case entity.NodeTypeKnowledgeIndexer, entity.NodeTypeKnowledgeDeleter:
 		return spanTypeVector
 	case entity.NodeTypeKnowledgeRetriever:

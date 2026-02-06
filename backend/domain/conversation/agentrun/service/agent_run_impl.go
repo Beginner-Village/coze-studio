@@ -32,6 +32,10 @@ import (
 
 	"github.com/cloudwego/eino/schema"
 	"github.com/mohae/deepcopy"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	messageModel "github.com/coze-dev/coze-studio/backend/api/model/conversation/message"
 	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/agentrun"
@@ -51,6 +55,8 @@ import (
 	"github.com/coze-dev/coze-studio/backend/types/consts"
 	"github.com/coze-dev/coze-studio/backend/types/errno"
 )
+
+const agentTracerName = "github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun"
 
  type runImpl struct {
 	 Components
@@ -103,7 +109,40 @@ import (
 
 	 safego.Go(ctx, func() {
 		 defer sw.Close()
-		 _ = c.run(ctx, sw, rtDependence)
+
+		 // Create agent execution tracing span
+		 spanCtx, span := otel.Tracer(agentTracerName).Start(ctx, "agent.run",
+			 oteltrace.WithSpanKind(oteltrace.SpanKindInternal),
+		 )
+		 defer span.End()
+
+		 // Build input from user message content
+		 var inputStr string
+		 if arm.DisplayContent != "" {
+			 inputStr = arm.DisplayContent
+		 } else if len(arm.Content) > 0 {
+			 inputBytes, _ := json.Marshal(arm.Content)
+			 inputStr = string(inputBytes)
+		 }
+
+		 span.SetAttributes(
+			 attribute.String("cozeloop.workspace_id", fmt.Sprintf("%d", arm.SpaceID)),
+			 attribute.String("cozeloop.span_type", "Agent"),
+			 attribute.String("cozeloop.input", inputStr),
+			 attribute.Int64("agent_id", arm.AgentID),
+			 attribute.Int64("conversation_id", arm.ConversationID),
+			 attribute.Int64("space_id", arm.SpaceID),
+			 attribute.String("user_id", arm.UserID),
+			 attribute.Bool("is_draft", arm.IsDraft),
+		 )
+
+		 runErr := c.run(spanCtx, sw, rtDependence)
+		 if runErr != nil {
+			 span.RecordError(runErr)
+			 span.SetStatus(codes.Error, runErr.Error())
+		 } else {
+			 span.SetStatus(codes.Ok, "")
+		 }
 	 })
 
 	 return sr, nil
@@ -1283,6 +1322,12 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 	 if err != nil {
 		 return err
 	 }
+
+	 // Set agent span output with the final answer content
+	 if span := oteltrace.SpanFromContext(ctx); span.IsRecording() {
+		 span.SetAttributes(attribute.String("cozeloop.output", msg.Content))
+	 }
+
 	 c.runEvent.SendMsgEvent(entity.RunEventMessageCompleted, msg, sw)
 
 	 return nil

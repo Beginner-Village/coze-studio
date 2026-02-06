@@ -19,10 +19,15 @@
 package router
 
 import (
+	"bytes"
 	"context"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
@@ -71,6 +76,7 @@ func GeneratedRegister(r *server.Hertz) {
 	// Manually register import/export routes until IDL is regenerated
 	manualRegisterImportExport(r)
 	manualRegisterExternalKnowledge(r)
+	cozeLoopProxyRegister(r)
 	staticFileRegister(r)
 }
 
@@ -114,6 +120,164 @@ func staticFileRegister(r *server.Hertz) {
 
 }
 
+// cozeLoopProxyRegister registers a reverse proxy for Coze Loop.
+// All requests to /loop/* are forwarded to the Coze Loop backend,
+// so the observability UI can be accessed through the same port (8888).
+func cozeLoopProxyRegister(r *server.Hertz) {
+	cozeLoopURL := os.Getenv("COZE_LOOP_PROXY_URL")
+	if cozeLoopURL == "" {
+		cozeLoopURL = os.Getenv("COZE_LOOP_TELEMETRY_ENDPOINT")
+		if cozeLoopURL != "" {
+			// Extract base URL from endpoint like "http://10.10.10.226:8082/v1/loop/opentelemetry/v1/traces"
+			if u, err := url.Parse(cozeLoopURL); err == nil {
+				cozeLoopURL = u.Scheme + "://" + u.Host
+			}
+		}
+	}
+	if cozeLoopURL == "" {
+		logs.Infof("[cozeLoopProxy] COZE_LOOP_PROXY_URL not set, skipping Coze Loop proxy")
+		return
+	}
+
+	if _, err := url.Parse(cozeLoopURL); err != nil {
+		logs.Warnf("[cozeLoopProxy] Invalid COZE_LOOP_PROXY_URL: %v", err)
+		return
+	}
+
+	httpClient := &http.Client{Timeout: 60 * time.Second}
+
+	logs.Infof("[cozeLoopProxy] Coze Loop proxy enabled: /loop/* -> %s", cozeLoopURL)
+
+	// Handle /loop/* - strip /loop prefix and forward to Coze Loop
+	r.Any("/loop/*path", func(c context.Context, ctx *app.RequestContext) {
+		// Strip /loop prefix: /loop/api/xxx -> /api/xxx, /loop/console/xxx -> /console/xxx
+		originalPath := string(ctx.Request.URI().Path())
+		newPath := strings.TrimPrefix(originalPath, "/loop")
+		if newPath == "" {
+			newPath = "/"
+		}
+
+		// Build target URL
+		targetURL := cozeLoopURL + newPath
+		queryString := string(ctx.Request.URI().QueryString())
+		if queryString != "" {
+			targetURL += "?" + queryString
+		}
+
+		// Create proxy request — use Body() bytes instead of BodyStream()
+		// because Hertz may have already consumed the stream
+		var bodyReader io.Reader
+		if body := ctx.Request.Body(); len(body) > 0 {
+			bodyReader = bytes.NewReader(body)
+		}
+		proxyReq, err := http.NewRequestWithContext(c,
+			string(ctx.Method()), targetURL, bodyReader)
+		if err != nil {
+			ctx.JSON(500, map[string]string{"code": "500", "msg": "proxy error"})
+			return
+		}
+
+		// Copy request headers
+		ctx.Request.Header.VisitAll(func(key, value []byte) {
+			k := string(key)
+			if !strings.EqualFold(k, "host") && !strings.EqualFold(k, "connection") {
+				proxyReq.Header.Set(k, string(value))
+			}
+		})
+
+		// Inject CozeLoop authentication
+		if token := os.Getenv("COZE_LOOP_TELEMETRY_TOKEN"); token != "" {
+			proxyReq.Header.Set("Authorization", "Bearer "+token)
+		}
+		// Use dev mode to bypass CozeLoop session validation
+		proxyReq.Header.Set("X-Dev-Mode", "true")
+
+		// Forward request
+		resp, err := httpClient.Do(proxyReq)
+		if err != nil {
+			logs.CtxWarnf(c, "[cozeLoopProxy] request failed: %v", err)
+			ctx.JSON(502, map[string]string{"code": "502", "msg": "upstream error"})
+			return
+		}
+		defer resp.Body.Close()
+
+		// Read the full response body (needed for potential HTML rewriting)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logs.CtxWarnf(c, "[cozeLoopProxy] read response body failed: %v", err)
+			ctx.JSON(502, map[string]string{"code": "502", "msg": "read upstream error"})
+			return
+		}
+
+		// For HTML responses, rewrite paths and inject base path configuration
+		contentType := resp.Header.Get("Content-Type")
+		if strings.Contains(contentType, "text/html") {
+			body = rewriteCozeLoopHTML(body)
+		}
+
+		// Copy response headers (skip Content-Length as body size may change after rewriting)
+		for key, values := range resp.Header {
+			if strings.EqualFold(key, "Content-Length") {
+				continue
+			}
+			for _, v := range values {
+				ctx.Response.Header.Add(key, v)
+			}
+		}
+
+		// Set CORS headers for iframe access
+		ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+		ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		ctx.Response.Header.Set("Access-Control-Allow-Headers", "*")
+
+		// Set status code and rewritten body
+		ctx.SetStatusCode(resp.StatusCode)
+		ctx.Response.SetBody(body)
+	})
+}
+
+// rewriteCozeLoopHTML rewrites the Coze Loop SPA HTML to work under the /loop/ subpath.
+// It rewrites static asset paths and injects JavaScript to handle API URL rewriting
+// and SPA router compatibility.
+func rewriteCozeLoopHTML(body []byte) []byte {
+	html := string(body)
+
+	// Rewrite static asset paths: /static/ -> /loop/static/
+	html = strings.ReplaceAll(html, `src="/static/`, `src="/loop/static/`)
+	html = strings.ReplaceAll(html, `href="/static/`, `href="/loop/static/`)
+	html = strings.ReplaceAll(html, `href="/coze.svg"`, `href="/loop/coze.svg"`)
+
+	// Inject base path configuration script before the first <script> tag.
+	// This script runs before the SPA code and:
+	// 1. Strips the /loop prefix from the URL so the SPA router matches routes correctly
+	// 2. Overrides fetch/XMLHttpRequest to add /loop prefix to API calls
+	// 3. Sets webpack/rspack public path for dynamic chunk loading
+	basePathScript := `<script>
+(function(){
+  var B='/loop';
+  if(location.pathname.indexOf(B)===0){
+    var p=location.pathname.substring(B.length)||'/';
+    history.replaceState(null,'',p+location.search+location.hash);
+  }
+  var _f=window.fetch;
+  window.fetch=function(u,o){
+    if(typeof u==='string'&&(u.indexOf('/api/')===0||u.indexOf('/v1/')===0))u=B+u;
+    return _f.call(this,u,o);
+  };
+  var _x=XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open=function(m,u){
+    if(typeof u==='string'&&(u.indexOf('/api/')===0||u.indexOf('/v1/')===0))arguments[1]=B+u;
+    return _x.apply(this,arguments);
+  };
+  try{__webpack_public_path__=B+'/';}catch(e){}
+})();
+</script>
+`
+	html = strings.Replace(html, "<script", basePathScript+"<script", 1)
+
+	return []byte(html)
+}
+
 // manualRegisterImportExport manually registers import/export routes
 // TODO: Remove this when IDL is regenerated with import/export definitions
 func manualRegisterImportExport(r *server.Hertz) {
@@ -135,4 +299,7 @@ func manualRegisterExternalKnowledge(r *server.Hertz) {
 	ragflowGroup.POST("/datasets/update", external_knowledge_handler.UpdateRAGFlowDataset)
 	ragflowGroup.POST("/datasets/delete", external_knowledge_handler.DeleteRAGFlowDataset)
 	ragflowGroup.GET("/session-key", external_knowledge_handler.GetRAGFlowSessionKey)
+
+	knowledgeGroup := api.Group("/knowledge")
+	knowledgeGroup.POST("/retrieve_test", cozeHandler.RetrieveTest)
 }
