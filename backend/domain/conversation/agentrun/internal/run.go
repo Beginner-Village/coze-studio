@@ -49,6 +49,9 @@ type AgentRuntime struct {
 	RunRecordRepo repository.RunRecordRepo
 	ImagexClient  imagex.ImageX
 	MessageEvent  *Event
+
+	// 可观测性：记录最终输出内容，供 trace span 使用
+	OutputContent string
 }
 
 func (rd *AgentRuntime) SetRunRecord(runRecord *entity.RunRecordMeta) {

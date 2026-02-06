@@ -77,6 +77,11 @@ const agentTracerName = "github.com/coze-dev/coze-studio/backend/domain/conversa
 	 // 用于计算每次工具调用的实际耗时，而不是累计时间
 	 llmStartTime     time.Time // LLM 开始思考的时间（对话开始或上次工具响应的时间）
 	 lastFuncCallTime time.Time // 上次 function_call 发送的时间，用于计算工具执行时间
+
+	 // 可观测性：用于在 trace span 中记录完整对话上下文
+	 historyMsgCount int                // 历史消息数量
+	 historyContent  string             // 历史消息摘要，用于 trace input
+	 outputContent   string             // 最终回复内容
  }
 
  type Components struct {
@@ -116,19 +121,20 @@ const agentTracerName = "github.com/coze-dev/coze-studio/backend/domain/conversa
 		 )
 		 defer span.End()
 
-		 // Build input from user message content
-		 var inputStr string
+		 // Build current user input string
+		 var currentInput string
 		 if arm.DisplayContent != "" {
-			 inputStr = arm.DisplayContent
+			 currentInput = arm.DisplayContent
 		 } else if len(arm.Content) > 0 {
 			 inputBytes, _ := json.Marshal(arm.Content)
-			 inputStr = string(inputBytes)
+			 currentInput = string(inputBytes)
 		 }
 
+		 // 先设置基础属性（cozeloop.input 会在 run 之后用完整上下文覆盖）
 		 span.SetAttributes(
 			 attribute.String("cozeloop.workspace_id", fmt.Sprintf("%d", arm.SpaceID)),
 			 attribute.String("cozeloop.span_type", "Agent"),
-			 attribute.String("cozeloop.input", inputStr),
+			 attribute.String("cozeloop.input", currentInput),
 			 attribute.Int64("agent_id", arm.AgentID),
 			 attribute.Int64("conversation_id", arm.ConversationID),
 			 attribute.Int64("space_id", arm.SpaceID),
@@ -137,6 +143,23 @@ const agentTracerName = "github.com/coze-dev/coze-studio/backend/domain/conversa
 		 )
 
 		 runErr := c.run(spanCtx, sw, rtDependence)
+
+		 // run() 完成后，用完整上下文覆盖 cozeloop.input（历史 + 当前输入）
+		 span.SetAttributes(
+			 attribute.Int("conversation.history_count", rtDependence.historyMsgCount),
+		 )
+		 if rtDependence.historyContent != "" {
+			 fullInput := rtDependence.historyContent + "\n---\n[当前输入] " + currentInput
+			 span.SetAttributes(
+				 attribute.String("cozeloop.input", fullInput),
+			 )
+		 }
+		 if rtDependence.outputContent != "" {
+			 span.SetAttributes(
+				 attribute.String("cozeloop.output", rtDependence.outputContent),
+			 )
+		 }
+
 		 if runErr != nil {
 			 span.RecordError(runErr)
 			 span.SetStatus(codes.Error, runErr.Error())
@@ -161,6 +184,8 @@ const agentTracerName = "github.com/coze-dev/coze-studio/backend/domain/conversa
 	 if err != nil {
 		 return
 	 }
+	 rtDependence.historyMsgCount = len(history)
+	 rtDependence.historyContent = buildHistorySummary(history)
 
 	 runRecord, err := c.createRunRecord(ctx, sw, rtDependence)
 
@@ -224,7 +249,10 @@ const agentTracerName = "github.com/coze-dev/coze-studio/backend/domain/conversa
 		 }
 		 
 		 // 调用Run方法，这会根据bot_mode选择ChatflowRun或AgentStreamExecute
-		 return art.Run(ctx)
+		 err = art.Run(ctx)
+		 // 将内部 AgentRuntime 的输出内容回传给 rtDependence，供 trace span 使用
+		 rtDependence.outputContent = art.OutputContent
+		 return err
 	 }
 
 	 // 原有的SingleAgent逻辑
@@ -291,6 +319,35 @@ const agentTracerName = "github.com/coze-dev/coze-studio/backend/domain/conversa
 	 wg.Wait()
 
 	return err
+}
+
+// buildHistorySummary 将历史消息构建为可读的摘要字符串，用于 trace span 的 cozeloop.input
+func buildHistorySummary(history []*msgEntity.Message) string {
+	if len(history) == 0 {
+		return ""
+	}
+	var sb strings.Builder
+	sb.WriteString("[历史消息]\n")
+	for _, msg := range history {
+		if msg == nil {
+			continue
+		}
+		// 跳过 verbose 和 knowledge 类型的内部消息
+		if msg.MessageType == message.MessageTypeVerbose || msg.MessageType == message.MessageTypeKnowledge {
+			continue
+		}
+		role := string(msg.Role)
+		content := msg.Content
+		if msg.DisplayContent != "" {
+			content = msg.DisplayContent
+		}
+		// 截断过长的内容，避免 span 属性过大
+		if len(content) > 500 {
+			content = content[:500] + "...(truncated)"
+		}
+		sb.WriteString(fmt.Sprintf("[%s] %s\n", role, content))
+	}
+	return sb.String()
 }
 
 func buildSchemaMessage(msg *msgEntity.Message) *schema.Message {
@@ -1323,10 +1380,8 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 		 return err
 	 }
 
-	 // Set agent span output with the final answer content
-	 if span := oteltrace.SpanFromContext(ctx); span.IsRecording() {
-		 span.SetAttributes(attribute.String("cozeloop.output", msg.Content))
-	 }
+	 // 记录最终回复内容到 rtDependence，用于 trace span output
+	 rtDependence.outputContent = msg.Content
 
 	 c.runEvent.SendMsgEvent(entity.RunEventMessageCompleted, msg, sw)
 

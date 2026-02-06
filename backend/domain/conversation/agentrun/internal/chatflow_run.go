@@ -153,6 +153,10 @@ func (art *AgentRuntime) pullWfStream(ctx context.Context, events *schema.Stream
 					})
 					_ = mh.handlerWfUsage(ctx, lastAnswerMsg, usage)
 				}
+				// 记录最终输出内容，供可观测性 trace span 使用
+				if lastAnswerMsg != nil {
+					art.OutputContent = lastAnswerMsg.Content
+				}
 
 				finishErr := mh.handlerFinalAnswerFinish(ctx, art)
 				if finishErr != nil {
