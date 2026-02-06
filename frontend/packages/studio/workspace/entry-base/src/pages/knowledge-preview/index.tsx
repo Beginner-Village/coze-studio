@@ -31,6 +31,8 @@ import {
 } from '@coze-data/knowledge-ide-adapter';
 import { useSpaceStore } from '@coze-arch/bot-studio-store';
 
+import { KnowledgeRetrieveTester } from './knowledge-retrieve-tester';
+
 export const KnowledgePreviewPage = () => {
   const { dataset_id, space_id } = useParams();
   const searchParams = new URLSearchParams(window.location.search);
@@ -90,6 +92,9 @@ export const KnowledgePreviewPage = () => {
         // Default'library'
         return <BizLibraryKnowledgeIDE />;
       })()}
+      {params.datasetID ? (
+        <KnowledgeRetrieveTester datasetID={params.datasetID} />
+      ) : null}
     </KnowledgeParamsStoreProvider>
   );
 };

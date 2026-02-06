@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -501,11 +502,21 @@ func (k *KnowledgeApplicationService) CreateSlice(ctx context.Context, req *data
 		DocumentID: req.GetDocumentID(),
 		Sequence:   req.GetSequence(),
 	}
+	qaAnswer := ""
 	if listResp.Documents[0].Type == model.DocumentTypeTable {
 		err = packTableSliceColumnData(ctx, sliceEntity, req.GetRawText(), listResp.Documents[0])
 		if err != nil {
 			logs.CtxErrorf(ctx, "pack table slice column data failed, err: %v", err)
 			return dataset.NewCreateSliceResponse(), errorx.New(errno.ErrKnowledgeCheckTableSliceValidCode, errorx.KV("msg", err.Error()))
+		}
+	} else if listResp.Documents[0].Type == model.DocumentTypeQA {
+		question, answer := parseQASliceRawText(req.GetRawText())
+		qaAnswer = answer
+		sliceEntity.RawContent = []*model.SliceContent{
+			{
+				Type: model.SliceContentTypeText,
+				Text: ptr.Of(question),
+			},
 		}
 	} else {
 		sliceEntity.RawContent = []*model.SliceContent{
@@ -520,6 +531,7 @@ func (k *KnowledgeApplicationService) CreateSlice(ctx context.Context, req *data
 		CreatorID:  ptr.From(uid),
 		Position:   req.GetSequence(),
 		RawContent: sliceEntity.RawContent,
+		Answer:     qaAnswer,
 	})
 	if err != nil {
 		logs.CtxErrorf(ctx, "create slice failed, err: %v", err)
@@ -578,11 +590,21 @@ func (k *KnowledgeApplicationService) UpdateSlice(ctx context.Context, req *data
 		},
 		DocumentID: docID,
 	}
+	qaAnswer := ""
 	if listResp.Documents[0].Type == model.DocumentTypeTable {
 		err = packTableSliceColumnData(ctx, sliceEntity, req.GetRawText(), listResp.Documents[0])
 		if err != nil {
 			logs.CtxErrorf(ctx, "pack table slice column data failed, err: %v", err)
 			return dataset.NewUpdateSliceResponse(), errorx.New(errno.ErrKnowledgeCheckTableSliceValidCode, errorx.KV("msg", err.Error()))
+		}
+	} else if listResp.Documents[0].Type == model.DocumentTypeQA {
+		question, answer := parseQASliceRawText(req.GetRawText())
+		qaAnswer = answer
+		sliceEntity.RawContent = []*model.SliceContent{
+			{
+				Type: model.SliceContentTypeText,
+				Text: ptr.Of(question),
+			},
 		}
 	} else {
 		sliceEntity.RawContent = []*model.SliceContent{
@@ -597,12 +619,40 @@ func (k *KnowledgeApplicationService) UpdateSlice(ctx context.Context, req *data
 		DocumentID: docID,
 		CreatorID:  ptr.From(uid),
 		RawContent: sliceEntity.RawContent,
+		Answer:     qaAnswer,
 	})
 	if err != nil {
 		logs.CtxErrorf(ctx, "update slice failed, err: %v", err)
 		return dataset.NewUpdateSliceResponse(), err
 	}
 	return &dataset.UpdateSliceResponse{}, nil
+}
+
+type qaSlicePayload struct {
+	Question string `json:"question"`
+	Answer   string `json:"answer"`
+	Content  string `json:"content"`
+}
+
+func parseQASliceRawText(rawText string) (question string, answer string) {
+	trimmed := strings.TrimSpace(rawText)
+	if trimmed == "" {
+		return "", ""
+	}
+
+	var payload qaSlicePayload
+	if err := sonic.Unmarshal([]byte(trimmed), &payload); err == nil {
+		question = strings.TrimSpace(payload.Question)
+		if question == "" {
+			question = strings.TrimSpace(payload.Content)
+		}
+		answer = strings.TrimSpace(payload.Answer)
+		if question != "" || answer != "" {
+			return question, answer
+		}
+	}
+
+	return rawText, ""
 }
 
 func packTableSliceColumnData(ctx context.Context, slice *model.Slice, text string, doc *entity.Document) error {

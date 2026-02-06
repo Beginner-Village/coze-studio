@@ -28,6 +28,7 @@ import (
 	"github.com/cloudwego/eino/components/document/parser"
 	"github.com/cloudwego/eino/schema"
 	"github.com/dimchansky/utfbom"
+	"github.com/xuri/excelize/v2"
 
 	"github.com/coze-dev/coze-studio/backend/infra/contract/document"
 	contract "github.com/coze-dev/coze-studio/backend/infra/contract/document/parser"
@@ -245,5 +246,106 @@ func anyToString(val any) string {
 		return ""
 	default:
 		return strings.TrimSpace(fmt.Sprintf("%v", v))
+	}
+}
+
+// ParseQAXLSX parses XLSX files with Q/A columns.
+// Expected format: First row is header with Q and A columns,
+// subsequent rows contain question-answer pairs.
+//
+// The Q column content is used for vector embedding (stored in Content),
+// while A column is stored in MetaData for retrieval response.
+func ParseQAXLSX(config *contract.Config) ParseFn {
+	return func(ctx context.Context, reader io.Reader, opts ...parser.Option) (docs []*schema.Document, err error) {
+		f, err := excelize.OpenReader(reader)
+		if err != nil {
+			return nil, fmt.Errorf("[ParseQAXLSX] failed to open xlsx: %w", err)
+		}
+		defer f.Close()
+
+		options := parser.GetCommonOptions(&parser.Options{}, opts...)
+
+		// Get sheet ID from config, default to first sheet (0)
+		sheetID := 0
+		if config.ParsingStrategy.SheetID != nil {
+			sheetID = *config.ParsingStrategy.SheetID
+		}
+
+		sheetName := f.GetSheetName(sheetID)
+		if sheetName == "" {
+			return nil, fmt.Errorf("[ParseQAXLSX] sheet not found at index %d", sheetID)
+		}
+
+		rows, err := f.Rows(sheetName)
+		if err != nil {
+			return nil, fmt.Errorf("[ParseQAXLSX] failed to get rows: %w", err)
+		}
+		defer rows.Close()
+
+		// Read header row
+		if !rows.Next() {
+			return nil, fmt.Errorf("[ParseQAXLSX] empty XLSX file")
+		}
+
+		header, err := rows.Columns()
+		if err != nil {
+			return nil, fmt.Errorf("[ParseQAXLSX] failed to read header: %w", err)
+		}
+
+		// Find Q and A column indices
+		qIndex, aIndex := findQAColumnIndices(header)
+		if qIndex == -1 {
+			return nil, fmt.Errorf("[ParseQAXLSX] question column not found, expected one of: %v", questionColumnNames)
+		}
+		if aIndex == -1 {
+			return nil, fmt.Errorf("[ParseQAXLSX] answer column not found, expected one of: %v", answerColumnNames)
+		}
+
+		// Parse data rows
+		rowNum := 1
+		for rows.Next() {
+			rowNum++
+			row, err := rows.Columns()
+			if err != nil {
+				return nil, fmt.Errorf("[ParseQAXLSX] failed to read row %d: %w", rowNum, err)
+			}
+
+			// Skip rows with insufficient columns
+			if len(row) <= qIndex || len(row) <= aIndex {
+				continue
+			}
+
+			question := strings.TrimSpace(row[qIndex])
+			answer := ""
+			if aIndex < len(row) {
+				answer = strings.TrimSpace(row[aIndex])
+			}
+
+			// Skip empty questions
+			if question == "" {
+				continue
+			}
+
+			doc := &schema.Document{
+				Content:  question, // Q is embedded for vector search
+				MetaData: make(map[string]any),
+			}
+
+			// Store A in metadata for retrieval
+			document.WithDocumentAnswer(doc, answer)
+
+			// Add extra metadata from options
+			for k, v := range options.ExtraMeta {
+				doc.MetaData[k] = v
+			}
+
+			docs = append(docs, doc)
+		}
+
+		if len(docs) == 0 {
+			return nil, fmt.Errorf("[ParseQAXLSX] no valid QA pairs found")
+		}
+
+		return docs, nil
 	}
 }

@@ -73,6 +73,8 @@ func (m *manager) GetParser(config *parser.Config) (parser.Parser, error) {
 		pFn = ParseQACSV(config)
 	case parser.FileExtensionQAJSON:
 		pFn = ParseQAJSON(config)
+	case parser.FileExtensionQAXLSX:
+		pFn = ParseQAXLSX(config)
 	default:
 		return nil, fmt.Errorf("[Parse] document type not support, type=%s", config.FileExtension)
 	}

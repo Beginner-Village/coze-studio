@@ -222,6 +222,10 @@ func convertSliceContent(s *entity.Slice) string {
 	if len(s.RawContent) == 0 {
 		return ""
 	}
+	// QA format: keep content as Question only, Answer is returned separately in SliceInfo.answer
+	if s.Answer != "" && s.RawContent[0].Type == knowledgeModel.SliceContentTypeText && s.RawContent[0].Text != nil {
+		return ptr.From(s.RawContent[0].Text)
+	}
 	if s.RawContent[0].Type == knowledgeModel.SliceContentTypeTable {
 		tableData := make([]sliceContentData, 0, len(s.RawContent[0].Table.Columns))
 		for _, col := range s.RawContent[0].Table.Columns {
@@ -534,7 +538,7 @@ func GetExtension(uri string) string {
 }
 
 // GetFileExtensionForFormat returns the appropriate file extension based on format type
-// For QA format, csv becomes qa_csv and json becomes qa_json to route to QA-specific parsers
+// For QA format, csv becomes qa_csv, json becomes qa_json, and xlsx becomes qa_xlsx to route to QA-specific parsers
 func GetFileExtensionForFormat(uri string, formatType dataset.FormatType) string {
 	ext := GetExtension(uri)
 	if formatType == dataset.FormatType_QA {
@@ -543,6 +547,8 @@ func GetFileExtensionForFormat(uri string, formatType dataset.FormatType) string
 			return "qa_csv"
 		case "json":
 			return "qa_json"
+		case "xlsx":
+			return "qa_xlsx"
 		}
 	}
 	return ext

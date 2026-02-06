@@ -68,7 +68,7 @@ export const TableKnowledgeWorkspace = ({
       Boolean(
         canEdit &&
           !sliceListData?.hasMore &&
-          sliceListData?.total &&
+          sliceListData &&
           sliceListData?.total < MAX_TOTAL,
       ),
     [canEdit, sliceListData],

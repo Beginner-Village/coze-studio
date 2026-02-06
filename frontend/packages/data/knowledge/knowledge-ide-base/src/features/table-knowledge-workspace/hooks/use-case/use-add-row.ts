@@ -15,6 +15,8 @@
  */
 
 import { nanoid } from 'nanoid';
+import { useKnowledgeStore } from '@coze-data/knowledge-stores';
+import { FormatType } from '@coze-arch/bot-api/knowledge';
 
 import { type ISliceInfo } from '@/types/slice';
 
@@ -34,23 +36,40 @@ export const useAddRow = ({
 }: UseAddRowProps) => {
   const { sliceListData } = useTableData();
   const { mutateSliceListData } = useTableActions();
+  const dataSetDetail = useKnowledgeStore(state => state.dataSetDetail);
+
   const handleAddRow = () => {
     /** Increase the height of the container first */
     increaseTableHeight(ADD_BTN_HEIGHT);
-    const items = JSON.parse(sliceListData?.list[0]?.content ?? '[]');
+    const isQAFormat = dataSetDetail?.format_type === FormatType.QA;
 
-    const addItemContent = items?.map(v => ({
-      ...v,
-      value: '',
-      char_count: 0,
-      hit_count: 0,
-    }));
+    const firstRowContent = sliceListData?.list[0]?.content;
+    let addRowPayload: ISliceInfo['content'] = '';
+
+    if (!isQAFormat) {
+      let items: Array<Record<string, unknown>> = [];
+      try {
+        items = JSON.parse(firstRowContent ?? '[]');
+      } catch {
+        items = [];
+      }
+
+      const addItemContent = items?.map(v => ({
+        ...v,
+        value: '',
+        char_count: 0,
+        hit_count: 0,
+      }));
+      addRowPayload = JSON.stringify(addItemContent);
+    }
 
     mutateSliceListData({
       ...sliceListData,
       total: Number(sliceListData?.total ?? '0'),
       list: sliceListData?.list.concat([
-        { content: JSON.stringify(addItemContent), addId: nanoid() },
+        isQAFormat
+          ? { content: '', answer: '', addId: nanoid() }
+          : { content: addRowPayload, addId: nanoid() },
       ]) as ISliceInfo[],
     });
 

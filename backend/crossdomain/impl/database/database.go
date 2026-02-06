@@ -31,11 +31,13 @@ import (
 	crossuser "github.com/coze-dev/coze-studio/backend/crossdomain/contract/user"
 	"github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
 	database "github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
+	workflowService "github.com/coze-dev/coze-studio/backend/domain/workflow/service"
 	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
 	"github.com/coze-dev/coze-studio/backend/pkg/lang/ternary"
 	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	"github.com/coze-dev/coze-studio/backend/types/consts"
 	"github.com/coze-dev/coze-studio/backend/types/errno"
 )
 
@@ -366,6 +368,25 @@ func (d *databaseImpl) validateSpaceAccess(ctx context.Context, databaseID int64
 		logs.CtxInfof(ctx, "validateSpaceAccess: skip check for OpenAPI request, apiKeyUserID=%d, requestUserID=%s, databaseID=%d",
 			apiKeyInfo.UserID, userIDStr, databaseID)
 		return nil
+	}
+
+	// 智能体模式或OpenAPI模式：检查 ExecuteConfig 来判断是否跳过权限检查
+	// 原因1（智能体模式）：智能体本身已经通过了权限验证，智能体绑定的数据库与智能体在同一空间
+	// 原因2（OpenAPI模式）：当工作流中存在 UseCtxCache=true 的节点（如LLM、Code）时，
+	//   会创建新的 ctxcache，导致原始 API Key 被覆盖，此时通过 ConnectorID 识别 OpenAPI 请求
+	if execCfg := workflowService.ExtractExecuteConfig(ctx); execCfg != nil {
+		// 智能体模式
+		if execCfg.AgentID != nil {
+			logs.CtxInfof(ctx, "validateSpaceAccess: skip check for Agent mode, agentID=%d, userIDStr=%s, databaseID=%d",
+				*execCfg.AgentID, userIDStr, databaseID)
+			return nil
+		}
+		// OpenAPI模式：ConnectorID == APIConnectorID (1024) 表示是通过 API Key 调用的
+		if execCfg.ConnectorID == consts.APIConnectorID {
+			logs.CtxInfof(ctx, "validateSpaceAccess: skip check for OpenAPI request (via ConnectorID), connectorID=%d, userIDStr=%s, databaseID=%d",
+				execCfg.ConnectorID, userIDStr, databaseID)
+			return nil
+		}
 	}
 
 	// 1. 获取数据库信息

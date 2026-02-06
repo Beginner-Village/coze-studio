@@ -107,6 +107,7 @@ const (
 	// QA format: Question-Answer pairs where Q is embedded, A is returned when matched
 	FileExtensionQACSV  FileExtension = "qa_csv"  // CSV with Q/A columns
 	FileExtensionQAJSON FileExtension = "qa_json" // JSON array with q/a fields
+	FileExtensionQAXLSX FileExtension = "qa_xlsx" // XLSX with Q/A columns
 )
 
 func ValidateFileExtension(fileSuffix string) (ext FileExtension, support bool) {
@@ -132,4 +133,5 @@ var fileExtensionSet = sets.Set[FileExtension]{
 	FileExtensionPNG:      {},
 	FileExtensionQACSV:    {},
 	FileExtensionQAJSON:   {},
+	FileExtensionQAXLSX:   {},
 }

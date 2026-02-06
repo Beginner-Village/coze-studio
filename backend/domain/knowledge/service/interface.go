@@ -113,6 +113,7 @@ type CreateSliceRequest struct {
 	CreatorID  int64
 	Position   int64
 	RawContent []*knowledge.SliceContent
+	Answer     string
 }
 type CreateSliceResponse struct {
 	SliceID int64
@@ -123,6 +124,7 @@ type UpdateSliceRequest struct {
 	DocumentID int64
 	CreatorID  int64
 	RawContent []*knowledge.SliceContent
+	Answer     string
 }
 
 type GetSliceRequest struct {

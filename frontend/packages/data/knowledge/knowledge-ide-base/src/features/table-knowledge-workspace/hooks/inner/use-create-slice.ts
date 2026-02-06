@@ -15,6 +15,7 @@
  */
 
 import { useKnowledgeStore } from '@coze-data/knowledge-stores';
+import { FormatType } from '@coze-arch/bot-api/knowledge';
 
 import { type ISliceInfo } from '@/types/slice';
 import { useCreateSlice as useCreateSliceService } from '@/service/slice';
@@ -35,25 +36,48 @@ export const useCreateSlice = () => {
     onReload: (createItem: ISliceInfo) => {
       const list =
         (sliceListData?.list ?? []).filter(item => !item.addId) ?? [];
-      const createSliceContent = JSON.parse(createItem.content ?? '{}');
-      const itemContent = (curDoc?.table_meta ?? []).reduce(
-        (
-          prev: { column_name: string; column_id: string; value: string }[],
-          cur,
-        ) => {
-          prev.push({
-            column_name: cur?.column_name ?? '',
-            column_id: cur?.id ?? '',
-            value: cur.id ? createSliceContent[cur.id] : '',
-          });
-          return prev;
-        },
-        [],
-      );
-      list.push({
-        ...createItem,
-        content: JSON.stringify(itemContent),
-      });
+      const isQAFormat = dataSetDetail?.format_type === FormatType.QA;
+
+      if (isQAFormat) {
+        let question = createItem.content ?? '';
+        let answer = createItem.answer ?? '';
+        try {
+          const parsed = JSON.parse(createItem.content ?? '{}') as {
+            question?: string;
+            answer?: string;
+            content?: string;
+          };
+          question = parsed.question ?? parsed.content ?? question;
+          answer = parsed.answer ?? answer;
+        } catch {
+          // keep original values
+        }
+        list.push({
+          ...createItem,
+          content: question,
+          answer,
+        });
+      } else {
+        const createSliceContent = JSON.parse(createItem.content ?? '{}');
+        const itemContent = (curDoc?.table_meta ?? []).reduce(
+          (
+            prev: { column_name: string; column_id: string; value: string }[],
+            cur,
+          ) => {
+            prev.push({
+              column_name: cur?.column_name ?? '',
+              column_id: cur?.id ?? '',
+              value: cur.id ? createSliceContent[cur.id] : '',
+            });
+            return prev;
+          },
+          [],
+        );
+        list.push({
+          ...createItem,
+          content: JSON.stringify(itemContent),
+        });
+      }
 
       mutateSliceListData({
         ...sliceListData,

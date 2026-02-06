@@ -126,8 +126,8 @@ type knowledgeSVC struct {
 	idgen               idgen.IDGenerator
 	rdb                 rdb.RDB
 	producer            eventbus.Producer
-	searchStoreManagers []searchstore.Manager          // Legacy: fixed managers
-	managerFactory      searchstore.ManagerFactory     // New: factory for space-level embedding
+	searchStoreManagers []searchstore.Manager      // Legacy: fixed managers
+	managerFactory      searchstore.ManagerFactory // New: factory for space-level embedding
 	parseManager        parser.Manager
 	rewriter            messages2query.MessagesToQuery
 	reranker            rerank.Reranker
@@ -742,6 +742,10 @@ func (k *knowledgeSVC) CreateSlice(ctx context.Context, request *CreateSliceRequ
 		docInfo.DocumentType == int32(knowledgeModel.DocumentTypeTable) {
 		sliceInfo.Content = sliceEntity.GetSliceContent()
 	}
+	if docInfo.DocumentType == int32(knowledgeModel.DocumentTypeQA) {
+		sliceInfo.Content = getSliceTextFromRawContent(request.RawContent)
+		sliceInfo.Answer = request.Answer
+	}
 	if docInfo.DocumentType == int32(knowledgeModel.DocumentTypeTable) {
 		sliceEntity.ID = sliceInfo.ID
 		err = k.upsertDataToTable(ctx, docInfo.TableInfo, []*entity.Slice{&sliceEntity})
@@ -799,6 +803,10 @@ func (k *knowledgeSVC) UpdateSlice(ctx context.Context, request *UpdateSliceRequ
 		sliceEntity := entity.Slice{RawContent: request.RawContent}
 		sliceInfo[0].Content = sliceEntity.GetSliceContent()
 	}
+	if docInfo.DocumentType == int32(knowledgeModel.DocumentTypeQA) {
+		sliceInfo[0].Content = getSliceTextFromRawContent(request.RawContent)
+		sliceInfo[0].Answer = request.Answer
+	}
 	if docInfo.DocumentType == int32(knowledgeModel.DocumentTypeImage) {
 		sliceInfo[0].Content = ptr.From(request.RawContent[0].Text)
 	}
@@ -844,6 +852,16 @@ func (k *knowledgeSVC) UpdateSlice(ctx context.Context, request *UpdateSliceRequ
 		return errorx.New(errno.ErrKnowledgeDBCode, errorx.KV("msg", err.Error()))
 	}
 	return nil
+}
+
+func getSliceTextFromRawContent(rawContent []*knowledgeModel.SliceContent) string {
+	if len(rawContent) == 0 || rawContent[0] == nil {
+		return ""
+	}
+	if rawContent[0].Type != knowledgeModel.SliceContentTypeText || rawContent[0].Text == nil {
+		return ""
+	}
+	return ptr.From(rawContent[0].Text)
 }
 
 func (k *knowledgeSVC) DeleteSlice(ctx context.Context, request *DeleteSliceRequest) error {
@@ -1071,7 +1089,7 @@ func (k *knowledgeSVC) CreateDocumentReview(ctx context.Context, request *Create
 	}
 	for i := range reviews {
 		review := reviews[i]
-		// Convert file extension for QA format: csv -> qa_csv, json -> qa_json
+		// Convert file extension for QA format: csv -> qa_csv, json -> qa_json, xlsx -> qa_xlsx
 		fileExt := review.DocumentType
 		if kn.FormatType == int32(knowledgeModel.DocumentTypeQA) {
 			switch fileExt {
@@ -1079,6 +1097,8 @@ func (k *knowledgeSVC) CreateDocumentReview(ctx context.Context, request *Create
 				fileExt = "qa_csv"
 			case "json":
 				fileExt = "qa_json"
+			case "xlsx":
+				fileExt = "qa_xlsx"
 			}
 		}
 		doc := &entity.Document{
