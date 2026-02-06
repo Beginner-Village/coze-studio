@@ -79,6 +79,9 @@
       "path": "../../packages/arch/i18n/tsconfig.build.json"
     },
     {
+      "path": "../../packages/arch/idl/tsconfig.build.json"
+    },
+    {
       "path": "../../packages/arch/logger/tsconfig.build.json"
     },
     {
@@ -131,6 +134,9 @@
     },
     {
       "path": "../../packages/workflow/adapter/playground/tsconfig.build.json"
+    },
+    {
+      "path": "../../packages/workflow/test-run-next/trace/tsconfig.build.json"
     }
   ]
 }

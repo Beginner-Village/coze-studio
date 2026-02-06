@@ -23,3 +23,6 @@ export { TraceFlameThread } from './trace-flame-thread';
 export { MessagePanel, type MessagePanelProps } from './message-panel';
 export { spans2SpanNodes } from './utils/graph';
 export { ObservationModules } from './consts';
+export type { SpanNode, TraceTreeProps, TraceFlamethreadProps } from './typings/graph';
+export type { TraceFrontendSpan, SpanInputOutput, Tag, TagType, InputOutputType } from './typings/idl';
+export type { I18nMapping } from './typings/basic';

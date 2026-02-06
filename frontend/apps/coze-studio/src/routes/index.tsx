@@ -21,7 +21,6 @@ import { GlobalError } from '@coze-foundation/layout';
 import { BaseEnum } from '@coze-arch/web-context';
 
 import { Layout } from '../layout';
-import { ProjectRouter } from '../components/project-router';
 import { AdminError } from '../pages/admin/components/AdminError';
 import {
   LoginPage,
@@ -47,7 +46,6 @@ import {
   ExplorePluginPage,
   ExploreProjectPage,
   ExploreTemplatePage,
-  ExternalAppPage,
 } from './async-components';
 
 export const router: ReturnType<typeof createBrowserRouter> =
@@ -277,6 +275,12 @@ export const router: ReturnType<typeof createBrowserRouter> =
                 {
                   path: 'export-import',
                   lazy: () => import('../pages/space-export-import'),
+                },
+
+                // observability - Coze Loop integration
+                {
+                  path: 'observability',
+                  lazy: () => import('../pages/observability/index'),
                 },
               ],
             },

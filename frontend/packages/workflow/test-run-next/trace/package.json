@@ -4,7 +4,8 @@
   "description": "Workflow TestRun Form",
   "author": "jiangxujin@bytedance.com",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./observation-components": "./src/observation-components/index.ts"
   },
   "main": "./src/index.ts",
   "scripts": {

@@ -42,8 +42,9 @@ import {
   IconMcp,
   IconMcpActive,
   IconCard,
-  IconCardActive
+  IconCardActive,
 } from '../../../../../components/bot-icons';
+import { IconCozAnalytics } from '@coze-arch/coze-design/icons';
 import { useRouteConfig } from '@coze-arch/bot-hooks';
 import { ResType } from '@coze-arch/idl/plugin_develop';
 
@@ -172,6 +173,13 @@ const createSubMenuConfig = () => {
       title: () => '导出/导入',
       path: SpaceSubModuleEnum.EXPORT_IMPORT,
       dataTestId: 'navigation_workspace_export_import',
+    },
+    {
+      icon: <IconCozAnalytics />,
+      activeIcon: <IconCozAnalytics />,
+      title: () => '可观测性',
+      path: SpaceSubModuleEnum.OBSERVABILITY,
+      dataTestId: 'navigation_workspace_observability',
     },
   ];
 

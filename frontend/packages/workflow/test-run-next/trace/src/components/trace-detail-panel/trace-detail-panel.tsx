@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 
 import { isUndefined } from 'lodash-es';
 import copy from 'copy-to-clipboard';
 import { BottomPanel } from '@coze-workflow/test-run-shared';
 import { I18n } from '@coze-arch/i18n';
 import { type TraceFrontendSpan } from '@coze-arch/bot-api/workflow_api';
-import { IconCozCopy } from '@coze-arch/coze-design/icons';
-import { Divider, IconButton, Toast, Typography } from '@coze-arch/coze-design';
+import { IconCozCopy, IconCozShare } from '@coze-arch/coze-design/icons';
+import { Divider, IconButton, Toast, Typography, Button } from '@coze-arch/coze-design';
 
 import { StatusTag } from '../status-tag';
 import { FocusButton } from '../focus-button';
@@ -60,17 +60,44 @@ const ResultViewer: React.FC<
   />
 );
 
+// Coze Loop 服务地址配置
+const COZE_LOOP_BASE_URL =
+  typeof window !== 'undefined' && (window as any).__COZE_LOOP_URL__
+    ? (window as any).__COZE_LOOP_URL__
+    : 'http://10.10.10.226:8082';
+
+// 企业ID，用于 Coze Loop 路由
+const ENTERPRISE_ID = '1';
+
 interface TraceDetailPanelProps {
   span: TraceFrontendSpan;
+  spaceId?: string;
   onClose: () => void;
   onGotoNode: (params: GotoParams) => void;
 }
 
 export const TraceDetailPanel: React.FC<TraceDetailPanelProps> = ({
   span,
+  spaceId,
   onClose,
   onGotoNode,
 }) => {
+  // 构建 Coze Loop 追踪详情页面 URL
+  const cozeLoopTraceUrl = useMemo(() => {
+    if (!spaceId || !span.trace_id) {
+      return null;
+    }
+    // Coze Loop 路由格式：/console/enterprise/{enterpriseID}/space/{spaceID}/observation/traces?trace_id={traceId}
+    return `${COZE_LOOP_BASE_URL}/console/enterprise/${ENTERPRISE_ID}/space/${spaceId}/observation/traces?trace_id=${span.trace_id}`;
+  }, [spaceId, span.trace_id]);
+
+  // 打开 Coze Loop 追踪详情页面
+  const handleOpenInCozeLoop = useCallback(() => {
+    if (cozeLoopTraceUrl) {
+      window.open(cozeLoopTraceUrl, '_blank', 'noopener,noreferrer');
+    }
+  }, [cozeLoopTraceUrl]);
+
   const pays = useMemo(() => {
     const temp = [
       {
@@ -127,6 +154,18 @@ export const TraceDetailPanel: React.FC<TraceDetailPanelProps> = ({
               onClick={handleCopy}
               color="secondary"
             />
+          </div>
+        ) : null}
+        {cozeLoopTraceUrl ? (
+          <div className={styles['coze-loop-link']}>
+            <Button
+              size="small"
+              type="tertiary"
+              icon={<IconCozShare />}
+              onClick={handleOpenInCozeLoop}
+            >
+              {I18n.t('observability_open_in_coze_loop', {}, 'Open in Coze Loop')}
+            </Button>
           </div>
         ) : null}
         <Divider margin={16} />

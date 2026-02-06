@@ -72,6 +72,9 @@ importers:
       '@coze-arch/i18n':
         specifier: workspace:*
         version: link:../../packages/arch/i18n
+      '@coze-arch/idl':
+        specifier: workspace:*
+        version: link:../../packages/arch/idl
       '@coze-arch/logger':
         specifier: workspace:*
         version: link:../../packages/arch/logger
@@ -123,6 +126,12 @@ importers:
       '@coze-workflow/playground-adapter':
         specifier: workspace:*
         version: link:../../packages/workflow/adapter/playground
+      '@coze-workflow/test-run-trace':
+        specifier: workspace:*
+        version: link:../../packages/workflow/test-run-next/trace
+      copy-to-clipboard:
+        specifier: ^3.3.3
+        version: 3.3.3
       path-browserify:
         specifier: ^1.0.1
         version: 1.0.1

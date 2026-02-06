@@ -24,4 +24,5 @@ export enum SpaceSubModuleEnum {
   MCP = 'mcp',
   CARD = 'card',
   EXPORT_IMPORT = 'export-import',
+  OBSERVABILITY = 'observability',
 }

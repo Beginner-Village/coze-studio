@@ -106,6 +106,7 @@ const Library = lazy(() => import('./pages/library'));
 const Members = lazy(() => import('./pages/members'));
 const ExportImportPage = lazy(() => import('./pages/space-export-import'));
 const SpaceEmbeddingConfig = lazy(() => import('./pages/space-embedding-config'));
+const ObservabilityPage = lazy(() => import('./pages/observability'));
 
 const WorkflowPage = lazy(() =>
   import('@coze-workflow/playground-adapter').then(res => ({
@@ -324,6 +325,13 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   ],
                   loader: () => ({
                     subMenuKey: SpaceSubModuleEnum.HIAGENTS,
+                  }),
+                },
+                {
+                  path: 'observability',
+                  Component: ObservabilityPage,
+                  loader: () => ({
+                    subMenuKey: SpaceSubModuleEnum.OBSERVABILITY,
                   }),
                 },
                 {

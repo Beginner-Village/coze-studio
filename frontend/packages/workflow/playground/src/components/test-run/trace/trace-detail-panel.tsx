@@ -19,7 +19,7 @@ import { useEffect } from 'react';
 import { TraceDetailPanel as TraceDetailPanelNext } from '@coze-workflow/test-run-next';
 import { type TraceFrontendSpan } from '@coze-workflow/base';
 
-import { useFloatLayoutService, useTestRunReporterService } from '@/hooks';
+import { useFloatLayoutService, useTestRunReporterService, useGlobalState } from '@/hooks';
 
 import { PanelWrap } from '../../float-layout';
 import { useGotoNode } from './use-goto-node';
@@ -31,6 +31,7 @@ export interface TraceDetailPanelProps {
 export const TraceDetailPanel: React.FC<TraceDetailPanelProps> = ({ span }) => {
   const floatLayoutService = useFloatLayoutService();
   const reporter = useTestRunReporterService();
+  const globalState = useGlobalState();
   const { goto: gotoNode } = useGotoNode();
   const handleClose = () => {
     floatLayoutService.close('right');
@@ -44,6 +45,7 @@ export const TraceDetailPanel: React.FC<TraceDetailPanelProps> = ({ span }) => {
     <PanelWrap layout="vertical">
       <TraceDetailPanelNext
         span={span}
+        spaceId={globalState.spaceId}
         onClose={handleClose}
         onGotoNode={gotoNode}
       />
