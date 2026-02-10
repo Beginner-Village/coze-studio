@@ -71,14 +71,15 @@ func (art *AgentRuntime) ChatflowRun(ctx context.Context, imagex imagex.ImageX) 
 	userID, _ := strconv.ParseInt(art.GetRunMeta().UserID, 10, 64)
 
 	executeConfig := crossworkflow.ExecuteConfig{
-		ID:           wfID,
-		ConnectorID:  art.GetRunMeta().ConnectorID,
-		ConnectorUID: art.GetRunMeta().UserID,
-		Operator:     userID, // 修复：添加 Operator 字段，与 ChatFlow 直接运行保持一致
-		AgentID:      ptr.Of(art.GetRunMeta().AgentID),
-		Mode:         executeMode,
-		BizType:      crossworkflow.BizTypeAgent,
-		SyncPattern:  crossworkflow.SyncPatternStream,
+		ID:              wfID,
+		ConnectorID:     art.GetRunMeta().ConnectorID,
+		ConnectorUID:    art.GetRunMeta().UserID,
+		Operator:        userID, // 修复：添加 Operator 字段，与 ChatFlow 直接运行保持一致
+		AgentID:         ptr.Of(art.GetRunMeta().AgentID),
+		Mode:            executeMode,
+		BizType:         crossworkflow.BizTypeAgent,
+		SyncPattern:     crossworkflow.SyncPatternStream,
+		CustomVariables: art.GetRunMeta().CustomVariables, // 传递会话自定义变量到工作流，用于覆盖预设变量
 	}
 
 	if resumeInfo != nil {
