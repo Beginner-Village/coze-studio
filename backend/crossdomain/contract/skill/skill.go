@@ -14,11 +14,28 @@
  * limitations under the License.
  */
 
-export * as passport from './idl/passport/passport';
-export * as external_knowledge from './idl/external_knowledge/external_knowledge';
-export * as explore from './idl/marketplace/public_api';
-export * as ynet_workflow from './idl/ynet_workflow/ynet_workflow';
-export * as ynet_agent from './idl/ynet-agent/ynet_agent';
-export * as statistics from './idl/statistics/statistics';
-export * as admin from './idl/admin/admin';
-export * as skill from './idl/skill/skill';
+package skill
+
+import (
+	"context"
+
+	"github.com/coze-dev/coze-studio/backend/domain/skill/entity"
+)
+
+// Skill defines the cross-domain interface for skill service.
+// Used by agent runtime to load skill details at runtime.
+type Skill interface {
+	GetSkill(ctx context.Context, skillID int64) (*entity.Skill, error)
+	GetSkillByName(ctx context.Context, spaceID int64, name string) (*entity.Skill, error)
+	MGetSkills(ctx context.Context, skillIDs []int64) ([]*entity.Skill, error)
+}
+
+var defaultSVC Skill
+
+func DefaultSVC() Skill {
+	return defaultSVC
+}
+
+func SetDefaultSVC(c Skill) {
+	defaultSVC = c
+}

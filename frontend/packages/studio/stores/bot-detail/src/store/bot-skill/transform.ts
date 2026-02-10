@@ -65,6 +65,7 @@ import {
   type DatabaseList,
   type TableMemoryItem,
   type VoicesInfo,
+  type AgentSkillItem,
   type BoundCardInfo,
   type CardParam,
   type CardParamMapping,
@@ -336,6 +337,20 @@ export const transformDto2Vo = {
     plugin_id: layoutInfoFromService?.plugin_id,
   }),
 
+  // Agent skills (progressive disclosure)
+  agentSkills: (
+    data?: Array<{
+      skill_id?: string;
+      skill_name?: string;
+      skill_description?: string;
+    }>,
+  ): AgentSkillItem[] =>
+    data?.map(item => ({
+      skill_id: item.skill_id ?? '',
+      skill_name: item.skill_name ?? '',
+      skill_description: item.skill_description ?? '',
+    })) ?? [],
+
   // 卡片绑定数据转换
   boundCards: (data?: BoundCardDTO[]): BoundCardInfo[] =>
     data?.map(card => ({
@@ -486,6 +501,14 @@ export const transformVo2Dto = {
     mode?: number;
   }): BotInfoForUpdate['memory_tool_config'] =>
     config ? { mode: config.mode } : undefined,
+
+  // Agent skills (progressive disclosure)
+  agentSkills: (agentSkills: AgentSkillItem[]) =>
+    agentSkills.map(s => ({
+      skill_id: s.skill_id,
+      skill_name: s.skill_name,
+      skill_description: s.skill_description,
+    })),
 
   // 卡片绑定数据转换
   boundCards: (boundCards: BoundCardInfo[]): BoundCardDTO[] =>

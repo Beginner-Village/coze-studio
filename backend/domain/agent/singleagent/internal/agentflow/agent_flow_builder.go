@@ -61,6 +61,7 @@ type Config struct {
 const (
 	keyOfPersonRender           = "persona_render"
 	keyOfBoundCardsRender       = "bound_cards_render"
+	keyOfSkillsRender           = "skills_render"
 	keyOfKnowledgeRetriever     = "knowledge_retriever"
 	keyOfKnowledgeRetrieverPack = "knowledge_retriever_pack"
 	keyOfPromptVariables        = "prompt_variables"
@@ -96,6 +97,9 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 
 	// Create bound cards renderer
 	boundCardsRenderer := newBoundCardsRender(conf.Agent.BoundCards, nil)
+
+	// Create skills renderer
+	skillsRenderer := newSkillsRender(conf.Agent.SkillInfoList)
 
 	// Load model info first so it can be used for knowledge retrieval
 	modelInfo, err := loadModelInfo(ctx, conf.ModelMgr, ptr.From(conf.Agent.ModelInfo.ModelId), conf.Agent.SpaceID)
@@ -214,6 +218,12 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		return a
 	})...)
 
+	// 添加技能工具 (read_skill)
+	skillTools := newSkillTools(conf.Agent.SpaceID, conf.Agent.SkillInfoList)
+	agentTools = append(agentTools, slices.Transform(skillTools, func(a tool.InvokableTool) tool.BaseTool {
+		return a
+	})...)
+
 	var isReActAgent bool
 	if len(agentTools) > 0 {
 		isReActAgent = true
@@ -315,6 +325,10 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		compose.InvokableLambda[*AgentRequest, string](boundCardsRenderer.RenderBoundCards),
 		compose.WithOutputKey(placeholderOfBoundCards))
 
+	_ = g.AddLambdaNode(keyOfSkillsRender,
+		compose.InvokableLambda[*AgentRequest, string](skillsRenderer.RenderSkills),
+		compose.WithOutputKey(placeholderOfAvailableSkills))
+
 	_ = g.AddLambdaNode(keyOfPromptVariables,
 		compose.InvokableLambda[*AgentRequest, map[string]any](promptVars.AssemblePromptVariables))
 
@@ -353,12 +367,14 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 
 	_ = g.AddEdge(compose.START, keyOfPersonRender)
 	_ = g.AddEdge(compose.START, keyOfBoundCardsRender)
+	_ = g.AddEdge(compose.START, keyOfSkillsRender)
 	_ = g.AddEdge(compose.START, keyOfPromptVariables)
 	_ = g.AddEdge(compose.START, keyOfKnowledgeRetriever)
 	_ = g.AddEdge(compose.START, keyOfToolsPreRetriever)
 
 	_ = g.AddEdge(keyOfPersonRender, keyOfPromptTemplate)
 	_ = g.AddEdge(keyOfBoundCardsRender, keyOfPromptTemplate)
+	_ = g.AddEdge(keyOfSkillsRender, keyOfPromptTemplate)
 	_ = g.AddEdge(keyOfPromptVariables, keyOfPromptTemplate)
 	_ = g.AddEdge(keyOfKnowledgeRetriever, keyOfKnowledgeRetrieverPack)
 	_ = g.AddEdge(keyOfKnowledgeRetrieverPack, keyOfPromptTemplate)

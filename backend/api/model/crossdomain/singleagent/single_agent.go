@@ -82,6 +82,14 @@ type SingleAgent struct {
 	ShortcutCommand         []string
 	MemoryToolConfig        *bot_common.MemoryToolConfig
 	BoundCards              []*bot_common.BoundCardInfo
+	SkillInfoList           []*SkillReference
+}
+
+// SkillReference is a lightweight reference for Bot binding.
+type SkillReference struct {
+	SkillID          int64  `json:"skill_id"`
+	SkillName        string `json:"skill_name"`
+	SkillDescription string `json:"skill_description"`
 }
 
 type InterruptEventType int64

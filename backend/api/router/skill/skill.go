@@ -14,11 +14,26 @@
  * limitations under the License.
  */
 
-export * as passport from './idl/passport/passport';
-export * as external_knowledge from './idl/external_knowledge/external_knowledge';
-export * as explore from './idl/marketplace/public_api';
-export * as ynet_workflow from './idl/ynet_workflow/ynet_workflow';
-export * as ynet_agent from './idl/ynet-agent/ynet_agent';
-export * as statistics from './idl/statistics/statistics';
-export * as admin from './idl/admin/admin';
-export * as skill from './idl/skill/skill';
+package skill
+
+import (
+	"github.com/cloudwego/hertz/pkg/app/server"
+
+	skillHandler "github.com/coze-dev/coze-studio/backend/api/handler/skill"
+)
+
+// Register registers skill routes.
+func Register(r *server.Hertz) {
+	root := r.Group("/")
+	{
+		api := root.Group("/api")
+		{
+			skillGroup := api.Group("/skill")
+			skillGroup.POST("/create", skillHandler.CreateSkill)
+			skillGroup.GET("/get", skillHandler.GetSkill)
+			skillGroup.POST("/update", skillHandler.UpdateSkill)
+			skillGroup.POST("/delete", skillHandler.DeleteSkill)
+			skillGroup.GET("/list", skillHandler.ListSkills)
+		}
+	}
+}

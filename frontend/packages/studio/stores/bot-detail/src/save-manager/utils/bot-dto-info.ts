@@ -50,6 +50,7 @@ export const getBotDetailDtoInfo = () => {
     suggestionConfig,
     onboardingContent,
     pluginApis,
+    agentSkills,
     backgroundImageInfoList,
     shortcut,
     tts,
@@ -95,6 +96,10 @@ export const getBotDetailDtoInfo = () => {
       ),
       bot_tag_info: botSkill.transformVo2Dto.timeCapsule(timeCapsule),
       filebox_info: botSkill.transformVo2Dto.filebox(filebox),
+      // @ts-expect-error skill_info_list added via IDL extension
+      skill_info_list: isMulti
+        ? undefined
+        : botSkill.transformVo2Dto.agentSkills(agentSkills),
       hook_info: isMulti ? undefined : devHooks,
       user_query_collect_conf: queryCollect.transformVo2Dto(queryCollect),
       memory_tool_config: botSkill.transformVo2Dto.memoryToolConfig(

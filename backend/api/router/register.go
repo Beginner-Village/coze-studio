@@ -41,6 +41,7 @@ import (
 	external_knowledge "github.com/coze-dev/coze-studio/backend/api/router/external_knowledge"
 	memory_config "github.com/coze-dev/coze-studio/backend/api/router/memory_config"
 	modelmgr "github.com/coze-dev/coze-studio/backend/api/router/modelmgr"
+	skill "github.com/coze-dev/coze-studio/backend/api/router/skill"
 	space "github.com/coze-dev/coze-studio/backend/api/router/space"
 	statistics "github.com/coze-dev/coze-studio/backend/api/router/statistics"
 	template_publish "github.com/coze-dev/coze-studio/backend/api/router/template_publish"
@@ -69,6 +70,7 @@ func GeneratedRegister(r *server.Hertz) {
 	embedding.Register(r)
 	external_knowledge.Register(r)
 	modelmgr.Register(r)
+	skill.Register(r)
 	space.Register(r)
 	space.RegisterExportImport(r)
 	// space_member.Register(r) // 已经在space模块中包含了

@@ -44,6 +44,7 @@ import (
 	"github.com/coze-dev/coze-studio/backend/application/search"
 	"github.com/coze-dev/coze-studio/backend/application/shortcutcmd"
 	"github.com/coze-dev/coze-studio/backend/application/singleagent"
+	skillApp "github.com/coze-dev/coze-studio/backend/application/skill"
 	spaceapp "github.com/coze-dev/coze-studio/backend/application/space"
 	"github.com/coze-dev/coze-studio/backend/application/statistics"
 	"github.com/coze-dev/coze-studio/backend/application/upload"
@@ -62,6 +63,7 @@ import (
 	ynet_agent_repo "github.com/coze-dev/coze-studio/backend/infra/repository/ynet_agent"
 	crossmodelmgr "github.com/coze-dev/coze-studio/backend/crossdomain/contract/modelmgr"
 	crossplugin "github.com/coze-dev/coze-studio/backend/crossdomain/contract/plugin"
+	crossskill "github.com/coze-dev/coze-studio/backend/crossdomain/contract/skill"
 	crossuser "github.com/coze-dev/coze-studio/backend/crossdomain/contract/user"
 	crossvariables "github.com/coze-dev/coze-studio/backend/crossdomain/contract/variables"
 	crossworkflow "github.com/coze-dev/coze-studio/backend/crossdomain/contract/workflow"
@@ -75,6 +77,7 @@ import (
 	messageImpl "github.com/coze-dev/coze-studio/backend/crossdomain/impl/message"
 	modelmgrImpl "github.com/coze-dev/coze-studio/backend/crossdomain/impl/modelmgr"
 	pluginImpl "github.com/coze-dev/coze-studio/backend/crossdomain/impl/plugin"
+	skillImpl "github.com/coze-dev/coze-studio/backend/crossdomain/impl/skill"
 	searchImpl "github.com/coze-dev/coze-studio/backend/crossdomain/impl/search"
 	singleagentImpl "github.com/coze-dev/coze-studio/backend/crossdomain/impl/singleagent"
 	variablesImpl "github.com/coze-dev/coze-studio/backend/crossdomain/impl/variables"
@@ -219,6 +222,13 @@ func initBasicServices(ctx context.Context, infra *appinfra.AppDependencies, e *
 
 	// Initialize external knowledge service
 	external_knowledge.InitExternalKnowledgeService(infra.DB)
+
+	// Initialize Skill service
+	skillSVC := skillApp.InitService(&skillApp.ServiceComponents{
+		IDGen: infra.IDGenSVC,
+		DB:    infra.DB,
+	})
+	crossskill.SetDefaultSVC(skillImpl.InitDomainService(skillSVC.DomainSVC))
 
 	// Initialize HiAgent repository
 	hiAgentRepo := ynet_agent_repo.NewHiAgentRepository(infra.DB)

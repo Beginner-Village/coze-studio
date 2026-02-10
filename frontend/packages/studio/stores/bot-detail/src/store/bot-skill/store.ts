@@ -50,6 +50,7 @@ import {
   type TaskManageInfo,
   type TimeCapsuleConfig,
   type TTSInfo,
+  type AgentSkillItem,
   type VariableItem,
   type WorkFlowItemType,
 } from '../../types/skill';
@@ -70,6 +71,7 @@ export const getDefaultBotSkillStore = (): BotSkillStore => ({
   pluginApis: [],
   workflows: [],
   boundCards: [],
+  agentSkills: [],
   knowledge: {
     dataSetList: [],
     dataSetInfo: DEFAULT_KNOWLEDGE_CONFIG(),
@@ -110,6 +112,8 @@ export interface BotSkillStore {
   workflows: WorkFlowItemType[];
   /** Bound cards for prompt injection */
   boundCards: BoundCardInfo[];
+  /** Agent skills (progressive disclosure) */
+  agentSkills: AgentSkillItem[];
   /** Knowledge Allocation */
   knowledge: KnowledgeConfig;
   // endregion
@@ -170,6 +174,7 @@ export interface BotSkillAction {
   updateSkillPluginApis: (pluginApis: PluginApi[]) => void;
   updateSkillWorkflows: (workflows: WorkFlowItemType[]) => void;
   updateBoundCards: (boundCards: BoundCardInfo[]) => void;
+  updateAgentSkills: (agentSkills: AgentSkillItem[]) => void;
   updateSkillKnowledgeDatasetList: (
     dataSetList: KnowledgeConfig['dataSetList'],
   ) => void;
@@ -211,6 +216,7 @@ export const useBotSkillStore = create<BotSkillStore & BotSkillAction>()(
       },
       updateSkillWorkflows: workflows => set(s => ({ ...s, workflows })),
       updateBoundCards: boundCards => set(s => ({ ...s, boundCards })),
+      updateAgentSkills: agentSkills => set(s => ({ ...s, agentSkills })),
       updateSkillKnowledgeDatasetList: dataSetList =>
         set(
           produce<BotSkillStore>(s => {
@@ -292,6 +298,7 @@ export const useBotSkillStore = create<BotSkillStore & BotSkillAction>()(
             optionData?.workflow_detail_map,
           ),
           boundCards: transformDto2Vo.boundCards(botInfo?.bound_cards),
+          agentSkills: transformDto2Vo.agentSkills(botInfo?.skill_info_list),
           knowledge: transformDto2Vo.knowledge(
             botInfo?.knowledge,
             optionData?.knowledge_detail_map,

@@ -58,6 +58,7 @@ type SingleAgentVersion struct {
 	LayoutInfo              *bot_common.LayoutInfo            `gorm:"column:layout_info;comment:chatflow layout info;serializer:json" json:"layout_info"`                           // chatflow layout info
 	MemoryToolConfig        *bot_common.MemoryToolConfig      `gorm:"column:memory_tool_config;comment:Memory Tool Configuration;serializer:json" json:"memory_tool_config"`         // Memory Tool Configuration
 	BoundCards              []*bot_common.BoundCardInfo       `gorm:"column:bound_cards;comment:Bound Cards for Prompt Injection;serializer:json" json:"bound_cards"`                 // Bound Cards for Prompt Injection
+	SkillInfoList           []*SkillReference                 `gorm:"column:skill_info_list;comment:Skill references bound to this agent;serializer:json" json:"skill_info_list"`     // Skill references bound to this agent
 }
 
 // TableName SingleAgentVersion's table name

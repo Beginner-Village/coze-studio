@@ -46,6 +46,7 @@ export const enum ToolKey {
   SHORTCUT = 'shortcut',
   DEV_HOOKS = 'devHooks',
   USER_INPUT = 'userInput',
+  AGENT_SKILL = 'agentSkill',
 }
 
 export const enum AgentSkillKey {

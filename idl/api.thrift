@@ -16,6 +16,7 @@ include "./workflow/workflow_svc.thrift"
 include "./app/bot_open_api.thrift"
 include "./upload/upload.thrift"
 include "./statistics/statistics.thrift"
+include "./skill/skill_svc.thrift"
 
 
 namespace go coze
@@ -38,3 +39,4 @@ service KnowledgeService extends knowledge_svc.DatasetService {}
 service BotOpenApiService extends bot_open_api.BotOpenApiService {}
 service UploadService extends upload.UploadService {}
 service StatisticsService extends statistics.StatisticsService {}
+service SkillService extends skill_svc.SkillService {}

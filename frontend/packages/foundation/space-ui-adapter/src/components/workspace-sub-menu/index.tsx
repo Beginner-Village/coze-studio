@@ -21,7 +21,9 @@ import {
   SpaceSelector,
 } from '@coze-foundation/space-ui-base';
 import { useSpaceStore } from '@coze-foundation/space-store';
+import { ResType } from '@coze-arch/idl/plugin_develop';
 import { I18n } from '@coze-arch/i18n';
+import { IconCozAnalytics } from '@coze-arch/coze-design/icons';
 import {
   IconBotDevelop,
   IconBotDevelopActive,
@@ -43,10 +45,8 @@ import {
   IconMcpActive,
   IconCard,
   IconCardActive,
-} from '../../../../../components/bot-icons';
-import { IconCozAnalytics } from '@coze-arch/coze-design/icons';
+} from '@coze-arch/bot-icons/src';
 import { useRouteConfig } from '@coze-arch/bot-hooks';
-import { ResType } from '@coze-arch/idl/plugin_develop';
 
 import { SpaceSubModuleEnum } from '@/const';
 
@@ -56,7 +56,6 @@ declare const FEATURE_SHOW_MCP: boolean;
 declare const FEATURE_SHOW_EXTERNAL_KNOWLEDGE: boolean;
 
 const createSubMenuConfig = () => {
-
   const menuItems = [
     {
       icon: <IconBotDevelop />,
@@ -74,8 +73,7 @@ const createSubMenuConfig = () => {
     FEATURE_SHOW_MCP && {
       icon: <IconMcp />,
       activeIcon: <IconMcpActive />,
-      title: () =>
-        I18n.t('navigation_workspace_library_mcp', {}, 'Mcp'),
+      title: () => I18n.t('navigation_workspace_library_mcp', {}, 'Mcp'),
       path: `${SpaceSubModuleEnum.MCP}`,
       dataTestId: 'navigation_workspace_library_mcp',
     },
@@ -83,8 +81,7 @@ const createSubMenuConfig = () => {
     {
       icon: <IconCard />,
       activeIcon: <IconCardActive />,
-      title: () =>
-        I18n.t('navigation_workspace_library_card', {}, 'Card'),
+      title: () => I18n.t('navigation_workspace_library_card', {}, 'Card'),
       path: `${SpaceSubModuleEnum.CARD}`,
       dataTestId: 'navigation_workspace_library_card',
     },
@@ -123,6 +120,13 @@ const createSubMenuConfig = () => {
     {
       icon: <IconBotPrompt />,
       activeIcon: <IconBotPromptActive />,
+      title: () => '技能',
+      path: SpaceSubModuleEnum.SKILLS,
+      dataTestId: 'navigation_workspace_library_skills',
+    },
+    {
+      icon: <IconBotPrompt />,
+      activeIcon: <IconBotPromptActive />,
       title: () => I18n.t('navigation_workspace_library_prompt', {}, 'Prompt'),
       path: `${SpaceSubModuleEnum.LIBRARY}/${ResType.Prompt}`,
       dataTestId: 'navigation_workspace_library_prompt',
@@ -149,14 +153,16 @@ const createSubMenuConfig = () => {
     {
       icon: <IconBotKnowledge />,
       activeIcon: <IconBotKnowledgeActive />,
-      title: () => I18n.t('navigation_workspace_manage_embedding', {}, 'Embedding'),
+      title: () =>
+        I18n.t('navigation_workspace_manage_embedding', {}, 'Embedding'),
       path: SpaceSubModuleEnum.EMBEDDING,
       dataTestId: 'navigation_workspace_embedding',
     },
     {
       icon: <IconBotPlugin />,
       activeIcon: <IconBotPluginActive />,
-      title: () => I18n.t('navigation_workspace_manage_external_agents', {}, '外部智能体'),
+      title: () =>
+        I18n.t('navigation_workspace_manage_external_agents', {}, '外部智能体'),
       path: SpaceSubModuleEnum.HIAGENTS,
       dataTestId: 'navigation_workspace_external_agents',
     },

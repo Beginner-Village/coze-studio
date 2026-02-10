@@ -21,11 +21,11 @@ import { SpaceSubModuleEnum } from '@coze-foundation/space-ui-adapter';
 import { GlobalError } from '@coze-foundation/layout';
 import { BaseEnum } from '@coze-arch/web-context';
 
-import { exploreRouter } from './pages/explore';
 import { templateRouter } from './pages/template';
+import { exploreRouter } from './pages/explore';
+import { AdminError } from './pages/admin/components/AdminError';
 import { Layout } from './layout';
-import { MicroAppWrapper} from './apps/MicroAppWrapper'
-import { AdminError } from './pages/admin/components/AdminError'
+import { MicroAppWrapper } from './apps/MicroAppWrapper';
 
 const subMenu = lazy(() =>
   import('@coze-foundation/space-ui-adapter').then(exps => ({
@@ -105,7 +105,9 @@ const Develop = lazy(() => import('./pages/develop'));
 const Library = lazy(() => import('./pages/library'));
 const Members = lazy(() => import('./pages/members'));
 const ExportImportPage = lazy(() => import('./pages/space-export-import'));
-const SpaceEmbeddingConfig = lazy(() => import('./pages/space-embedding-config'));
+const SpaceEmbeddingConfig = lazy(
+  () => import('./pages/space-embedding-config'),
+);
 const ObservabilityPage = lazy(() => import('./pages/observability'));
 
 const WorkflowPage = lazy(() =>
@@ -139,6 +141,8 @@ const AgentPublishPage = lazy(() =>
 const DocsRedirect = lazy(() => import('./pages/docs'));
 
 const SpaceModelConfig = lazy(() => import('./pages/space-model-config'));
+
+const SpaceSkillPage = lazy(() => import('./pages/space-skill'));
 
 const FalconMcp = lazy(() => import('./pages/falconmcp'));
 const FalconMcpDetail = lazy(() => import('./pages/falconmcpDetail'));
@@ -332,6 +336,13 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   Component: ObservabilityPage,
                   loader: () => ({
                     subMenuKey: SpaceSubModuleEnum.OBSERVABILITY,
+                  }),
+                },
+                {
+                  path: 'skills',
+                  Component: SpaceSkillPage,
+                  loader: () => ({
+                    subMenuKey: SpaceSubModuleEnum.SKILLS,
                   }),
                 },
                 {

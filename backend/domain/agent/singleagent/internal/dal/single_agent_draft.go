@@ -159,6 +159,7 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftPo2Do(po *model.SingleAgentDraft)
 			LayoutInfo:              po.LayoutInfo,
 			MemoryToolConfig:        po.MemoryToolConfig,
 			BoundCards:              po.BoundCards,
+			SkillInfoList:           skillPOsToSkillDOs(po.SkillInfoList),
 		},
 	}
 }
@@ -191,5 +192,36 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftDo2Po(do *entity.SingleAgent) *mo
 		LayoutInfo:              do.LayoutInfo,
 		MemoryToolConfig:        do.MemoryToolConfig,
 		BoundCards:              do.BoundCards,
+		SkillInfoList:           skillDOsToPOs(do.SkillInfoList),
 	}
+}
+
+func skillPOsToSkillDOs(pos []*model.SkillReference) []*singleagent.SkillReference {
+	if len(pos) == 0 {
+		return nil
+	}
+	result := make([]*singleagent.SkillReference, 0, len(pos))
+	for _, po := range pos {
+		result = append(result, &singleagent.SkillReference{
+			SkillID:          po.SkillID,
+			SkillName:        po.SkillName,
+			SkillDescription: po.SkillDescription,
+		})
+	}
+	return result
+}
+
+func skillDOsToPOs(dos []*singleagent.SkillReference) []*model.SkillReference {
+	if len(dos) == 0 {
+		return nil
+	}
+	result := make([]*model.SkillReference, 0, len(dos))
+	for _, do := range dos {
+		result = append(result, &model.SkillReference{
+			SkillID:          do.SkillID,
+			SkillName:        do.SkillName,
+			SkillDescription: do.SkillDescription,
+		})
+	}
+	return result
 }

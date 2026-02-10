@@ -37,6 +37,7 @@ import {
   SuggestionBlock,
   ExternalKnowledgeArea,
   CardBindingArea,
+  AgentSkillArea,
 } from '@coze-agent-ide/space-bot/component';
 import { PluginApisArea } from '@coze-agent-ide/plugin-area-adapter';
 import { OnboardingMessage } from '@coze-agent-ide/onboarding-message-adapter';
@@ -92,6 +93,8 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
               />
               {/* 卡片绑定 */}
               <CardBindingArea />
+              {/* Agent Skills (progressive disclosure) */}
+              <AgentSkillArea toolKey={ToolKey.AGENT_SKILL} title="技能" />
               {skillToolSlot}
             </GroupingContainer>
             <GroupingContainer
@@ -136,7 +139,11 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
               <ExternalKnowledgeArea
                 toolKey={ToolKey.EXTERNAL_KNOWLEDGE}
                 title={I18n.t('external_knowledge_title', {}, '外部知识库')}
-                desc={I18n.t('external_knowledge_desc', {}, '接入RAGFlow等外部知识库系统')}
+                desc={I18n.t(
+                  'external_knowledge_desc',
+                  {},
+                  '接入RAGFlow等外部知识库系统',
+                )}
               />
               {knowledgeToolSlot}
             </GroupingContainer>

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { type ShortCutStruct } from '@coze-agent-ide/tool-config/src/shortcut-config/type';
 import {
   type PluginStatus,
   type PluginType,
@@ -39,6 +38,7 @@ import type {
   TaskInfo,
   SuggestReplyMode,
 } from '@coze-arch/bot-api/developer_api';
+import { type ShortCutStruct } from '@coze-agent-ide/tool-config/src/shortcut-config/type';
 
 interface DefaultPluginApi extends PluginApi {
   isAuto?: boolean;
@@ -279,4 +279,11 @@ export interface BoundCardInfo {
   cardPicUrl?: string;
   paramList?: CardParam[];
   paramMapping?: CardParamMapping[]; // 参数映射配置
+}
+
+// Agent Skill（渐进式披露技能）
+export interface AgentSkillItem {
+  skill_id: string;
+  skill_name: string;
+  skill_description: string;
 }

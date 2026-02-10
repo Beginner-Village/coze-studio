@@ -1,5 +1,6 @@
 namespace go app.bot_common
 
+include "../skill/skill.thrift"
 
 struct AuthToken {
     1: string service_id,
@@ -483,6 +484,7 @@ struct BotInfo {
     36: optional ExternalKnowledge ExternalKnowledge (api.body="external_knowledge"),                          // External Knowledge configuration for RAGFlow integration
     37: optional MemoryToolConfig  MemoryToolConfig  (api.body="memory_tool_config"),                          // Memory tool configuration (setKeywordMemory, getKeywordMemory, etc.)
     38: optional list<BoundCardInfo> BoundCards      (api.body="bound_cards")                                  // Bound cards for agent prompt injection
+    39: optional list<skill.SkillReference> SkillInfoList  (api.body="skill_info_list")                          // Skills bound to this bot
 }
 
 // External Knowledge structures for RAGFlow integration
@@ -647,6 +649,7 @@ struct BotInfoForUpdate {
     34: optional ExternalKnowledge        ExternalKnowledge (api.body="external_knowledge")           // External Knowledge configuration for RAGFlow integration
     35: optional MemoryToolConfig         MemoryToolConfig  (api.body="memory_tool_config")           // Memory tool configuration
     36: optional list<BoundCardInfo>      BoundCards        (api.body="bound_cards")                  // Bound cards for agent prompt injection
+    37: optional list<skill.SkillReference> SkillInfoList  (api.body="skill_info_list")              // Skills bound to this bot
 }
 
 struct AgentForUpdate {

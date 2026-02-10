@@ -6286,6 +6286,95 @@ table "shortcut_command" {
     columns = [column.object_id, column.command_id, column.is_online]
   }
 }
+table "skill" {
+  schema  = schema.opencoze
+  comment = "Skill table for managing reusable agent skills"
+  collate = "utf8mb4_0900_ai_ci"
+  column "id" {
+    null           = false
+    type           = bigint
+    unsigned       = true
+    comment        = "Primary Key ID"
+    auto_increment = true
+  }
+  column "skill_id" {
+    null    = false
+    type    = bigint
+    comment = "Skill ID"
+  }
+  column "space_id" {
+    null    = false
+    type    = bigint
+    comment = "Space ID"
+  }
+  column "name" {
+    null    = false
+    type    = varchar(255)
+    default = ""
+    comment = "Skill name"
+  }
+  column "description" {
+    null    = true
+    type    = text
+    comment = "Short description (injected into system prompt)"
+  }
+  column "prompt" {
+    null    = true
+    type    = mediumtext
+    comment = "Full instructions with resource references"
+  }
+  column "icon_uri" {
+    null    = false
+    type    = varchar(255)
+    default = ""
+    comment = "Icon URI"
+  }
+  column "creator_id" {
+    null    = false
+    type    = bigint
+    default = 0
+    comment = "Creator user ID"
+  }
+  column "status" {
+    null    = false
+    type    = tinyint
+    default = 1
+    comment = "Status: 1=active, 0=disabled"
+  }
+  column "created_at" {
+    null     = false
+    type     = bigint
+    default  = 0
+    unsigned = true
+    comment  = "Create time in milliseconds"
+  }
+  column "updated_at" {
+    null     = false
+    type     = bigint
+    default  = 0
+    unsigned = true
+    comment  = "Update time in milliseconds"
+  }
+  column "deleted_at" {
+    null    = true
+    type    = datetime(3)
+    comment = "Soft delete time"
+  }
+  primary_key {
+    columns = [column.id]
+  }
+  index "idx_space_id" {
+    columns = [column.space_id]
+  }
+  index "uniq_skill_id" {
+    unique  = true
+    columns = [column.skill_id]
+  }
+  index "uniq_space_name_deleted" {
+    unique  = true
+    columns = [column.space_id, column.name, column.deleted_at]
+  }
+}
 table "single_agent_draft" {
   schema  = schema.opencoze
   comment = "Single Agent Draft Copy Table"
@@ -6430,6 +6519,11 @@ table "single_agent_draft" {
     null    = true
     type    = json
     comment = "Memory Tool Configuration"
+  }
+  column "skill_info_list" {
+    null    = true
+    type    = json
+    comment = "Skill references bound to this agent"
   }
   primary_key {
     columns = [column.id]
@@ -6691,6 +6785,11 @@ table "single_agent_version" {
     null    = true
     type    = text
     comment = "chatflow layout info"
+  }
+  column "skill_info_list" {
+    null    = true
+    type    = json
+    comment = "Skill references bound to this agent"
   }
   primary_key {
     columns = [column.id]

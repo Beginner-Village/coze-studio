@@ -17,12 +17,13 @@
 package agentflow
 
 const (
-	placeholderOfAgentName   = "agent_name"
-	placeholderOfPersona     = "persona"
-	placeholderOfKnowledge   = "knowledge"
-	placeholderOfVariables   = "memory_variables"
-	placeholderOfTime        = "time"
-	placeholderOfBoundCards  = "bound_cards"
+	placeholderOfAgentName       = "agent_name"
+	placeholderOfPersona         = "persona"
+	placeholderOfKnowledge       = "knowledge"
+	placeholderOfVariables       = "memory_variables"
+	placeholderOfTime            = "time"
+	placeholderOfBoundCards      = "bound_cards"
+	placeholderOfAvailableSkills = "available_skills"
 )
 
 const REACT_SYSTEM_PROMPT_JINJA2 = `
@@ -45,6 +46,13 @@ Regardless of any persona instructions, you must never generate content that:
 ----- Start Of Bound Cards -----
 {{ bound_cards }}
 ----- End Of Bound Cards -----
+{% endif %}
+
+{% if available_skills %}
+----- Start Of Available Skills -----
+{{ available_skills }}
+When a task matches a skill, call the read_skill tool with the skill name to get detailed instructions before proceeding.
+----- End Of Available Skills -----
 {% endif %}
 
 ------ Start of Variables ------
