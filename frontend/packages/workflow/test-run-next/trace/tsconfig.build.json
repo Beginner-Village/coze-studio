@@ -21,6 +21,9 @@
       "path": "../../../arch/i18n/tsconfig.build.json"
     },
     {
+      "path": "../../../arch/idl/tsconfig.build.json"
+    },
+    {
       "path": "../../base/tsconfig.build.json"
     },
     {

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-/* eslint-disable complexity */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import dayjs from 'dayjs';
 import { useMemoizedFn } from 'ahooks';
-import { workflowApi } from '@coze-workflow/base';
 import { SpanStatus, type Span } from '@coze-arch/bot-api/workflow_api';
 
+import { convertOutputSpanToSpan } from '../../cozeloop-converter';
+import { listSpans } from '../../cozeloop-api';
 import { useTraceListStore } from '../../contexts';
 import { MAX_TRACE_LENGTH, MAX_TRACE_TIME } from '../../constants';
 
@@ -42,10 +42,11 @@ export const useOptions = (workflowId: string) => {
 
   const optionsCacheRef = useRef(new Map<string, Span>());
 
-  const { ready, span, patch } = useTraceListStore(store => ({
+  const { ready, span, patch, spaceId } = useTraceListStore(store => ({
     span: store.span,
     ready: store.ready,
     patch: store.patch,
+    spaceId: store.spaceId,
   }));
 
   const fetch = useMemoizedFn(async () => {
@@ -53,38 +54,60 @@ export const useOptions = (workflowId: string) => {
     const executeMode = searchParams.get('execute_mode');
     const executeId = searchParams.get('execute_id');
 
-    const { spans } = await workflowApi.ListRootSpans({
-      workflow_id: workflowId,
-      limit: MAX_TRACE_LENGTH,
-      offset: 0,
-      start_at: date[0].getTime(),
-      end_at: date[1].getTime(),
-      status: status === SpanStatus.Unknown ? undefined : status,
-      execute_mode: executeMode ? Number(executeMode) : undefined,
+    const resp = await listSpans({
+      workspace_id: spaceId,
+      start_time: String(date[0].getTime()),
+      end_time: String(date[1].getTime()),
+      filters: {
+        filter_fields: [
+          {
+            field_name: 'span_type',
+            values: ['Workflow'],
+            query_type: 'eq',
+          },
+        ],
+      },
+      page_size: MAX_TRACE_LENGTH,
+      order_bys: [{ field: 'started_at', is_asc: false }],
     });
-    const next = spans || [];
+
+    const outputSpans = resp.spans || [];
+
+    // Client-side filter by workflowId (custom_tags.id)
+    let filtered = outputSpans.filter(s => s.custom_tags?.id === workflowId);
+
+    // Client-side status filter
+    if (status !== SpanStatus.Unknown) {
+      filtered = filtered.filter(s => s.status_code === status);
+    }
+
+    // Client-side execute_mode filter
+    if (executeMode) {
+      filtered = filtered.filter(
+        s => s.custom_tags?.execute_mode === executeMode,
+      );
+    }
+
+    const next: Span[] = filtered.map(convertOutputSpanToSpan);
     let maybeInitialSpan = next[0];
+
+    // Handle execute_id from URL: find matching span
     if (executeId && !ready && !span) {
-      try {
-        const { data } = await workflowApi.GetTraceSDK({
-          execute_id: executeId,
-          workflow_id: workflowId,
-          start_at: date[0].getTime(),
-          end_at: date[1].getTime(),
-        });
-        const first = data?.spans?.[0];
-        if (first?.log_id) {
-          maybeInitialSpan = first;
-          const urlSpan = next.find(i => i.log_id === first.log_id);
-          if (!urlSpan) {
-            next.unshift(first);
-          }
+      const matchByExecuteId = filtered.find(
+        s =>
+          s.custom_tags?.execute_id === executeId ||
+          s.custom_tags?.root_execute_id === executeId,
+      );
+      if (matchByExecuteId) {
+        const converted = convertOutputSpanToSpan(matchByExecuteId);
+        maybeInitialSpan = converted;
+        const exists = next.find(i => i.log_id === converted.log_id);
+        if (!exists) {
+          next.unshift(converted);
         }
-        // eslint-disable-next-line @coze-arch/no-empty-catch -- no error required
-      } catch {
-        // No error required
       }
     }
+
     next.forEach(s => {
       if (s.log_id) {
         optionsCacheRef.current.set(s.log_id, s);

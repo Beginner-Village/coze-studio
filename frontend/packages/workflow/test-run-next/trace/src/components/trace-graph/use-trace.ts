@@ -18,10 +18,11 @@ import { useEffect, useState } from 'react';
 
 import dayjs from 'dayjs';
 import { useMemoizedFn } from 'ahooks';
-import { workflowApi } from '@coze-workflow/base';
 import { type TraceFrontendSpan } from '@coze-arch/bot-api/workflow_api';
 
 import { sortSpans } from '../../utils';
+import { convertOutputSpanToTraceFrontendSpan } from '../../cozeloop-converter';
+import { getTrace } from '../../cozeloop-api';
 import { useTraceListStore } from '../../contexts';
 import { MAX_TRACE_TIME } from '../../constants';
 
@@ -29,11 +30,12 @@ export const useTrace = () => {
   const [loading, setLoading] = useState(false);
   const [spans, setSpans] = useState<TraceFrontendSpan[] | null>(null);
 
-  const { span } = useTraceListStore(store => ({
+  const { span, spaceId } = useTraceListStore(store => ({
     span: store.span,
+    spaceId: store.spaceId,
   }));
 
-  const fetch = useMemoizedFn(async (logId: string) => {
+  const fetch = useMemoizedFn(async (traceId: string) => {
     setLoading(true);
     /** When querying the log, the start and end time must be passed. Since the user can check the range within 7 days, he can directly fake the 7-day time interval. */
     const now = dayjs().endOf('day').valueOf();
@@ -43,15 +45,17 @@ export const useTrace = () => {
       .valueOf();
 
     try {
-      const { data } = await workflowApi.GetTraceSDK({
-        log_id: logId,
-        start_at: end,
-        end_at: now,
+      const resp = await getTrace({
+        workspace_id: spaceId,
+        trace_id: traceId,
+        start_time: String(end),
+        end_time: String(now),
       });
-      if (!data || !data.spans) {
+      if (!resp || !resp.spans) {
         return;
       }
-      const next = sortSpans(data.spans);
+      const converted = resp.spans.map(convertOutputSpanToTraceFrontendSpan);
+      const next = sortSpans(converted);
       setSpans(next);
     } finally {
       setLoading(false);
@@ -59,8 +63,10 @@ export const useTrace = () => {
   });
 
   useEffect(() => {
-    if (span?.log_id) {
-      fetch(span.log_id);
+    // log_id is mapped from trace_id by the converter
+    const traceId = span?.trace_id || span?.log_id;
+    if (traceId) {
+      fetch(traceId);
     }
   }, [span, fetch]);
 

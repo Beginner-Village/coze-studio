@@ -20,9 +20,15 @@ import { isUndefined } from 'lodash-es';
 import copy from 'copy-to-clipboard';
 import { BottomPanel } from '@coze-workflow/test-run-shared';
 import { I18n } from '@coze-arch/i18n';
-import { type TraceFrontendSpan } from '@coze-arch/bot-api/workflow_api';
 import { IconCozCopy, IconCozShare } from '@coze-arch/coze-design/icons';
-import { Divider, IconButton, Toast, Typography, Button } from '@coze-arch/coze-design';
+import {
+  Divider,
+  IconButton,
+  Toast,
+  Typography,
+  Button,
+} from '@coze-arch/coze-design';
+import { type TraceFrontendSpan } from '@coze-arch/bot-api/workflow_api';
 
 import { StatusTag } from '../status-tag';
 import { FocusButton } from '../focus-button';
@@ -60,15 +66,6 @@ const ResultViewer: React.FC<
   />
 );
 
-// Coze Loop 服务地址配置
-const COZE_LOOP_BASE_URL =
-  typeof window !== 'undefined' && (window as any).__COZE_LOOP_URL__
-    ? (window as any).__COZE_LOOP_URL__
-    : 'http://10.10.10.226:8082';
-
-// 企业ID，用于 Coze Loop 路由
-const ENTERPRISE_ID = '1';
-
 interface TraceDetailPanelProps {
   span: TraceFrontendSpan;
   spaceId?: string;
@@ -82,21 +79,20 @@ export const TraceDetailPanel: React.FC<TraceDetailPanelProps> = ({
   onClose,
   onGotoNode,
 }) => {
-  // 构建 Coze Loop 追踪详情页面 URL
-  const cozeLoopTraceUrl = useMemo(() => {
+  // 构建自建可观测性页面 URL
+  const observabilityUrl = useMemo(() => {
     if (!spaceId || !span.trace_id) {
       return null;
     }
-    // Coze Loop 路由格式：/console/enterprise/{enterpriseID}/space/{spaceID}/observation/traces?trace_id={traceId}
-    return `${COZE_LOOP_BASE_URL}/console/enterprise/${ENTERPRISE_ID}/space/${spaceId}/observation/traces?trace_id=${span.trace_id}`;
+    return `/space/${spaceId}/observability`;
   }, [spaceId, span.trace_id]);
 
-  // 打开 Coze Loop 追踪详情页面
-  const handleOpenInCozeLoop = useCallback(() => {
-    if (cozeLoopTraceUrl) {
-      window.open(cozeLoopTraceUrl, '_blank', 'noopener,noreferrer');
+  // 打开可观测性页面
+  const handleOpenObservability = useCallback(() => {
+    if (observabilityUrl) {
+      window.open(observabilityUrl, '_blank', 'noopener,noreferrer');
     }
-  }, [cozeLoopTraceUrl]);
+  }, [observabilityUrl]);
 
   const pays = useMemo(() => {
     const temp = [
@@ -119,7 +115,7 @@ export const TraceDetailPanel: React.FC<TraceDetailPanelProps> = ({
 
   const handleCopy = () => {
     try {
-      copy(span.log_id || '');
+      copy(span.trace_id || span.log_id || '');
       Toast.success({ content: I18n.t('copy_success'), showClose: false });
     } catch {
       Toast.error(I18n.t('copy_failed'));
@@ -143,10 +139,10 @@ export const TraceDetailPanel: React.FC<TraceDetailPanelProps> = ({
           <FocusButton span={span} onClick={handleScroll} />
         </div>
         <PayBlocks options={pays} />
-        {span.log_id ? (
+        {span.trace_id || span.log_id ? (
           <div className={styles['log-id']}>
             <Typography.Text type="secondary" size="small">
-              LogId: {span.log_id}
+              TraceId: {span.trace_id || span.log_id}
             </Typography.Text>
             <IconButton
               icon={<IconCozCopy />}
@@ -156,15 +152,19 @@ export const TraceDetailPanel: React.FC<TraceDetailPanelProps> = ({
             />
           </div>
         ) : null}
-        {cozeLoopTraceUrl ? (
+        {observabilityUrl ? (
           <div className={styles['coze-loop-link']}>
             <Button
               size="small"
               type="tertiary"
               icon={<IconCozShare />}
-              onClick={handleOpenInCozeLoop}
+              onClick={handleOpenObservability}
             >
-              {I18n.t('observability_open_in_coze_loop', {}, 'Open in Coze Loop')}
+              {I18n.t(
+                'observability_open_in_coze_loop',
+                {},
+                'Open in Coze Loop',
+              )}
             </Button>
           </div>
         ) : null}
