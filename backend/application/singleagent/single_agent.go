@@ -35,6 +35,8 @@ import (
 	intelligence "github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/common"
 	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
 	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/plugin"
+	crossdomainSingleagent "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/singleagent"
+	"github.com/coze-dev/coze-studio/backend/api/model/skill"
 	"github.com/coze-dev/coze-studio/backend/api/model/data/database/table"
 	"github.com/coze-dev/coze-studio/backend/api/model/playground"
 	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
@@ -397,7 +399,49 @@ func (s *SingleAgentApplicationService) applyAgentUpdates(target *entity.SingleA
 		target.BoundCards = patch.BoundCards
 	}
 
+	// Add SkillInfoList handling for skill binding feature
+	if patch.SkillInfoList != nil {
+		target.SkillInfoList = skillThriftToCrossdomain(patch.SkillInfoList)
+	}
+
+	// Add ForceToolReturn handling
+	if patch.ForceToolReturn != nil {
+		target.ForceToolReturn = patch.ForceToolReturn
+	}
+
 	return target, nil
+}
+
+// skillThriftToCrossdomain converts thrift-generated SkillReference to crossdomain SkillReference.
+func skillThriftToCrossdomain(refs []*skill.SkillReference) []*crossdomainSingleagent.SkillReference {
+	if len(refs) == 0 {
+		return nil
+	}
+	result := make([]*crossdomainSingleagent.SkillReference, 0, len(refs))
+	for _, r := range refs {
+		result = append(result, &crossdomainSingleagent.SkillReference{
+			SkillID:          r.GetSkillID(),
+			SkillName:        r.GetSkillName(),
+			SkillDescription: r.GetSkillDescription(),
+		})
+	}
+	return result
+}
+
+// skillCrossdomainToThrift converts crossdomain SkillReference to thrift-generated SkillReference.
+func skillCrossdomainToThrift(refs []*crossdomainSingleagent.SkillReference) []*skill.SkillReference {
+	if len(refs) == 0 {
+		return nil
+	}
+	result := make([]*skill.SkillReference, 0, len(refs))
+	for _, r := range refs {
+		result = append(result, &skill.SkillReference{
+			SkillID:          &r.SkillID,
+			SkillName:        &r.SkillName,
+			SkillDescription: &r.SkillDescription,
+		})
+	}
+	return result
 }
 
 func (s *SingleAgentApplicationService) DeleteAgentDraft(ctx context.Context, req *developer_api.DeleteDraftBotRequest) (*developer_api.DeleteDraftBotResponse, error) {
@@ -455,6 +499,8 @@ func (s *SingleAgentApplicationService) singleAgentDraftDo2Vo(ctx context.Contex
 		Version:                 do.Version,
 		MemoryToolConfig:        do.MemoryToolConfig,
 		BoundCards:              do.BoundCards,
+		SkillInfoList:           skillCrossdomainToThrift(do.SkillInfoList),
+		ForceToolReturn:         do.ForceToolReturn,
 	}
 
 	if do.VariablesMetaID != nil {

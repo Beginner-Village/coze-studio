@@ -27,6 +27,7 @@ import (
 	"github.com/cloudwego/eino/flow/agent/react"
 	"github.com/cloudwego/eino/schema"
 
+	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_common"
 	"github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/entity"
 	"github.com/coze-dev/coze-studio/backend/domain/workflow"
 	"github.com/coze-dev/coze-studio/backend/infra/contract/chatmodel"
@@ -223,6 +224,42 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	agentTools = append(agentTools, slices.Transform(skillTools, func(a tool.InvokableTool) tool.BaseTool {
 		return a
 	})...)
+
+	// 自动绑定技能提示词中引用的工作流
+	existingWorkflowIDs := make(map[int64]struct{}, len(conf.Agent.Workflow))
+	for _, wf := range conf.Agent.Workflow {
+		existingWorkflowIDs[wf.GetWorkflowId()] = struct{}{}
+	}
+	skillWfIDs, skillResErr := resolveSkillResources(ctx, conf.Agent.SkillInfoList, existingWorkflowIDs)
+	if skillResErr == nil && len(skillWfIDs) > 0 {
+		logs.CtxInfof(ctx, "[BuildAgent] Auto-binding %d workflow(s) from skill prompts", len(skillWfIDs))
+		skillWfInfos := make([]*bot_common.WorkflowInfo, 0, len(skillWfIDs))
+		for _, id := range skillWfIDs {
+			skillWfInfos = append(skillWfInfos, &bot_common.WorkflowInfo{
+				WorkflowId: ptr.Of(id),
+			})
+		}
+		skillWfTools, skillReturnDirectly, wfErr := newWorkflowTools(ctx, &workflowConfig{wfInfos: skillWfInfos})
+		if wfErr == nil {
+			agentTools = append(agentTools, slices.Transform(skillWfTools, func(a workflow.ToolFromWorkflow) tool.BaseTool {
+				return a.(tool.BaseTool)
+			})...)
+			for k, v := range skillReturnDirectly {
+				returnDirectlyTools[k] = v
+			}
+			if len(skillWfTools) > 0 {
+				containWfTool = true
+			}
+		} else {
+			logs.CtxWarnf(ctx, "[BuildAgent] Failed to create workflow tools from skill prompts: %v", wfErr)
+		}
+	}
+
+	// 如果开启 ForceToolReturn，清空 returnDirectlyTools
+	if conf.Agent.ForceToolReturn != nil && *conf.Agent.ForceToolReturn {
+		returnDirectlyTools = make(map[string]struct{})
+		logs.CtxInfof(ctx, "[BuildAgent] ForceToolReturn enabled, all tools return to model")
+	}
 
 	var isReActAgent bool
 	if len(agentTools) > 0 {

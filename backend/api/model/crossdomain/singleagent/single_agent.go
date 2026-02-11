@@ -83,6 +83,7 @@ type SingleAgent struct {
 	MemoryToolConfig        *bot_common.MemoryToolConfig
 	BoundCards              []*bot_common.BoundCardInfo
 	SkillInfoList           []*SkillReference
+	ForceToolReturn         *bool
 }
 
 // SkillReference is a lightweight reference for Bot binding.

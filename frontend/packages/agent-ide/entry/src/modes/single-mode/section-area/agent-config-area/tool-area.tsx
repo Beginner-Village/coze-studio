@@ -38,6 +38,7 @@ import {
   ExternalKnowledgeArea,
   CardBindingArea,
   AgentSkillArea,
+  ForceToolReturn,
 } from '@coze-agent-ide/space-bot/component';
 import { PluginApisArea } from '@coze-agent-ide/plugin-area-adapter';
 import { OnboardingMessage } from '@coze-agent-ide/onboarding-message-adapter';
@@ -95,6 +96,8 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
               <CardBindingArea />
               {/* Agent Skills (progressive disclosure) */}
               <AgentSkillArea toolKey={ToolKey.AGENT_SKILL} title="技能" />
+              {/* Force tool return switch */}
+              <ForceToolReturn />
               {skillToolSlot}
             </GroupingContainer>
             <GroupingContainer

@@ -485,6 +485,7 @@ struct BotInfo {
     37: optional MemoryToolConfig  MemoryToolConfig  (api.body="memory_tool_config"),                          // Memory tool configuration (setKeywordMemory, getKeywordMemory, etc.)
     38: optional list<BoundCardInfo> BoundCards      (api.body="bound_cards")                                  // Bound cards for agent prompt injection
     39: optional list<skill.SkillReference> SkillInfoList  (api.body="skill_info_list")                          // Skills bound to this bot
+    40: optional bool ForceToolReturn (api.body="force_tool_return")  // When true, all tool results return to model instead of directly to user
 }
 
 // External Knowledge structures for RAGFlow integration
@@ -650,6 +651,7 @@ struct BotInfoForUpdate {
     35: optional MemoryToolConfig         MemoryToolConfig  (api.body="memory_tool_config")           // Memory tool configuration
     36: optional list<BoundCardInfo>      BoundCards        (api.body="bound_cards")                  // Bound cards for agent prompt injection
     37: optional list<skill.SkillReference> SkillInfoList  (api.body="skill_info_list")              // Skills bound to this bot
+    38: optional bool ForceToolReturn (api.body="force_tool_return")  // When true, all tool results return to model instead of directly to user
 }
 
 struct AgentForUpdate {

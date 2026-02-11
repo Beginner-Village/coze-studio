@@ -160,6 +160,7 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftPo2Do(po *model.SingleAgentDraft)
 			MemoryToolConfig:        po.MemoryToolConfig,
 			BoundCards:              po.BoundCards,
 			SkillInfoList:           skillPOsToSkillDOs(po.SkillInfoList),
+			ForceToolReturn:         po.ForceToolReturn,
 		},
 	}
 }
@@ -193,6 +194,7 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftDo2Po(do *entity.SingleAgent) *mo
 		MemoryToolConfig:        do.MemoryToolConfig,
 		BoundCards:              do.BoundCards,
 		SkillInfoList:           skillDOsToPOs(do.SkillInfoList),
+		ForceToolReturn:         do.ForceToolReturn,
 	}
 }
 

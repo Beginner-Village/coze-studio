@@ -105,6 +105,9 @@ export const getBotDetailDtoInfo = () => {
       memory_tool_config: botSkill.transformVo2Dto.memoryToolConfig(
         botSkill.memoryToolConfig,
       ),
+      force_tool_return: botSkill.transformVo2Dto.forceToolReturn(
+        botSkill.forceToolReturn,
+      ),
       agents: isMulti
         ? agents.map(item => multiAgent.transformVo2Dto.agent(item))
         : undefined,

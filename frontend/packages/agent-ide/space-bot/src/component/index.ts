@@ -70,3 +70,4 @@ import PublishPlatformDescription from './publish-platform-description';
 export { PublishPlatformDescription };
 export { CardBindingArea } from './card-binding-area';
 export { AgentSkillArea } from './agent-skill-area';
+export { ForceToolReturn } from './force-tool-return';

@@ -502,6 +502,8 @@ export const transformVo2Dto = {
   }): BotInfoForUpdate['memory_tool_config'] =>
     config ? { mode: config.mode } : undefined,
 
+  forceToolReturn: (v?: boolean) => v ?? undefined,
+
   // Agent skills (progressive disclosure)
   agentSkills: (agentSkills: AgentSkillItem[]) =>
     agentSkills.map(s => ({

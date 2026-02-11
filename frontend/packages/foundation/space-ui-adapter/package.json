@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@coze-arch/bot-hooks": "workspace:*",
+    "@coze-arch/bot-icons": "workspace:*",
     "@coze-arch/coze-design": "0.0.6-alpha.346d77",
     "@coze-arch/i18n": "workspace:*",
     "@coze-arch/idl": "workspace:*",

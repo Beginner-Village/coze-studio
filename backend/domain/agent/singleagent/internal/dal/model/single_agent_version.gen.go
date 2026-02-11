@@ -59,6 +59,7 @@ type SingleAgentVersion struct {
 	MemoryToolConfig        *bot_common.MemoryToolConfig      `gorm:"column:memory_tool_config;comment:Memory Tool Configuration;serializer:json" json:"memory_tool_config"`         // Memory Tool Configuration
 	BoundCards              []*bot_common.BoundCardInfo       `gorm:"column:bound_cards;comment:Bound Cards for Prompt Injection;serializer:json" json:"bound_cards"`                 // Bound Cards for Prompt Injection
 	SkillInfoList           []*SkillReference                 `gorm:"column:skill_info_list;comment:Skill references bound to this agent;serializer:json" json:"skill_info_list"`     // Skill references bound to this agent
+	ForceToolReturn         *bool                             `gorm:"column:force_tool_return;comment:Force all tool results to return to model" json:"force_tool_return"` // Force all tool results to return to model
 }
 
 // TableName SingleAgentVersion's table name

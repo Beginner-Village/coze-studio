@@ -101,6 +101,7 @@ export const getDefaultBotSkillStore = (): BotSkillStore => ({
   memoryToolConfig: {
     mode: 1, // 默认启用，保持向后兼容
   },
+  forceToolReturn: false,
 });
 
 /** Persona & Prompted Areas */
@@ -166,6 +167,8 @@ export interface BotSkillStore {
   memoryToolConfig?: {
     mode?: number; // 0: disabled, 1: enabled
   };
+  // Force tool return - when true, all tool results return to model instead of directly to user
+  forceToolReturn: boolean;
 }
 
 export interface BotSkillAction {
@@ -194,6 +197,7 @@ export interface BotSkillAction {
   setSuggestionConfig: (config: Partial<BotSuggestionConfig>) => void;
   setDefaultUserInputType: (type: DefaultUserInputType) => void;
   updateMemoryToolConfig: (config: { mode?: number }) => void;
+  updateForceToolReturn: (value: boolean) => void;
   transformDto2Vo: typeof transformDto2Vo;
   transformVo2Dto: typeof transformVo2Dto;
   initStore: (botData: GetDraftBotInfoAgwData) => void;
@@ -283,6 +287,11 @@ export const useBotSkillStore = create<BotSkillStore & BotSkillAction>()(
           ...s,
           memoryToolConfig: { ...s.memoryToolConfig, ...config },
         })),
+      updateForceToolReturn: value =>
+        set(s => ({
+          ...s,
+          forceToolReturn: value,
+        })),
       transformDto2Vo,
       transformVo2Dto,
       initStore: botData => {
@@ -328,6 +337,8 @@ export const useBotSkillStore = create<BotSkillStore & BotSkillAction>()(
           devHooks: transformDto2Vo.hookInfo(botInfo?.hook_info),
           layoutInfo: transformDto2Vo.layoutInfo(botInfo?.layout_info),
           memoryToolConfig: botInfo?.memory_tool_config ?? { mode: 1 },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- force_tool_return not yet in generated frontend types
+          forceToolReturn: (botInfo as any)?.force_tool_return ?? false,
         });
       },
       clear: () => {

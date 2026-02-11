@@ -45,7 +45,7 @@ import {
   IconMcpActive,
   IconCard,
   IconCardActive,
-} from '@coze-arch/bot-icons/src';
+} from '@coze-arch/bot-icons';
 import { useRouteConfig } from '@coze-arch/bot-hooks';
 
 import { SpaceSubModuleEnum } from '@/const';

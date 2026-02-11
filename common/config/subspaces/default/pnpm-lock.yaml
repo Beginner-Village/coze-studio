@@ -16964,6 +16964,9 @@ importers:
       '@coze-arch/bot-hooks':
         specifier: workspace:*
         version: link:../../arch/bot-hooks
+      '@coze-arch/bot-icons':
+        specifier: workspace:*
+        version: link:../../components/bot-icons
       '@coze-arch/coze-design':
         specifier: 0.0.6-alpha.101d0c
         version: 0.0.6-alpha.101d0c(@types/react@18.2.37)(react-dom@18.2.0)(react@18.2.0)
@@ -23094,6 +23097,9 @@ importers:
       '@coze-arch/i18n':
         specifier: workspace:*
         version: link:../../../arch/i18n
+      '@coze-arch/idl':
+        specifier: workspace:*
+        version: link:../../../arch/idl
       '@coze-workflow/base':
         specifier: workspace:*
         version: link:../../base

@@ -30,6 +30,9 @@
       "path": "../../arch/idl/tsconfig.build.json"
     },
     {
+      "path": "../../components/bot-icons/tsconfig.build.json"
+    },
+    {
       "path": "../../../config/eslint-config/tsconfig.build.json"
     },
     {

@@ -29,6 +29,7 @@ import { onboardingConfig } from './onboarding-content';
 import { memoryToolConfig } from './memory-tool-config';
 import { layoutInfoConfig } from './layout-info';
 import { knowledgeConfig } from './knowledge';
+import { forceToolReturnConfig } from './force-tool-return';
 import { chatBackgroundConfig } from './chat-background';
 import { boundCardsConfig } from './bound-cards';
 
@@ -49,4 +50,5 @@ export const registers: HostedObserverConfig<
   voicesInfoConfig,
   memoryToolConfig,
   boundCardsConfig,
+  forceToolReturnConfig,
 ];

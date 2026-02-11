@@ -6525,6 +6525,11 @@ table "single_agent_draft" {
     type    = json
     comment = "Skill references bound to this agent"
   }
+  column "force_tool_return" {
+    null    = true
+    type    = bool
+    comment = "Force all tool results to return to model instead of directly to user"
+  }
   primary_key {
     columns = [column.id]
   }
@@ -6790,6 +6795,11 @@ table "single_agent_version" {
     null    = true
     type    = json
     comment = "Skill references bound to this agent"
+  }
+  column "force_tool_return" {
+    null    = true
+    type    = bool
+    comment = "Force all tool results to return to model instead of directly to user"
   }
   primary_key {
     columns = [column.id]

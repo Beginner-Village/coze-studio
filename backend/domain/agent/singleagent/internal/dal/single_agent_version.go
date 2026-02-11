@@ -109,6 +109,7 @@ func (sa *SingleAgentVersionDAO) singleAgentVersionPo2Do(po *model.SingleAgentVe
 			MemoryToolConfig:  po.MemoryToolConfig,
 			BoundCards:        po.BoundCards,
 			SkillInfoList:     skillPOsToSkillDOs(po.SkillInfoList),
+			ForceToolReturn:   po.ForceToolReturn,
 		},
 	}
 }
@@ -139,5 +140,6 @@ func (sa *SingleAgentVersionDAO) singleAgentVersionDo2Po(do *entity.SingleAgent)
 		MemoryToolConfig:  do.MemoryToolConfig,
 		BoundCards:        do.BoundCards,
 		SkillInfoList:     skillDOsToPOs(do.SkillInfoList),
+		ForceToolReturn:   do.ForceToolReturn,
 	}
 }
