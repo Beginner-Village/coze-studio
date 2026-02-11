@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
 
 import type { SkillInfo } from '@coze-studio/api-schema/idl/skill/skill';
@@ -34,7 +34,6 @@ import {
   IconButton,
 } from '@coze-arch/coze-design';
 
-import { SkillEditModal } from './SkillEditModal';
 import { useSkillManagement } from './hooks/use-skill-management';
 
 const SkillCard: React.FC<{
@@ -49,7 +48,10 @@ const SkillCard: React.FC<{
     onMouseEnter={() => onHover(skill.skill_id)}
     onMouseLeave={() => onHover(null)}
   >
-    <div className="h-full w-full cursor-pointer flex flex-col gap-[8px] px-[16px] py-[16px]">
+    <div
+      className="h-full w-full cursor-pointer flex flex-col gap-[8px] px-[16px] py-[16px]"
+      onClick={() => onEdit(skill)}
+    >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-[12px] flex-1 min-w-0">
           <div
@@ -150,29 +152,20 @@ const SkillCard: React.FC<{
 
 const SpaceSkillPage: React.FC = () => {
   const { space_id } = useParams<{ space_id: string }>();
-  const {
-    skillList,
-    loading,
-    total,
-    keyword,
-    setKeyword,
-    createSkill,
-    updateSkill,
-    deleteSkill,
-  } = useSkillManagement(space_id || '');
+  const navigate = useNavigate();
+  const { skillList, loading, total, keyword, setKeyword, deleteSkill } =
+    useSkillManagement(space_id || '');
 
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingSkill, setEditingSkill] = useState<SkillInfo | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const handleCreate = () => {
-    setEditingSkill(null);
-    setShowEditModal(true);
+    navigate(`/space/${space_id}/skill-detail/create`);
   };
 
   const handleEdit = (skillItem: SkillInfo) => {
-    setEditingSkill(skillItem);
-    setShowEditModal(true);
+    navigate(
+      `/space/${space_id}/skill-detail/edit?skill_id=${skillItem.skill_id}`,
+    );
   };
 
   const handleDelete = (skillItem: SkillInfo) => {
@@ -190,19 +183,6 @@ const SpaceSkillPage: React.FC = () => {
         }
       },
     });
-  };
-
-  const handleSubmit = async (data: {
-    name: string;
-    description: string;
-    prompt: string;
-    icon_uri?: string;
-  }) => {
-    if (editingSkill) {
-      await updateSkill(editingSkill.skill_id, data);
-    } else {
-      await createSkill(data);
-    }
   };
 
   return (
@@ -267,15 +247,6 @@ const SpaceSkillPage: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* 编辑/创建弹窗 */}
-      <SkillEditModal
-        isOpen={showEditModal}
-        skill={editingSkill}
-        spaceId={space_id || ''}
-        onClose={() => setShowEditModal(false)}
-        onSubmit={handleSubmit}
-      />
     </div>
   );
 };

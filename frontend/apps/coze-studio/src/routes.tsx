@@ -143,6 +143,7 @@ const DocsRedirect = lazy(() => import('./pages/docs'));
 const SpaceModelConfig = lazy(() => import('./pages/space-model-config'));
 
 const SpaceSkillPage = lazy(() => import('./pages/space-skill'));
+const SpaceSkillDetail = lazy(() => import('./pages/space-skill/detail'));
 
 const FalconMcp = lazy(() => import('./pages/falconmcp'));
 const FalconMcpDetail = lazy(() => import('./pages/falconmcpDetail'));
@@ -341,6 +342,13 @@ export const router: ReturnType<typeof createBrowserRouter> =
                 {
                   path: 'skills',
                   Component: SpaceSkillPage,
+                  loader: () => ({
+                    subMenuKey: SpaceSubModuleEnum.SKILLS,
+                  }),
+                },
+                {
+                  path: 'skill-detail/:page_type',
+                  Component: SpaceSkillDetail,
                   loader: () => ({
                     subMenuKey: SpaceSubModuleEnum.SKILLS,
                   }),

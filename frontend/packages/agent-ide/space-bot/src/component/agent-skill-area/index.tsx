@@ -202,6 +202,7 @@ const SkillSelectModal: React.FC<{
   </Modal>
 );
 
+// eslint-disable-next-line @coze-arch/max-line-per-function -- skill area includes modal and card list rendering
 export const AgentSkillArea: React.FC<AgentSkillAreaProps> = ({
   title = '技能',
 }) => {
@@ -297,7 +298,13 @@ export const AgentSkillArea: React.FC<AgentSkillAreaProps> = ({
             {agentSkills.map(skillItem => (
               <div
                 key={skillItem.skill_id}
-                className="p-3 border rounded-lg hover:bg-gray-50 transition-colors group relative bg-white"
+                className="p-3 border rounded-lg hover:bg-gray-50 transition-colors group relative bg-white cursor-pointer"
+                onClick={() =>
+                  window.open(
+                    `/space/${spaceId}/skill-detail/edit?skill_id=${skillItem.skill_id}`,
+                    '_blank',
+                  )
+                }
               >
                 <div className="flex items-start">
                   <div
@@ -317,7 +324,10 @@ export const AgentSkillArea: React.FC<AgentSkillAreaProps> = ({
                       {skillItem.skill_description || '暂无描述'}
                     </div>
                   </div>
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={e => e.stopPropagation()}
+                  >
                     <ToolItemActionDelete
                       onClick={() => handleRemoveSkill(skillItem.skill_id)}
                       tooltips="移除技能"
