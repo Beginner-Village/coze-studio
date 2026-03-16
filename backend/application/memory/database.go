@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,26 +20,26 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/base"
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/database/table"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/knowledge"
-	document "github.com/coze-dev/coze-studio/backend/api/model/data/knowledge"
-	resCommon "github.com/coze-dev/coze-studio/backend/api/model/resource/common"
-	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
-	"github.com/coze-dev/coze-studio/backend/application/search"
-	crossuser "github.com/coze-dev/coze-studio/backend/crossdomain/contract/user"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/database/entity"
-	databaseEntity "github.com/coze-dev/coze-studio/backend/domain/memory/database/entity"
-	database "github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
-	searchEntity "github.com/coze-dev/coze-studio/backend/domain/search/entity"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/base"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/database/table"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/knowledge"
+	document "github.com/ynet-dev/ynet-studio/backend/api/model/data/knowledge"
+	resCommon "github.com/ynet-dev/ynet-studio/backend/api/model/resource/common"
+	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
+	"github.com/ynet-dev/ynet-studio/backend/application/search"
+	crossuser "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/user"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/database/entity"
+	databaseEntity "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/entity"
+	database "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
+	searchEntity "github.com/ynet-dev/ynet-studio/backend/domain/search/entity"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 type DatabaseApplicationService struct {

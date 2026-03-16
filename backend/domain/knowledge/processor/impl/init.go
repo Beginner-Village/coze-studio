@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,15 @@ package impl
 import (
 	"context"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/processor"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/repository"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document/parser"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/eventbus"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/rdb"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/processor"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/repository"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/eventbus"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
 )
 
 type DocProcessorConfig struct {

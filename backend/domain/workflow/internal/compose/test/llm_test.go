@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,21 +34,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/modelmgr"
-	crossmodelmgr "github.com/coze-dev/coze-studio/backend/crossdomain/contract/modelmgr"
-	mockmodel "github.com/coze-dev/coze-studio/backend/crossdomain/contract/modelmgr/modelmock"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	compose2 "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/compose"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/emitter"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/entry"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/exit"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/llm"
-	schema2 "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
-	"github.com/coze-dev/coze-studio/backend/internal/testutil"
-	"github.com/coze-dev/coze-studio/backend/pkg/ctxcache"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/modelmgr"
+	crossmodelmgr "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/modelmgr"
+	mockmodel "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/modelmgr/modelmock"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	compose2 "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/compose"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/emitter"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/entry"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/exit"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/llm"
+	schema2 "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/schema"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
+	"github.com/ynet-dev/ynet-studio/backend/internal/testutil"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/ctxcache"
 )
 
 func TestLLM(t *testing.T) {

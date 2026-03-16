@@ -4,7 +4,7 @@
 
 ## Overview
 
-This package is part of the Coze Studio monorepo and provides utilities functionality. It serves as a core component in the Coze ecosystem.
+This package is part of the Ynet Studio monorepo and provides utilities functionality. It serves as a core component in the Coze ecosystem.
 
 ## Getting Started
 
@@ -37,7 +37,7 @@ import { /* exported functions/components */ } from '@coze-common/auth-adapter';
 
 ## Features
 
-- Core functionality for Coze Studio
+- Core functionality for Ynet Studio
 - TypeScript support
 - Modern ES modules
 
@@ -62,7 +62,7 @@ This package is built with:
 
 ## Contributing
 
-This package is part of the Coze Studio monorepo. Please follow the monorepo contribution guidelines.
+This package is part of the Ynet Studio monorepo. Please follow the monorepo contribution guidelines.
 
 ## License
 

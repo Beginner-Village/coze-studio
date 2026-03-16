@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/database/table"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/database/internal/convertor"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/rdb"
-	entity3 "github.com/coze-dev/coze-studio/backend/infra/contract/rdb/entity"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/database/table"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/database/internal/convertor"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb"
+	entity3 "github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb/entity"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 func CreatePhysicalTable(ctx context.Context, db rdb.RDB, columns []*entity3.Column) (*rdb.CreateTableResponse, error) {

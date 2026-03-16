@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,20 +22,20 @@ import (
 
 	"gorm.io/gorm"
 
-	connectorModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/connector"
-	databaseModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
-	knowledgeModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	crossconnector "github.com/coze-dev/coze-studio/backend/crossdomain/contract/connector"
-	crossdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/contract/database"
-	crossknowledge "github.com/coze-dev/coze-studio/backend/crossdomain/contract/knowledge"
-	crossplugin "github.com/coze-dev/coze-studio/backend/crossdomain/contract/plugin"
-	crossworkflow "github.com/coze-dev/coze-studio/backend/crossdomain/contract/workflow"
+	connectorModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/connector"
+	databaseModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	knowledgeModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	crossconnector "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/connector"
+	crossdatabase "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/database"
+	crossknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
+	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
+	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
 
-	"github.com/coze-dev/coze-studio/backend/domain/app/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/app/repository"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/domain/app/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/app/repository"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 type Components struct {

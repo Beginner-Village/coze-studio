@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,27 +31,27 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 
-	knowledgeModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/internal/convert"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/internal/dal/model"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document/nl2sql"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document/parser"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document/searchstore"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/cache/redis"
-	sses "github.com/coze-dev/coze-studio/backend/infra/impl/document/searchstore/elasticsearch"
-	ssmilvus "github.com/coze-dev/coze-studio/backend/infra/impl/document/searchstore/milvus"
-	hembed "github.com/coze-dev/coze-studio/backend/infra/impl/embedding/http"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/es"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/eventbus"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/idgen"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/mysql"
-	rdbservice "github.com/coze-dev/coze-studio/backend/infra/impl/rdb"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/storage/minio"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
+	knowledgeModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/internal/convert"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/internal/dal/model"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document/nl2sql"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document/searchstore"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/cache/redis"
+	sses "github.com/ynet-dev/ynet-studio/backend/infra/impl/document/searchstore/elasticsearch"
+	ssmilvus "github.com/ynet-dev/ynet-studio/backend/infra/impl/document/searchstore/milvus"
+	hembed "github.com/ynet-dev/ynet-studio/backend/infra/impl/embedding/http"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/es"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/eventbus"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/mysql"
+	rdbservice "github.com/ynet-dev/ynet-studio/backend/infra/impl/rdb"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/storage/minio"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 )
 
 func TestKnowledgeSuite(t *testing.T) {

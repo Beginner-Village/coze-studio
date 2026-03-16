@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-This package provides foundational components and interfaces for bot content auditing within the Coze Studio platform. It includes UI components for displaying audit error messages and TypeScript interfaces for audit functionality integration.
+This package provides foundational components and interfaces for bot content auditing within the Ynet Studio platform. It includes UI components for displaying audit error messages and TypeScript interfaces for audit functionality integration.
 
 ## Features
 

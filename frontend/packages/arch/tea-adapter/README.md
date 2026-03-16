@@ -4,7 +4,7 @@ get default tea init class
 
 ## Overview
 
-This package is part of the Coze Studio monorepo and provides architecture functionality. It includes sdk.
+This package is part of the Ynet Studio monorepo and provides architecture functionality. It includes sdk.
 
 ## Getting Started
 
@@ -59,7 +59,7 @@ This package is built with:
 
 ## Contributing
 
-This package is part of the Coze Studio monorepo. Please follow the monorepo contribution guidelines.
+This package is part of the Ynet Studio monorepo. Please follow the monorepo contribution guidelines.
 
 ## License
 

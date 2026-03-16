@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ package variables
 import (
 	"context"
 
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/variables"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/variable/kvmemory"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/variable/project_memory"
-	crossvariables "github.com/coze-dev/coze-studio/backend/crossdomain/contract/variables"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/variables/entity"
-	variables "github.com/coze-dev/coze-studio/backend/domain/memory/variables/service"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/variables"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/variable/kvmemory"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/variable/project_memory"
+	crossvariables "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/variables"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/variables/entity"
+	variables "github.com/ynet-dev/ynet-studio/backend/domain/memory/variables/service"
 )
 
 var defaultSVC crossvariables.Variables

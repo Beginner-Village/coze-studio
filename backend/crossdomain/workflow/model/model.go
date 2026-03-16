@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import (
 
 	model2 "github.com/cloudwego/eino/components/model"
 
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/model"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/chatmodel"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
-	chatmodel2 "github.com/coze-dev/coze-studio/backend/infra/impl/chatmodel"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/model"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/chatmodel"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
+	chatmodel2 "github.com/ynet-dev/ynet-studio/backend/infra/impl/chatmodel"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 type ModelManager struct {

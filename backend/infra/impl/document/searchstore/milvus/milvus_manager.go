@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,13 @@ import (
 	mindex "github.com/milvus-io/milvus/client/v2/index"
 	client "github.com/milvus-io/milvus/client/v2/milvusclient"
 
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document/searchstore"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/embedding"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/sets"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document/searchstore"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/embedding"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/sets"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 type ManagerConfig struct {
@@ -150,7 +150,7 @@ func (m *milvusManager) createCollection(ctx context.Context, req *searchstore.C
 
 	opt := client.NewCreateCollectionOption(collectionName, &mentity.Schema{
 		CollectionName:     collectionName,
-		Description:        fmt.Sprintf("created by coze"),
+		Description:        fmt.Sprintf("created by ynet"),
 		AutoID:             false,
 		Fields:             fields,
 		EnableDynamicField: false,

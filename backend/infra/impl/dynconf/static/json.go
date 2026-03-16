@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/coze-dev/coze-studio/backend/infra/impl/dynconf/static/internal"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/dynconf/static/internal"
 )
 
 type ConfJson struct {

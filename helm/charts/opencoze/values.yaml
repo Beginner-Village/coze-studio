@@ -1,4 +1,4 @@
-# Default values for opencoze.
+# Default values for openynet.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -10,9 +10,9 @@ mysql:
     repository: mysql
     tag: 8.4.5
   rootPassword: "root"
-  database: opencoze
-  user: coze
-  password: coze123
+  database: openynet
+  user: ynet
+  password: ynet123
   persistence:
     storageClassName: ""
     size: "50Gi"
@@ -33,14 +33,14 @@ redis:
     storageClassName: ""
     size: "50Gi"
 
-# -- coze-server configuration
+# -- ynet-server configuration
 cozeServer:
   enabled: true
-  # -- Number of replicas for the coze-server deployment
+  # -- Number of replicas for the ynet-server deployment
   replicaCount: 1
 
   image:
-    repository: opencoze/opencoze
+    repository: openynet/openynet
     # -- Keep the mirror up to date
     pullPolicy: Always
     tag: '0.3.9'
@@ -62,7 +62,7 @@ cozeServer:
     MAX_REQUEST_BODY_SIZE: "1073741824"
     STORAGE_TYPE: "minio"
     MINIO_PROXY_ENDPOINT: ":8889"
-    COZE_MQ_TYPE: rmq
+    YNET_MQ_TYPE: rmq
     ES_VERSION: "v8"
     VECTOR_STORE_TYPE: "milvus"
     EMBEDDING_TYPE: "ark"
@@ -117,9 +117,9 @@ rocketmq:
       initialDelaySeconds: 30
       periodSeconds: 10
   topics:
-    - opencoze_knowledge
-    - opencoze_search_app
-    - opencoze_search_resource
+    - openynet_knowledge
+    - openynet_search_app
+    - openynet_search_resource
     - "%RETRY%cg_knowledge"
     - "%RETRY%cg_search_app"
     - "%RETRY%cg_search_resource"
@@ -182,7 +182,7 @@ minio:
     tag: RELEASE.2025-06-13T11-33-47Z-cpuv1
   accessKey: minioadmin
   secretKey: minioadmin123
-  bucket: opencoze
+  bucket: openynet
   service:
     type: LoadBalancer
     port: 9000

@@ -4,7 +4,7 @@ Adapter of coze ProjectIDE
 
 ## Overview
 
-This package is part of the Coze Studio monorepo and provides ui component functionality. It includes component, hook, store.
+This package is part of the Ynet Studio monorepo and provides ui component functionality. It includes component, hook, store.
 
 ## Getting Started
 
@@ -68,7 +68,7 @@ This package is built with:
 
 ## Contributing
 
-This package is part of the Coze Studio monorepo. Please follow the monorepo contribution guidelines.
+This package is part of the Ynet Studio monorepo. Please follow the monorepo contribution guidelines.
 
 ## License
 

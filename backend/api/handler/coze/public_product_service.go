@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,24 +22,24 @@ import (
 	"context"
 	"strconv"
 
-	product_public_api "github.com/coze-dev/coze-studio/backend/api/model/marketplace/product_public_api"
-	"github.com/coze-dev/coze-studio/backend/api/model/workflow"
-	appworkflow "github.com/coze-dev/coze-studio/backend/application/workflow"
+	product_public_api "github.com/ynet-dev/ynet-studio/backend/api/model/marketplace/product_public_api"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/workflow"
+	appworkflow "github.com/ynet-dev/ynet-studio/backend/application/workflow"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/app/developer_api"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/developer_api"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_common"
-	"github.com/coze-dev/coze-studio/backend/api/model/marketplace/product_common"
-	"github.com/coze-dev/coze-studio/backend/api/model/playground"
-	appApplication "github.com/coze-dev/coze-studio/backend/application/app"
-	"github.com/coze-dev/coze-studio/backend/application/modelmgr"
-	"github.com/coze-dev/coze-studio/backend/application/plugin"
-	"github.com/coze-dev/coze-studio/backend/application/search"
-	"github.com/coze-dev/coze-studio/backend/application/singleagent"
-	"github.com/coze-dev/coze-studio/backend/application/template"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/marketplace/product_common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/playground"
+	appApplication "github.com/ynet-dev/ynet-studio/backend/application/app"
+	"github.com/ynet-dev/ynet-studio/backend/application/modelmgr"
+	"github.com/ynet-dev/ynet-studio/backend/application/plugin"
+	"github.com/ynet-dev/ynet-studio/backend/application/search"
+	"github.com/ynet-dev/ynet-studio/backend/application/singleagent"
+	"github.com/ynet-dev/ynet-studio/backend/application/template"
 )
 
 // PublicGetProductList .

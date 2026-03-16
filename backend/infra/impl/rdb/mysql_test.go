@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,14 +30,14 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/infra/contract/rdb"
-	entity2 "github.com/coze-dev/coze-studio/backend/infra/contract/rdb/entity"
-	mock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb"
+	entity2 "github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb/entity"
+	mock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 func setupTestDB(t *testing.T) (*gorm.DB, rdb.RDB) {
-	dsn := "root:root@tcp(127.0.0.1:3306)/opencoze?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:root@tcp(127.0.0.1:3306)/openynet?charset=utf8mb4&parseTime=True&loc=Local"
 	if os.Getenv("CI_JOB_NAME") != "" {
 		dsn = strings.ReplaceAll(dsn, "127.0.0.1", "mysql")
 	}

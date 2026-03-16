@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
-	crossdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/contract/database"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/canvas/convert"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	crossdatabase "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/database"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/canvas/convert"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/schema"
 )
 
 type InsertConfig struct {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,28 +26,28 @@ import (
 	"strings"
 
 	"github.com/cloudwego/eino/schema"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/message"
-	workflowModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/workflow"
-	"github.com/coze-dev/coze-studio/backend/api/model/workflow"
-	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
-	crossagentrun "github.com/coze-dev/coze-studio/backend/crossdomain/contract/agentrun"
-	crossconversation "github.com/coze-dev/coze-studio/backend/crossdomain/contract/conversation"
-	crossmessage "github.com/coze-dev/coze-studio/backend/crossdomain/contract/message"
-	agententity "github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/upload/service"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/maps"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ternary"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/pkg/safego"
-	"github.com/coze-dev/coze-studio/backend/pkg/sonic"
-	"github.com/coze-dev/coze-studio/backend/pkg/taskgroup"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/message"
+	workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
+	crossagentrun "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/agentrun"
+	crossconversation "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/conversation"
+	crossmessage "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/message"
+	agententity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/upload/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/maps"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ternary"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/safego"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/sonic"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/taskgroup"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 const (

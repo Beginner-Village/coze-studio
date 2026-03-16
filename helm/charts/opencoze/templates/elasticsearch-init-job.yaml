@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "opencoze.fullname" . }}-es-init
+  name: {{ include "openynet.fullname" . }}-es-init
 
 spec:
   template:
@@ -10,7 +10,7 @@ spec:
       initContainers:
         - name: wait-for-es
           image: busybox:1.36
-          command: ['sh', '-c', 'until nc -z {{ include "opencoze.fullname" . }}-elasticsearch 9200; do echo waiting for elasticsearch; sleep 2; done']
+          command: ['sh', '-c', 'until nc -z {{ include "openynet.fullname" . }}-elasticsearch 9200; do echo waiting for elasticsearch; sleep 2; done']
       containers:
         - name: es-init
           image: alpine/curl:8.12.1
@@ -39,9 +39,9 @@ spec:
       volumes:
         - name: es-init-script
           configMap:
-            name: {{ include "opencoze.fullname" . }}-es-init-script
+            name: {{ include "openynet.fullname" . }}-es-init-script
             defaultMode: 0755
         - name: es-index-schema
           configMap:
-            name: {{ include "opencoze.fullname" . }}-es-init-config
+            name: {{ include "openynet.fullname" . }}-es-init-config
   backoffLimit: 4

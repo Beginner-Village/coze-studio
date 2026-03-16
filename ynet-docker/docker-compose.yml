@@ -3,7 +3,7 @@ version: '3.8'
 services:
   coze-studio-backend:
     image: luzhipeng728/coze-studio-backend:v1.2.ynet
-    container_name: coze-server-new
+    container_name: ynet-server-new
     ports:
       - "9888:8888"
       - "9889:9889"
@@ -21,13 +21,13 @@ services:
       # - SSL_KEY_FILE=/root/coze-test/ssl/server.key
       - MINIO_PROXY_ENDPOINT=:9889
       - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=opencoze
+      - MYSQL_DATABASE=openynet
       - MYSQL_USER=coze
-      - MYSQL_PASSWORD=coze123
+      - MYSQL_PASSWORD=ynet123
       - MYSQL_HOST=10.10.10.220
       - MYSQL_PORT=3306
-      - MYSQL_DSN=coze:coze123@tcp(10.10.10.220:3306)/opencoze?charset=utf8mb4&parseTime=True
-      - ATLAS_URL=mysql://coze:coze123@10.10.10.220:3306/opencoze?charset=utf8mb4&parseTime=True
+      - MYSQL_DSN=coze:ynet123@tcp(10.10.10.220:3306)/openynet?charset=utf8mb4&parseTime=True
+      - ATLAS_URL=mysql://coze:ynet123@10.10.10.220:3306/openynet?charset=utf8mb4&parseTime=True
       - REDIS_AOF_ENABLED=no
       - REDIS_IO_THREADS=4
       - ALLOW_EMPTY_PASSWORD=yes
@@ -40,7 +40,7 @@ services:
       - VE_IMAGEX_TEMPLATE=
       - VE_IMAGEX_UPLOAD_HOST=https://imagex.volcengineapi.com
       - STORAGE_TYPE=minio
-      - STORAGE_BUCKET=opencoze
+      - STORAGE_BUCKET=openynet
       - STORAGE_UPLOAD_HTTP_SCHEME=https
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin123
@@ -52,13 +52,13 @@ services:
       - TOS_ACCESS_KEY=
       - TOS_SECRET_KEY=
       - TOS_ENDPOINT=https://tos-cn-beijing.volces.com
-      - TOS_BUCKET_ENDPOINT=https://opencoze.tos-cn-beijing.volces.com
+      - TOS_BUCKET_ENDPOINT=https://openynet.tos-cn-beijing.volces.com
       - TOS_REGION=cn-beijing
       - ES_ADDR=http://10.10.10.220:9200
       - ES_VERSION=v8
       - ES_USERNAME=
       - ES_PASSWORD=
-      - COZE_MQ_TYPE=nsq
+      - YNET_MQ_TYPE=nsq
       - MQ_NAME_SERVER=10.10.10.220:4150
       - RMQ_ACCESS_KEY=
       - RMQ_SECRET_KEY=
@@ -87,7 +87,7 @@ services:
       - VE_OCR_AK=
       - VE_OCR_SK=
       - MODEL_PROTOCOL_0=ark
-      - MODEL_OPENCOZE_ID_0=100001
+      - MODEL_OPENYNET_ID_0=100001
       - MODEL_NAME_0=
       - MODEL_ID_0=
       - MODEL_API_KEY_0=
@@ -125,10 +125,10 @@ services:
       - CODE_RUNNER_TIMEOUT_SECONDS=
       - CODE_RUNNER_MEMORY_LIMIT_MB=
     networks:
-      - coze-network
+      - ynet-network
     restart: unless-stopped
 
 networks:
-  coze-network:
+  ynet-network:
     driver: bridge
 

@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "opencoze.fullname" . }}-milvus
+  name: {{ include "openynet.fullname" . }}-milvus
   labels:
-    {{- include "opencoze.labels" . | nindent 4 }}
+    {{- include "openynet.labels" . | nindent 4 }}
 spec:
   ports:
     - name: milvus
@@ -15,6 +15,6 @@ spec:
       targetPort: 9091
   selector:
     app.kubernetes.io/component: milvus
-    app.kubernetes.io/name: {{ include "opencoze.name" . }}
+    app.kubernetes.io/name: {{ include "openynet.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}

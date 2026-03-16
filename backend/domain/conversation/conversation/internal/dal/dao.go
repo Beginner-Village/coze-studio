@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,13 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/conversation/common"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/conversation"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/internal/dal/model"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/internal/dal/query"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/conversation"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/internal/dal/model"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/internal/dal/query"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
 )
 
 type ConversationDAO struct {

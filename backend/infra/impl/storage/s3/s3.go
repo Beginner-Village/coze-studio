@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,14 +28,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
-	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/storage/proxy"
-	"github.com/coze-dev/coze-studio/backend/pkg/ctxcache"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/storage/proxy"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/ctxcache"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 type s3Client struct {

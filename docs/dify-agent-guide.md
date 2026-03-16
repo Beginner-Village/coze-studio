@@ -14,7 +14,7 @@ API端点: https://ai.finmall.com/v1/chat-messages
 API密钥: app-UZHHu47HfF1VL0HgdoJ0bjUT
 ```
 
-### 2. 在 Coze Studio 中添加 Dify 智能体
+### 2. 在 Ynet Studio 中添加 Dify 智能体
 
 1. 进入空间管理页面
 2. 点击左侧菜单"外部智能体"

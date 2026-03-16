@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,19 +19,19 @@ package service
 import (
 	"context"
 	"fmt"
-	workflowModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/workflow"
+	workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
 
-	workflow2 "github.com/coze-dev/coze-studio/backend/api/model/workflow"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/sonic"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	workflow2 "github.com/ynet-dev/ynet-studio/backend/api/model/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/conversation"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/sonic"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 type conversationImpl struct {

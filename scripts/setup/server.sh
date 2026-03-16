@@ -1,4 +1,20 @@
 #!/bin/bash
+#
+# Copyright 2025 ynet-dev Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$(cd "$SCRIPT_DIR/../../" && pwd)"
@@ -35,15 +51,15 @@ if command -v goimports >/dev/null 2>&1; then
         -path "*/mock/*" -prune -o \
         -path "*_mock.go" -prune -o \
         -path "*/dal/model*" -prune -o \
-        -name "*.go" -exec goimports -w -local "github.com/coze-dev/coze-studio" {} \;
+        -name "*.go" -exec goimports -w -local "github.com/ynet-dev/ynet-studio" {} \;
 else
     echo "⚠️ goimports not found, skipping Go file formatting."
 fi
 
 echo "🛠  Building Go project..."
-rm -rf "$BIN_DIR/opencoze"
+rm -rf "$BIN_DIR/openynet"
 cd $BACKEND_DIR &&
-    go build -ldflags="-s -w" -o "$BIN_DIR/opencoze" main.go
+    go build -ldflags="-s -w" -o "$BIN_DIR/openynet" main.go
 
 # 添加构建失败检查
 if [ $? -ne 0 ]; then
@@ -74,7 +90,7 @@ cp -r "$BACKEND_DIR/static" "$RESOURCES_DIR"
 for arg in "$@"; do
     if [[ "$arg" == "-start" ]]; then
         echo "🚀 Starting Go service..."
-        cd $BIN_DIR && ./opencoze "$@"
+        cd $BIN_DIR && ./openynet "$@"
         exit 0
     fi
 done

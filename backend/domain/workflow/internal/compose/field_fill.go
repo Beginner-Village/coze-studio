@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import (
 
 	"github.com/cloudwego/eino/schema"
 
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	schema2 "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
-	"github.com/coze-dev/coze-studio/backend/pkg/sonic"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	schema2 "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/schema"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/sonic"
 )
 
 // outputValueFiller will fill the output value with nil if the key is not present in the output map.

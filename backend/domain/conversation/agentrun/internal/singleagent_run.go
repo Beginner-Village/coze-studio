@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,18 +25,18 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"github.com/mohae/deepcopy"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/message"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/singleagent"
-	crossagent "github.com/coze-dev/coze-studio/backend/crossdomain/contract/agent"
-	crossmessage "github.com/coze-dev/coze-studio/backend/crossdomain/contract/message"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/entity"
-	msgEntity "github.com/coze-dev/coze-studio/backend/domain/conversation/message/entity"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/pkg/safego"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/message"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
+	crossagent "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/agent"
+	crossmessage "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/message"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/entity"
+	msgEntity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/message/entity"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/safego"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 func (art *AgentRuntime) AgentStreamExecute(ctx context.Context, imagex imagex.ImageX) (err error) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/singleagent"
-	crossskill "github.com/coze-dev/coze-studio/backend/crossdomain/contract/skill"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
+	crossskill "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/skill"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 // skillResourceRef represents a single resource reference in a skill prompt.

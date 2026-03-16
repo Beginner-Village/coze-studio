@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ import (
 
 	"github.com/cloudwego/eino/compose"
 
-	workflow2 "github.com/coze-dev/coze-studio/backend/domain/workflow"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
+	workflow2 "github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/schema"
 )
 
 func NewWorkflowFromNode(ctx context.Context, sc *schema.WorkflowSchema, nodeKey vo.NodeKey, opts ...compose.GraphCompileOption) (

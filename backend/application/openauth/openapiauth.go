@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_open_api"
-	openapimodel "github.com/coze-dev/coze-studio/backend/api/model/permission/openapiauth"
-	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
-	openapi "github.com/coze-dev/coze-studio/backend/domain/openauth/openapiauth"
-	"github.com/coze-dev/coze-studio/backend/domain/openauth/openapiauth/entity"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_open_api"
+	openapimodel "github.com/ynet-dev/ynet-studio/backend/api/model/permission/openapiauth"
+	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
+	openapi "github.com/ynet-dev/ynet-studio/backend/domain/openauth/openapiauth"
+	"github.com/ynet-dev/ynet-studio/backend/domain/openauth/openapiauth/entity"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 type OpenAuthApplicationService struct {

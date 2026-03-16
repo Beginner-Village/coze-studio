@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ package entity
 import (
 	"github.com/cloudwego/eino/schema"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/conversation/common"
-	message2 "github.com/coze-dev/coze-studio/backend/api/model/conversation/message"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/agentrun"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/message"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/singleagent"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/internal/dal/model"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/common"
+	message2 "github.com/ynet-dev/ynet-studio/backend/api/model/conversation/message"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/agentrun"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/message"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/internal/dal/model"
 )
 
 type RunRecord = model.RunRecord

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/coze-dev/coze-studio/backend/domain/openauth/openapiauth/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/openauth/openapiauth/internal/dal/model"
-	mock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/orm"
+	"github.com/ynet-dev/ynet-studio/backend/domain/openauth/openapiauth/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/openauth/openapiauth/internal/dal/model"
+	mock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/orm"
 )
 
 func TestApiAuthImpl_Create(t *testing.T) {

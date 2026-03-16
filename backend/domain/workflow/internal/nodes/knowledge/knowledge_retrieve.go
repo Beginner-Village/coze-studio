@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,20 +24,20 @@ import (
 
 	einoSchema "github.com/cloudwego/eino/schema"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	"github.com/coze-dev/coze-studio/backend/api/model/workflow"
-	crossknowledge "github.com/coze-dev/coze-studio/backend/crossdomain/contract/knowledge"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/canvas/convert"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/execute"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes"
-	nodesconversation "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/conversation"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
-	"github.com/coze-dev/coze-studio/backend/pkg/ctxcache"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/workflow"
+	crossknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/conversation"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/canvas/convert"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/execute"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes"
+	nodesconversation "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/conversation"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/schema"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/ctxcache"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 const outputList = "outputList"

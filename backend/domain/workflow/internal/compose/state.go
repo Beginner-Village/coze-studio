@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,24 +22,24 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/conversation"
 
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
 
-	workflow2 "github.com/coze-dev/coze-studio/backend/api/model/workflow"
-	workflowModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/workflow"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/execute"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/exit"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/qa"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/receiver"
-	schema2 "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/variable"
-	"github.com/coze-dev/coze-studio/backend/pkg/sonic"
+	workflow2 "github.com/ynet-dev/ynet-studio/backend/api/model/workflow"
+	workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/execute"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/exit"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/qa"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/receiver"
+	schema2 "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/schema"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/variable"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/sonic"
 )
 
 type State struct {

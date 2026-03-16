@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package builtin
 
 import (
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document"
 )
 
 func alignTableSliceValue(schema []*document.Column, row []*document.ColumnData) (err error) {

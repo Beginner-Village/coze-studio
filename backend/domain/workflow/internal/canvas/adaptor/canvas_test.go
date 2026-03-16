@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,30 +32,30 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	crossmodel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	workflowModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/workflow"
-	crossdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/contract/database"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/database/databasemock"
-	crossknowledge "github.com/coze-dev/coze-studio/backend/crossdomain/contract/knowledge"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/knowledge/knowledgemock"
-	crossmodelmgr "github.com/coze-dev/coze-studio/backend/crossdomain/contract/modelmgr"
-	mockmodel "github.com/coze-dev/coze-studio/backend/crossdomain/contract/modelmgr/modelmock"
-	crossplugin "github.com/coze-dev/coze-studio/backend/crossdomain/contract/plugin"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/plugin/pluginmock"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/impl/code"
-	userentity "github.com/coze-dev/coze-studio/backend/domain/user/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/compose"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/execute"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/coderunner"
-	mockWorkflow "github.com/coze-dev/coze-studio/backend/internal/mock/domain/workflow"
-	mockcode "github.com/coze-dev/coze-studio/backend/internal/mock/domain/workflow/crossdomain/code"
-	"github.com/coze-dev/coze-studio/backend/internal/testutil"
-	"github.com/coze-dev/coze-studio/backend/pkg/ctxcache"
-	"github.com/coze-dev/coze-studio/backend/pkg/sonic"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
+	crossmodel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
+	crossdatabase "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/database"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/database/databasemock"
+	crossknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge/knowledgemock"
+	crossmodelmgr "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/modelmgr"
+	mockmodel "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/modelmgr/modelmock"
+	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin/pluginmock"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/code"
+	userentity "github.com/ynet-dev/ynet-studio/backend/domain/user/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/compose"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/execute"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/coderunner"
+	mockWorkflow "github.com/ynet-dev/ynet-studio/backend/internal/mock/domain/workflow"
+	mockcode "github.com/ynet-dev/ynet-studio/backend/internal/mock/domain/workflow/crossdomain/code"
+	"github.com/ynet-dev/ynet-studio/backend/internal/testutil"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/ctxcache"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/sonic"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 )
 
 func TestMain(m *testing.M) {

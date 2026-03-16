@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,17 +21,17 @@ import (
 	"strings"
 	"time"
 
-	template_publish "github.com/coze-dev/coze-studio/backend/api/model/template_publish"
-	product_public_api "github.com/coze-dev/coze-studio/backend/api/model/marketplace/product_public_api"
-	product_common "github.com/coze-dev/coze-studio/backend/api/model/marketplace/product_common"
-	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
-	"github.com/coze-dev/coze-studio/backend/application/singleagent"
-	agent_entity "github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/template/entity"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	template_publish "github.com/ynet-dev/ynet-studio/backend/api/model/template_publish"
+	product_public_api "github.com/ynet-dev/ynet-studio/backend/api/model/marketplace/product_public_api"
+	product_common "github.com/ynet-dev/ynet-studio/backend/api/model/marketplace/product_common"
+	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
+	"github.com/ynet-dev/ynet-studio/backend/application/singleagent"
+	agent_entity "github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/template/entity"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 

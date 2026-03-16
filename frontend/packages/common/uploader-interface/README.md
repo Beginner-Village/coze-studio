@@ -4,7 +4,7 @@ uploader interface
 
 ## Overview
 
-This package is part of the Coze Studio monorepo and provides utilities functionality. It includes store, service.
+This package is part of the Ynet Studio monorepo and provides utilities functionality. It includes store, service.
 
 ## Getting Started
 
@@ -62,7 +62,7 @@ This package is built with:
 
 ## Contributing
 
-This package is part of the Coze Studio monorepo. Please follow the monorepo contribution guidelines.
+This package is part of the Ynet Studio monorepo. Please follow the monorepo contribution guidelines.
 
 ## License
 

@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Coze Studio 是一个开源 AI 智能体开发平台。
+Ynet Studio 是一个开源 AI 智能体开发平台。
 
 - **后端**: Go + CloudWeGo/Hertz + DDD 架构
 - **前端**: React + TypeScript + Rush.js monorepo (300+ packages)
@@ -12,7 +12,7 @@ Coze Studio 是一个开源 AI 智能体开发平台。
 |------|---------|
 | 新增/修改 API 接口 | 阅读 `docs/api-development-guide.md` |
 | 开发规范、命令、架构 | 阅读 `docs/development-standards.md` |
-| 可观测性 / Coze Loop 集成 | 阅读 `docs/coze-loop-setup.md` |
+| 可观测性 / Ynet Loop 集成 | 阅读 `docs/coze-loop-setup.md` |
 
 ## 核心开发命令
 

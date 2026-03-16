@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/database/table"
-	"github.com/coze-dev/coze-studio/backend/api/model/resource/common"
-	"github.com/coze-dev/coze-studio/backend/api/model/workflow"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/service"
-	dbservice "github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ternary"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/database/table"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/resource/common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/service"
+	dbservice "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ternary"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 var defaultAction = []*common.ResourceAction{

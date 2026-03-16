@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/project"
-	"github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/publish"
-	"github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/task"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence/project"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence/publish"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence/task"
 )
 
 type IntelligenceService interface {

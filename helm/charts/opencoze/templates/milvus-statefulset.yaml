@@ -2,9 +2,9 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "opencoze.fullname" . }}-milvus
+  name: {{ include "openynet.fullname" . }}-milvus
   labels:
-    {{- include "opencoze.labels" . | nindent 4 }}
+    {{- include "openynet.labels" . | nindent 4 }}
 spec:
   serviceName: {{ .Release.Name }}-milvus
   replicas: 1
@@ -12,13 +12,13 @@ spec:
     matchLabels:
       app.kubernetes.io/component: milvus
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/name: {{ include "opencoze.name" . }}
+      app.kubernetes.io/name: {{ include "openynet.name" . }}
   template:
     metadata:
       labels:
         app.kubernetes.io/component: milvus
         app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/name: {{ include "opencoze.name" . }}
+        app.kubernetes.io/name: {{ include "openynet.name" . }}
     spec:
       containers:
         - name: milvus
@@ -35,9 +35,9 @@ spec:
               exec milvus run standalone
           env:
             - name: ETCD_ENDPOINTS
-              value: "{{ include "opencoze.fullname" . }}-etcd:2379"
+              value: "{{ include "openynet.fullname" . }}-etcd:2379"
             - name: MINIO_ADDRESS
-              value: "{{ include "opencoze.fullname" . }}-minio:9000"
+              value: "{{ include "openynet.fullname" . }}-minio:9000"
             - name: MINIO_BUCKET_NAME
               value: {{ .Values.milvus.bucketName | quote }}
             - name: MINIO_ACCESS_KEY_ID

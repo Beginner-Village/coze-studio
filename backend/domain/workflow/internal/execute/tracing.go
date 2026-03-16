@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
-const workflowTracerName = "github.com/coze-dev/coze-studio/backend/domain/workflow/execute"
+const workflowTracerName = "github.com/ynet-dev/ynet-studio/backend/domain/workflow/execute"
 
 func workflowTracer() oteltrace.Tracer {
 	return otel.Tracer(workflowTracerName)

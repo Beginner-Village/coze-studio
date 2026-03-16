@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,64 +47,64 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	modelknowledge "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/modelmgr"
-	plugin2 "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/plugin"
-	pluginmodel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/plugin"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	modelknowledge "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/modelmgr"
+	plugin2 "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
+	pluginmodel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
 
-	workflowModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/workflow"
-	"github.com/coze-dev/coze-studio/backend/api/model/playground"
-	pluginAPI "github.com/coze-dev/coze-studio/backend/api/model/plugin_develop"
-	"github.com/coze-dev/coze-studio/backend/api/model/workflow"
-	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
-	appknowledge "github.com/coze-dev/coze-studio/backend/application/knowledge"
-	appmemory "github.com/coze-dev/coze-studio/backend/application/memory"
-	appplugin "github.com/coze-dev/coze-studio/backend/application/plugin"
-	"github.com/coze-dev/coze-studio/backend/application/user"
-	appworkflow "github.com/coze-dev/coze-studio/backend/application/workflow"
+	workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/playground"
+	pluginAPI "github.com/ynet-dev/ynet-studio/backend/api/model/plugin_develop"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
+	appknowledge "github.com/ynet-dev/ynet-studio/backend/application/knowledge"
+	appmemory "github.com/ynet-dev/ynet-studio/backend/application/memory"
+	appplugin "github.com/ynet-dev/ynet-studio/backend/application/plugin"
+	"github.com/ynet-dev/ynet-studio/backend/application/user"
+	appworkflow "github.com/ynet-dev/ynet-studio/backend/application/workflow"
 
-	crossdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/contract/database"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/database/databasemock"
-	crossknowledge "github.com/coze-dev/coze-studio/backend/crossdomain/contract/knowledge"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/knowledge/knowledgemock"
-	crossmodelmgr "github.com/coze-dev/coze-studio/backend/crossdomain/contract/modelmgr"
-	mockmodel "github.com/coze-dev/coze-studio/backend/crossdomain/contract/modelmgr/modelmock"
-	crossplugin "github.com/coze-dev/coze-studio/backend/crossdomain/contract/plugin"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/plugin/pluginmock"
-	crossuser "github.com/coze-dev/coze-studio/backend/crossdomain/contract/user"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/impl/code"
-	pluginImpl "github.com/coze-dev/coze-studio/backend/crossdomain/impl/plugin"
-	entity4 "github.com/coze-dev/coze-studio/backend/domain/memory/database/entity"
-	entity2 "github.com/coze-dev/coze-studio/backend/domain/openauth/openapiauth/entity"
-	entity3 "github.com/coze-dev/coze-studio/backend/domain/plugin/entity"
-	entity5 "github.com/coze-dev/coze-studio/backend/domain/plugin/entity"
-	search "github.com/coze-dev/coze-studio/backend/domain/search/entity"
-	userentity "github.com/coze-dev/coze-studio/backend/domain/user/entity"
-	workflow2 "github.com/coze-dev/coze-studio/backend/domain/workflow"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/service"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/variable"
-	mockvar "github.com/coze-dev/coze-studio/backend/domain/workflow/variable/varmock"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/coderunner"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/cache/redis"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/checkpoint"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/coderunner/direct"
-	mockCrossUser "github.com/coze-dev/coze-studio/backend/internal/mock/crossdomain/crossuser"
-	mockPlugin "github.com/coze-dev/coze-studio/backend/internal/mock/domain/plugin"
-	mockcode "github.com/coze-dev/coze-studio/backend/internal/mock/domain/workflow/crossdomain/code"
-	mock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/idgen"
-	storageMock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/internal/testutil"
-	"github.com/coze-dev/coze-studio/backend/pkg/ctxcache"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ternary"
-	"github.com/coze-dev/coze-studio/backend/pkg/sonic"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	crossdatabase "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/database"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/database/databasemock"
+	crossknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge/knowledgemock"
+	crossmodelmgr "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/modelmgr"
+	mockmodel "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/modelmgr/modelmock"
+	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin/pluginmock"
+	crossuser "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/user"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/code"
+	pluginImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/plugin"
+	entity4 "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/entity"
+	entity2 "github.com/ynet-dev/ynet-studio/backend/domain/openauth/openapiauth/entity"
+	entity3 "github.com/ynet-dev/ynet-studio/backend/domain/plugin/entity"
+	entity5 "github.com/ynet-dev/ynet-studio/backend/domain/plugin/entity"
+	search "github.com/ynet-dev/ynet-studio/backend/domain/search/entity"
+	userentity "github.com/ynet-dev/ynet-studio/backend/domain/user/entity"
+	workflow2 "github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/variable"
+	mockvar "github.com/ynet-dev/ynet-studio/backend/domain/workflow/variable/varmock"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/coderunner"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/cache/redis"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/checkpoint"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/coderunner/direct"
+	mockCrossUser "github.com/ynet-dev/ynet-studio/backend/internal/mock/crossdomain/crossuser"
+	mockPlugin "github.com/ynet-dev/ynet-studio/backend/internal/mock/domain/plugin"
+	mockcode "github.com/ynet-dev/ynet-studio/backend/internal/mock/domain/workflow/crossdomain/code"
+	mock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/idgen"
+	storageMock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/internal/testutil"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/ctxcache"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ternary"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/sonic"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 func TestMain(m *testing.M) {
@@ -233,7 +233,7 @@ func newWfTestRunner(t *testing.T) *wfTestRunner {
 			return ids, nil
 		}).AnyTimes()
 
-	dsn := "root:root@tcp(127.0.0.1:3306)/opencoze?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:root@tcp(127.0.0.1:3306)/openynet?charset=utf8mb4&parseTime=True&loc=Local"
 	if os.Getenv("CI_JOB_NAME") != "" {
 		dsn = strings.ReplaceAll(dsn, "127.0.0.1", "mysql")
 	}
@@ -3132,7 +3132,7 @@ func TestStreamRun(t *testing.T) {
 				ID:    "6",
 				Event: appworkflow.DoneEvent,
 				Data: &streamRunData{
-					DebugURL: ptr.Of(fmt.Sprintf("https://www.coze.cn/work_flow?execute_id={{exeID}}&space_id=123&workflow_id=%s&execute_mode=2", id)),
+					DebugURL: ptr.Of(fmt.Sprintf("https://www.ynet.cn/work_flow?execute_id={{exeID}}&space_id=123&workflow_id=%s&execute_mode=2", id)),
 				},
 			},
 		}
@@ -3151,7 +3151,7 @@ func TestStreamRun(t *testing.T) {
 			assert.NoError(t, err)
 			debugURL := streamE.DebugURL
 			if debugURL != nil {
-				exeID := strings.TrimPrefix(strings.Split(*debugURL, "&")[0], "https://www.coze.cn/work_flow?execute_id=")
+				exeID := strings.TrimPrefix(strings.Split(*debugURL, "&")[0], "https://www.ynet.cn/work_flow?execute_id=")
 				expectedEvents[index].Data.DebugURL = ptr.Of(strings.ReplaceAll(*debugURL, "{{exeID}}", exeID))
 			}
 			require.Equal(t, expectedEvents[index].Data.Content, streamE.Content)
@@ -3222,7 +3222,7 @@ func TestStreamResume(t *testing.T) {
 				ID:    "1",
 				Event: appworkflow.InterruptEvent,
 				Data: &streamRunData{
-					DebugURL: ptr.Of(fmt.Sprintf("https://www.coze.cn/work_flow?execute_id={{exeID}}&space_id=123&workflow_id=%s&execute_mode=2", id)),
+					DebugURL: ptr.Of(fmt.Sprintf("https://www.ynet.cn/work_flow?execute_id={{exeID}}&space_id=123&workflow_id=%s&execute_mode=2", id)),
 					InterruptData: &interruptData{
 						EventID: "%s/%s",
 						Type:    5,
@@ -3254,7 +3254,7 @@ func TestStreamResume(t *testing.T) {
 			assert.NoError(t, err)
 			debugURL := streamE.DebugURL
 			if debugURL != nil {
-				exeID := strings.TrimPrefix(strings.Split(*debugURL, "&")[0], "https://www.coze.cn/work_flow?execute_id=")
+				exeID := strings.TrimPrefix(strings.Split(*debugURL, "&")[0], "https://www.ynet.cn/work_flow?execute_id=")
 				expectedEvents[index].Data.DebugURL = ptr.Of(strings.ReplaceAll(*debugURL, "{{exeID}}", exeID))
 			}
 			if streamE.InterruptData != nil {
@@ -3288,7 +3288,7 @@ func TestStreamResume(t *testing.T) {
 				ID:    "1",
 				Event: appworkflow.DoneEvent,
 				Data: &streamRunData{
-					DebugURL: ptr.Of(fmt.Sprintf("https://www.coze.cn/work_flow?execute_id={{exeID}}&space_id=123&workflow_id=%s&execute_mode=2", id)),
+					DebugURL: ptr.Of(fmt.Sprintf("https://www.ynet.cn/work_flow?execute_id={{exeID}}&space_id=123&workflow_id=%s&execute_mode=2", id)),
 				},
 			},
 		}
@@ -3306,7 +3306,7 @@ func TestStreamResume(t *testing.T) {
 			assert.NoError(t, err)
 			debugURL := streamE.DebugURL
 			if debugURL != nil {
-				exeID := strings.TrimPrefix(strings.Split(*debugURL, "&")[0], "https://www.coze.cn/work_flow?execute_id=")
+				exeID := strings.TrimPrefix(strings.Split(*debugURL, "&")[0], "https://www.ynet.cn/work_flow?execute_id=")
 				expectedEvents[index].Data.DebugURL = ptr.Of(strings.ReplaceAll(*debugURL, "{{exeID}}", exeID))
 			}
 			if streamE.InterruptData != nil {

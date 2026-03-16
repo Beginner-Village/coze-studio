@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,16 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
 
-	"github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/entity"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_common"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/database/table"
-	crossdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/contract/database"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/sqlparser"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/database/table"
+	crossdatabase "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/database"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/sqlparser"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
 )
 
 const (

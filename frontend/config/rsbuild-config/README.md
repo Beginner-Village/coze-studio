@@ -4,7 +4,7 @@ rsbuild config
 
 ## Overview
 
-This package is part of the Coze Studio monorepo and provides ui component functionality. It includes plugin.
+This package is part of the Ynet Studio monorepo and provides ui component functionality. It includes plugin.
 
 ## Getting Started
 
@@ -54,7 +54,7 @@ This package is built with:
 
 ## Contributing
 
-This package is part of the Coze Studio monorepo. Please follow the monorepo contribution guidelines.
+This package is part of the Ynet Studio monorepo. Please follow the monorepo contribution guidelines.
 
 ## License
 

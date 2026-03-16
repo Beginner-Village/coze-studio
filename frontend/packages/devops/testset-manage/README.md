@@ -1,10 +1,10 @@
-# @coze-devops/testset-manage
+# @ynet-devops/testset-manage
 
 Testset manage for coze
 
 ## Overview
 
-This package is part of the Coze Studio monorepo and provides library functionality. It includes component, hook, store.
+This package is part of the Ynet Studio monorepo and provides library functionality. It includes component, hook, store.
 
 ## Getting Started
 
@@ -15,7 +15,7 @@ Add this package to your `package.json`:
 ```json
 {
   "dependencies": {
-    "@coze-devops/testset-manage": "workspace:*"
+    "@ynet-devops/testset-manage": "workspace:*"
   }
 }
 ```
@@ -29,7 +29,7 @@ rush update
 ### Usage
 
 ```typescript
-import { /* exported functions/components */ } from '@coze-devops/testset-manage';
+import { /* exported functions/components */ } from '@ynet-devops/testset-manage';
 
 // Example usage
 // TODO: Add specific usage examples
@@ -73,7 +73,7 @@ This package is built with:
 
 ## Contributing
 
-This package is part of the Coze Studio monorepo. Please follow the monorepo contribution guidelines.
+This package is part of the Ynet Studio monorepo. Please follow the monorepo contribution guidelines.
 
 ## License
 

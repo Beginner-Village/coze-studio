@@ -1,4 +1,4 @@
-module github.com/coze-dev/coze-studio/backend
+module github.com/ynet-dev/ynet-studio/backend
 
 go 1.24.0
 

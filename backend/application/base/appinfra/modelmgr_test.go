@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/coze-dev/coze-studio/backend/infra/contract/chatmodel"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/chatmodel"
 )
 
 func TestInitByEnv(t *testing.T) {
 	i := 0
 	for k := range modelMapping[chatmodel.ProtocolArk] {
 		_ = os.Setenv(concatEnvKey(modelProtocolPrefix, i), "ark")
-		_ = os.Setenv(concatEnvKey(modelOpenCozeIDPrefix, i), fmt.Sprintf("%d", 45678+i))
+		_ = os.Setenv(concatEnvKey(modelOpenYnetIDPrefix, i), fmt.Sprintf("%d", 45678+i))
 		_ = os.Setenv(concatEnvKey(modelNamePrefix, i), k)
 		_ = os.Setenv(concatEnvKey(modelIDPrefix, i), k)
 		_ = os.Setenv(concatEnvKey(modelApiKeyPrefix, i), "mock_api_key")

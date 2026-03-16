@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,15 @@ package memory
 import (
 	"gorm.io/gorm"
 
-	database "github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/variables/repository"
-	variables "github.com/coze-dev/coze-studio/backend/domain/memory/variables/service"
-	search "github.com/coze-dev/coze-studio/backend/domain/search/service"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/cache"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/rdb"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	rdbService "github.com/coze-dev/coze-studio/backend/infra/impl/rdb"
+	database "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/variables/repository"
+	variables "github.com/ynet-dev/ynet-studio/backend/domain/memory/variables/service"
+	search "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	rdbService "github.com/ynet-dev/ynet-studio/backend/infra/impl/rdb"
 )
 
 type MemoryApplicationServices struct {

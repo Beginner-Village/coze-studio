@@ -2,7 +2,7 @@
 
 This file provides guidance to WARP (warp.dev) when working with code in this repository.
 
-Coze Studio is an open-source AI agent development platform with:
+Ynet Studio is an open-source AI agent development platform with:
 - **Backend**: Go microservices using CloudWeGo/Hertz framework with Domain-Driven Design (DDD)
 - **Frontend**: React + TypeScript monorepo managed by Rush.js with 300+ packages
 - **API**: Thrift IDL-based code generation for type-safe frontend-backend communication

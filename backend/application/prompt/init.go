@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package prompt
 import (
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/application/search"
-	"github.com/coze-dev/coze-studio/backend/domain/prompt/repository"
-	prompt "github.com/coze-dev/coze-studio/backend/domain/prompt/service"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/application/search"
+	"github.com/ynet-dev/ynet-studio/backend/domain/prompt/repository"
+	prompt "github.com/ynet-dev/ynet-studio/backend/domain/prompt/service"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
 )
 
 func InitService(db *gorm.DB, idGenSVC idgen.IDGenerator, re search.ResourceEventBus) *PromptApplicationService {

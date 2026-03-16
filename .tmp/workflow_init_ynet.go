@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,27 +23,27 @@ import (
 	"github.com/cloudwego/eino/compose"
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/application/internal"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/impl/code"
+	"github.com/ynet-dev/ynet-studio/backend/application/internal"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/code"
 
-	wfconversation "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/conversation"
-	knowledge "github.com/coze-dev/coze-studio/backend/domain/knowledge/service"
-	dbservice "github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
-	variables "github.com/coze-dev/coze-studio/backend/domain/memory/variables/service"
-	plugin "github.com/coze-dev/coze-studio/backend/domain/plugin/service"
-	search "github.com/coze-dev/coze-studio/backend/domain/search/service"
-	upservice "github.com/coze-dev/coze-studio/backend/domain/upload/service"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/service"
-	workflowservice "github.com/coze-dev/coze-studio/backend/domain/workflow/service"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/cache"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/coderunner"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	wfconversation "github.com/ynet-dev/ynet-studio/backend/crossdomain/workflow/conversation"
+	knowledge "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/service"
+	dbservice "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
+	variables "github.com/ynet-dev/ynet-studio/backend/domain/memory/variables/service"
+	plugin "github.com/ynet-dev/ynet-studio/backend/domain/plugin/service"
+	search "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
+	upservice "github.com/ynet-dev/ynet-studio/backend/domain/upload/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/service"
+	workflowservice "github.com/ynet-dev/ynet-studio/backend/domain/workflow/service"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/coderunner"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 
-	crossconversation "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
+	crossconversation "github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/conversation"
 )
 
 type ServiceComponents struct {

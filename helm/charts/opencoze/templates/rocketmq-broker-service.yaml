@@ -1,10 +1,10 @@
-{{- if and (eq (lower (default "rmq" .Values.cozeServer.env.COZE_MQ_TYPE)) "rmq") .Values.rocketmq.enabled }}
+{{- if and (eq (lower (default "rmq" .Values.cozeServer.env.YNET_MQ_TYPE)) "rmq") .Values.rocketmq.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "opencoze.fullname" . }}-rocketmq-broker
+  name: {{ include "openynet.fullname" . }}-rocketmq-broker
   labels:
-    {{- include "opencoze.labels" . | nindent 4 }}
+    {{- include "openynet.labels" . | nindent 4 }}
 spec:
   ports:
     - port: 10909
@@ -18,6 +18,6 @@ spec:
       name: broker-c
   selector:
     app.kubernetes.io/component: rocketmq-broker
-    app.kubernetes.io/name: {{ include "opencoze.name" . }}
+    app.kubernetes.io/name: {{ include "openynet.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}

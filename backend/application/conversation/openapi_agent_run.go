@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,25 +29,25 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"github.com/google/uuid"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/conversation/common"
-	"github.com/coze-dev/coze-studio/backend/api/model/conversation/run"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/agentrun"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/message"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/singleagent"
-	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
-	"github.com/coze-dev/coze-studio/backend/application/upload"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/contract/conversation"
-	saEntity "github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/entity"
-	convEntity "github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/entity"
-	cmdEntity "github.com/coze-dev/coze-studio/backend/domain/shortcutcmd/entity"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
-	sseImpl "github.com/coze-dev/coze-studio/backend/infra/impl/sse"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/run"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/agentrun"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/message"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
+	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
+	"github.com/ynet-dev/ynet-studio/backend/application/upload"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/conversation"
+	saEntity "github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/entity"
+	convEntity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/entity"
+	cmdEntity "github.com/ynet-dev/ynet-studio/backend/domain/shortcutcmd/entity"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
+	sseImpl "github.com/ynet-dev/ynet-studio/backend/infra/impl/sse"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 // ConversationExtData 会话扩展数据结构，用于存储会话级自定义变量等信息
@@ -466,7 +466,7 @@ func (a *OpenapiAgentRunApplication) getUrlByUri(ctx context.Context, uri string
 }
 
 // extractURIFromURL 从完整URL中提取URI
-// 例如：http://localhost:8889/opencoze/BIZ_BOT_ICON/xxx.jpg -> BIZ_BOT_ICON/xxx.jpg
+// 例如：http://localhost:8889/openynet/BIZ_BOT_ICON/xxx.jpg -> BIZ_BOT_ICON/xxx.jpg
 // 或者：https://agents.finmall.com/api/storage/tos-cn-i-v4nquku3lp/xxx.jpg -> tos-cn-i-v4nquku3lp/xxx.jpg
 func (a *OpenapiAgentRunApplication) extractURIFromURL(fileURL string) (string, error) {
 	if fileURL == "" {
@@ -484,9 +484,9 @@ func (a *OpenapiAgentRunApplication) extractURIFromURL(fileURL string) (string, 
 		return uri, nil
 	}
 
-	// 情况2: 如果URL包含 "/opencoze/"，提取后面的部分作为URI
-	if idx := strings.Index(fileURL, "/opencoze/"); idx >= 0 {
-		path := fileURL[idx+len("/opencoze/"):]
+	// 情况2: 如果URL包含 "/openynet/"，提取后面的部分作为URI
+	if idx := strings.Index(fileURL, "/openynet/"); idx >= 0 {
+		path := fileURL[idx+len("/openynet/"):]
 		return path, nil
 	}
 

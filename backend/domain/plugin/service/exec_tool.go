@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,19 +33,19 @@ import (
 
 	einoCompose "github.com/cloudwego/eino/compose"
 
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/plugin"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/variables"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/variable/project_memory"
-	common "github.com/coze-dev/coze-studio/backend/api/model/plugin_develop/common"
-	crossvariables "github.com/coze-dev/coze-studio/backend/crossdomain/contract/variables"
-	"github.com/coze-dev/coze-studio/backend/domain/plugin/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/plugin/internal/encoder"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/i18n"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/variables"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/variable/project_memory"
+	common "github.com/ynet-dev/ynet-studio/backend/api/model/plugin_develop/common"
+	crossvariables "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/variables"
+	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/internal/encoder"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/i18n"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 func (p *pluginServiceImpl) ExecuteTool(ctx context.Context, req *ExecuteToolRequest, opts ...entity.ExecuteToolOpt) (resp *ExecuteToolResponse, err error) {

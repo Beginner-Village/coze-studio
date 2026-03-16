@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 package entity
 
 import (
-	"github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/common"
-	publishAPI "github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/publish"
-	resourceCommon "github.com/coze-dev/coze-studio/backend/api/model/resource/common"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence/common"
+	publishAPI "github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence/publish"
+	resourceCommon "github.com/ynet-dev/ynet-studio/backend/api/model/resource/common"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 type APP struct {

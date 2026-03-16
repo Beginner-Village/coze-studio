@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/opcode"
 	_ "github.com/pingcap/tidb/pkg/parser/test_driver"
 
-	"github.com/coze-dev/coze-studio/backend/infra/contract/sqlparser"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/sqlparser"
 )
 
 // Impl implements the SQLParser interface

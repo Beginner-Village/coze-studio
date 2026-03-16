@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,16 +24,16 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"gorm.io/gorm"
 
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/modelmgr"
-	crossmodelmgr "github.com/coze-dev/coze-studio/backend/crossdomain/contract/modelmgr"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/service"
-	"github.com/coze-dev/coze-studio/backend/domain/ynet_agent"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/chatmodel"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
-	chatmodel2 "github.com/coze-dev/coze-studio/backend/infra/impl/chatmodel"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/mysql"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/modelmgr"
+	crossmodelmgr "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/modelmgr"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/ynet_agent"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/chatmodel"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
+	chatmodel2 "github.com/ynet-dev/ynet-studio/backend/infra/impl/chatmodel"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/mysql"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 type modelManager struct {

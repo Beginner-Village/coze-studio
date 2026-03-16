@@ -10,7 +10,7 @@ On Linux :
 
 Setup to you database url :
 
-	export ATLAS_URL="mysql://coze:coze123@localhost:3306/opencoze?charset=utf8mb4&parseTime=True"
+	export ATLAS_URL="mysql://coze:coze123@localhost:3306/openynet?charset=utf8mb4&parseTime=True"
 
 ## 2. init baseline
 
@@ -49,14 +49,14 @@ On developer machine（I want add/update table for my business）
 	atlas migrate status --url $ATLAS_URL --dir "file://migrations" # check status 
 	
 	# Last, dump the latest database schema for other developer
-	atlas schema inspect -u $ATLAS_URL --exclude "atlas_schema_revisions,table_*"  > opencoze_latest_schema.hcl # step 3 
+	atlas schema inspect -u $ATLAS_URL --exclude "atlas_schema_revisions,table_*"  > openynet_latest_schema.hcl # step 3 
 
 ## 4. apply migration
 
 On developer machine（I want to update my local database with the changes that others developer have made）
 
 	# cd ./docker/atlas
-	atlas schema apply -u $ATLAS_URL --to file://opencoze_latest_schema.hcl # step 1 for developer on mac, this command will execute in start_debug.sh
+	atlas schema apply -u $ATLAS_URL --to file://openynet_latest_schema.hcl # step 1 for developer on mac, this command will execute in start_debug.sh
 
 On Server machine
 

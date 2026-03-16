@@ -252,7 +252,7 @@ import (
     "sync"
 
     "github.com/cloudwego/eino/schema"
-    workflowModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/workflow"
+    workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
 )
 
 type HiAgentChatModel struct {
@@ -948,7 +948,7 @@ import (
     "context"
     "testing"
     "github.com/stretchr/testify/assert"
-    workflowModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/workflow"
+    workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
 )
 
 func TestHiAgentConversationReuse(t *testing.T) {
@@ -1963,7 +1963,7 @@ import (
     "context"
     "fmt"
     "github.com/cloudwego/eino/schema"
-    workflowModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/workflow"
+    workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
 )
 
 type WenxinAgent struct {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,16 +27,16 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/application/space/export"
-	resCommon "github.com/coze-dev/coze-studio/backend/api/model/resource/common"
-	pluginConf "github.com/coze-dev/coze-studio/backend/domain/plugin/conf"
-	searchEntity "github.com/coze-dev/coze-studio/backend/domain/search/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/search/service"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/application/space/export"
+	resCommon "github.com/ynet-dev/ynet-studio/backend/api/model/resource/common"
+	pluginConf "github.com/ynet-dev/ynet-studio/backend/domain/plugin/conf"
+	searchEntity "github.com/ynet-dev/ynet-studio/backend/domain/search/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/search/service"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 // toJSON converts an interface{} to JSON string for database storage

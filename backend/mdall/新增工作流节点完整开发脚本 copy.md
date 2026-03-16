@@ -104,7 +104,7 @@ mkdir -p /Users/dev/myproject/cursor/coze-studio/backend/domain/workflow/interna
 
 ```go
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  * [License header...]
  */
 
@@ -115,11 +115,11 @@ import (
     "fmt"
     // 其他必要的导入
     
-    "github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
-    "github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-    "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/canvas/convert"
-    "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes"
-    "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
+    "github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+    "github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+    "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/canvas/convert"
+    "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes"
+    "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/schema"
 )
 
 // 定义输入输出常量
@@ -195,7 +195,7 @@ func (yn *YourNode) Invoke(ctx context.Context, input map[string]any) (map[strin
 ```go
 import (
     // ... 其他导入
-    "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/yournode"
+    "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/yournode"
 )
 ```
 

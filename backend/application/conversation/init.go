@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,19 +19,19 @@ package conversation
 import (
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/application/singleagent"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/repository"
-	agentrun "github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/service"
-	convRepo "github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/repository"
-	conversation "github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/service"
-	msgRepo "github.com/coze-dev/coze-studio/backend/domain/conversation/message/repository"
-	message "github.com/coze-dev/coze-studio/backend/domain/conversation/message/service"
-	shortcutRepo "github.com/coze-dev/coze-studio/backend/domain/shortcutcmd/repository"
-	"github.com/coze-dev/coze-studio/backend/domain/shortcutcmd/service"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/application/singleagent"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/repository"
+	agentrun "github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/service"
+	convRepo "github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/repository"
+	conversation "github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/service"
+	msgRepo "github.com/ynet-dev/ynet-studio/backend/domain/conversation/message/repository"
+	message "github.com/ynet-dev/ynet-studio/backend/domain/conversation/message/service"
+	shortcutRepo "github.com/ynet-dev/ynet-studio/backend/domain/shortcutcmd/repository"
+	"github.com/ynet-dev/ynet-studio/backend/domain/shortcutcmd/service"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
 )
 
 type ServiceComponents struct {

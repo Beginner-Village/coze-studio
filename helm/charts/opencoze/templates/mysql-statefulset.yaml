@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "opencoze.fullname" . }}-mysql
+  name: {{ include "openynet.fullname" . }}-mysql
   labels:
-    {{- include "opencoze.labels" . | nindent 4 }}
+    {{- include "openynet.labels" . | nindent 4 }}
 spec:
   serviceName: {{ .Release.Name }}-mysql
   replicas: 1
@@ -11,13 +11,13 @@ spec:
     matchLabels:
       app.kubernetes.io/component: mysql
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/name: {{ include "opencoze.name" . }}
+      app.kubernetes.io/name: {{ include "openynet.name" . }}
   template:
     metadata:
       labels:
         app.kubernetes.io/component: mysql
         app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/name: {{ include "opencoze.name" . }}
+        app.kubernetes.io/name: {{ include "openynet.name" . }}
     spec:
       containers:
         - name: mysql

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,15 +36,15 @@ import (
 	"github.com/hertz-contrib/cors"
 	"github.com/joho/godotenv"
 
-	"github.com/coze-dev/coze-studio/backend/api/middleware"
-	"github.com/coze-dev/coze-studio/backend/api/router"
-	"github.com/coze-dev/coze-studio/backend/application"
-	otelsetup "github.com/coze-dev/coze-studio/backend/infra/otel"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ternary"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/pkg/safego"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/api/middleware"
+	"github.com/ynet-dev/ynet-studio/backend/api/router"
+	"github.com/ynet-dev/ynet-studio/backend/application"
+	otelsetup "github.com/ynet-dev/ynet-studio/backend/infra/otel"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ternary"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/safego"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 )
 
 func main() {
@@ -182,7 +182,7 @@ func asyncStartMinioProxyServer(ctx context.Context) {
 	proxyURL := getEnv(consts.MinIOAPIHost, "http://localhost:9000")
 
 	if storageType == "tos" {
-		proxyURL = getEnv(consts.TOSBucketEndpoint, "https://opencoze.tos-cn-beijing.volces.com")
+		proxyURL = getEnv(consts.TOSBucketEndpoint, "https://openynet.tos-cn-beijing.volces.com")
 	}
 
 	if storageType == "s3" {

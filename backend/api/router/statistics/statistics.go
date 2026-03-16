@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package statistics
 
 import (
 	"github.com/cloudwego/hertz/pkg/app/server"
-	statistics "github.com/coze-dev/coze-studio/backend/api/handler/statistics"
+	statistics "github.com/ynet-dev/ynet-studio/backend/api/handler/statistics"
 )
 
 /*

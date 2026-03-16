@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ import (
 	reflect "reflect"
 
 	model "github.com/cloudwego/eino/components/model"
-	model0 "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/modelmgr"
-	modelmgr "github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
+	model0 "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/modelmgr"
+	modelmgr "github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
 	gomock "go.uber.org/mock/gomock"
 )
 

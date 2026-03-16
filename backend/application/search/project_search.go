@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,22 +22,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/app/intelligence"
-	"github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/common"
-	search2 "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/search"
-	"github.com/coze-dev/coze-studio/backend/api/model/marketplace/marketplace_common"
-	"github.com/coze-dev/coze-studio/backend/api/model/marketplace/product_common"
-	"github.com/coze-dev/coze-studio/backend/api/model/marketplace/product_public_api"
-	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
-	searchEntity "github.com/coze-dev/coze-studio/backend/domain/search/entity"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ternary"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/pkg/taskgroup"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence/common"
+	search2 "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/search"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/marketplace/marketplace_common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/marketplace/product_common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/marketplace/product_public_api"
+	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
+	searchEntity "github.com/ynet-dev/ynet-studio/backend/domain/search/entity"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ternary"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/taskgroup"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 var projectType2iconURI = map[common.IntelligenceType]string{

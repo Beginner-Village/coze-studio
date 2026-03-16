@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "opencoze.fullname" . }}-mysql-init
+  name: {{ include "openynet.fullname" . }}-mysql-init
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "-10"
@@ -12,15 +12,15 @@ spec:
       initContainers:
       - name: wait-for-mysql
         image: {{ .Values.images.busybox }}
-        command: ['sh', '-c', 'until nc -z {{ include "opencoze.fullname" . }}-mysql 3306; do echo waiting for mysql; sleep 2; done']
+        command: ['sh', '-c', 'until nc -z {{ include "openynet.fullname" . }}-mysql 3306; do echo waiting for mysql; sleep 2; done']
       - name: sql-init
         image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
         command:
         - "/bin/sh"
         - "-c"
         - |
-          mysql -h {{ include "opencoze.fullname" . }}-mysql -u root -p"{{ .Values.mysql.rootPassword }}" -e "CREATE USER IF NOT EXISTS '{{ .Values.mysql.user }}'@'%' IDENTIFIED BY '{{ .Values.mysql.password }}';GRANT ALL PRIVILEGES ON {{ .Values.mysql.database }}.* TO '{{ .Values.mysql.user }}'@'%';FLUSH PRIVILEGES;"
-          mysql -h {{ include "opencoze.fullname" . }}-mysql -u {{ .Values.mysql.user }} -p"{{ .Values.mysql.password }}" {{ .Values.mysql.database }} < /sql/schema.sql
+          mysql -h {{ include "openynet.fullname" . }}-mysql -u root -p"{{ .Values.mysql.rootPassword }}" -e "CREATE USER IF NOT EXISTS '{{ .Values.mysql.user }}'@'%' IDENTIFIED BY '{{ .Values.mysql.password }}';GRANT ALL PRIVILEGES ON {{ .Values.mysql.database }}.* TO '{{ .Values.mysql.user }}'@'%';FLUSH PRIVILEGES;"
+          mysql -h {{ include "openynet.fullname" . }}-mysql -u {{ .Values.mysql.user }} -p"{{ .Values.mysql.password }}" {{ .Values.mysql.database }} < /sql/schema.sql
         volumeMounts:
         - name: schema-sql
           mountPath: /sql/schema.sql
@@ -35,7 +35,7 @@ spec:
       volumes:
       - name: schema-sql
         configMap:
-          name: {{ include "opencoze.fullname" . }}-mysql-init
+          name: {{ include "openynet.fullname" . }}-mysql-init
           items:
             - key: schema.sql
               path: schema.sql

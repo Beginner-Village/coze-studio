@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package conversation
 import (
 	"context"
 
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/conversation"
-	crossconversation "github.com/coze-dev/coze-studio/backend/crossdomain/contract/conversation"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/entity"
-	conversation "github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/service"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/conversation"
+	crossconversation "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/conversation"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/entity"
+	conversation "github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/service"
 )
 
 var defaultSVC crossconversation.Conversation

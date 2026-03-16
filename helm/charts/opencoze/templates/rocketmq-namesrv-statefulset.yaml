@@ -1,10 +1,10 @@
-{{- if and (eq (lower (default "rmq" .Values.cozeServer.env.COZE_MQ_TYPE)) "rmq") .Values.rocketmq.enabled }}
+{{- if and (eq (lower (default "rmq" .Values.cozeServer.env.YNET_MQ_TYPE)) "rmq") .Values.rocketmq.enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "opencoze.fullname" . }}-rocketmq-namesrv
+  name: {{ include "openynet.fullname" . }}-rocketmq-namesrv
   labels:
-    {{- include "opencoze.labels" . | nindent 4 }}
+    {{- include "openynet.labels" . | nindent 4 }}
 spec:
   serviceName: {{ .Release.Name }}-rocketmq-namesrv
   replicas: 1
@@ -12,13 +12,13 @@ spec:
     matchLabels:
       app.kubernetes.io/component: rocketmq-namesrv
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/name: {{ include "opencoze.name" . }}
+      app.kubernetes.io/name: {{ include "openynet.name" . }}
   template:
     metadata:
       labels:
         app.kubernetes.io/component: rocketmq-namesrv
         app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/name: {{ include "opencoze.name" . }}
+        app.kubernetes.io/name: {{ include "openynet.name" . }}
     spec:
       containers:
         - name: namesrv

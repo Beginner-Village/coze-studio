@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import (
 	"context"
 	"strings"
 
-	"github.com/coze-dev/coze-studio/backend/domain/prompt/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/prompt/internal/official"
-	"github.com/coze-dev/coze-studio/backend/domain/prompt/repository"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/domain/prompt/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/prompt/internal/official"
+	"github.com/ynet-dev/ynet-studio/backend/domain/prompt/repository"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
 )
 
 type promptService struct {

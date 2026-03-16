@@ -56,7 +56,7 @@ import AppBuilderService from '@coze-arch/idl/app_builder';
 
 // Initialize service client
 const appBuilder = new AppBuilderService({
-  baseURL: 'https://api.coze.com',
+  baseURL: 'https://api.ynet.com',
   request: async (params, options) => {
     // Your HTTP client implementation
     return fetch(params.url, {

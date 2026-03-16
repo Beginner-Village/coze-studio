@@ -1,6 +1,6 @@
 apiVersion: v2
-name: opencoze
-description: opencoze is a ai agent platform.
+name: openynet
+description: openynet is a ai agent platform.
 
 # A chart can be either an 'application' or a 'library' chart.
 #

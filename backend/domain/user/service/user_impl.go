@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,19 +32,19 @@ import (
 
 	"golang.org/x/crypto/argon2"
 
-	uploadEntity "github.com/coze-dev/coze-studio/backend/domain/upload/entity"
-	userEntity "github.com/coze-dev/coze-studio/backend/domain/user/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/user/internal/dal/model"
-	"github.com/coze-dev/coze-studio/backend/domain/user/repository"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	uploadEntity "github.com/ynet-dev/ynet-studio/backend/domain/upload/entity"
+	userEntity "github.com/ynet-dev/ynet-studio/backend/domain/user/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/user/internal/dal/model"
+	"github.com/ynet-dev/ynet-studio/backend/domain/user/repository"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 type Components struct {
@@ -576,7 +576,7 @@ type Session struct {
 }
 
 // The key used for signing (in practice you should read from the configuration or use environment variables)
-var hmacSecret = []byte("opencoze-session-hmac-key")
+var hmacSecret = []byte("openynet-session-hmac-key")
 
 // Generate a secure session key
 func generateSessionKey(sessionID int64) (string, error) {

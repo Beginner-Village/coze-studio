@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,18 +20,18 @@ import (
 	"context"
 	"time"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/plugin"
-	resourceCommon "github.com/coze-dev/coze-studio/backend/api/model/resource/common"
-	crossplugin "github.com/coze-dev/coze-studio/backend/crossdomain/contract/plugin"
-	crossworkflow "github.com/coze-dev/coze-studio/backend/crossdomain/contract/workflow"
-	"github.com/coze-dev/coze-studio/backend/domain/app/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/app/repository"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	commonConsts "github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
+	resourceCommon "github.com/ynet-dev/ynet-studio/backend/api/model/resource/common"
+	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
+	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/app/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/app/repository"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	commonConsts "github.com/ynet-dev/ynet-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 func (a *appServiceImpl) PublishAPP(ctx context.Context, req *PublishAPPRequest) (resp *PublishAPPResponse, err error) {

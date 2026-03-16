@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_common"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/agentrun"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/plugin"
-	crossworkflow "github.com/coze-dev/coze-studio/backend/crossdomain/contract/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/agentrun"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
+	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
 )
 
 type EventType string

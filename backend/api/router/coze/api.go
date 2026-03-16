@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ package coze
 import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
-	coze "github.com/coze-dev/coze-studio/backend/api/handler/coze"
-	workflow "github.com/coze-dev/coze-studio/backend/api/handler/workflow"
+	coze "github.com/ynet-dev/ynet-studio/backend/api/handler/coze"
+	workflow "github.com/ynet-dev/ynet-studio/backend/api/handler/workflow"
 )
 
 /*

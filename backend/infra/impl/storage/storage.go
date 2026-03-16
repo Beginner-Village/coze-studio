@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/storage/minio"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/storage/s3"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/storage/tos"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/storage/minio"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/storage/s3"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/storage/tos"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 )
 
 type Storage = storage.Storage

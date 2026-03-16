@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,21 +30,21 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/database/table"
-	entity2 "github.com/coze-dev/coze-studio/backend/domain/memory/database/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/database/internal/dal"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/database/repository"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/rdb"
-	rdb2 "github.com/coze-dev/coze-studio/backend/infra/impl/rdb"
-	mock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/idgen"
-	storageMock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/database/table"
+	entity2 "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/database/internal/dal"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/database/repository"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb"
+	rdb2 "github.com/ynet-dev/ynet-studio/backend/infra/impl/rdb"
+	mock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/idgen"
+	storageMock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
 )
 
 func setupTestEnv(t *testing.T) (*gorm.DB, rdb.RDB, *mock.MockIDGenerator, repository.DraftDAO, repository.OnlineDAO, Database) {
-	dsn := "root:root@tcp(127.0.0.1:3306)/opencoze?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:root@tcp(127.0.0.1:3306)/openynet?charset=utf8mb4&parseTime=True&loc=Local"
 	if os.Getenv("CI_JOB_NAME") != "" {
 		dsn = strings.ReplaceAll(dsn, "127.0.0.1", "mysql")
 	}

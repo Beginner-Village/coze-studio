@@ -1,10 +1,10 @@
 # @coze-workflow/nodes
 
-A workflow package for the Coze Studio monorepo
+A workflow package for the Ynet Studio monorepo
 
 ## Overview
 
-This package is part of the Coze Studio monorepo and provides workflow functionality. It includes service.
+This package is part of the Ynet Studio monorepo and provides workflow functionality. It includes service.
 
 ## Getting Started
 
@@ -69,7 +69,7 @@ This package is built with:
 
 ## Contributing
 
-This package is part of the Coze Studio monorepo. Please follow the monorepo contribution guidelines.
+This package is part of the Ynet Studio monorepo. Please follow the monorepo contribution guidelines.
 
 ## License
 

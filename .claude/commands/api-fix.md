@@ -56,7 +56,7 @@ import { test_management } from '@coze-studio/api-schema';
 // 确保有正确的导入
 import (
     "github.com/cloudwego/hertz/pkg/app/server"
-    "github.com/coze-dev/coze-studio/backend/api/router"
+    "github.com/ynet-dev/ynet-studio/backend/api/router"
 )
 
 func main() {
@@ -119,7 +119,7 @@ fi
 
 # 检查main.go导入
 echo "2. 检查main.go配置..."
-if ! grep -q "github.com/coze-dev/coze-studio/backend/api/router" backend/main.go; then
+if ! grep -q "github.com/ynet-dev/ynet-studio/backend/api/router" backend/main.go; then
     echo "⚠️ main.go可能缺少router导入"
 fi
 

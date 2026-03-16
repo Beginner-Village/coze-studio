@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,13 +55,13 @@ const (
 	HostKeyInCtx          = "HOST_KEY_IN_CTX"
 	RequestSchemeKeyInCtx = "REQUEST_SCHEME_IN_CTX"
 
-	MQTypeKey                = "COZE_MQ_TYPE"
+	MQTypeKey                = "YNET_MQ_TYPE"
 	MQServer                 = "MQ_NAME_SERVER"
 	RMQSecretKey             = "RMQ_SECRET_KEY"
 	RMQAccessKey             = "RMQ_ACCESS_KEY"
-	RMQTopicApp              = "opencoze_search_app"
-	RMQTopicResource         = "opencoze_search_resource"
-	RMQTopicKnowledge        = "opencoze_knowledge"
+	RMQTopicApp              = "openynet_search_app"
+	RMQTopicResource         = "openynet_search_resource"
+	RMQTopicKnowledge        = "openynet_knowledge"
 	RMQConsumeGroupResource  = "cg_search_resource"
 	RMQConsumeGroupApp       = "cg_search_app"
 	RMQConsumeGroupKnowledge = "cg_knowledge"

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,26 +27,26 @@ import (
 
 	"github.com/bytedance/sonic"
 
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	dataset "github.com/coze-dev/coze-studio/backend/api/model/data/knowledge"
-	document "github.com/coze-dev/coze-studio/backend/api/model/data/knowledge"
-	modelCommon "github.com/coze-dev/coze-studio/backend/api/model/data/knowledge"
-	resource "github.com/coze-dev/coze-studio/backend/api/model/resource/common"
-	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
-	"github.com/coze-dev/coze-studio/backend/application/search"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/service"
-	resourceEntity "github.com/coze-dev/coze-studio/backend/domain/search/entity"
-	cd "github.com/coze-dev/coze-studio/backend/infra/contract/document"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document/parser"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/maps"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	dataset "github.com/ynet-dev/ynet-studio/backend/api/model/data/knowledge"
+	document "github.com/ynet-dev/ynet-studio/backend/api/model/data/knowledge"
+	modelCommon "github.com/ynet-dev/ynet-studio/backend/api/model/data/knowledge"
+	resource "github.com/ynet-dev/ynet-studio/backend/api/model/resource/common"
+	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
+	"github.com/ynet-dev/ynet-studio/backend/application/search"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/service"
+	resourceEntity "github.com/ynet-dev/ynet-studio/backend/domain/search/entity"
+	cd "github.com/ynet-dev/ynet-studio/backend/infra/contract/document"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/maps"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 type KnowledgeApplicationService struct {

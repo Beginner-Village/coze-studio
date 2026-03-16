@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	contract "github.com/coze-dev/coze-studio/backend/infra/contract/document/parser"
-	ms "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/storage"
+	contract "github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
+	ms "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/storage"
 )
 
 func TestParseMarkdown(t *testing.T) {

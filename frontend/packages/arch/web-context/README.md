@@ -2,7 +2,7 @@
 
 > Global Context for whole hot studio web app. You should keep using this package instead of call `window.xxx` directly
 
-A centralized context management package that provides global state, event handling, and navigation utilities for Coze Studio web applications. This package helps you avoid direct window object manipulation and provides a structured way to handle global application state.
+A centralized context management package that provides global state, event handling, and navigation utilities for Ynet Studio web applications. This package helps you avoid direct window object manipulation and provides a structured way to handle global application state.
 
 ## Features
 

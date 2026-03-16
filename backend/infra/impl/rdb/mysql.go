@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/rdb"
-	entity2 "github.com/coze-dev/coze-studio/backend/infra/contract/rdb/entity"
-	sqlparsercontract "github.com/coze-dev/coze-studio/backend/infra/contract/sqlparser"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/sqlparser"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb"
+	entity2 "github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb/entity"
+	sqlparsercontract "github.com/ynet-dev/ynet-studio/backend/infra/contract/sqlparser"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/sqlparser"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 type mysqlService struct {

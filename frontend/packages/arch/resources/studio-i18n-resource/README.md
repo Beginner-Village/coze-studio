@@ -1,8 +1,8 @@
 # @coze-studio/studio-i18n-resource-adapter
 
-> Comprehensive internationalization (i18n) resource adapter for Coze Studio applications
+> Comprehensive internationalization (i18n) resource adapter for Ynet Studio applications
 
-This package provides a centralized internationalization resource adapter containing localized strings and type definitions for Coze Studio applications. It supports multiple languages and provides type-safe access to translation keys with parameter interpolation.
+This package provides a centralized internationalization resource adapter containing localized strings and type definitions for Ynet Studio applications. It supports multiple languages and provides type-safe access to translation keys with parameter interpolation.
 
 ## Features
 
@@ -11,13 +11,13 @@ This package provides a centralized internationalization resource adapter contai
 - 📦 **Auto-generated**: Resources are automatically generated using the `dl-i18n` command
 - ⚡ **React Integration**: Built-in support for React components with `ReactNode` parameter types
 - 🎯 **Parameter Interpolation**: Support for dynamic content insertion with type-safe parameters
-- 📝 **Extensive Coverage**: Over 13,000+ translation strings covering the entire Coze Studio ecosystem
+- 📝 **Extensive Coverage**: Over 13,000+ translation strings covering the entire Ynet Studio ecosystem
 
 ## Get Started
 
 ### Installation
 
-This package is part of the Coze Studio monorepo and should be installed via Rush:
+This package is part of the Ynet Studio monorepo and should be installed via Rush:
 
 ```bash
 # Add to your package.json dependencies
@@ -232,7 +232,7 @@ src/
 
 ## License
 
-This package is part of the Coze Studio monorepo and follows the same licensing terms as the main project.
+This package is part of the Ynet Studio monorepo and follows the same licensing terms as the main project.
 
 ---
 

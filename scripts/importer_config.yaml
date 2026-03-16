@@ -1,6 +1,6 @@
 database:
-  database: opencoze
+  database: openynet
   host: 10.10.10.224
-  password: coze123
+  password: ynet123
   port: 3306
-  username: coze
+  username: ynet

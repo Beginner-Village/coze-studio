@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ package template
 import (
 	"context"
 
-	productAPI "github.com/coze-dev/coze-studio/backend/api/model/marketplace/product_public_api"
-	"github.com/coze-dev/coze-studio/backend/domain/template/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/template/repository"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
+	productAPI "github.com/ynet-dev/ynet-studio/backend/api/model/marketplace/product_public_api"
+	"github.com/ynet-dev/ynet-studio/backend/domain/template/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/template/repository"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 )
 
 type ApplicationService struct {

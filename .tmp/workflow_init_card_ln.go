@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,36 +24,36 @@ import (
 
 	"github.com/cloudwego/eino/callbacks"
 
-	"github.com/coze-dev/coze-studio/backend/application/internal"
+	"github.com/ynet-dev/ynet-studio/backend/application/internal"
 
-	wfdatabase "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/database"
-	wfknowledge "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/knowledge"
-	wfmodel "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/model"
-	wfplugin "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/plugin"
-	wfsearch "github.com/coze-dev/coze-studio/backend/crossdomain/workflow/search"
-	"github.com/coze-dev/coze-studio/backend/crossdomain/workflow/variable"
-	knowledge "github.com/coze-dev/coze-studio/backend/domain/knowledge/service"
-	dbservice "github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
-	variables "github.com/coze-dev/coze-studio/backend/domain/memory/variables/service"
-	plugin "github.com/coze-dev/coze-studio/backend/domain/plugin/service"
-	search "github.com/coze-dev/coze-studio/backend/domain/search/service"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow"
-	crosscode "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/code"
-	crossdatabase "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/database"
-	crossknowledge "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/knowledge"
-	crossmodel "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/model"
-	crossplugin "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/plugin"
-	crosssearch "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/search"
-	crossvariable "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/variable"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/service"
-	workflowservice "github.com/coze-dev/coze-studio/backend/domain/workflow/service"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/cache"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/coderunner"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	wfdatabase "github.com/ynet-dev/ynet-studio/backend/crossdomain/workflow/database"
+	wfknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/workflow/knowledge"
+	wfmodel "github.com/ynet-dev/ynet-studio/backend/crossdomain/workflow/model"
+	wfplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/workflow/plugin"
+	wfsearch "github.com/ynet-dev/ynet-studio/backend/crossdomain/workflow/search"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/workflow/variable"
+	knowledge "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/service"
+	dbservice "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
+	variables "github.com/ynet-dev/ynet-studio/backend/domain/memory/variables/service"
+	plugin "github.com/ynet-dev/ynet-studio/backend/domain/plugin/service"
+	search "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	crosscode "github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/code"
+	crossdatabase "github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/database"
+	crossknowledge "github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/knowledge"
+	crossmodel "github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/model"
+	crossplugin "github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/plugin"
+	crosssearch "github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/search"
+	crossvariable "github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/variable"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/service"
+	workflowservice "github.com/ynet-dev/ynet-studio/backend/domain/workflow/service"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/coderunner"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 type ServiceComponents struct {

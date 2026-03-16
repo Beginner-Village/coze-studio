@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package external_knowledge
 import (
 	"gorm.io/gorm"
 	
-	domainExternalKnowledge "github.com/coze-dev/coze-studio/backend/domain/external_knowledge"
-	externalKnowledgeRepo "github.com/coze-dev/coze-studio/backend/infra/repository/external_knowledge"
+	domainExternalKnowledge "github.com/ynet-dev/ynet-studio/backend/domain/external_knowledge"
+	externalKnowledgeRepo "github.com/ynet-dev/ynet-studio/backend/infra/repository/external_knowledge"
 )
 
 // InitExternalKnowledgeService initializes the external knowledge application service

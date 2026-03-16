@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/application/base/appinfra"
-	crossdatacopy "github.com/coze-dev/coze-studio/backend/crossdomain/contract/datacopy"
-	"github.com/coze-dev/coze-studio/backend/domain/datacopy"
-	"github.com/coze-dev/coze-studio/backend/domain/datacopy/service"
+	"github.com/ynet-dev/ynet-studio/backend/application/base/appinfra"
+	crossdatacopy "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/datacopy"
+	"github.com/ynet-dev/ynet-studio/backend/domain/datacopy"
+	"github.com/ynet-dev/ynet-studio/backend/domain/datacopy/service"
 )
 
 var defaultSVC crossdatacopy.DataCopy

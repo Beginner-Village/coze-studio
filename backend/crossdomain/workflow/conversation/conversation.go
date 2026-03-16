@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,18 +22,18 @@ import (
 	"strconv"
 
 	"github.com/cloudwego/eino/schema"
-	"github.com/coze-dev/coze-studio/backend/api/model/conversation/common"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/message"
-	crossagentrun "github.com/coze-dev/coze-studio/backend/crossdomain/contract/agentrun"
-	crossconversation "github.com/coze-dev/coze-studio/backend/crossdomain/contract/conversation"
-	crossmessage "github.com/coze-dev/coze-studio/backend/crossdomain/contract/message"
-	agententity "github.com/coze-dev/coze-studio/backend/domain/conversation/agentrun/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/entity"
-	msgentity "github.com/coze-dev/coze-studio/backend/domain/conversation/message/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/conversation"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/sonic"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/message"
+	crossagentrun "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/agentrun"
+	crossconversation "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/conversation"
+	crossmessage "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/message"
+	agententity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/entity"
+	msgentity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/message/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/conversation"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/sonic"
 )
 
 type ConversationRepository struct {

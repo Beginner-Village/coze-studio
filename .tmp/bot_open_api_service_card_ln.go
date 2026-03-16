@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/coze-dev/coze-studio/backend/application/plugin"
-	"github.com/coze-dev/coze-studio/backend/application/singleagent"
-	"github.com/coze-dev/coze-studio/backend/application/upload"
-	"github.com/coze-dev/coze-studio/backend/domain/plugin/conf"
+	"github.com/ynet-dev/ynet-studio/backend/application/plugin"
+	"github.com/ynet-dev/ynet-studio/backend/application/singleagent"
+	"github.com/ynet-dev/ynet-studio/backend/application/upload"
+	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/conf"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_open_api"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_open_api"
 )
 
 // OauthAuthorizationCode .

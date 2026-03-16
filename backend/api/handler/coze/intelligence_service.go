@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,13 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/app/intelligence"
-	"github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/common"
-	project "github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/project"
-	publish "github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/publish"
-	task "github.com/coze-dev/coze-studio/backend/api/model/app/intelligence/task"
-	appApplication "github.com/coze-dev/coze-studio/backend/application/app"
-	"github.com/coze-dev/coze-studio/backend/application/search"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence/common"
+	project "github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence/project"
+	publish "github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence/publish"
+	task "github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence/task"
+	appApplication "github.com/ynet-dev/ynet-studio/backend/application/app"
+	"github.com/ynet-dev/ynet-studio/backend/application/search"
 )
 
 // GetDraftIntelligenceList .

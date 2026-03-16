@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -37,13 +37,13 @@ import (
 )
 
 const (
-	envEnable       = "COZE_LOOP_TELEMETRY_ENABLE"
-	envEndpoint     = "COZE_LOOP_TELEMETRY_ENDPOINT"
-	envWorkspace    = "COZE_LOOP_WORKSPACE_ID"
-	envToken        = "COZE_LOOP_TELEMETRY_TOKEN"
-	envSamplerRatio = "COZE_LOOP_TRACE_RATIO"
-	envServiceName  = "COZE_SERVICE_NAME"
-	defaultSvcName  = "coze-studio"
+	envEnable       = "YNET_LOOP_TELEMETRY_ENABLE"
+	envEndpoint     = "YNET_LOOP_TELEMETRY_ENDPOINT"
+	envWorkspace    = "YNET_LOOP_WORKSPACE_ID"
+	envToken        = "YNET_LOOP_TELEMETRY_TOKEN"
+	envSamplerRatio = "YNET_LOOP_TRACE_RATIO"
+	envServiceName  = "YNET_SERVICE_NAME"
+	defaultSvcName  = "ynet-studio"
 	defaultSample   = 1.0
 	defaultTimeout  = 5 * time.Second
 

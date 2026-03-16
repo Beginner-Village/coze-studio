@@ -1,4 +1,4 @@
-# @coze-devops/mockset-manage
+# @ynet-devops/mockset-manage
 
 > Project template for react component with storybook.
 

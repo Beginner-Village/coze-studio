@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import (
 
 	gomock "go.uber.org/mock/gomock"
 
-	crossuser "github.com/coze-dev/coze-studio/backend/crossdomain/contract/user"
+	crossuser "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/user"
 )
 
 // MockUser is a mock of User interface.

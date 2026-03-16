@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import (
 	"github.com/cloudwego/hertz/pkg/common/utils"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
-	adminapp "github.com/coze-dev/coze-studio/backend/application/admin"
-	"github.com/coze-dev/coze-studio/backend/application/base/ctxutil"
+	adminapp "github.com/ynet-dev/ynet-studio/backend/application/admin"
+	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
 )
 
 // AdminAuthMiddleware 管理员权限验证中间件

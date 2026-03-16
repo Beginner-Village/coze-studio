@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
-	nodedatabase "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/database"
-	mockDatabase "github.com/coze-dev/coze-studio/backend/internal/mock/domain/memory/database"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
+	nodedatabase "github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/database"
+	mockDatabase "github.com/ynet-dev/ynet-studio/backend/internal/mock/domain/memory/database"
 )
 
 func mockExecuteSQL(t *testing.T) func(ctx context.Context, request *service.ExecuteSQLRequest) (*service.ExecuteSQLResponse, error) {

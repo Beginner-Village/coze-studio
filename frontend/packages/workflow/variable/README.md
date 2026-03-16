@@ -4,7 +4,7 @@ workflow 变量包
 
 ## Overview
 
-This package is part of the Coze Studio monorepo and provides workflow functionality. It includes component, hook, adapter and more.
+This package is part of the Ynet Studio monorepo and provides workflow functionality. It includes component, hook, adapter and more.
 
 ## Getting Started
 
@@ -74,7 +74,7 @@ This package is built with:
 
 ## Contributing
 
-This package is part of the Coze Studio monorepo. Please follow the monorepo contribution guidelines.
+This package is part of the Ynet Studio monorepo. Please follow the monorepo contribution guidelines.
 
 ## License
 

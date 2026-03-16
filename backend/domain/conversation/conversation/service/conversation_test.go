@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/conversation/common"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/conversation"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/internal/dal/model"
-	"github.com/coze-dev/coze-studio/backend/domain/conversation/conversation/repository"
-	mock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/orm"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/conversation"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/internal/dal/model"
+	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/repository"
+	mock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/orm"
 )
 
 // Test_NewListMessage tests the NewListMessage function

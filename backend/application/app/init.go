@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,16 +19,16 @@ package app
 import (
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/domain/app/repository"
-	"github.com/coze-dev/coze-studio/backend/domain/app/service"
-	connector "github.com/coze-dev/coze-studio/backend/domain/connector/service"
-	variables "github.com/coze-dev/coze-studio/backend/domain/memory/variables/service"
-	search "github.com/coze-dev/coze-studio/backend/domain/search/service"
-	user "github.com/coze-dev/coze-studio/backend/domain/user/service"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/cache"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/domain/app/repository"
+	"github.com/ynet-dev/ynet-studio/backend/domain/app/service"
+	connector "github.com/ynet-dev/ynet-studio/backend/domain/connector/service"
+	variables "github.com/ynet-dev/ynet-studio/backend/domain/memory/variables/service"
+	search "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
+	user "github.com/ynet-dev/ynet-studio/backend/domain/user/service"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
 )
 
 type ServiceComponents struct {

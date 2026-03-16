@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import (
 
 	"github.com/cloudwego/eino/schema"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	knowledgeModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/internal/convert"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document/searchstore"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	knowledgeModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/internal/convert"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document/searchstore"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 const fieldNameDocumentID = "document_id"
@@ -413,7 +413,7 @@ var d2sMapping = map[knowledge.DocumentType]document2SliceFn{
 }
 
 func getCollectionName(knowledgeID int64) string {
-	return fmt.Sprintf("opencoze_%d", knowledgeID)
+	return fmt.Sprintf("openynet_%d", knowledgeID)
 }
 
 func getIndexingFields(fields []*searchstore.Field) []string {

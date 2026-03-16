@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,14 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/variables"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/variable/kvmemory"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/variable/project_memory"
-	crossvariables "github.com/coze-dev/coze-studio/backend/crossdomain/contract/variables"
-	"github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/entity"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/embedding"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/variables"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/variable/kvmemory"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/variable/project_memory"
+	crossvariables "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/variables"
+	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/embedding"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 

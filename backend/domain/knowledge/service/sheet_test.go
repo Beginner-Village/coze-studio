@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,17 +25,17 @@ import (
 	"github.com/smartystreets/goconvey/convey"
 	"go.uber.org/mock/gomock"
 
-	knowledgeModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/internal/consts"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/internal/convert"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/internal/dal/model"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/internal/mock/dal/dao"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/rdb"
-	rentity "github.com/coze-dev/coze-studio/backend/infra/contract/rdb/entity"
-	mrdb "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/rdb"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	knowledgeModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/internal/consts"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/internal/convert"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/internal/dal/model"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/internal/mock/dal/dao"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb"
+	rentity "github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb/entity"
+	mrdb "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/rdb"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 func TestValidateTableSchema(t *testing.T) {

@@ -4,7 +4,7 @@
 
 ## Overview
 
-`@coze-studio/slardar-interface` provides standardized TypeScript interface definitions for integrating with Slardar monitoring services. This package serves as a contract layer that defines the structure and behavior of Slardar instances used throughout the Coze Studio ecosystem.
+`@coze-studio/slardar-interface` provides standardized TypeScript interface definitions for integrating with Slardar monitoring services. This package serves as a contract layer that defines the structure and behavior of Slardar instances used throughout the Ynet Studio ecosystem.
 
 ## Features
 
@@ -255,4 +255,4 @@ Apache-2.0
 
 ---
 
-> This package is part of the Coze Studio monorepo and provides foundational type definitions for Slardar monitoring integration.
+> This package is part of the Ynet Studio monorepo and provides foundational type definitions for Slardar monitoring integration.

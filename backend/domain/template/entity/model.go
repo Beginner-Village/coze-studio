@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package entity
 
-import product_public_api "github.com/coze-dev/coze-studio/backend/api/model/marketplace/product_public_api"
+import product_public_api "github.com/ynet-dev/ynet-studio/backend/api/model/marketplace/product_public_api"
 
 // TemplateModel represents a template model for database operations
 type TemplateModel struct {

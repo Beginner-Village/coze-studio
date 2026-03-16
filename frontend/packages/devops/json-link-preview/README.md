@@ -1,4 +1,4 @@
-# @coze-devops/json-link-preview
+# @ynet-devops/json-link-preview
 
 > Project template for react component with storybook and supports publish independently.
 

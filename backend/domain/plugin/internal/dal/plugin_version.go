@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import (
 	"gorm.io/gen/field"
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/plugin"
-	plugin_develop_common "github.com/coze-dev/coze-studio/backend/api/model/plugin_develop/common"
-	"github.com/coze-dev/coze-studio/backend/domain/plugin/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/plugin/internal/dal/model"
-	"github.com/coze-dev/coze-studio/backend/domain/plugin/internal/dal/query"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
+	plugin_develop_common "github.com/ynet-dev/ynet-studio/backend/api/model/plugin_develop/common"
+	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/internal/dal/model"
+	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/internal/dal/query"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
 )
 
 func NewPluginVersionDAO(db *gorm.DB, idGen idgen.IDGenerator) *PluginVersionDAO {

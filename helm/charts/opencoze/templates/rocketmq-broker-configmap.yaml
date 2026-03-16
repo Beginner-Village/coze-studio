@@ -1,10 +1,10 @@
-{{- if and (eq (lower (default "rmq" .Values.cozeServer.env.COZE_MQ_TYPE)) "rmq") }}
+{{- if and (eq (lower (default "rmq" .Values.cozeServer.env.YNET_MQ_TYPE)) "rmq") }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "opencoze.fullname" . }}-broker-config
+  name: {{ include "openynet.fullname" . }}-broker-config
   labels:
-    {{- include "opencoze.labels" . | nindent 4 }}
+    {{- include "openynet.labels" . | nindent 4 }}
 data:
   broker.conf: |-
     brokerClusterName = DefaultCluster

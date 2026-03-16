@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import (
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/schema"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/singleagent"
-	crossagent "github.com/coze-dev/coze-studio/backend/crossdomain/contract/agent"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
+	crossagent "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/agent"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 // SingleAgentChatModel 实现 Eino 的 BaseChatModel 接口，用于调用内部 SingleAgent 智能体

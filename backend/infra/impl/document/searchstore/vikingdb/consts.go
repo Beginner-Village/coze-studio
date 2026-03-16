@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import (
 
 	"github.com/volcengine/volc-sdk-golang/service/vikingdb"
 
-	embcontract "github.com/coze-dev/coze-studio/backend/infra/contract/embedding"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	embcontract "github.com/ynet-dev/ynet-studio/backend/infra/contract/embedding"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 type VikingEmbeddingModelName string
@@ -109,7 +109,7 @@ const (
 	vikingEmbeddingUseSparse          = "return_sparse"
 	vikingEmbeddingRespSentenceDense  = "sentence_dense_embedding"
 	vikingEmbeddingRespSentenceSparse = "sentence_sparse_embedding"
-	vikingIndexName                   = "opencoze_index"
+	vikingIndexName                   = "openynet_index"
 )
 
 const (

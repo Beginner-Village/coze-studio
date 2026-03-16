@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,23 +20,23 @@ package coze
 
 import (
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_open_api"
-	"github.com/coze-dev/coze-studio/backend/api/model/app/developer_api"
-	"github.com/coze-dev/coze-studio/backend/api/model/app/intelligence"
-	"github.com/coze-dev/coze-studio/backend/api/model/conversation/agentrun"
-	"github.com/coze-dev/coze-studio/backend/api/model/conversation/conversation"
-	"github.com/coze-dev/coze-studio/backend/api/model/conversation/message"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/database"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/knowledge"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/variable"
-	"github.com/coze-dev/coze-studio/backend/api/model/file/upload"
-	"github.com/coze-dev/coze-studio/backend/api/model/marketplace/product_public_api"
-	"github.com/coze-dev/coze-studio/backend/api/model/passport"
-	"github.com/coze-dev/coze-studio/backend/api/model/permission/openapiauth"
-	"github.com/coze-dev/coze-studio/backend/api/model/playground"
-	"github.com/coze-dev/coze-studio/backend/api/model/plugin_develop"
-	"github.com/coze-dev/coze-studio/backend/api/model/resource"
-	"github.com/coze-dev/coze-studio/backend/api/model/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_open_api"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/developer_api"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/intelligence"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/agentrun"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/conversation"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/message"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/database"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/knowledge"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/variable"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/file/upload"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/marketplace/product_public_api"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/passport"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/permission/openapiauth"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/playground"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/plugin_develop"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/resource"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/workflow"
 )
 
 type IntelligenceService interface {

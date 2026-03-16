@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,7 +51,7 @@ func TestValidateImportPackage_ValidPackage(t *testing.T) {
 		Version:     "1.0",
 		ExportedAt:  time.Now(),
 		ExportedBy:  123,
-		Source:      "coze-studio",
+		Source:      "ynet-studio",
 		Description: "Test package",
 		Workflows: []vo.WorkflowExportData{
 			{
@@ -69,7 +69,7 @@ func TestValidateImportPackage_ValidPackage(t *testing.T) {
 					InputParamsStr:  "[]",
 					OutputParamsStr: "[]",
 				},
-				ExportedFrom: "coze-studio",
+				ExportedFrom: "ynet-studio",
 				ExportedAt:   time.Now(),
 			},
 		},
@@ -86,7 +86,7 @@ func TestValidateImportPackage_ValidPackage(t *testing.T) {
 	assert.True(t, result.IsValid)
 	assert.Len(t, result.Errors, 0)
 	assert.Equal(t, "1.0", result.FormatVersion)
-	assert.Equal(t, "coze-studio", result.SourceSystem)
+	assert.Equal(t, "ynet-studio", result.SourceSystem)
 	assert.Equal(t, 1, result.WorkflowCount)
 }
 
@@ -101,7 +101,7 @@ func TestValidateImportPackage_InvalidWorkflow(t *testing.T) {
 		Version:     "1.0",
 		ExportedAt:  time.Now(),
 		ExportedBy:  123,
-		Source:      "coze-studio",
+		Source:      "ynet-studio",
 		Description: "Test package",
 		Workflows: []vo.WorkflowExportData{
 			{
@@ -112,7 +112,7 @@ func TestValidateImportPackage_InvalidWorkflow(t *testing.T) {
 					InputParamsStr:  "[]",
 					OutputParamsStr: "[]",
 				},
-				ExportedFrom: "coze-studio",
+				ExportedFrom: "ynet-studio",
 				ExportedAt:   time.Now(),
 			},
 		},
@@ -143,7 +143,7 @@ func TestValidateImportPackage_InvalidCanvas(t *testing.T) {
 		Version:     "1.0",
 		ExportedAt:  time.Now(),
 		ExportedBy:  123,
-		Source:      "coze-studio",
+		Source:      "ynet-studio",
 		Description: "Test package",
 		Workflows: []vo.WorkflowExportData{
 			{
@@ -161,7 +161,7 @@ func TestValidateImportPackage_InvalidCanvas(t *testing.T) {
 					InputParamsStr:  "[]",
 					OutputParamsStr: "[]",
 				},
-				ExportedFrom: "coze-studio",
+				ExportedFrom: "ynet-studio",
 				ExportedAt:   time.Now(),
 			},
 		},
@@ -191,7 +191,7 @@ func TestValidateImportPackage_VersionMismatch(t *testing.T) {
 		Version:     "2.0", // Different version
 		ExportedAt:  time.Now(),
 		ExportedBy:  123,
-		Source:      "coze-studio",
+		Source:      "ynet-studio",
 		Description: "Test package",
 		Workflows: []vo.WorkflowExportData{
 			{
@@ -209,7 +209,7 @@ func TestValidateImportPackage_VersionMismatch(t *testing.T) {
 					InputParamsStr:  "[]",
 					OutputParamsStr: "[]",
 				},
-				ExportedFrom: "coze-studio",
+				ExportedFrom: "ynet-studio",
 				ExportedAt:   time.Now(),
 			},
 		},

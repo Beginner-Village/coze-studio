@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,11 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/data/variable/kvmemory"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/variable/project_memory"
-	appApplication "github.com/coze-dev/coze-studio/backend/application/app"
-	"github.com/coze-dev/coze-studio/backend/application/memory"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/conv"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/variable/kvmemory"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/variable/project_memory"
+	appApplication "github.com/ynet-dev/ynet-studio/backend/application/app"
+	"github.com/ynet-dev/ynet-studio/backend/application/memory"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
 )
 
 // GetSysVariableConf .

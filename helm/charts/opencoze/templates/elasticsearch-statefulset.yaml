@@ -2,9 +2,9 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "opencoze.fullname" . }}-elasticsearch
+  name: {{ include "openynet.fullname" . }}-elasticsearch
   labels:
-    {{- include "opencoze.labels" . | nindent 4 }}
+    {{- include "openynet.labels" . | nindent 4 }}
 spec:
   serviceName: {{ .Release.Name }}-elasticsearch
   replicas: 1
@@ -12,13 +12,13 @@ spec:
     matchLabels:
       app.kubernetes.io/component: elasticsearch
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/name: {{ include "opencoze.name" . }}
+      app.kubernetes.io/name: {{ include "openynet.name" . }}
   template:
     metadata:
       labels:
         app.kubernetes.io/component: elasticsearch
         app.kubernetes.io/instance: {{ .Release.Name }}
-        app.kubernetes.io/name: {{ include "opencoze.name" . }}
+        app.kubernetes.io/name: {{ include "openynet.name" . }}
     spec:
       initContainers:
       - name: install-plugins
@@ -75,7 +75,7 @@ spec:
         emptyDir: {}
       - name: es-config
         configMap:
-          name: {{ include "opencoze.fullname" . }}-es-init-config
+          name: {{ include "openynet.fullname" . }}-es-init-config
   volumeClaimTemplates:
   - metadata:
       name: es-data

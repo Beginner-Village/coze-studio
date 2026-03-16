@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/playground"
-	appApplication "github.com/coze-dev/coze-studio/backend/application/app"
-	"github.com/coze-dev/coze-studio/backend/application/prompt"
-	"github.com/coze-dev/coze-studio/backend/application/shortcutcmd"
-	"github.com/coze-dev/coze-studio/backend/application/singleagent"
-	"github.com/coze-dev/coze-studio/backend/application/upload"
-	"github.com/coze-dev/coze-studio/backend/application/user"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/playground"
+	appApplication "github.com/ynet-dev/ynet-studio/backend/application/app"
+	"github.com/ynet-dev/ynet-studio/backend/application/prompt"
+	"github.com/ynet-dev/ynet-studio/backend/application/shortcutcmd"
+	"github.com/ynet-dev/ynet-studio/backend/application/singleagent"
+	"github.com/ynet-dev/ynet-studio/backend/application/upload"
+	"github.com/ynet-dev/ynet-studio/backend/application/user"
 )
 
 // UpdateDraftBotInfoAgw .

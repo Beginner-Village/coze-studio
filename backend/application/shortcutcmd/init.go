@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ package shortcutcmd
 import (
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/domain/shortcutcmd/repository"
-	"github.com/coze-dev/coze-studio/backend/domain/shortcutcmd/service"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/domain/shortcutcmd/repository"
+	"github.com/ynet-dev/ynet-studio/backend/domain/shortcutcmd/service"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
 )
 
 var ShortcutCmdSVC *ShortcutCmdApplicationService

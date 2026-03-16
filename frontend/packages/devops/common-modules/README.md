@@ -1,4 +1,4 @@
-# @coze-devops/common-modules
+# @ynet-devops/common-modules
 
 > Project template for react component with storybook.
 

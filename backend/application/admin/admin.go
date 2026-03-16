@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,14 @@ import (
 	"strconv"
 	"time"
 
-	adminapi "github.com/coze-dev/coze-studio/backend/api/model/admin"
-	adminentity "github.com/coze-dev/coze-studio/backend/domain/admin/entity"
-	adminrepo "github.com/coze-dev/coze-studio/backend/domain/admin/repository"
-	modelentity "github.com/coze-dev/coze-studio/backend/domain/model/entity"
-	modelrepo "github.com/coze-dev/coze-studio/backend/domain/model/repository"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/storage"
-	"github.com/coze-dev/coze-studio/backend/pkg/idgen"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	adminapi "github.com/ynet-dev/ynet-studio/backend/api/model/admin"
+	adminentity "github.com/ynet-dev/ynet-studio/backend/domain/admin/entity"
+	adminrepo "github.com/ynet-dev/ynet-studio/backend/domain/admin/repository"
+	modelentity "github.com/ynet-dev/ynet-studio/backend/domain/model/entity"
+	modelrepo "github.com/ynet-dev/ynet-studio/backend/domain/model/repository"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/storage"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 type AdminApplicationService struct {

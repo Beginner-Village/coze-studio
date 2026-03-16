@@ -14,7 +14,7 @@ RUN go mod download
 COPY backend/ ./
 
 # Build the Go application
-RUN go build -ldflags="-s -w" -o /app/opencoze main.go
+RUN go build -ldflags="-s -w" -o /app/openynet main.go
 
 
 # Stage 2: Final image
@@ -42,7 +42,7 @@ RUN apk add --no-cache --virtual .python-build-deps build-base py3-pip git && \
 
 
 # Copy the built Go binary from the builder stage
-COPY --from=builder /app/opencoze /app/opencoze
+COPY --from=builder /app/openynet /app/openynet
 
 # Copy Python application scripts
 COPY backend/infra/impl/document/parser/builtin/parse_pdf.py /app/parse_pdf.py
@@ -69,4 +69,4 @@ RUN chmod +x /app/parse_pdf.py /app/parse_docx.py  && \
 
 EXPOSE 8888
 
-CMD ["/app/opencoze"]
+CMD ["/app/openynet"]

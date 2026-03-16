@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,18 +25,18 @@ import (
 
 	"golang.org/x/exp/maps"
 
-	code2 "github.com/coze-dev/coze-studio/backend/crossdomain/impl/code"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/canvas/convert"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/coderunner"
+	code2 "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/code"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/canvas/convert"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/schema"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/coderunner"
 
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes"
-	"github.com/coze-dev/coze-studio/backend/pkg/ctxcache"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/ctxcache"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 const (
@@ -80,7 +80,7 @@ var pythonBuiltinModules = map[string]struct{}{
 }
 
 // pythonBuiltinBlacklist is the blacklist of python built-in modules,
-// see: https://www.coze.cn/open/docs/guides/code_node#7f41f073
+// see: https://www.ynet.cn/open/docs/guides/code_node#7f41f073
 var pythonBuiltinBlacklist = map[string]struct{}{
 	"curses":          {},
 	"dbm":             {},
@@ -108,7 +108,7 @@ var pythonBuiltinBlacklist = map[string]struct{}{
 }
 
 // pythonThirdPartyWhitelist is the whitelist of python third-party modules,
-// see: https://www.coze.cn/open/docs/guides/code_node#7f41f073
+// see: https://www.ynet.cn/open/docs/guides/code_node#7f41f073
 // If you want to use other third-party libraries, you can add them to this whitelist.
 // And you also need to install them in `/scripts/setup/python.sh` and `/backend/Dockerfile` via `pip install`.
 var pythonThirdPartyWhitelist = map[string]struct{}{

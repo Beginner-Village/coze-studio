@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-	space "github.com/coze-dev/coze-studio/backend/api/model/space"
-	"github.com/coze-dev/coze-studio/backend/application/user"
+	space "github.com/ynet-dev/ynet-studio/backend/api/model/space"
+	"github.com/ynet-dev/ynet-studio/backend/application/user"
 )
 
 // CreateSpace .

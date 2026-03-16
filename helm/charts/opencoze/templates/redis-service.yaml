@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "opencoze.fullname" . }}-redis
+  name: {{ include "openynet.fullname" . }}-redis
   labels:
-    {{- include "opencoze.labels" . | nindent 4 }}
+    {{- include "openynet.labels" . | nindent 4 }}
 spec:
   ports:
     - port: {{ .Values.redis.port }}
@@ -12,6 +12,6 @@ spec:
       protocol: TCP
   selector:
     app.kubernetes.io/component: redis
-    app.kubernetes.io/name: {{ include "opencoze.name" . }}
+    app.kubernetes.io/name: {{ include "openynet.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}

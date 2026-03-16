@@ -1,4 +1,4 @@
-name: coze-studio-debug
+name: ynet-studio-debug
 
 x-env-file: &env_file
   - .env.debug
@@ -6,12 +6,12 @@ x-env-file: &env_file
 services:
   mysql:
     image: mysql:8.4.5
-    container_name: coze-mysql
+    container_name: ynet-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-opencoze}
-      MYSQL_USER: ${MYSQL_USER:-coze}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-coze123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-openynet}
+      MYSQL_USER: ${MYSQL_USER:-ynet}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ynet123}
     profiles: ['middleware', 'mysql-setup', 'mysql']
     env_file: *env_file
     ports:
@@ -37,11 +37,11 @@ services:
       retries: 5
       start_period: 30s
     networks:
-      - coze-network
+      - ynet-network
 
   redis:
     image: bitnami/redis:8.0
-    container_name: coze-redis
+    container_name: ynet-redis
     user: root
     privileged: true
     profiles: ['middleware']
@@ -78,11 +78,11 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - coze-network
+      - ynet-network
 
   # rocketmq-namesrv:
   #   image: apache/rocketmq:5.3.2
-  #   container_name: coze-rocketmq-namesrv
+  #   container_name: ynet-rocketmq-namesrv
   #   privileged: true
   #   user: root
   #   profiles: ['middleware']
@@ -115,10 +115,10 @@ services:
   #     retries: 10
   #     start_period: 10s
   #   networks:
-  #     - coze-network
+  #     - ynet-network
   # rocketmq-broker:
   #   image: apache/rocketmq:5.3.2
-  #   container_name: coze-rocketmq-broker
+  #   container_name: ynet-rocketmq-broker
   #   privileged: true
   #   user: root
   #   profiles: ['middleware']
@@ -132,7 +132,7 @@ services:
   #     - ./data/rocketmq/broker/store:/home/rocketmq/store:rw,Z
   #     - ./volumes/rocketmq/broker.conf:/home/rocketmq/conf/broker.conf:rw,Z
   #   networks:
-  #     - coze-network
+  #     - ynet-network
   #   command: >
   #     bash -c '
   #       # Set proper permissions
@@ -164,7 +164,7 @@ services:
   #       fi
 
   #       echo "Creating topics..."
-  #       for t in opencoze_knowledge opencoze_search_app opencoze_search_resource \
+  #       for t in openynet_knowledge openynet_search_app openynet_search_resource \
   #                 %RETRY%cg_knowledge %RETRY%cg_search_app %RETRY%cg_search_resource; do
   #         sh mqadmin updateTopic -n rocketmq-namesrv:9876 \
   #           -c DefaultCluster -t "$$t"
@@ -185,7 +185,7 @@ services:
 
   elasticsearch:
     image: bitnami/elasticsearch:8.18.0
-    container_name: coze-elasticsearch
+    container_name: ynet-elasticsearch
     user: root
     privileged: true
     profiles: ['middleware']
@@ -213,7 +213,7 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - coze-network
+      - ynet-network
     # Install smartcn analyzer plugin and initialize ES
     command: >
       bash -c "
@@ -272,7 +272,7 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2025-06-13T11-33-47Z-cpuv1
-    container_name: coze-minio
+    container_name: ynet-minio
     user: root
     privileged: true
     profiles: ['middleware']
@@ -283,7 +283,7 @@ vvvvvvvvv
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
-      MINIO_DEFAULT_BUCKETS: ${MINIO_BUCKET:-opencoze},${MINIO_DEFAULT_BUCKETS:-milvus}
+      MINIO_DEFAULT_BUCKETS: ${MINIO_BUCKET:-openynet},${MINIO_DEFAULT_BUCKETS:-milvus}
     command: server /data --console-address ":9001"
     healthcheck:
       test:
@@ -296,11 +296,11 @@ vvvvvvvvv
       retries: 3
       start_period: 30s
     networks:
-      - coze-network
+      - ynet-network
 
   etcd:
     image: bitnami/etcd:3.5
-    container_name: coze-etcd
+    container_name: ynet-etcd
     user: root
     privileged: true
     profiles: ['middleware']
@@ -332,10 +332,10 @@ vvvvvvvvv
       retries: 10
       start_period: 10s
     networks:
-      - coze-network
+      - ynet-network
 
   milvus:
-    container_name: coze-milvus
+    container_name: ynet-milvus
     image: milvusdb/milvus:v2.5.10
     user: root
     privileged: true
@@ -352,8 +352,8 @@ vvvvvvvvv
     security_opt:
       - seccomp:unconfined
     environment:
-      ETCD_ENDPOINTS: coze-etcd:2379
-      MINIO_ADDRESS: coze-minio:9000
+      ETCD_ENDPOINTS: ynet-etcd:2379
+      MINIO_ADDRESS: ynet-minio:9000
       MINIO_BUCKET_NAME: ${MINIO_BUCKET:-milvus}
       MINIO_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
@@ -376,17 +376,17 @@ vvvvvvvvv
       minio:
         condition: service_healthy
     networks:
-      - coze-network
+      - ynet-network
   nsqlookupd:
     image: nsqio/nsq:v1.2.1
-    container_name: coze-nsqlookupd
+    container_name: ynet-nsqlookupd
     command: /nsqlookupd
     profiles: ['middleware']
     ports:
       - '4160:4160'
       - '4161:4161'
     networks:
-      - coze-network
+      - ynet-network
     healthcheck:
       test: ['CMD-SHELL', 'nsqlookupd --version']
       interval: 5s
@@ -396,8 +396,8 @@ vvvvvvvvv
 
   nsqd:
     image: nsqio/nsq:v1.2.1
-    container_name: coze-nsqd
-    command: /nsqd --lookupd-tcp-address=coze-nsqlookupd:4160 --broadcast-address=coze-nsqd
+    container_name: ynet-nsqd
+    command: /nsqd --lookupd-tcp-address=ynet-nsqlookupd:4160 --broadcast-address=ynet-nsqd
     profiles: ['middleware']
     ports:
       - '4150:4150'
@@ -406,7 +406,7 @@ vvvvvvvvv
       nsqlookupd:
         condition: service_healthy
     networks:
-      - coze-network
+      - ynet-network
     healthcheck:
       test: ['CMD-SHELL', '/nsqd --version']
       interval: 5s
@@ -416,8 +416,8 @@ vvvvvvvvv
 
   nsqadmin:
     image: nsqio/nsq:v1.2.1
-    container_name: coze-nsqadmin
-    command: /nsqadmin --lookupd-http-address=coze-nsqlookupd:4161
+    container_name: ynet-nsqadmin
+    command: /nsqadmin --lookupd-http-address=ynet-nsqlookupd:4161
     profiles: ['middleware']
     ports:
       - '4171:4171'
@@ -425,11 +425,11 @@ vvvvvvvvv
       nsqlookupd:
         condition: service_healthy
     networks:
-      - coze-network
+      - ynet-network
 
   minio-setup:
     image: minio/mc:RELEASE.2025-05-21T01-59-54Z-cpuv1
-    container_name: coze-minio-setup
+    container_name: ynet-minio-setup
     profiles: ['middleware']
     env_file: *env_file
     depends_on:
@@ -440,26 +440,26 @@ vvvvvvvvv
       - ./volumes/minio/official_plugin_icon/:/official_plugin_icon
     entrypoint: >
       /bin/sh -c  "
-        (/usr/bin/mc alias set localminio http://coze-minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} && \
+        (/usr/bin/mc alias set localminio http://ynet-minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} && \
         /usr/bin/mc mb --ignore-existing localminio/${STORAGE_BUCKET} && \
         /usr/bin/mc cp --recursive /default_icon/ localminio/${STORAGE_BUCKET}/default_icon/ && \
         /usr/bin/mc cp --recursive /official_plugin_icon/ localminio/${STORAGE_BUCKET}/official_plugin_icon/ && \
         echo 'upload files to minio complete: Files uploaded to ${STORAGE_BUCKET} bucket.') || exit 1; \
       "
     networks:
-      - coze-network
+      - ynet-network
     restart: 'no'
 
   mysql-setup-schema:
     image: arigaio/atlas:0.35.0-community-alpine
-    container_name: coze-mysql-setup-schema
+    container_name: ynet-mysql-setup-schema
     profiles: ['middleware', 'mysql-setup', 'run-server']
     env_file: *env_file
     depends_on:
       mysql:
         condition: service_healthy
     volumes:
-      - ./atlas/opencoze_latest_schema.hcl:/opencoze_latest_schema.hcl
+      - ./atlas/openynet_latest_schema.hcl:/openynet_latest_schema.hcl
     entrypoint:
       - /bin/sh
       - -c
@@ -475,7 +475,7 @@ vvvvvvvvv
         for i in `seq 1 60`; do
              if atlas schema apply \
                  -u "$${TMP_ATLAS_URL}" \
-                 --to file:///opencoze_latest_schema.hcl \
+                 --to file:///openynet_latest_schema.hcl \
                  --exclude "atlas_schema_revisions,table_*" \
                  --auto-approve; then
                  echo "MySQL setup complete."
@@ -487,10 +487,10 @@ vvvvvvvvv
          echo "MySQL setup failed after 60 retries."
          exit 1
     networks:
-      - coze-network
+      - ynet-network
   mysql-setup-init-sql:
     image: mysql:8.4.5
-    container_name: coze-mysql-setup-init-sql
+    container_name: ynet-mysql-setup-init-sql
     profiles: ['middleware', 'mysql-setup', 'run-server', 'volcano-setup']
     env_file: *env_file
     depends_on:
@@ -520,16 +520,16 @@ vvvvvvvvv
       - ./volumes/mysql/sql_init.sql:/sql_init.sql
       - ./volumes/mysql/schema.sql:/schema.sql
     networks:
-      - coze-network
+      - ynet-network
     restart: 'no'
 
-  coze-server:
+  ynet-server:
     build:
       context: ../
       dockerfile: backend/Dockerfile
-    image: opencoze/opencoze:latest
+    image: openynet/openynet:latest
     profiles: ['build-server']
 
 networks:
-  coze-network:
+  ynet-network:
     driver: bridge

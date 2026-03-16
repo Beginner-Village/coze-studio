@@ -1,4 +1,4 @@
-# 📤 Coze Studio 文件上传API文档
+# 📤 Ynet Studio 文件上传API文档
 
 ## 目录
 - [认证方式](#认证方式)
@@ -27,7 +27,7 @@ Authorization: Bearer pat_your_api_key_here
 ```
 
 **获取API Key**:
-1. 登录Coze Studio
+1. 登录Ynet Studio
 2. 进入 设置 → API密钥
 3. 创建新的API Key
 4. 妥善保存生成的Key (格式: `pat_xxx`)
@@ -131,7 +131,7 @@ curl -X POST http://localhost:8888/api/bot/upload_file \
 #   "code": 0,
 #   "msg": "",
 #   "data": {
-#     "upload_url": "http://localhost:8889/opencoze/BIZ_BOT_ICON/7532755646093983744_1760498668296240000_WJWoTBgTdq.jpg?...",
+#     "upload_url": "http://localhost:8889/openynet/BIZ_BOT_ICON/7532755646093983744_1760498668296240000_WJWoTBgTdq.jpg?...",
 #     "upload_uri": "BIZ_BOT_ICON/7532755646093983744_1760498668296240000_WJWoTBgTdq.jpg"
 #   }
 # }
@@ -145,7 +145,7 @@ import base64
 
 def upload_file(file_path, api_key, biz_type=1):
     """
-    上传文件到Coze Studio
+    上传文件到Ynet Studio
 
     Args:
         file_path: 本地文件路径
@@ -202,7 +202,7 @@ const axios = require('axios');
 const fs = require('fs');
 
 /**
- * 上传文件到Coze Studio
+ * 上传文件到Ynet Studio
  * @param {string} filePath - 本地文件路径
  * @param {string} apiKey - API密钥
  * @param {number} bizType - 业务类型 (默认1=Bot图标)
@@ -1022,7 +1022,7 @@ def upload_with_cache(file_path, api_key):
 ### Q2: 如何获取API Key?
 
 **A**:
-1. 登录Coze Studio
+1. 登录Ynet Studio
 2. 进入 设置 → API密钥
 3. 点击"创建新密钥"
 4. 复制生成的Key (格式: `pat_xxx`)
@@ -1057,7 +1057,7 @@ def upload_with_cache(file_path, api_key):
 **A**:
 使用返回的`upload_url`直接访问,例如:
 ```html
-<img src="http://localhost:8889/opencoze/BIZ_BOT_ICON/xxx.jpg?..." />
+<img src="http://localhost:8889/openynet/BIZ_BOT_ICON/xxx.jpg?..." />
 ```
 
 ### Q7: 可以删除已上传的文件吗?
@@ -1087,7 +1087,7 @@ BASE_URL="http://localhost:8888"
 TEST_FILE="test_icon.png"
 
 echo "=========================================="
-echo "  Coze Studio 文件上传测试"
+echo "  Ynet Studio 文件上传测试"
 echo "=========================================="
 echo ""
 
@@ -1164,11 +1164,11 @@ echo "=========================================="
 ### C. 联系方式
 
 - **问题反馈**: GitHub Issues
-- **技术支持**: support@coze.com
-- **API文档**: https://docs.coze.com
+- **技术支持**: support@ynet.com
+- **API文档**: https://docs.ynet.com
 
 ---
 
 **文档版本**: v1.1
 **最后更新**: 2025-10-15
-**维护者**: Coze Studio Team
+**维护者**: Ynet Studio Team

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ package search
 import (
 	"context"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/resource/common"
-	"github.com/coze-dev/coze-studio/backend/domain/search/entity"
-	search "github.com/coze-dev/coze-studio/backend/domain/search/service"
-	crosssearch "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/search"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/resource/common"
+	"github.com/ynet-dev/ynet-studio/backend/domain/search/entity"
+	search "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
+	crosssearch "github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/search"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 type Notifier interface {

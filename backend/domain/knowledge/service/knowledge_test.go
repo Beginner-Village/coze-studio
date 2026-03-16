@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,19 +29,19 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
-	knowledgeModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/knowledge"
-	"github.com/coze-dev/coze-studio/backend/domain/knowledge/entity"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/document"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/rdb"
-	producerMock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/eventbus"
-	mock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/idgen"
-	storageMock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	knowledgeModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/rdb"
+	producerMock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/eventbus"
+	mock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/idgen"
+	storageMock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 func MockKnowledgeSVC(t *testing.T) Knowledge {
-	// os.Setenv("MYSQL_DSN", "coze:coze123@(localhost:3306)/opencoze?charset=utf8mb4&parseTime=True")
-	dsn := "root:root@tcp(127.0.0.1:3306)/opencoze?charset=utf8mb4&parseTime=True&loc=Local"
+	// os.Setenv("MYSQL_DSN", "coze:coze123@(localhost:3306)/openynet?charset=utf8mb4&parseTime=True")
+	dsn := "root:root@tcp(127.0.0.1:3306)/openynet?charset=utf8mb4&parseTime=True&loc=Local"
 	if os.Getenv("CI_JOB_NAME") != "" {
 		dsn = strings.ReplaceAll(dsn, "127.0.0.1", "mysql")
 	}

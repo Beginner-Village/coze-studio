@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import (
 	reflect "reflect"
 
 	schema "github.com/cloudwego/eino/schema"
-	plugin "github.com/coze-dev/coze-studio/backend/domain/workflow/crossdomain/plugin"
+	plugin "github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/plugin"
 	gomock "go.uber.org/mock/gomock"
 )
 

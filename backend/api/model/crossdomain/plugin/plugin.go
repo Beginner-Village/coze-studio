@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package plugin
 import (
 	"github.com/getkin/kin-openapi/openapi3"
 
-	api "github.com/coze-dev/coze-studio/backend/api/model/plugin_develop/common"
+	api "github.com/ynet-dev/ynet-studio/backend/api/model/plugin_develop/common"
 )
 
 type VersionPlugin struct {

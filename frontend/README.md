@@ -1,6 +1,6 @@
-# Coze Studio Frontend
+# Ynet Studio Frontend
 
-This is the frontend project of Coze Studio, an AI Agent development platform built with monorepo architecture, based on React 18 and modern frontend technology stack.
+This is the frontend project of Ynet Studio, an AI Agent development platform built with monorepo architecture, based on React 18 and modern frontend technology stack.
 
 ## 🏗️ Project Architecture
 

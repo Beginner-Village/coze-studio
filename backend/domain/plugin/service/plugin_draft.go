@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,20 +28,20 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"gopkg.in/yaml.v3"
 
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/plugin"
-	searchModel "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/search"
-	common "github.com/coze-dev/coze-studio/backend/api/model/plugin_develop/common"
-	plugin_develop_common "github.com/coze-dev/coze-studio/backend/api/model/plugin_develop/common"
-	resCommon "github.com/coze-dev/coze-studio/backend/api/model/resource/common"
-	crosssearch "github.com/coze-dev/coze-studio/backend/crossdomain/contract/search"
-	"github.com/coze-dev/coze-studio/backend/domain/plugin/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/plugin/internal/openapi"
-	"github.com/coze-dev/coze-studio/backend/domain/plugin/repository"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
+	searchModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/search"
+	common "github.com/ynet-dev/ynet-studio/backend/api/model/plugin_develop/common"
+	plugin_develop_common "github.com/ynet-dev/ynet-studio/backend/api/model/plugin_develop/common"
+	resCommon "github.com/ynet-dev/ynet-studio/backend/api/model/resource/common"
+	crosssearch "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/search"
+	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/internal/openapi"
+	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/repository"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 func (p *pluginServiceImpl) CreateDraftPlugin(ctx context.Context, req *CreateDraftPluginRequest) (pluginID int64, err error) {

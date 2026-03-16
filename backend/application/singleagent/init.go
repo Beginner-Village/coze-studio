@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,27 +20,27 @@ import (
 	"github.com/cloudwego/eino/compose"
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/infra/contract/cache"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/embedding"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/embedding"
 
-	"github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/repository"
-	singleagent "github.com/coze-dev/coze-studio/backend/domain/agent/singleagent/service"
-	connector "github.com/coze-dev/coze-studio/backend/domain/connector/service"
-	knowledge "github.com/coze-dev/coze-studio/backend/domain/knowledge/service"
-	database "github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
-	variables "github.com/coze-dev/coze-studio/backend/domain/memory/variables/service"
-	"github.com/coze-dev/coze-studio/backend/domain/plugin/service"
-	search "github.com/coze-dev/coze-studio/backend/domain/search/service"
-	shortcutCmd "github.com/coze-dev/coze-studio/backend/domain/shortcutcmd/service"
-	user "github.com/coze-dev/coze-studio/backend/domain/user/service"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/imagex"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/modelmgr"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/chatmodel"
-	"github.com/coze-dev/coze-studio/backend/pkg/jsoncache"
+	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/repository"
+	singleagent "github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/service"
+	connector "github.com/ynet-dev/ynet-studio/backend/domain/connector/service"
+	knowledge "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/service"
+	database "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
+	variables "github.com/ynet-dev/ynet-studio/backend/domain/memory/variables/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/service"
+	search "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
+	shortcutCmd "github.com/ynet-dev/ynet-studio/backend/domain/shortcutcmd/service"
+	user "github.com/ynet-dev/ynet-studio/backend/domain/user/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/chatmodel"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/jsoncache"
 )
 
 type (

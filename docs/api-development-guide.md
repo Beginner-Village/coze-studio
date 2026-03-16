@@ -2,7 +2,7 @@
 
 ## 概述
 
-Coze Studio 使用 Thrift IDL 定义 API 契约，通过 Hz 工具（后端）和 idl2ts（前端）生成类型安全的代码。
+Ynet Studio 使用 Thrift IDL 定义 API 契约，通过 Hz 工具（后端）和 idl2ts（前端）生成类型安全的代码。
 
 ---
 

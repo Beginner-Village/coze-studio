@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,9 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/plugin"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
 )
 
 func TestToolExecutorProcessWithInvalidRespProcessStrategyOfReturnDefault(t *testing.T) {

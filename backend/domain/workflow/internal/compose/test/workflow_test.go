@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,16 +23,16 @@ import (
 	"github.com/cloudwego/eino/compose"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	compose2 "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/compose"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/entry"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/exit"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/selector"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/textprocessor"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/variableaggregator"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	compose2 "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/compose"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/entry"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/exit"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/selector"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/textprocessor"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/variableaggregator"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/schema"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 func TestAddSelector(t *testing.T) {

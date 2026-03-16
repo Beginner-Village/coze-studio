@@ -1,4 +1,4 @@
-# @coze-devops/debug-panel
+# @ynet-devops/debug-panel
 
 > Project template for react component with storybook.
 

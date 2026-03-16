@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,13 @@ import (
 	"github.com/cloudwego/eino-ext/components/embedding/ollama"
 	"github.com/cloudwego/eino-ext/components/embedding/openai"
 
-	embEntity "github.com/coze-dev/coze-studio/backend/domain/embedding/entity"
-	embService "github.com/coze-dev/coze-studio/backend/domain/embedding/service"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/embedding"
-	arkemb "github.com/coze-dev/coze-studio/backend/infra/impl/embedding/ark"
-	httpemb "github.com/coze-dev/coze-studio/backend/infra/impl/embedding/http"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/embedding/wrap"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
+	embEntity "github.com/ynet-dev/ynet-studio/backend/domain/embedding/entity"
+	embService "github.com/ynet-dev/ynet-studio/backend/domain/embedding/service"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/embedding"
+	arkemb "github.com/ynet-dev/ynet-studio/backend/infra/impl/embedding/ark"
+	httpemb "github.com/ynet-dev/ynet-studio/backend/infra/impl/embedding/http"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/embedding/wrap"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 // SpaceEmbeddingProvider provides embedding instances based on space configuration

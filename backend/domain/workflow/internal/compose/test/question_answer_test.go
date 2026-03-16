@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,25 +36,25 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
-	model "github.com/coze-dev/coze-studio/backend/api/model/crossdomain/modelmgr"
-	crossmodelmgr "github.com/coze-dev/coze-studio/backend/crossdomain/contract/modelmgr"
-	mockmodel "github.com/coze-dev/coze-studio/backend/crossdomain/contract/modelmgr/modelmock"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/entity/vo"
-	compose2 "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/compose"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/entry"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/exit"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow/internal/nodes/qa"
-	repo2 "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/repo"
-	schema2 "github.com/coze-dev/coze-studio/backend/domain/workflow/internal/schema"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/cache/redis"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/checkpoint"
-	mock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/idgen"
-	storageMock "github.com/coze-dev/coze-studio/backend/internal/mock/infra/contract/storage"
+	model "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/modelmgr"
+	crossmodelmgr "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/modelmgr"
+	mockmodel "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/modelmgr/modelmock"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	compose2 "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/compose"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/entry"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/exit"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/nodes/qa"
+	repo2 "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/repo"
+	schema2 "github.com/ynet-dev/ynet-studio/backend/domain/workflow/internal/schema"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/cache/redis"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/checkpoint"
+	mock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/idgen"
+	storageMock "github.com/ynet-dev/ynet-studio/backend/internal/mock/infra/contract/storage"
 
-	"github.com/coze-dev/coze-studio/backend/internal/testutil"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/internal/testutil"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 func TestQuestionAnswer(t *testing.T) {
@@ -84,7 +84,7 @@ func TestQuestionAnswer(t *testing.T) {
 			mockModelManager.EXPECT().GetModel(gomock.Any(), gomock.Any()).Return(chatModel, nil, nil).AnyTimes()
 		}
 
-		dsn := "root:root@tcp(127.0.0.1:3306)/opencoze?charset=utf8mb4&parseTime=True&loc=Local"
+		dsn := "root:root@tcp(127.0.0.1:3306)/openynet?charset=utf8mb4&parseTime=True&loc=Local"
 		if os.Getenv("CI_JOB_NAME") != "" {
 			dsn = strings.ReplaceAll(dsn, "127.0.0.1", "mysql")
 		}

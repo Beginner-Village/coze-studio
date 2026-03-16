@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,22 +23,22 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/application/singleagent"
-	app "github.com/coze-dev/coze-studio/backend/domain/app/service"
-	connector "github.com/coze-dev/coze-studio/backend/domain/connector/service"
-	knowledge "github.com/coze-dev/coze-studio/backend/domain/knowledge/service"
-	database "github.com/coze-dev/coze-studio/backend/domain/memory/database/service"
-	"github.com/coze-dev/coze-studio/backend/domain/plugin/service"
-	prompt "github.com/coze-dev/coze-studio/backend/domain/prompt/service"
-	search "github.com/coze-dev/coze-studio/backend/domain/search/service"
-	user "github.com/coze-dev/coze-studio/backend/domain/user/service"
-	"github.com/coze-dev/coze-studio/backend/domain/workflow"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/cache"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/es"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/eventbus"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/application/singleagent"
+	app "github.com/ynet-dev/ynet-studio/backend/domain/app/service"
+	connector "github.com/ynet-dev/ynet-studio/backend/domain/connector/service"
+	knowledge "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/service"
+	database "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/service"
+	prompt "github.com/ynet-dev/ynet-studio/backend/domain/prompt/service"
+	search "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
+	user "github.com/ynet-dev/ynet-studio/backend/domain/user/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/es"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/eventbus"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 )
 
 type ServiceComponents struct {

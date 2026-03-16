@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/domain/user/internal/dal"
-	"github.com/coze-dev/coze-studio/backend/domain/user/internal/dal/model"
+	"github.com/ynet-dev/ynet-studio/backend/domain/user/internal/dal"
+	"github.com/ynet-dev/ynet-studio/backend/domain/user/internal/dal/model"
 )
 
 func NewUserRepo(db *gorm.DB) UserRepository {

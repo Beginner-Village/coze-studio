@@ -1,4 +1,4 @@
-# Coze Studio OpenAPI 测试文档
+# Ynet Studio OpenAPI 测试文档
 
 ## 测试环境配置
 

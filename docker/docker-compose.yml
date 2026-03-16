@@ -1,17 +1,17 @@
-name: coze-studio
+name: ynet-studio
 x-env-file: &env_file
   - .env
 
 services:
   mysql:
     image: mysql:8.4.5
-    container_name: coze-mysql
+    container_name: ynet-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-opencoze}
-      MYSQL_USER: ${MYSQL_USER:-coze}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-coze123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-openynet}
+      MYSQL_USER: ${MYSQL_USER:-ynet}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ynet123}
     env_file: *env_file
     ports:
       - '3306'
@@ -37,11 +37,11 @@ services:
       retries: 5
       start_period: 30s
     networks:
-      - coze-network
+      - ynet-network
 
   redis:
     image: bitnami/redis:8.0
-    container_name: coze-redis
+    container_name: ynet-redis
     restart: always
     user: root
     privileged: true
@@ -71,10 +71,10 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - coze-network
+      - ynet-network
   elasticsearch:
     image: bitnami/elasticsearch:8.18.0
-    container_name: coze-elasticsearch
+    container_name: ynet-elasticsearch
     restart: always
     user: root
     privileged: true
@@ -102,7 +102,7 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - coze-network
+      - ynet-network
     # Install smartcn analyzer plugin and initialize ES
     command: >
       bash -c "
@@ -161,7 +161,7 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2025-06-13T11-33-47Z-cpuv1
-    container_name: coze-minio
+    container_name: ynet-minio
     user: root
     privileged: true
     restart: always
@@ -176,7 +176,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
-      MINIO_DEFAULT_BUCKETS: ${MINIO_BUCKET:-opencoze},${MINIO_DEFAULT_BUCKETS:-milvus}
+      MINIO_DEFAULT_BUCKETS: ${MINIO_BUCKET:-openynet},${MINIO_DEFAULT_BUCKETS:-milvus}
     entrypoint:
       - /bin/sh
       - -c
@@ -210,11 +210,11 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - coze-network
+      - ynet-network
 
   etcd:
     image: bitnami/etcd:3.5
-    container_name: coze-etcd
+    container_name: ynet-etcd
     user: root
     restart: always
     privileged: true
@@ -246,10 +246,10 @@ services:
       retries: 10
       start_period: 10s
     networks:
-      - coze-network
+      - ynet-network
 
   milvus:
-    container_name: coze-milvus
+    container_name: ynet-milvus
     image: milvusdb/milvus:v2.5.10
     user: root
     privileged: true
@@ -290,17 +290,17 @@ services:
       minio:
         condition: service_healthy
     networks:
-      - coze-network
+      - ynet-network
   nsqlookupd:
     image: nsqio/nsq:v1.2.1
-    container_name: coze-nsqlookupd
+    container_name: ynet-nsqlookupd
     command: /nsqlookupd
     restart: always
     ports:
       - '4160'
       - '4161'
     networks:
-      - coze-network
+      - ynet-network
     healthcheck:
       test: ['CMD-SHELL', 'nsqlookupd --version']
       interval: 5s
@@ -310,7 +310,7 @@ services:
 
   nsqd:
     image: nsqio/nsq:v1.2.1
-    container_name: coze-nsqd
+    container_name: ynet-nsqd
     command: /nsqd --lookupd-tcp-address=nsqlookupd:4160 --broadcast-address=nsqd
     restart: always
     ports:
@@ -320,7 +320,7 @@ services:
       nsqlookupd:
         condition: service_healthy
     networks:
-      - coze-network
+      - ynet-network
     healthcheck:
       test: ['CMD-SHELL', '/nsqd --version']
       interval: 5s
@@ -330,7 +330,7 @@ services:
 
   nsqadmin:
     image: nsqio/nsq:v1.2.1
-    container_name: coze-nsqadmin
+    container_name: ynet-nsqadmin
     command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
     restart: always
     ports:
@@ -339,20 +339,20 @@ services:
       nsqlookupd:
         condition: service_healthy
     networks:
-      - coze-network
+      - ynet-network
 
-  coze-server:
+  ynet-server:
     # build:
     #   context: ../
     #   dockerfile: backend/Dockerfile
-    image: opencoze/opencoze:latest
+    image: openynet/openynet:latest
     restart: always
-    container_name: coze-server
+    container_name: ynet-server
     env_file: *env_file
     # environment:
     #   LISTEN_ADDR: 0.0.0.0:8888
     networks:
-      - coze-network
+      - ynet-network
     ports:
       - '8888'
       - '8889:8889'
@@ -371,14 +371,14 @@ services:
         condition: service_healthy
       milvus:
         condition: service_healthy
-    command: ['/app/opencoze']
+    command: ['/app/openynet']
 
-  coze-web:
+  ynet-web:
     # build:
     #   context: ..
     #   dockerfile: frontend/Dockerfile
-    image: opencoze/web:latest
-    container_name: coze-web
+    image: openynet/web:latest
+    container_name: ynet-web
     restart: always
     ports:
       - '8888:80'
@@ -388,10 +388,10 @@ services:
       - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro # Proxy config
       # - ./nginx/ssl:/etc/nginx/ssl:ro  # SSL certificates (uncomment if using SSL)
     depends_on:
-      - coze-server
+      - ynet-server
     networks:
-      - coze-network
+      - ynet-network
 
 networks:
-  coze-network:
+  ynet-network:
     driver: bridge

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 coze-dev Authors
+ * Copyright 2025 ynet-dev Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,30 +31,30 @@ import (
 	"github.com/tealeg/xlsx/v3"
 	"gorm.io/gorm"
 
-	"github.com/coze-dev/coze-studio/backend/infra/contract/cache"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
 
-	"github.com/coze-dev/coze-studio/backend/api/model/app/bot_common"
-	"github.com/coze-dev/coze-studio/backend/api/model/crossdomain/database"
-	"github.com/coze-dev/coze-studio/backend/api/model/data/database/table"
-	crossvariables "github.com/coze-dev/coze-studio/backend/crossdomain/contract/variables"
-	entity2 "github.com/coze-dev/coze-studio/backend/domain/memory/database/entity"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/database/internal/convertor"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/database/internal/dal/query"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/database/internal/physicaltable"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/database/internal/sheet"
-	"github.com/coze-dev/coze-studio/backend/domain/memory/database/repository"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/idgen"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/rdb"
-	entity3 "github.com/coze-dev/coze-studio/backend/infra/contract/rdb/entity"
-	sqlparsercontract "github.com/coze-dev/coze-studio/backend/infra/contract/sqlparser"
-	"github.com/coze-dev/coze-studio/backend/infra/contract/storage"
-	"github.com/coze-dev/coze-studio/backend/infra/impl/sqlparser"
-	"github.com/coze-dev/coze-studio/backend/pkg/errorx"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/ptr"
-	"github.com/coze-dev/coze-studio/backend/pkg/lang/slices"
-	"github.com/coze-dev/coze-studio/backend/pkg/logs"
-	"github.com/coze-dev/coze-studio/backend/types/consts"
-	"github.com/coze-dev/coze-studio/backend/types/errno"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_common"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/data/database/table"
+	crossvariables "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/variables"
+	entity2 "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/database/internal/convertor"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/database/internal/dal/query"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/database/internal/physicaltable"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/database/internal/sheet"
+	"github.com/ynet-dev/ynet-studio/backend/domain/memory/database/repository"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb"
+	entity3 "github.com/ynet-dev/ynet-studio/backend/infra/contract/rdb/entity"
+	sqlparsercontract "github.com/ynet-dev/ynet-studio/backend/infra/contract/sqlparser"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/infra/impl/sqlparser"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 type databaseService struct {

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2025 coze-dev Authors
+# Copyright 2025 ynet-dev Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,10 +37,10 @@ EMAIL="$1"
 PASSWORD="${2:-123456}"
 
 # Read MySQL configuration from docker-compose.yml
-MYSQL_USER="${MYSQL_USER:-coze}"
-MYSQL_PASSWORD="${MYSQL_PASSWORD:-coze123}"
-MYSQL_DATABASE="${MYSQL_DATABASE:-opencoze}"
-MYSQL_CONTAINER="coze-mysql"
+MYSQL_USER="${MYSQL_USER:-ynet}"
+MYSQL_PASSWORD="${MYSQL_PASSWORD:-ynet123}"
+MYSQL_DATABASE="${MYSQL_DATABASE:-openynet}"
+MYSQL_CONTAINER="ynet-mysql"
 
 echo "Updating password for user $EMAIL..."
 
