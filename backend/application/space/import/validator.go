@@ -52,6 +52,7 @@ func NewValidator() *Validator {
 type ValidationResult struct {
 	Manifest     *export.Manifest
 	Resources    *export.SpaceResources
+	Deleted      *export.DeletedResources
 	Warnings     []string
 	FileContents map[int64][]byte // document ID -> file bytes from knowledge_bases/{id}/files/
 }
@@ -88,7 +89,7 @@ func (v *Validator) ValidateAndParse(ctx context.Context, fileContent []byte) (*
 	}
 
 	// Parse resources
-	resources, warnings, fileContents, err := v.parseResources(ctx, zipReader, manifest)
+	resources, deleted, warnings, fileContents, err := v.parseResources(ctx, zipReader, manifest)
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +122,7 @@ func (v *Validator) ValidateAndParse(ctx context.Context, fileContent []byte) (*
 	return &ValidationResult{
 		Manifest:     manifest,
 		Resources:    resources,
+		Deleted:      deleted,
 		Warnings:     warnings,
 		FileContents: fileContents,
 	}, nil
@@ -193,7 +195,7 @@ func (v *Validator) validateResourceCounts(manifest *export.Manifest) error {
 }
 
 // parseResources parses all resources from the ZIP
-func (v *Validator) parseResources(ctx context.Context, zipReader *zip.Reader, manifest *export.Manifest) (*export.SpaceResources, []string, map[int64][]byte, error) {
+func (v *Validator) parseResources(ctx context.Context, zipReader *zip.Reader, manifest *export.Manifest) (*export.SpaceResources, *export.DeletedResources, []string, map[int64][]byte, error) {
 	resources := &export.SpaceResources{
 		Agents:            make([]*export.ExportedAgent, 0),
 		Plugins:           make([]*export.ExportedPlugin, 0),
@@ -406,10 +408,13 @@ func (v *Validator) parseResources(ctx context.Context, zipReader *zip.Reader, m
 	}
 
 	// Parse deleted_resources.json (for incremental sync)
+	var deletedResources *export.DeletedResources
 	if data, ok := fileMap["deleted_resources.json"]; ok {
 		var deleted export.DeletedResources
 		if err := sonic.Unmarshal(data, &deleted); err != nil {
 			warnings = append(warnings, fmt.Sprintf("Failed to parse deleted_resources.json: %v", err))
+		} else {
+			deletedResources = &deleted
 		}
 		logs.CtxDebugf(ctx, "Parsed deleted_resources.json")
 	}
@@ -426,7 +431,7 @@ func (v *Validator) parseResources(ctx context.Context, zipReader *zip.Reader, m
 	// Generate warnings for cleared references
 	warnings = append(warnings, v.generateClearingWarnings(resources)...)
 
-	return resources, warnings, fileContents, nil
+	return resources, deletedResources, warnings, fileContents, nil
 }
 
 // generateClearingWarnings generates warnings about references that will be cleared

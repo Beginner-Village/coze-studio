@@ -181,6 +181,15 @@ func (s *SyncService) ImportConfirm(ctx context.Context, spaceID, userID int64, 
 		return nil, err
 	}
 
+	// Handle deleted resources before creating/updating
+	if validationResult.Deleted != nil {
+		if txErr := s.db.Transaction(func(tx *gorm.DB) error {
+			return s.handleDeletedResources(ctx, tx, validationResult.Deleted, pending.MappingStore)
+		}); txErr != nil {
+			return nil, errorx.WrapByCode(txErr, errno.ErrSpaceImportFailedCode, errorx.KV("msg", "failed to handle deleted resources"))
+		}
+	}
+
 	// Execute the sync import using the existing importer in upsert mode
 	importResult, err := s.importer.Confirm(ctx, &spaceimport.ConfirmRequest{
 		SpaceID:     spaceID,
@@ -241,6 +250,84 @@ func (s *SyncService) GetLastExport(ctx context.Context, spaceID int64) (*SyncHi
 
 func (s *SyncService) GetHistory(ctx context.Context, spaceID int64) ([]SyncHistory, error) {
 	return s.historyRepo.ListBySpace(ctx, spaceID, 50)
+}
+
+// handleDeletedResources processes deleted resources from the import package.
+// For each deleted resource that has a mapping in the target space, soft-delete it.
+func (s *SyncService) handleDeletedResources(ctx context.Context, tx *gorm.DB, deleted *spaceexport.DeletedResources, mappingStore *SyncMappingStore) error {
+	if deleted == nil {
+		return nil
+	}
+	now := time.Now()
+
+	// Delete agents
+	for _, sourceID := range deleted.Agents {
+		targetID, exists := mappingStore.GetTargetID("agent", sourceID)
+		if !exists {
+			continue
+		}
+		tx.Table("single_agent_draft").Where("agent_id = ?", targetID).Update("deleted_at", now)
+		tx.Table("agent_tool_draft").Where("agent_id = ?", targetID).Delete(&struct{}{})
+		mappingStore.RemoveMapping(ctx, "agent", sourceID)
+	}
+
+	// Delete plugins
+	for _, sourceID := range deleted.Plugins {
+		targetID, exists := mappingStore.GetTargetID("plugin", sourceID)
+		if !exists {
+			continue
+		}
+		tx.Table("plugin_draft").Where("id = ?", targetID).Update("deleted_at", now)
+		tx.Table("plugin").Where("id = ?", targetID).Update("deleted_at", now)
+		mappingStore.RemoveMapping(ctx, "plugin", sourceID)
+	}
+
+	// Delete workflows
+	for _, sourceID := range deleted.Workflows {
+		targetID, exists := mappingStore.GetTargetID("workflow", sourceID)
+		if !exists {
+			continue
+		}
+		tx.Table("workflow_meta").Where("id = ?", targetID).Update("deleted_at", now)
+		tx.Table("workflow_draft").Where("id = ?", targetID).Update("deleted_at", now)
+		mappingStore.RemoveMapping(ctx, "workflow", sourceID)
+	}
+
+	// Delete knowledge bases (+ their documents and slices)
+	for _, sourceID := range deleted.KnowledgeBases {
+		targetID, exists := mappingStore.GetTargetID("knowledge", sourceID)
+		if !exists {
+			continue
+		}
+		tx.Table("knowledge_document_slice").Where("knowledge_id = ?", targetID).Update("deleted_at", now)
+		tx.Table("knowledge_document").Where("knowledge_id = ?", targetID).Update("deleted_at", now)
+		tx.Table("knowledge").Where("id = ?", targetID).Update("deleted_at", now)
+		mappingStore.RemoveMapping(ctx, "knowledge", sourceID)
+	}
+
+	// Delete individual documents
+	for _, sourceID := range deleted.Documents {
+		targetID, exists := mappingStore.GetTargetID("document", sourceID)
+		if !exists {
+			continue
+		}
+		tx.Table("knowledge_document_slice").Where("document_id = ?", targetID).Update("deleted_at", now)
+		tx.Table("knowledge_document").Where("id = ?", targetID).Update("deleted_at", now)
+		mappingStore.RemoveMapping(ctx, "document", sourceID)
+	}
+
+	// Delete folders
+	for _, sourceID := range deleted.Folders {
+		targetID, exists := mappingStore.GetTargetID("folder", sourceID)
+		if !exists {
+			continue
+		}
+		tx.Table("folder").Where("id = ?", targetID).Update("deleted_at", now)
+		tx.Table("resource_folder_mapping").Where("folder_id = ?", targetID).Delete(&struct{}{})
+		mappingStore.RemoveMapping(ctx, "folder", sourceID)
+	}
+
+	return nil
 }
 
 func (s *SyncService) buildImportPlan(resources *spaceexport.SpaceResources, mappingStore *SyncMappingStore) *ImportPlan {
