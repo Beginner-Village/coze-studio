@@ -45,6 +45,7 @@ type ImportResult struct {
 	WorkflowsCreated   int            `json:"workflows_created"`
 	VariablesCreated   int            `json:"variables_created"`
 	SpaceModelsCreated int            `json:"space_models_created"`
+	KnowledgeCreated   int            `json:"knowledge_created"`
 	Errors             []*ImportError `json:"errors,omitempty"`
 }
 

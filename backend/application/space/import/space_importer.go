@@ -195,8 +195,8 @@ func (s *SpaceImporter) Confirm(ctx context.Context, req *ConfirmRequest) (*Impo
 	// Remove pending import
 	delete(s.pendingCache, req.ImportToken)
 
-	logs.CtxInfof(ctx, "Import completed: agents=%d, plugins=%d, workflows=%d, variables=%d, space_models=%d",
-		result.AgentsCreated, result.PluginsCreated, result.WorkflowsCreated, result.VariablesCreated, result.SpaceModelsCreated)
+	logs.CtxInfof(ctx, "Import completed: agents=%d, plugins=%d, workflows=%d, variables=%d, space_models=%d, knowledge=%d",
+		result.AgentsCreated, result.PluginsCreated, result.WorkflowsCreated, result.VariablesCreated, result.SpaceModelsCreated, result.KnowledgeCreated)
 
 	return result, nil
 }
@@ -252,7 +252,15 @@ func (s *SpaceImporter) executeImport(ctx context.Context, pending *PendingImpor
 			result.WorkflowsCreated++
 		}
 
-		// Step 3: Create agents (may reference plugins, workflows, and space models)
+		// Step 3: Create knowledge bases
+		for _, kb := range pending.Resources.KnowledgeBases {
+			if err := s.createKnowledge(ctx, tx, kb, importCtx); err != nil {
+				return err
+			}
+			result.KnowledgeCreated++
+		}
+
+		// Step 4: Create agents (may reference plugins, workflows, and space models)
 		for _, agent := range pending.Resources.Agents {
 			rewritten := s.rewriter.RewriteAgent(ctx, agent, importCtx)
 			if err := s.createAgent(ctx, tx, rewritten, importCtx); err != nil {
@@ -261,13 +269,27 @@ func (s *SpaceImporter) executeImport(ctx context.Context, pending *PendingImpor
 			result.AgentsCreated++
 		}
 
-		// Step 4: Create variables (reference agents)
+		// Step 5: Create variables (reference agents)
 		for _, variable := range pending.Resources.Variables {
 			rewritten := s.rewriter.RewriteVariable(ctx, variable, importCtx)
 			if err := s.createVariable(ctx, tx, rewritten, importCtx); err != nil {
 				return err
 			}
 			result.VariablesCreated++
+		}
+
+		// Step 6: Create folders
+		for _, folder := range pending.Resources.Folders {
+			if err := s.createFolder(ctx, tx, folder, importCtx); err != nil {
+				return err
+			}
+		}
+
+		// Step 7: Create folder mappings
+		for _, mapping := range pending.Resources.FolderMappings {
+			if err := s.createFolderMapping(ctx, tx, mapping, importCtx); err != nil {
+				logs.CtxWarnf(ctx, "Failed to create folder mapping: %v", err)
+			}
 		}
 
 		return nil
@@ -619,6 +641,162 @@ func (s *SpaceImporter) createSpaceModel(ctx context.Context, tx *gorm.DB, space
 	// Mark this space model as actually created
 	importCtx.MarkSpaceModelCreated(newID)
 	return nil
+}
+
+// createKnowledge creates a knowledge base with its documents and slices in the DB
+func (s *SpaceImporter) createKnowledge(ctx context.Context, tx *gorm.DB, kb *export.ExportedKnowledge, importCtx *ImportContext) error {
+	newKnowledgeID := importCtx.KnowledgeIDMap[kb.ID]
+	now := time.Now().UnixMilli()
+
+	knowledgeModel := map[string]interface{}{
+		"id":          newKnowledgeID,
+		"name":        kb.Name,
+		"app_id":      0,
+		"creator_id":  importCtx.UserID,
+		"space_id":    importCtx.TargetSpaceID,
+		"created_at":  now,
+		"updated_at":  now,
+		"status":      1,
+		"description": kb.Description,
+		"icon_uri":    kb.IconURI,
+		"format_type": kb.FormatType,
+	}
+	if err := tx.Table("knowledge").Create(knowledgeModel).Error; err != nil {
+		return err
+	}
+
+	for _, doc := range kb.Documents {
+		if err := s.createDocument(ctx, tx, doc, newKnowledgeID, importCtx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// createDocument creates a document and its slices in the DB
+func (s *SpaceImporter) createDocument(ctx context.Context, tx *gorm.DB, doc *export.ExportedDocument, knowledgeID int64, importCtx *ImportContext) error {
+	newDocID := importCtx.DocumentIDMap[doc.ID]
+	now := time.Now().UnixMilli()
+
+	// Get new URI from Phase 1 file upload (if available)
+	newURI := ""
+	if uri, ok := importCtx.FileURIMap[doc.ID]; ok {
+		newURI = uri
+	}
+
+	docModel := map[string]interface{}{
+		"id":             newDocID,
+		"knowledge_id":   knowledgeID,
+		"name":           doc.Name,
+		"file_extension": doc.FileExtension,
+		"document_type":  doc.DocumentType,
+		"uri":            newURI,
+		"size":           doc.Size,
+		"slice_count":    doc.SliceCount,
+		"char_count":     doc.CharCount,
+		"creator_id":     importCtx.UserID,
+		"space_id":       importCtx.TargetSpaceID,
+		"created_at":     now,
+		"updated_at":     now,
+		"source_type":    doc.SourceType,
+		"status":         1,
+		"parse_rule":     toJSON(doc.ParseRule),
+		"table_info":     toJSON(doc.TableInfo),
+	}
+	if err := tx.Table("knowledge_document").Create(docModel).Error; err != nil {
+		return err
+	}
+
+	// Create slices
+	for _, slice := range doc.Slices {
+		newSliceID, err := s.idGen.GenID(ctx)
+		if err != nil {
+			return err
+		}
+		sliceModel := map[string]interface{}{
+			"id":           newSliceID,
+			"knowledge_id": knowledgeID,
+			"document_id":  newDocID,
+			"content":      slice.Content,
+			"sequence":     slice.Sequence,
+			"created_at":   now,
+			"updated_at":   now,
+			"creator_id":   importCtx.UserID,
+			"space_id":     importCtx.TargetSpaceID,
+			"status":       1,
+		}
+		if err := tx.Table("knowledge_document_slice").Create(sliceModel).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// createFolder creates a folder in the DB
+func (s *SpaceImporter) createFolder(ctx context.Context, tx *gorm.DB, folder *export.ExportedFolder, importCtx *ImportContext) error {
+	newID := importCtx.FolderIDMap[folder.ID]
+	now := time.Now().UnixMilli()
+
+	parentID := folder.ParentID
+	if parentID != 0 {
+		if newParentID, ok := importCtx.FolderIDMap[parentID]; ok {
+			parentID = newParentID
+		}
+	}
+
+	model := map[string]interface{}{
+		"id":         newID,
+		"space_id":   importCtx.TargetSpaceID,
+		"parent_id":  parentID,
+		"name":       folder.Name,
+		"creator_id": importCtx.UserID,
+		"created_at": now,
+		"updated_at": now,
+	}
+	return tx.Table("folder").Create(model).Error
+}
+
+// createFolderMapping creates a resource-to-folder mapping in the DB
+func (s *SpaceImporter) createFolderMapping(ctx context.Context, tx *gorm.DB, mapping *export.ExportedFolderMapping, importCtx *ImportContext) error {
+	// Remap resource ID based on type
+	newResourceID := mapping.ResourceID
+	switch mapping.ResourceType {
+	case 1: // agent
+		if id, ok := importCtx.AgentIDMap[mapping.ResourceID]; ok {
+			newResourceID = id
+		}
+	case 2: // workflow
+		if id, ok := importCtx.WorkflowIDMap[mapping.ResourceID]; ok {
+			newResourceID = id
+		}
+	case 3: // knowledge
+		if id, ok := importCtx.KnowledgeIDMap[mapping.ResourceID]; ok {
+			newResourceID = id
+		}
+	case 5: // plugin
+		if id, ok := importCtx.PluginIDMap[mapping.ResourceID]; ok {
+			newResourceID = id
+		}
+	}
+
+	newFolderID := mapping.FolderID
+	if id, ok := importCtx.FolderIDMap[mapping.FolderID]; ok {
+		newFolderID = id
+	}
+
+	newID, err := s.idGen.GenID(ctx)
+	if err != nil {
+		return err
+	}
+	model := map[string]interface{}{
+		"id":            newID,
+		"space_id":      importCtx.TargetSpaceID,
+		"resource_id":   newResourceID,
+		"resource_type": mapping.ResourceType,
+		"folder_id":     newFolderID,
+		"created_at":    time.Now().UnixMilli(),
+	}
+	return tx.Table("resource_folder_mapping").Create(model).Error
 }
 
 // getFirstSpaceModel gets the first available space_model in the target space
