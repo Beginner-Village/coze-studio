@@ -35,6 +35,12 @@ const (
 
 	// ExportFilePrefix is the prefix for exported files in object storage
 	ExportFilePrefix = "space_exports"
+
+	// SyncExportFilePrefix is the prefix for sync export files in object storage
+	SyncExportFilePrefix = "sync_exports"
+
+	// SyncExportMaxSize is the maximum allowed size for a sync export ZIP (2GB)
+	SyncExportMaxSize = 2 * 1024 * 1024 * 1024
 )
 
 // SpaceExporter handles the export of a space to a ZIP file
@@ -60,6 +66,15 @@ type ExportRequest struct {
 	SpaceID    int64
 	SpaceName  string
 	ExporterID int64
+}
+
+// SyncExportRequest represents a request to export a space for sync
+type SyncExportRequest struct {
+	SpaceID   int64
+	UserID    int64
+	SpaceName string
+	Mode      string // "full" or "incremental"
+	SinceTime int64  // only used when Mode == "incremental"
 }
 
 // Export exports a space to a ZIP file and returns the download URL
@@ -122,6 +137,112 @@ func (e *SpaceExporter) Export(ctx context.Context, req *ExportRequest) (*Export
 			Variables: len(resources.Variables),
 		},
 	}, nil
+}
+
+// ExportSync exports a space for sync (full or incremental) and returns the download URL
+func (e *SpaceExporter) ExportSync(ctx context.Context, req *SyncExportRequest) (*ExportResult, error) {
+	logs.CtxInfof(ctx, "Starting sync export for space_id=%d, mode=%s, since_time=%d", req.SpaceID, req.Mode, req.SinceTime)
+
+	var (
+		resources *SpaceResources
+		deleted   *DeletedResources
+		err       error
+	)
+
+	switch req.Mode {
+	case "full":
+		resources, err = e.collector.CollectAll(ctx, req.SpaceID)
+		if err != nil {
+			logs.CtxErrorf(ctx, "Failed to collect resources for space %d: %v", req.SpaceID, err)
+			return nil, err
+		}
+	case "incremental":
+		resources, deleted, err = e.collector.CollectIncremental(ctx, req.SpaceID, req.SinceTime)
+		if err != nil {
+			logs.CtxErrorf(ctx, "Failed to collect incremental resources for space %d: %v", req.SpaceID, err)
+			return nil, err
+		}
+	default:
+		return nil, errorx.WrapByCode(fmt.Errorf("invalid sync mode: %s", req.Mode), errno.ErrSpaceExportFailedCode, errorx.KV("mode", req.Mode))
+	}
+
+	// Download knowledge base files from object storage
+	fileContents := e.downloadKnowledgeFiles(ctx, resources)
+
+	// Build sync manifest
+	manifest := e.serializer.BuildSyncManifest(req.SpaceID, req.SpaceName, req.Mode, req.SinceTime, resources)
+
+	// Build sync state
+	syncState := &SyncState{
+		ExportTime:    time.Now().Unix(),
+		SourceSpaceID: req.SpaceID,
+	}
+
+	// Serialize to sync ZIP
+	zipContent, err := e.serializer.SerializeToSyncZip(ctx, manifest, resources, fileContents, syncState, deleted)
+	if err != nil {
+		logs.CtxErrorf(ctx, "Failed to serialize sync export for space %d: %v", req.SpaceID, err)
+		return nil, err
+	}
+
+	fileSize := int64(len(zipContent))
+
+	// Check size limit
+	if fileSize > SyncExportMaxSize {
+		return nil, errorx.WrapByCode(
+			fmt.Errorf("sync export size %d exceeds limit %d", fileSize, SyncExportMaxSize),
+			errno.ErrSpaceExportFailedCode,
+			errorx.KV("msg", "sync export file too large"),
+		)
+	}
+
+	// Upload to object storage
+	fileName := e.generateFileName(req.SpaceID, req.SpaceName)
+	objectKey := fmt.Sprintf("%s/%s", SyncExportFilePrefix, fileName)
+
+	if err = e.objectStorage.PutObject(ctx, objectKey, zipContent); err != nil {
+		logs.CtxErrorf(ctx, "Failed to upload sync export file for space %d: %v", req.SpaceID, err)
+		return nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("msg", "failed to upload sync export file"))
+	}
+
+	// Generate presigned download URL
+	downloadURL, err := e.objectStorage.GetObjectUrl(ctx, objectKey)
+	if err != nil {
+		logs.CtxErrorf(ctx, "Failed to generate download URL for space %d: %v", req.SpaceID, err)
+		return nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("msg", "failed to generate download URL"))
+	}
+
+	expiresAt := time.Now().Add(ExportFileTTL)
+
+	logs.CtxInfof(ctx, "Sync export completed for space_id=%d, mode=%s, file_size=%d, expires_at=%v",
+		req.SpaceID, req.Mode, fileSize, expiresAt)
+
+	return &ExportResult{
+		DownloadURL: downloadURL,
+		FileName:    fileName,
+		FileSize:    fileSize,
+		ExpiresAt:   expiresAt,
+		Statistics:  manifest.Statistics,
+	}, nil
+}
+
+// downloadKnowledgeFiles downloads original files for knowledge base documents from object storage
+func (e *SpaceExporter) downloadKnowledgeFiles(ctx context.Context, resources *SpaceResources) map[int64][]byte {
+	fileContents := make(map[int64][]byte)
+	for _, kb := range resources.KnowledgeBases {
+		for _, doc := range kb.Documents {
+			if doc.URI == "" {
+				continue
+			}
+			content, err := e.objectStorage.GetObject(ctx, doc.URI)
+			if err != nil {
+				logs.CtxWarnf(ctx, "Failed to download file for document %d (uri=%s): %v", doc.ID, doc.URI, err)
+				continue
+			}
+			fileContents[doc.ID] = content
+		}
+	}
+	return fileContents
 }
 
 // isSpaceEmpty checks if the space has no resources
