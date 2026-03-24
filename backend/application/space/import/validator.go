@@ -50,9 +50,10 @@ func NewValidator() *Validator {
 
 // ValidationResult contains the validation result
 type ValidationResult struct {
-	Manifest  *export.Manifest
-	Resources *export.SpaceResources
-	Warnings  []string
+	Manifest     *export.Manifest
+	Resources    *export.SpaceResources
+	Warnings     []string
+	FileContents map[int64][]byte // document ID -> file bytes from knowledge_bases/{id}/files/
 }
 
 // ValidateAndParse validates and parses an import package
@@ -87,14 +88,16 @@ func (v *Validator) ValidateAndParse(ctx context.Context, fileContent []byte) (*
 	}
 
 	// Parse resources
-	resources, warnings, err := v.parseResources(ctx, zipReader, manifest)
+	resources, warnings, fileContents, err := v.parseResources(ctx, zipReader, manifest)
 	if err != nil {
 		return nil, err
 	}
 
-	logs.CtxInfof(ctx, "Validated import package: agents=%d, plugins=%d, workflows=%d, variables=%d, space_models=%d, warnings=%d",
+	logs.CtxInfof(ctx, "Validated import package: agents=%d, plugins=%d, workflows=%d, variables=%d, space_models=%d, knowledge=%d, folders=%d, external_knowledge=%d, warnings=%d",
 		len(resources.Agents), len(resources.Plugins), len(resources.Workflows),
-		len(resources.Variables), len(resources.SpaceModels), len(warnings))
+		len(resources.Variables), len(resources.SpaceModels),
+		len(resources.KnowledgeBases), len(resources.Folders), len(resources.ExternalKnowledge),
+		len(warnings))
 
 	// Log IDRegistry for debugging
 	logs.CtxDebugf(ctx, "Parsed IDRegistry - Agents: %v", manifest.IDRegistry.Agents)
@@ -102,6 +105,8 @@ func (v *Validator) ValidateAndParse(ctx context.Context, fileContent []byte) (*
 	logs.CtxDebugf(ctx, "Parsed IDRegistry - Workflows: %v", manifest.IDRegistry.Workflows)
 	logs.CtxDebugf(ctx, "Parsed IDRegistry - Variables: %v", manifest.IDRegistry.Variables)
 	logs.CtxDebugf(ctx, "Parsed IDRegistry - SpaceModels: %v", manifest.IDRegistry.SpaceModels)
+	logs.CtxDebugf(ctx, "Parsed IDRegistry - KnowledgeBases: %v", manifest.IDRegistry.KnowledgeBases)
+	logs.CtxDebugf(ctx, "Parsed IDRegistry - Folders: %v", manifest.IDRegistry.Folders)
 
 	// Log workflow refs in agents for debugging
 	for _, agent := range resources.Agents {
@@ -114,9 +119,10 @@ func (v *Validator) ValidateAndParse(ctx context.Context, fileContent []byte) (*
 	}
 
 	return &ValidationResult{
-		Manifest:  manifest,
-		Resources: resources,
-		Warnings:  warnings,
+		Manifest:     manifest,
+		Resources:    resources,
+		Warnings:     warnings,
+		FileContents: fileContents,
 	}, nil
 }
 
@@ -151,6 +157,12 @@ func (v *Validator) parseManifest(ctx context.Context, zipReader *zip.Reader) (*
 		errorx.KV("msg", "manifest.json not found in package"))
 }
 
+// supportedManifestVersions lists all supported manifest versions
+var supportedManifestVersions = map[string]bool{
+	"1.0.0": true,
+	"2.0.0": true,
+}
+
 // validateManifestVersion validates the manifest version
 func (v *Validator) validateManifestVersion(manifest *export.Manifest) error {
 	if manifest.Version == "" {
@@ -158,11 +170,10 @@ func (v *Validator) validateManifestVersion(manifest *export.Manifest) error {
 			errorx.KV("msg", "manifest version is empty"))
 	}
 
-	// For now, we only support version 1.0.0
-	if manifest.Version != export.ManifestVersion {
+	if !supportedManifestVersions[manifest.Version] {
 		return errorx.New(errno.ErrSpaceImportFailedCode,
-			errorx.KV("msg", fmt.Sprintf("unsupported manifest version: %s, expected: %s",
-				manifest.Version, export.ManifestVersion)))
+			errorx.KV("msg", fmt.Sprintf("unsupported manifest version: %s, supported: 1.0.0, 2.0.0",
+				manifest.Version)))
 	}
 
 	return nil
@@ -182,15 +193,20 @@ func (v *Validator) validateResourceCounts(manifest *export.Manifest) error {
 }
 
 // parseResources parses all resources from the ZIP
-func (v *Validator) parseResources(ctx context.Context, zipReader *zip.Reader, manifest *export.Manifest) (*export.SpaceResources, []string, error) {
+func (v *Validator) parseResources(ctx context.Context, zipReader *zip.Reader, manifest *export.Manifest) (*export.SpaceResources, []string, map[int64][]byte, error) {
 	resources := &export.SpaceResources{
-		Agents:      make([]*export.ExportedAgent, 0),
-		Plugins:     make([]*export.ExportedPlugin, 0),
-		Workflows:   make([]*export.ExportedWorkflow, 0),
-		Variables:   make([]*export.ExportedVariable, 0),
-		SpaceModels: make([]*export.ExportedSpaceModel, 0),
+		Agents:            make([]*export.ExportedAgent, 0),
+		Plugins:           make([]*export.ExportedPlugin, 0),
+		Workflows:         make([]*export.ExportedWorkflow, 0),
+		Variables:         make([]*export.ExportedVariable, 0),
+		SpaceModels:       make([]*export.ExportedSpaceModel, 0),
+		KnowledgeBases:    make([]*export.ExportedKnowledge, 0),
+		Folders:           make([]*export.ExportedFolder, 0),
+		FolderMappings:    make([]*export.ExportedFolderMapping, 0),
+		ExternalKnowledge: make([]*export.ExportedExternalKnowledge, 0),
 	}
 	var warnings []string
+	fileContents := make(map[int64][]byte) // document ID -> file bytes
 
 	// Create a map of file contents for easy access
 	fileMap := make(map[string][]byte)
@@ -301,10 +317,116 @@ func (v *Validator) parseResources(ctx context.Context, zipReader *zip.Reader, m
 		resources.SpaceModels = append(resources.SpaceModels, &spaceModel)
 	}
 
+	// Parse knowledge bases with documents (inline slices)
+	for _, kbID := range manifest.IDRegistry.KnowledgeBases {
+		// Each knowledge base has documents at knowledge_bases/{kbID}/documents/{docID}.json
+		// First, try to find the knowledge base index or individual document files
+		var kb export.ExportedKnowledge
+		kb.ID = kbID
+		kb.Documents = make([]*export.ExportedDocument, 0)
+
+		// Try knowledge base metadata file
+		kbMetaFile := fmt.Sprintf("knowledge_bases/%d/metadata.json", kbID)
+		if data, ok := fileMap[kbMetaFile]; ok {
+			if err := sonic.Unmarshal(data, &kb); err != nil {
+				warnings = append(warnings, fmt.Sprintf("Failed to parse knowledge base %d metadata: %v", kbID, err))
+				continue
+			}
+		}
+
+		// Parse documents for this knowledge base
+		for _, docID := range manifest.IDRegistry.Documents {
+			docFile := fmt.Sprintf("knowledge_bases/%d/documents/%d.json", kbID, docID)
+			data, ok := fileMap[docFile]
+			if !ok {
+				continue
+			}
+
+			var doc export.ExportedDocument
+			if err := sonic.Unmarshal(data, &doc); err != nil {
+				warnings = append(warnings, fmt.Sprintf("Failed to parse document %d: %v", docID, err))
+				continue
+			}
+
+			// Only include documents belonging to this knowledge base
+			if doc.KnowledgeID == kbID {
+				kb.Documents = append(kb.Documents, &doc)
+
+				// Collect file contents for this document
+				fileKey := fmt.Sprintf("knowledge_bases/%d/files/%d", kbID, docID)
+				// Try with known extensions
+				for fname, fdata := range fileMap {
+					if strings.HasPrefix(fname, fileKey) {
+						fileContents[docID] = fdata
+						break
+					}
+				}
+			}
+		}
+
+		resources.KnowledgeBases = append(resources.KnowledgeBases, &kb)
+	}
+
+	// Parse folders
+	if data, ok := fileMap["folders/index.json"]; ok {
+		var folders []*export.ExportedFolder
+		if err := sonic.Unmarshal(data, &folders); err != nil {
+			warnings = append(warnings, fmt.Sprintf("Failed to parse folders/index.json: %v", err))
+		} else {
+			resources.Folders = folders
+		}
+	}
+
+	// Parse folder mappings
+	if data, ok := fileMap["folders/resource_mappings.json"]; ok {
+		var mappings []*export.ExportedFolderMapping
+		if err := sonic.Unmarshal(data, &mappings); err != nil {
+			warnings = append(warnings, fmt.Sprintf("Failed to parse folders/resource_mappings.json: %v", err))
+		} else {
+			resources.FolderMappings = mappings
+		}
+	}
+
+	// Parse external knowledge
+	for _, ekID := range manifest.IDRegistry.ExternalKnowledge {
+		filename := fmt.Sprintf("external_knowledge/%d.json", ekID)
+		data, ok := fileMap[filename]
+		if !ok {
+			warnings = append(warnings, fmt.Sprintf("ExternalKnowledge file not found: %s", filename))
+			continue
+		}
+
+		var ek export.ExportedExternalKnowledge
+		if err := sonic.Unmarshal(data, &ek); err != nil {
+			warnings = append(warnings, fmt.Sprintf("Failed to parse external knowledge %d: %v", ekID, err))
+			continue
+		}
+
+		resources.ExternalKnowledge = append(resources.ExternalKnowledge, &ek)
+	}
+
+	// Parse deleted_resources.json (for incremental sync)
+	if data, ok := fileMap["deleted_resources.json"]; ok {
+		var deleted export.DeletedResources
+		if err := sonic.Unmarshal(data, &deleted); err != nil {
+			warnings = append(warnings, fmt.Sprintf("Failed to parse deleted_resources.json: %v", err))
+		}
+		logs.CtxDebugf(ctx, "Parsed deleted_resources.json")
+	}
+
+	// Parse sync_state.json (for incremental sync)
+	if data, ok := fileMap["sync_state.json"]; ok {
+		var syncState export.SyncState
+		if err := sonic.Unmarshal(data, &syncState); err != nil {
+			warnings = append(warnings, fmt.Sprintf("Failed to parse sync_state.json: %v", err))
+		}
+		logs.CtxDebugf(ctx, "Parsed sync_state.json: export_time=%d, source_space_id=%d", syncState.ExportTime, syncState.SourceSpaceID)
+	}
+
 	// Generate warnings for cleared references
 	warnings = append(warnings, v.generateClearingWarnings(resources)...)
 
-	return resources, warnings, nil
+	return resources, warnings, fileContents, nil
 }
 
 // generateClearingWarnings generates warnings about references that will be cleared
