@@ -40,11 +40,15 @@ func NewResourceCollector(db *gorm.DB) *ResourceCollector {
 // CollectAll collects all resources from a space
 func (c *ResourceCollector) CollectAll(ctx context.Context, spaceID int64) (*SpaceResources, error) {
 	resources := &SpaceResources{
-		Agents:      make([]*ExportedAgent, 0),
-		Plugins:     make([]*ExportedPlugin, 0),
-		Workflows:   make([]*ExportedWorkflow, 0),
-		Variables:   make([]*ExportedVariable, 0),
-		SpaceModels: make([]*ExportedSpaceModel, 0),
+		Agents:            make([]*ExportedAgent, 0),
+		Plugins:           make([]*ExportedPlugin, 0),
+		Workflows:         make([]*ExportedWorkflow, 0),
+		Variables:         make([]*ExportedVariable, 0),
+		SpaceModels:       make([]*ExportedSpaceModel, 0),
+		KnowledgeBases:    make([]*ExportedKnowledge, 0),
+		Folders:           make([]*ExportedFolder, 0),
+		FolderMappings:    make([]*ExportedFolderMapping, 0),
+		ExternalKnowledge: make([]*ExportedExternalKnowledge, 0),
 	}
 
 	// Collect agents
@@ -105,6 +109,34 @@ func (c *ResourceCollector) CollectAll(ctx context.Context, spaceID int64) (*Spa
 	}
 	resources.SpaceModels = spaceModels
 	logs.CtxInfof(ctx, "Collected %d space models from space %d", len(spaceModels), spaceID)
+
+	// Collect knowledge bases
+	knowledgeBases, err := c.collectKnowledgeBases(ctx, spaceID)
+	if err != nil {
+		logs.CtxErrorf(ctx, "Failed to collect knowledge bases for space %d: %v", spaceID, err)
+		return nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "knowledge_bases"))
+	}
+	resources.KnowledgeBases = knowledgeBases
+	logs.CtxInfof(ctx, "Collected %d knowledge bases from space %d", len(knowledgeBases), spaceID)
+
+	// Collect folders
+	folders, folderMappings, err := c.collectFolders(ctx, spaceID)
+	if err != nil {
+		logs.CtxWarnf(ctx, "Failed to collect folders for space %d: %v", spaceID, err)
+	} else {
+		resources.Folders = folders
+		resources.FolderMappings = folderMappings
+		logs.CtxInfof(ctx, "Collected %d folders from space %d", len(folders), spaceID)
+	}
+
+	// Collect external knowledge bindings
+	externalKnowledge, err := c.collectExternalKnowledge(ctx, agents)
+	if err != nil {
+		logs.CtxWarnf(ctx, "Failed to collect external knowledge: %v", err)
+	} else {
+		resources.ExternalKnowledge = externalKnowledge
+		logs.CtxInfof(ctx, "Collected %d external knowledge bindings", len(externalKnowledge))
+	}
 
 	return resources, nil
 }
@@ -548,4 +580,168 @@ func (c *ResourceCollector) collectReferencedWorkflows(ctx context.Context, agen
 	}
 
 	return workflows, nil
+}
+
+// collectKnowledgeBases collects all knowledge bases from a space
+func (c *ResourceCollector) collectKnowledgeBases(ctx context.Context, spaceID int64) ([]*ExportedKnowledge, error) {
+	var knowledges []KnowledgeModel
+	err := c.db.WithContext(ctx).Table("knowledge").
+		Where("space_id = ? AND deleted_at IS NULL", spaceID).
+		Find(&knowledges).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*ExportedKnowledge, 0, len(knowledges))
+	for _, k := range knowledges {
+		exported := &ExportedKnowledge{
+			ID: k.ID, Name: k.Name, Description: getStringValue(k.Description),
+			IconURI: getStringValue(k.IconURI), FormatType: k.FormatType,
+			Status: k.Status, CreatedAt: k.CreatedAt, UpdatedAt: k.UpdatedAt,
+		}
+		docs, err := c.collectDocuments(ctx, k.ID)
+		if err != nil {
+			return nil, err
+		}
+		exported.Documents = docs
+		result = append(result, exported)
+	}
+	return result, nil
+}
+
+// collectDocuments collects all documents for a knowledge base
+func (c *ResourceCollector) collectDocuments(ctx context.Context, knowledgeID int64) ([]*ExportedDocument, error) {
+	var docs []KnowledgeDocumentModel
+	err := c.db.WithContext(ctx).Table("knowledge_document").
+		Where("knowledge_id = ? AND deleted_at IS NULL", knowledgeID).
+		Find(&docs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*ExportedDocument, 0, len(docs))
+	for _, doc := range docs {
+		exported := &ExportedDocument{
+			ID: doc.ID, KnowledgeID: doc.KnowledgeID, Name: doc.Name,
+			FileExtension: doc.FileExtension, DocumentType: doc.DocumentType,
+			URI: getStringValue(doc.URI), Size: doc.Size, SliceCount: doc.SliceCount,
+			CharCount: doc.CharCount, SourceType: doc.SourceType, Status: doc.Status,
+			ParseRule: doc.ParseRule, TableInfo: doc.TableInfo,
+			CreatedAt: doc.CreatedAt, UpdatedAt: doc.UpdatedAt,
+			ExportFileName: fmt.Sprintf("%d_%s", doc.ID, doc.Name),
+		}
+		slices, err := c.collectSlices(ctx, doc.ID)
+		if err != nil {
+			return nil, err
+		}
+		exported.Slices = slices
+		result = append(result, exported)
+	}
+	return result, nil
+}
+
+// collectSlices collects all slices for a document in batches
+func (c *ResourceCollector) collectSlices(ctx context.Context, documentID int64) ([]*ExportedSlice, error) {
+	var allSlices []*ExportedSlice
+	batchSize := 100
+	offset := 0
+
+	for {
+		var slices []KnowledgeDocumentSliceModel
+		err := c.db.WithContext(ctx).Table("knowledge_document_slice").
+			Where("document_id = ? AND deleted_at IS NULL", documentID).
+			Order("sequence ASC").Offset(offset).Limit(batchSize).
+			Find(&slices).Error
+		if err != nil {
+			return nil, err
+		}
+		if len(slices) == 0 {
+			break
+		}
+		for _, s := range slices {
+			allSlices = append(allSlices, &ExportedSlice{
+				ID: s.ID, DocumentID: s.DocumentID, Content: getStringValue(s.Content),
+				Sequence: s.Sequence, Status: s.Status, CreatedAt: s.CreatedAt, UpdatedAt: s.UpdatedAt,
+			})
+		}
+		if len(slices) < batchSize {
+			break
+		}
+		offset += batchSize
+	}
+	return allSlices, nil
+}
+
+// collectFolders collects all folders and resource-folder mappings from a space
+func (c *ResourceCollector) collectFolders(ctx context.Context, spaceID int64) ([]*ExportedFolder, []*ExportedFolderMapping, error) {
+	var folders []FolderModel
+	err := c.db.WithContext(ctx).Table("folder").
+		Where("space_id = ? AND deleted_at IS NULL", spaceID).
+		Find(&folders).Error
+	if err != nil {
+		return nil, nil, err
+	}
+
+	exportedFolders := make([]*ExportedFolder, 0, len(folders))
+	for _, f := range folders {
+		exportedFolders = append(exportedFolders, &ExportedFolder{
+			ID: f.ID, ParentID: f.ParentID, Name: f.Name,
+			Description: getStringValue(f.Description), CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt,
+		})
+	}
+
+	var mappings []ResourceFolderMappingModel
+	err = c.db.WithContext(ctx).Table("resource_folder_mapping").
+		Where("space_id = ?", spaceID).Find(&mappings).Error
+	if err != nil {
+		return exportedFolders, nil, err
+	}
+
+	exportedMappings := make([]*ExportedFolderMapping, 0, len(mappings))
+	for _, m := range mappings {
+		exportedMappings = append(exportedMappings, &ExportedFolderMapping{
+			ResourceID: m.ResourceID, ResourceType: m.ResourceType, FolderID: m.FolderID,
+		})
+	}
+	return exportedFolders, exportedMappings, nil
+}
+
+// collectExternalKnowledge collects external knowledge bindings referenced by agents
+func (c *ResourceCollector) collectExternalKnowledge(ctx context.Context, agents []*ExportedAgent) ([]*ExportedExternalKnowledge, error) {
+	bindingKeys := make(map[string]bool)
+	for _, agent := range agents {
+		if agent.ExternalKnowledge == nil {
+			continue
+		}
+		for _, datasetID := range agent.ExternalKnowledge.GetDatasetIds() {
+			if datasetID != "" {
+				bindingKeys[datasetID] = true
+			}
+		}
+	}
+	if len(bindingKeys) == 0 {
+		return []*ExportedExternalKnowledge{}, nil
+	}
+
+	keys := make([]string, 0, len(bindingKeys))
+	for key := range bindingKeys {
+		keys = append(keys, key)
+	}
+
+	var bindings []ExternalKnowledgeBindingModel
+	err := c.db.WithContext(ctx).Table("external_knowledge_binding").
+		Where("binding_key IN ?", keys).Find(&bindings).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*ExportedExternalKnowledge, 0, len(bindings))
+	for _, b := range bindings {
+		result = append(result, &ExportedExternalKnowledge{
+			ID: b.ID, BindingKey: b.BindingKey, BindingName: b.BindingName,
+			BindingType: b.BindingType, ExtraConfig: b.ExtraConfig,
+			Status: b.Status, CreatedAt: b.CreatedAt, UpdatedAt: b.UpdatedAt,
+		})
+	}
+	return result, nil
 }
