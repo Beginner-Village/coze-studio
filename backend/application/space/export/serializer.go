@@ -254,6 +254,266 @@ func (s *Serializer) writeSpaceModels(ctx context.Context, zipWriter *zip.Writer
 	return nil
 }
 
+// addJSONToZip marshals v as JSON and writes it to the ZIP at the given path
+func (s *Serializer) addJSONToZip(w *zip.Writer, path string, v interface{}) error {
+	data, err := sonic.Marshal(v)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON for %s: %w", path, err)
+	}
+	writer, err := w.CreateHeader(&zip.FileHeader{
+		Name:     path,
+		Method:   zip.Deflate,
+		Modified: time.Now(),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create zip entry for %s: %w", path, err)
+	}
+	if _, err := writer.Write(data); err != nil {
+		return fmt.Errorf("failed to write data for %s: %w", path, err)
+	}
+	return nil
+}
+
+// SerializeToSyncZip serializes space resources to a ZIP file for incremental sync
+func (s *Serializer) SerializeToSyncZip(ctx context.Context, manifest *Manifest, resources *SpaceResources,
+	fileContents map[int64][]byte, syncState *SyncState, deleted *DeletedResources) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	zipWriter := zip.NewWriter(buf)
+
+	// Write manifest.json
+	if err := s.addJSONToZip(zipWriter, "manifest.json", manifest); err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", "manifest.json"))
+	}
+
+	// Write existing resource types
+	if err := s.writeAgents(ctx, zipWriter, resources.Agents); err != nil {
+		return nil, err
+	}
+	if err := s.writePlugins(ctx, zipWriter, resources.Plugins); err != nil {
+		return nil, err
+	}
+	if err := s.writeWorkflows(ctx, zipWriter, resources.Workflows); err != nil {
+		return nil, err
+	}
+	if err := s.writeVariables(ctx, zipWriter, resources.Variables); err != nil {
+		return nil, err
+	}
+	if err := s.writeSpaceModels(ctx, zipWriter, resources.SpaceModels); err != nil {
+		return nil, err
+	}
+
+	// Write knowledge bases with nested structure
+	if err := s.writeKnowledgeBases(ctx, zipWriter, resources.KnowledgeBases, fileContents); err != nil {
+		return nil, err
+	}
+
+	// Write folders
+	if err := s.writeFolders(ctx, zipWriter, resources.Folders, resources.FolderMappings); err != nil {
+		return nil, err
+	}
+
+	// Write external knowledge
+	if err := s.writeExternalKnowledge(ctx, zipWriter, resources.ExternalKnowledge); err != nil {
+		return nil, err
+	}
+
+	// Write sync_state.json
+	if syncState != nil {
+		if err := s.addJSONToZip(zipWriter, "sync_state.json", syncState); err != nil {
+			return nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", "sync_state.json"))
+		}
+	}
+
+	// Write deleted_resources.json
+	if deleted != nil {
+		if err := s.addJSONToZip(zipWriter, "deleted_resources.json", deleted); err != nil {
+			return nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", "deleted_resources.json"))
+		}
+	}
+
+	if err := zipWriter.Close(); err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("msg", "failed to close zip writer"))
+	}
+
+	logs.CtxInfof(ctx, "SerializeToSyncZip: written ZIP with %d bytes", buf.Len())
+	return buf.Bytes(), nil
+}
+
+// writeKnowledgeBases writes knowledge bases with nested directory structure
+func (s *Serializer) writeKnowledgeBases(ctx context.Context, zipWriter *zip.Writer, knowledgeBases []*ExportedKnowledge, fileContents map[int64][]byte) error {
+	index := &ResourceIndex{
+		Count: len(knowledgeBases),
+		Items: make([]ResourceIndexItem, 0, len(knowledgeBases)),
+	}
+
+	for _, kb := range knowledgeBases {
+		// Write meta.json (knowledge metadata without documents)
+		meta := &ExportedKnowledge{
+			ID: kb.ID, Name: kb.Name, Description: kb.Description,
+			IconURI: kb.IconURI, FormatType: kb.FormatType,
+			Status: kb.Status, CreatedAt: kb.CreatedAt, UpdatedAt: kb.UpdatedAt,
+		}
+		metaPath := fmt.Sprintf("knowledge_bases/%d/meta.json", kb.ID)
+		if err := s.addJSONToZip(zipWriter, metaPath, meta); err != nil {
+			return errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", metaPath))
+		}
+
+		// Write documents index
+		docIndex := &ResourceIndex{
+			Count: len(kb.Documents),
+			Items: make([]ResourceIndexItem, 0, len(kb.Documents)),
+		}
+		for _, doc := range kb.Documents {
+			docPath := fmt.Sprintf("knowledge_bases/%d/documents/%d.json", kb.ID, doc.ID)
+			if err := s.addJSONToZip(zipWriter, docPath, doc); err != nil {
+				return errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", docPath))
+			}
+			docIndex.Items = append(docIndex.Items, ResourceIndexItem{
+				ID: doc.ID, Name: doc.Name, File: docPath,
+			})
+
+			// Write raw file bytes if available
+			if fileContents != nil {
+				if content, ok := fileContents[doc.ID]; ok && len(content) > 0 {
+					filePath := fmt.Sprintf("knowledge_bases/%d/files/%s", kb.ID, doc.ExportFileName)
+					writer, err := zipWriter.CreateHeader(&zip.FileHeader{
+						Name: filePath, Method: zip.Deflate, Modified: time.Now(),
+					})
+					if err != nil {
+						return errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", filePath))
+					}
+					if _, err := writer.Write(content); err != nil {
+						return errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", filePath))
+					}
+				}
+			}
+		}
+		docIndexPath := fmt.Sprintf("knowledge_bases/%d/documents/index.json", kb.ID)
+		if err := s.addJSONToZip(zipWriter, docIndexPath, docIndex); err != nil {
+			return errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", docIndexPath))
+		}
+
+		index.Items = append(index.Items, ResourceIndexItem{
+			ID: kb.ID, Name: kb.Name, File: metaPath,
+		})
+	}
+
+	if err := s.addJSONToZip(zipWriter, "knowledge_bases/index.json", index); err != nil {
+		return errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", "knowledge_bases/index.json"))
+	}
+
+	logs.CtxInfof(ctx, "Written %d knowledge bases to ZIP", len(knowledgeBases))
+	return nil
+}
+
+// writeFolders writes folders and resource mappings
+func (s *Serializer) writeFolders(ctx context.Context, zipWriter *zip.Writer, folders []*ExportedFolder, mappings []*ExportedFolderMapping) error {
+	if err := s.addJSONToZip(zipWriter, "folders/index.json", folders); err != nil {
+		return errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", "folders/index.json"))
+	}
+	if err := s.addJSONToZip(zipWriter, "folders/resource_mappings.json", mappings); err != nil {
+		return errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", "folders/resource_mappings.json"))
+	}
+	logs.CtxInfof(ctx, "Written %d folders and %d mappings to ZIP", len(folders), len(mappings))
+	return nil
+}
+
+// writeExternalKnowledge writes external knowledge bindings
+func (s *Serializer) writeExternalKnowledge(ctx context.Context, zipWriter *zip.Writer, bindings []*ExportedExternalKnowledge) error {
+	index := &ResourceIndex{
+		Count: len(bindings),
+		Items: make([]ResourceIndexItem, 0, len(bindings)),
+	}
+
+	for _, b := range bindings {
+		filename := fmt.Sprintf("external_knowledge/%d.json", b.ID)
+		if err := s.addJSONToZip(zipWriter, filename, b); err != nil {
+			return errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", filename))
+		}
+		index.Items = append(index.Items, ResourceIndexItem{
+			ID: b.ID, Name: b.BindingName, File: filename,
+		})
+	}
+
+	if err := s.addJSONToZip(zipWriter, "external_knowledge/index.json", index); err != nil {
+		return errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("file", "external_knowledge/index.json"))
+	}
+
+	logs.CtxInfof(ctx, "Written %d external knowledge bindings to ZIP", len(bindings))
+	return nil
+}
+
+// BuildSyncManifest builds a manifest with sync metadata
+func (s *Serializer) BuildSyncManifest(spaceID int64, spaceName string, mode string, sinceTime int64, resources *SpaceResources) *Manifest {
+	registry := IDRegistry{
+		Agents:            make([]int64, 0, len(resources.Agents)),
+		Plugins:           make([]int64, 0, len(resources.Plugins)),
+		Workflows:         make([]int64, 0, len(resources.Workflows)),
+		Variables:         make([]int64, 0, len(resources.Variables)),
+		SpaceModels:       make([]int64, 0, len(resources.SpaceModels)),
+		KnowledgeBases:    make([]int64, 0, len(resources.KnowledgeBases)),
+		Documents:         make([]int64, 0),
+		ExternalKnowledge: make([]int64, 0, len(resources.ExternalKnowledge)),
+		Folders:           make([]int64, 0, len(resources.Folders)),
+	}
+
+	totalDocs := 0
+	var filesTotalSize int64
+	for _, agent := range resources.Agents {
+		registry.Agents = append(registry.Agents, agent.ID)
+	}
+	for _, plugin := range resources.Plugins {
+		registry.Plugins = append(registry.Plugins, plugin.ID)
+	}
+	for _, workflow := range resources.Workflows {
+		registry.Workflows = append(registry.Workflows, workflow.ID)
+	}
+	for _, variable := range resources.Variables {
+		registry.Variables = append(registry.Variables, variable.ID)
+	}
+	for _, sm := range resources.SpaceModels {
+		registry.SpaceModels = append(registry.SpaceModels, sm.ID)
+	}
+	for _, kb := range resources.KnowledgeBases {
+		registry.KnowledgeBases = append(registry.KnowledgeBases, kb.ID)
+		for _, doc := range kb.Documents {
+			registry.Documents = append(registry.Documents, doc.ID)
+			totalDocs++
+			filesTotalSize += doc.Size
+		}
+	}
+	for _, ek := range resources.ExternalKnowledge {
+		registry.ExternalKnowledge = append(registry.ExternalKnowledge, ek.ID)
+	}
+	for _, f := range resources.Folders {
+		registry.Folders = append(registry.Folders, f.ID)
+	}
+
+	return &Manifest{
+		Version:    ManifestVersion,
+		SyncType:   mode,
+		SinceTime:  sinceTime,
+		ExportTime: time.Now().UTC().Format(time.RFC3339),
+		Source: SourceInfo{
+			SpaceID:   spaceID,
+			SpaceName: spaceName,
+		},
+		Statistics: Statistics{
+			Agents:            len(resources.Agents),
+			Plugins:           len(resources.Plugins),
+			Workflows:         len(resources.Workflows),
+			Variables:         len(resources.Variables),
+			SpaceModels:       len(resources.SpaceModels),
+			KnowledgeBases:    len(resources.KnowledgeBases),
+			Documents:         totalDocs,
+			FilesTotalSize:    filesTotalSize,
+			ExternalKnowledge: len(resources.ExternalKnowledge),
+			Folders:           len(resources.Folders),
+		},
+		IDRegistry: registry,
+	}
+}
+
 // BuildManifest builds the manifest for export
 func (s *Serializer) BuildManifest(spaceID int64, spaceName string, exporterID int64, resources *SpaceResources) *Manifest {
 	// Build ID registry
