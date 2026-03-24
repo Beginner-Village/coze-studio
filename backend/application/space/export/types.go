@@ -23,11 +23,13 @@ import (
 )
 
 // ManifestVersion is the current version of the export format
-const ManifestVersion = "1.0.0"
+const ManifestVersion = "2.0.0"
 
 // Manifest represents the metadata of an exported space package
 type Manifest struct {
 	Version    string           `json:"version"`
+	SyncType   string           `json:"sync_type,omitempty"`
+	SinceTime  int64            `json:"since_time,omitempty"`
 	ExportTime string           `json:"export_time"`
 	Source     SourceInfo       `json:"source"`
 	Statistics Statistics       `json:"statistics"`
@@ -43,20 +45,29 @@ type SourceInfo struct {
 
 // Statistics contains counts of exported resources
 type Statistics struct {
-	Agents      int `json:"agents"`
-	Plugins     int `json:"plugins"`
-	Workflows   int `json:"workflows"`
-	Variables   int `json:"variables"`
-	SpaceModels int `json:"space_models"`
+	Agents            int   `json:"agents"`
+	Plugins           int   `json:"plugins"`
+	Workflows         int   `json:"workflows"`
+	Variables         int   `json:"variables"`
+	SpaceModels       int   `json:"space_models"`
+	KnowledgeBases    int   `json:"knowledge_bases"`
+	Documents         int   `json:"documents"`
+	FilesTotalSize    int64 `json:"files_total_size"`
+	ExternalKnowledge int   `json:"external_knowledge"`
+	Folders           int   `json:"folders"`
 }
 
 // IDRegistry contains all resource IDs in the package for quick lookup
 type IDRegistry struct {
-	Agents      []int64 `json:"agents"`
-	Plugins     []int64 `json:"plugins"`
-	Workflows   []int64 `json:"workflows"`
-	Variables   []int64 `json:"variables"`
-	SpaceModels []int64 `json:"space_models"`
+	Agents            []int64 `json:"agents"`
+	Plugins           []int64 `json:"plugins"`
+	Workflows         []int64 `json:"workflows"`
+	Variables         []int64 `json:"variables"`
+	SpaceModels       []int64 `json:"space_models"`
+	KnowledgeBases    []int64 `json:"knowledge_bases"`
+	Documents         []int64 `json:"documents"`
+	ExternalKnowledge []int64 `json:"external_knowledge"`
+	Folders           []int64 `json:"folders"`
 }
 
 // ResourceIndex represents the index file for each resource type
@@ -191,11 +202,108 @@ type ExportedSpaceModel struct {
 
 // SpaceResources contains all resources collected from a space
 type SpaceResources struct {
-	Agents      []*ExportedAgent      `json:"agents"`
-	Plugins     []*ExportedPlugin     `json:"plugins"`
-	Workflows   []*ExportedWorkflow   `json:"workflows"`
-	Variables   []*ExportedVariable   `json:"variables"`
-	SpaceModels []*ExportedSpaceModel `json:"space_models"`
+	Agents            []*ExportedAgent            `json:"agents"`
+	Plugins           []*ExportedPlugin           `json:"plugins"`
+	Workflows         []*ExportedWorkflow         `json:"workflows"`
+	Variables         []*ExportedVariable         `json:"variables"`
+	SpaceModels       []*ExportedSpaceModel       `json:"space_models"`
+	KnowledgeBases    []*ExportedKnowledge        `json:"knowledge_bases"`
+	Folders           []*ExportedFolder           `json:"folders"`
+	FolderMappings    []*ExportedFolderMapping    `json:"folder_mappings"`
+	ExternalKnowledge []*ExportedExternalKnowledge `json:"external_knowledge"`
+}
+
+// ExportedKnowledge represents an exported knowledge base with its documents
+type ExportedKnowledge struct {
+	ID          int64                `json:"id,string"`
+	Name        string               `json:"name"`
+	Description string               `json:"description"`
+	IconURI     string               `json:"icon_uri"`
+	FormatType  int32                `json:"format_type"`
+	Status      int32                `json:"status"`
+	CreatedAt   int64                `json:"created_at"`
+	UpdatedAt   int64                `json:"updated_at"`
+	Documents   []*ExportedDocument  `json:"documents"`
+}
+
+// ExportedDocument represents an exported document within a knowledge base
+type ExportedDocument struct {
+	ID             int64            `json:"id,string"`
+	KnowledgeID    int64            `json:"knowledge_id,string"`
+	Name           string           `json:"name"`
+	FileExtension  string           `json:"file_extension"`
+	DocumentType   int32            `json:"document_type"`
+	URI            string           `json:"uri"`
+	Size           int64            `json:"size"`
+	SliceCount     int64            `json:"slice_count"`
+	CharCount      int64            `json:"char_count"`
+	SourceType     int32            `json:"source_type"`
+	Status         int32            `json:"status"`
+	ParseRule      interface{}      `json:"parse_rule,omitempty"`
+	TableInfo      interface{}      `json:"table_info,omitempty"`
+	CreatedAt      int64            `json:"created_at"`
+	UpdatedAt      int64            `json:"updated_at"`
+	Slices         []*ExportedSlice `json:"slices"`
+	ExportFileName string           `json:"export_file_name,omitempty"`
+}
+
+// ExportedSlice represents an exported document slice
+type ExportedSlice struct {
+	ID         int64   `json:"id,string"`
+	DocumentID int64   `json:"document_id,string"`
+	Content    string  `json:"content"`
+	Sequence   float64 `json:"sequence"`
+	Status     int32   `json:"status"`
+	CreatedAt  int64   `json:"created_at"`
+	UpdatedAt  int64   `json:"updated_at"`
+}
+
+// ExportedFolder represents an exported folder
+type ExportedFolder struct {
+	ID          int64  `json:"id,string"`
+	ParentID    int64  `json:"parent_id,string"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	CreatedAt   int64  `json:"created_at"`
+	UpdatedAt   int64  `json:"updated_at"`
+}
+
+// ExportedFolderMapping represents a resource-to-folder mapping
+type ExportedFolderMapping struct {
+	ResourceID   int64 `json:"resource_id,string"`
+	ResourceType int32 `json:"resource_type"`
+	FolderID     int64 `json:"folder_id,string"`
+}
+
+// ExportedExternalKnowledge represents an exported external knowledge binding
+type ExportedExternalKnowledge struct {
+	ID          int64       `json:"id,string"`
+	BindingKey  string      `json:"binding_key"`
+	BindingName string      `json:"binding_name"`
+	BindingType int32       `json:"binding_type"`
+	ExtraConfig interface{} `json:"extra_config,omitempty"`
+	Status      int32       `json:"status"`
+	CreatedAt   int64       `json:"created_at"`
+	UpdatedAt   int64       `json:"updated_at"`
+}
+
+// DeletedResources tracks resources that were deleted during incremental sync
+type DeletedResources struct {
+	Agents            []int64 `json:"agents"`
+	Plugins           []int64 `json:"plugins"`
+	Workflows         []int64 `json:"workflows"`
+	Variables         []int64 `json:"variables"`
+	SpaceModels       []int64 `json:"space_models"`
+	KnowledgeBases    []int64 `json:"knowledge_bases"`
+	Documents         []int64 `json:"documents"`
+	ExternalKnowledge []int64 `json:"external_knowledge"`
+	Folders           []int64 `json:"folders"`
+}
+
+// SyncState tracks the state of an incremental sync
+type SyncState struct {
+	ExportTime    int64 `json:"export_time"`
+	SourceSpaceID int64 `json:"source_space_id,string"`
 }
 
 // ExportResult represents the result of an export operation

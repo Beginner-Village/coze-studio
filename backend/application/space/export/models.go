@@ -167,3 +167,104 @@ type SpaceModelModel struct {
 func (SpaceModelModel) TableName() string {
 	return "space_model"
 }
+
+// KnowledgeModel represents the knowledge table
+type KnowledgeModel struct {
+	ID          int64   `gorm:"column:id;primaryKey"`
+	Name        string  `gorm:"column:name"`
+	AppID       int64   `gorm:"column:app_id"`
+	CreatorID   int64   `gorm:"column:creator_id"`
+	SpaceID     int64   `gorm:"column:space_id"`
+	CreatedAt   int64   `gorm:"column:created_at"`
+	UpdatedAt   int64   `gorm:"column:updated_at"`
+	Status      int32   `gorm:"column:status"`
+	Description *string `gorm:"column:description"`
+	IconURI     *string `gorm:"column:icon_uri"`
+	FormatType  int32   `gorm:"column:format_type"`
+}
+
+func (KnowledgeModel) TableName() string { return "knowledge" }
+
+// KnowledgeDocumentModel represents the knowledge_document table
+type KnowledgeDocumentModel struct {
+	ID            int64       `gorm:"column:id;primaryKey"`
+	KnowledgeID   int64       `gorm:"column:knowledge_id"`
+	Name          string      `gorm:"column:name"`
+	FileExtension string      `gorm:"column:file_extension"`
+	DocumentType  int32       `gorm:"column:document_type"`
+	URI           *string     `gorm:"column:uri"`
+	Size          int64       `gorm:"column:size"`
+	SliceCount    int64       `gorm:"column:slice_count"`
+	CharCount     int64       `gorm:"column:char_count"`
+	CreatorID     int64       `gorm:"column:creator_id"`
+	SpaceID       int64       `gorm:"column:space_id"`
+	CreatedAt     int64       `gorm:"column:created_at"`
+	UpdatedAt     int64       `gorm:"column:updated_at"`
+	SourceType    int32       `gorm:"column:source_type"`
+	Status        int32       `gorm:"column:status"`
+	FailReason    *string     `gorm:"column:fail_reason"`
+	ParseRule     interface{} `gorm:"column:parse_rule;serializer:json"`
+	TableInfo     interface{} `gorm:"column:table_info;serializer:json"`
+}
+
+func (KnowledgeDocumentModel) TableName() string { return "knowledge_document" }
+
+// KnowledgeDocumentSliceModel represents the knowledge_document_slice table
+type KnowledgeDocumentSliceModel struct {
+	ID          int64   `gorm:"column:id;primaryKey"`
+	KnowledgeID int64   `gorm:"column:knowledge_id"`
+	DocumentID  int64   `gorm:"column:document_id"`
+	Content     *string `gorm:"column:content"`
+	Sequence    float64 `gorm:"column:sequence"`
+	CreatedAt   int64   `gorm:"column:created_at"`
+	UpdatedAt   int64   `gorm:"column:updated_at"`
+	CreatorID   int64   `gorm:"column:creator_id"`
+	SpaceID     int64   `gorm:"column:space_id"`
+	Status      int32   `gorm:"column:status"`
+	FailReason  *string `gorm:"column:fail_reason"`
+	Hit         int64   `gorm:"column:hit"`
+}
+
+func (KnowledgeDocumentSliceModel) TableName() string { return "knowledge_document_slice" }
+
+// FolderModel represents the folder table
+type FolderModel struct {
+	ID          int64   `gorm:"column:id;primaryKey"`
+	SpaceID     int64   `gorm:"column:space_id"`
+	ParentID    int64   `gorm:"column:parent_id"`
+	Name        string  `gorm:"column:name"`
+	Description *string `gorm:"column:description"`
+	CreatorID   int64   `gorm:"column:creator_id"`
+	CreatedAt   int64   `gorm:"column:created_at"`
+	UpdatedAt   int64   `gorm:"column:updated_at"`
+}
+
+func (FolderModel) TableName() string { return "folder" }
+
+// ResourceFolderMappingModel represents the resource_folder_mapping table
+type ResourceFolderMappingModel struct {
+	ID           int64 `gorm:"column:id;primaryKey"`
+	SpaceID      int64 `gorm:"column:space_id"`
+	ResourceID   int64 `gorm:"column:resource_id"`
+	ResourceType int32 `gorm:"column:resource_type"`
+	FolderID     int64 `gorm:"column:folder_id"`
+	CreatedAt    int64 `gorm:"column:created_at"`
+	UpdatedAt    int64 `gorm:"column:updated_at"`
+}
+
+func (ResourceFolderMappingModel) TableName() string { return "resource_folder_mapping" }
+
+// ExternalKnowledgeBindingModel represents the external_knowledge_binding table
+type ExternalKnowledgeBindingModel struct {
+	ID          int64       `gorm:"column:id;primaryKey"`
+	UserID      int64       `gorm:"column:user_id"`
+	BindingKey  string      `gorm:"column:binding_key"`
+	BindingName string      `gorm:"column:binding_name"`
+	BindingType int32       `gorm:"column:binding_type"`
+	ExtraConfig interface{} `gorm:"column:extra_config;serializer:json"`
+	Status      int32       `gorm:"column:status"`
+	CreatedAt   int64       `gorm:"column:created_at"`
+	UpdatedAt   int64       `gorm:"column:updated_at"`
+}
+
+func (ExternalKnowledgeBindingModel) TableName() string { return "external_knowledge_binding" }
