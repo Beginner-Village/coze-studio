@@ -706,6 +706,371 @@ func (c *ResourceCollector) collectFolders(ctx context.Context, spaceID int64) (
 	return exportedFolders, exportedMappings, nil
 }
 
+// CollectIncremental collects only resources changed since sinceTime
+func (c *ResourceCollector) CollectIncremental(ctx context.Context, spaceID int64, sinceTime int64) (*SpaceResources, *DeletedResources, error) {
+	resources := &SpaceResources{
+		Agents:            make([]*ExportedAgent, 0),
+		Plugins:           make([]*ExportedPlugin, 0),
+		Workflows:         make([]*ExportedWorkflow, 0),
+		Variables:         make([]*ExportedVariable, 0),
+		SpaceModels:       make([]*ExportedSpaceModel, 0),
+		KnowledgeBases:    make([]*ExportedKnowledge, 0),
+		Folders:           make([]*ExportedFolder, 0),
+		FolderMappings:    make([]*ExportedFolderMapping, 0),
+		ExternalKnowledge: make([]*ExportedExternalKnowledge, 0),
+	}
+
+	// Collect changed agents
+	var agentDrafts []SingleAgentDraftModel
+	err := c.db.WithContext(ctx).Table("single_agent_draft").
+		Where("space_id = ? AND updated_at > ? AND deleted_at IS NULL", spaceID, sinceTime).
+		Find(&agentDrafts).Error
+	if err != nil {
+		return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "agents"))
+	}
+	agentIDs := make([]int64, 0, len(agentDrafts))
+	for _, a := range agentDrafts {
+		agentIDs = append(agentIDs, a.AgentID)
+	}
+	agentToolsMap, err := c.collectAgentTools(ctx, agentIDs)
+	if err != nil {
+		return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "agent_tools"))
+	}
+	for _, agent := range agentDrafts {
+		exported := c.convertAgentDraftToExported(&agent)
+		if tools, ok := agentToolsMap[agent.AgentID]; ok {
+			exported.AgentTools = tools
+		}
+		resources.Agents = append(resources.Agents, exported)
+	}
+	logs.CtxInfof(ctx, "Incremental: collected %d changed agents from space %d", len(resources.Agents), spaceID)
+
+	// Collect changed plugins
+	var pluginDrafts []PluginDraftModel
+	err = c.db.WithContext(ctx).Table("plugin_draft").
+		Where("space_id = ? AND updated_at > ? AND deleted_at IS NULL", spaceID, sinceTime).
+		Find(&pluginDrafts).Error
+	if err != nil {
+		return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "plugins"))
+	}
+	for _, plugin := range pluginDrafts {
+		resources.Plugins = append(resources.Plugins, c.convertPluginDraftToExported(&plugin))
+	}
+	logs.CtxInfof(ctx, "Incremental: collected %d changed plugins from space %d", len(resources.Plugins), spaceID)
+
+	// Collect changed workflows
+	var workflowMetas []WorkflowMetaModel
+	err = c.db.WithContext(ctx).Table("workflow_meta").
+		Where("space_id = ? AND updated_at > ? AND deleted_at IS NULL", spaceID, sinceTime).
+		Find(&workflowMetas).Error
+	if err != nil {
+		return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "workflows"))
+	}
+	if len(workflowMetas) > 0 {
+		wfIDs := make([]int64, 0, len(workflowMetas))
+		for _, meta := range workflowMetas {
+			wfIDs = append(wfIDs, meta.ID)
+		}
+		var workflowDrafts []WorkflowDraftModel
+		err = c.db.WithContext(ctx).Table("workflow_draft").
+			Where("id IN ?", wfIDs).Where("deleted_at IS NULL").
+			Find(&workflowDrafts).Error
+		if err != nil {
+			return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "workflow_drafts"))
+		}
+		draftMap := make(map[int64]*WorkflowDraftModel)
+		for i := range workflowDrafts {
+			draftMap[workflowDrafts[i].ID] = &workflowDrafts[i]
+		}
+		for _, meta := range workflowMetas {
+			resources.Workflows = append(resources.Workflows, c.convertWorkflowToExported(&meta, draftMap[meta.ID]))
+		}
+	}
+	logs.CtxInfof(ctx, "Incremental: collected %d changed workflows from space %d", len(resources.Workflows), spaceID)
+
+	// Collect changed variables directly by updated_at
+	var variableMetas []VariablesMetaModel
+	err = c.db.WithContext(ctx).Table("variables_meta").
+		Where("biz_type = ? AND updated_at > ?", 1, sinceTime).
+		Find(&variableMetas).Error
+	if err != nil {
+		return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "variables"))
+	}
+	// Filter to only variables belonging to agents in this space
+	allAgentIDs := make(map[string]bool)
+	var allSpaceAgents []SingleAgentDraftModel
+	err = c.db.WithContext(ctx).Table("single_agent_draft").
+		Select("agent_id").Where("space_id = ? AND deleted_at IS NULL", spaceID).
+		Find(&allSpaceAgents).Error
+	if err != nil {
+		return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "variables_agents"))
+	}
+	for _, a := range allSpaceAgents {
+		allAgentIDs[fmt.Sprintf("%d", a.AgentID)] = true
+	}
+	for _, v := range variableMetas {
+		if allAgentIDs[v.BizID] {
+			resources.Variables = append(resources.Variables, c.convertVariableToExported(&v))
+		}
+	}
+	logs.CtxInfof(ctx, "Incremental: collected %d changed variables from space %d", len(resources.Variables), spaceID)
+
+	// Collect changed space models
+	var spaceModels []SpaceModelModel
+	err = c.db.WithContext(ctx).Table("space_model").
+		Where("space_id = ? AND updated_at > ? AND deleted_at IS NULL", spaceID, sinceTime).
+		Find(&spaceModels).Error
+	if err != nil {
+		return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "space_models"))
+	}
+	if len(spaceModels) > 0 {
+		entityIDs := make([]int64, 0, len(spaceModels))
+		for _, sm := range spaceModels {
+			entityIDs = append(entityIDs, sm.ModelEntityID)
+		}
+		entityNameMap, err := c.getModelEntityNames(ctx, entityIDs)
+		if err != nil {
+			logs.CtxWarnf(ctx, "Failed to get model entity names: %v", err)
+			entityNameMap = make(map[int64]string)
+		}
+		for _, sm := range spaceModels {
+			exported := c.convertSpaceModelToExported(&sm)
+			exported.ModelEntityName = entityNameMap[sm.ModelEntityID]
+			resources.SpaceModels = append(resources.SpaceModels, exported)
+		}
+	}
+	logs.CtxInfof(ctx, "Incremental: collected %d changed space models from space %d", len(resources.SpaceModels), spaceID)
+
+	// Collect changed knowledge bases - include KB if it or any of its docs changed
+	changedKBIDs := make(map[int64]bool)
+	var changedKnowledges []KnowledgeModel
+	err = c.db.WithContext(ctx).Table("knowledge").
+		Where("space_id = ? AND updated_at > ? AND deleted_at IS NULL", spaceID, sinceTime).
+		Find(&changedKnowledges).Error
+	if err != nil {
+		return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "knowledge_bases"))
+	}
+	for _, k := range changedKnowledges {
+		changedKBIDs[k.ID] = true
+	}
+	// Also find KBs with changed documents
+	type kbIDRow struct {
+		KnowledgeID int64 `gorm:"column:knowledge_id"`
+	}
+	var docKBIDs []kbIDRow
+	err = c.db.WithContext(ctx).Table("knowledge_document").
+		Select("DISTINCT knowledge_id").
+		Where("space_id = ? AND updated_at > ? AND deleted_at IS NULL", spaceID, sinceTime).
+		Find(&docKBIDs).Error
+	if err != nil {
+		return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "knowledge_docs"))
+	}
+	for _, row := range docKBIDs {
+		changedKBIDs[row.KnowledgeID] = true
+	}
+	// Batch-fetch all changed knowledge bases
+	if len(changedKBIDs) > 0 {
+		kbIDs := make([]int64, 0, len(changedKBIDs))
+		for id := range changedKBIDs {
+			kbIDs = append(kbIDs, id)
+		}
+		var knowledges []KnowledgeModel
+		err = c.db.WithContext(ctx).Table("knowledge").
+			Where("id IN ? AND deleted_at IS NULL", kbIDs).
+			Find(&knowledges).Error
+		if err != nil {
+			return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "knowledge_bases_batch"))
+		}
+		for _, k := range knowledges {
+			exported := &ExportedKnowledge{
+				ID: k.ID, Name: k.Name, Description: getStringValue(k.Description),
+				IconURI: getStringValue(k.IconURI), FormatType: k.FormatType,
+				Status: k.Status, CreatedAt: k.CreatedAt, UpdatedAt: k.UpdatedAt,
+			}
+			docs, err := c.collectDocuments(ctx, k.ID)
+			if err != nil {
+				return nil, nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("resource", "knowledge_docs"))
+			}
+			exported.Documents = docs
+			resources.KnowledgeBases = append(resources.KnowledgeBases, exported)
+		}
+	}
+	logs.CtxInfof(ctx, "Incremental: collected %d changed knowledge bases from space %d", len(resources.KnowledgeBases), spaceID)
+
+	// Collect changed folders (filter by updated_at) but always export full resource_folder_mapping
+	var folders []FolderModel
+	err = c.db.WithContext(ctx).Table("folder").
+		Where("space_id = ? AND updated_at > ? AND deleted_at IS NULL", spaceID, sinceTime).
+		Find(&folders).Error
+	if err != nil {
+		logs.CtxWarnf(ctx, "Failed to collect folders for space %d: %v", spaceID, err)
+	} else {
+		for _, f := range folders {
+			resources.Folders = append(resources.Folders, &ExportedFolder{
+				ID: f.ID, ParentID: f.ParentID, Name: f.Name,
+				Description: getStringValue(f.Description), CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt,
+			})
+		}
+	}
+	// Always export full resource_folder_mapping
+	var mappings []ResourceFolderMappingModel
+	err = c.db.WithContext(ctx).Table("resource_folder_mapping").
+		Where("space_id = ?", spaceID).Find(&mappings).Error
+	if err != nil {
+		logs.CtxWarnf(ctx, "Failed to collect folder mappings for space %d: %v", spaceID, err)
+	} else {
+		for _, m := range mappings {
+			resources.FolderMappings = append(resources.FolderMappings, &ExportedFolderMapping{
+				ResourceID: m.ResourceID, ResourceType: m.ResourceType, FolderID: m.FolderID,
+			})
+		}
+	}
+	logs.CtxInfof(ctx, "Incremental: collected %d changed folders from space %d", len(resources.Folders), spaceID)
+
+	// Collect external knowledge bindings from changed agents
+	externalKnowledge, err := c.collectExternalKnowledge(ctx, resources.Agents)
+	if err != nil {
+		logs.CtxWarnf(ctx, "Failed to collect external knowledge: %v", err)
+	} else {
+		resources.ExternalKnowledge = externalKnowledge
+	}
+
+	// Collect deleted resources
+	deleted, err := c.collectDeletedResources(ctx, spaceID, sinceTime)
+	if err != nil {
+		logs.CtxWarnf(ctx, "Failed to collect deleted resources: %v", err)
+		deleted = &DeletedResources{}
+	}
+
+	return resources, deleted, nil
+}
+
+// collectDeletedResources finds resources soft-deleted since sinceTime
+func (c *ResourceCollector) collectDeletedResources(ctx context.Context, spaceID int64, sinceTime int64) (*DeletedResources, error) {
+	deleted := &DeletedResources{
+		Agents:         make([]int64, 0),
+		Plugins:        make([]int64, 0),
+		Workflows:      make([]int64, 0),
+		SpaceModels:    make([]int64, 0),
+		KnowledgeBases: make([]int64, 0),
+		Documents:      make([]int64, 0),
+		Folders:        make([]int64, 0),
+	}
+
+	type idRow struct {
+		ID int64 `gorm:"column:id"`
+	}
+
+	deletedSinceCondition := "UNIX_TIMESTAMP(deleted_at) * 1000 > ?"
+
+	// Agents (id column is agent_id)
+	type agentIDRow struct {
+		AgentID int64 `gorm:"column:agent_id"`
+	}
+	var deletedAgents []agentIDRow
+	if err := c.db.WithContext(ctx).Unscoped().Table("single_agent_draft").
+		Select("agent_id").
+		Where("space_id = ?", spaceID).
+		Where("deleted_at IS NOT NULL").
+		Where(deletedSinceCondition, sinceTime).
+		Find(&deletedAgents).Error; err != nil {
+		return nil, err
+	}
+	for _, a := range deletedAgents {
+		deleted.Agents = append(deleted.Agents, a.AgentID)
+	}
+
+	// Plugins
+	var deletedPlugins []idRow
+	if err := c.db.WithContext(ctx).Unscoped().Table("plugin_draft").
+		Select("id").
+		Where("space_id = ?", spaceID).
+		Where("deleted_at IS NOT NULL").
+		Where(deletedSinceCondition, sinceTime).
+		Find(&deletedPlugins).Error; err != nil {
+		return nil, err
+	}
+	for _, p := range deletedPlugins {
+		deleted.Plugins = append(deleted.Plugins, p.ID)
+	}
+
+	// Workflows
+	var deletedWorkflows []idRow
+	if err := c.db.WithContext(ctx).Unscoped().Table("workflow_meta").
+		Select("id").
+		Where("space_id = ?", spaceID).
+		Where("deleted_at IS NOT NULL").
+		Where(deletedSinceCondition, sinceTime).
+		Find(&deletedWorkflows).Error; err != nil {
+		return nil, err
+	}
+	for _, w := range deletedWorkflows {
+		deleted.Workflows = append(deleted.Workflows, w.ID)
+	}
+
+	// Space models
+	var deletedSpaceModels []idRow
+	if err := c.db.WithContext(ctx).Unscoped().Table("space_model").
+		Select("id").
+		Where("space_id = ?", spaceID).
+		Where("deleted_at IS NOT NULL").
+		Where(deletedSinceCondition, sinceTime).
+		Find(&deletedSpaceModels).Error; err != nil {
+		return nil, err
+	}
+	for _, sm := range deletedSpaceModels {
+		deleted.SpaceModels = append(deleted.SpaceModels, sm.ID)
+	}
+
+	// Knowledge bases
+	var deletedKnowledge []idRow
+	if err := c.db.WithContext(ctx).Unscoped().Table("knowledge").
+		Select("id").
+		Where("space_id = ?", spaceID).
+		Where("deleted_at IS NOT NULL").
+		Where(deletedSinceCondition, sinceTime).
+		Find(&deletedKnowledge).Error; err != nil {
+		return nil, err
+	}
+	for _, k := range deletedKnowledge {
+		deleted.KnowledgeBases = append(deleted.KnowledgeBases, k.ID)
+	}
+
+	// Documents
+	var deletedDocs []idRow
+	if err := c.db.WithContext(ctx).Unscoped().Table("knowledge_document").
+		Select("id").
+		Where("space_id = ?", spaceID).
+		Where("deleted_at IS NOT NULL").
+		Where(deletedSinceCondition, sinceTime).
+		Find(&deletedDocs).Error; err != nil {
+		return nil, err
+	}
+	for _, d := range deletedDocs {
+		deleted.Documents = append(deleted.Documents, d.ID)
+	}
+
+	// Folders
+	var deletedFolders []idRow
+	if err := c.db.WithContext(ctx).Unscoped().Table("folder").
+		Select("id").
+		Where("space_id = ?", spaceID).
+		Where("deleted_at IS NOT NULL").
+		Where(deletedSinceCondition, sinceTime).
+		Find(&deletedFolders).Error; err != nil {
+		return nil, err
+	}
+	for _, f := range deletedFolders {
+		deleted.Folders = append(deleted.Folders, f.ID)
+	}
+
+	logs.CtxInfof(ctx, "Incremental: collected deleted resources from space %d: agents=%d plugins=%d workflows=%d space_models=%d knowledge=%d docs=%d folders=%d",
+		spaceID, len(deleted.Agents), len(deleted.Plugins), len(deleted.Workflows),
+		len(deleted.SpaceModels), len(deleted.KnowledgeBases), len(deleted.Documents), len(deleted.Folders))
+
+	return deleted, nil
+}
+
 // collectExternalKnowledge collects external knowledge bindings referenced by agents
 func (c *ResourceCollector) collectExternalKnowledge(ctx context.Context, agents []*ExportedAgent) ([]*ExportedExternalKnowledge, error) {
 	bindingKeys := make(map[string]bool)
