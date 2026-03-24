@@ -77,6 +77,18 @@ type ImportContext struct {
 	// Track which space models were actually created (not skipped)
 	CreatedSpaceModelIDs map[int64]bool // new space_model.id -> true if created
 
+	// New ID mappings for sync
+	KnowledgeIDMap         map[int64]int64
+	DocumentIDMap          map[int64]int64
+	FolderIDMap            map[int64]int64
+	ExternalKnowledgeIDMap map[int64]int64
+
+	// File URI mapping (old document ID -> new object storage URI, set during Phase 1)
+	FileURIMap map[int64]string
+
+	// Sync mode support
+	SyncMode string // "create_only" | "upsert"
+
 	// Fallback model ID for agents when their model is not available
 	FallbackModelID *int64
 
@@ -87,15 +99,20 @@ type ImportContext struct {
 // NewImportContext creates a new import context
 func NewImportContext(targetSpaceID, userID int64, registry *export.IDRegistry) *ImportContext {
 	return &ImportContext{
-		TargetSpaceID:        targetSpaceID,
-		UserID:               userID,
-		AgentIDMap:           make(map[int64]int64),
-		PluginIDMap:          make(map[int64]int64),
-		WorkflowIDMap:        make(map[int64]int64),
-		VariableIDMap:        make(map[int64]int64),
-		SpaceModelIDMap:      make(map[int64]int64),
-		CreatedSpaceModelIDs: make(map[int64]bool),
-		PackageIDs:           registry,
+		TargetSpaceID:          targetSpaceID,
+		UserID:                 userID,
+		AgentIDMap:             make(map[int64]int64),
+		PluginIDMap:            make(map[int64]int64),
+		WorkflowIDMap:          make(map[int64]int64),
+		VariableIDMap:          make(map[int64]int64),
+		SpaceModelIDMap:        make(map[int64]int64),
+		CreatedSpaceModelIDs:   make(map[int64]bool),
+		KnowledgeIDMap:         make(map[int64]int64),
+		DocumentIDMap:          make(map[int64]int64),
+		FolderIDMap:            make(map[int64]int64),
+		ExternalKnowledgeIDMap: make(map[int64]int64),
+		FileURIMap:             make(map[int64]string),
+		PackageIDs:             registry,
 	}
 }
 
@@ -212,6 +229,90 @@ func (c *ImportContext) WasSpaceModelCreated(newID int64) bool {
 // MarkSpaceModelCreated marks a space model as actually created
 func (c *ImportContext) MarkSpaceModelCreated(newID int64) {
 	c.CreatedSpaceModelIDs[newID] = true
+}
+
+// IsInPackageKnowledge checks if a knowledge base ID is in the package
+func (c *ImportContext) IsInPackageKnowledge(id int64) bool {
+	for _, kid := range c.PackageIDs.KnowledgeBases {
+		if kid == id {
+			return true
+		}
+	}
+	return false
+}
+
+// RemapKnowledgeID remaps a knowledge base ID or returns 0 if not in package
+func (c *ImportContext) RemapKnowledgeID(oldID int64) int64 {
+	if !c.IsInPackageKnowledge(oldID) {
+		return 0
+	}
+	if newID, ok := c.KnowledgeIDMap[oldID]; ok {
+		return newID
+	}
+	return 0
+}
+
+// IsInPackageDocument checks if a document ID is in the package
+func (c *ImportContext) IsInPackageDocument(id int64) bool {
+	for _, did := range c.PackageIDs.Documents {
+		if did == id {
+			return true
+		}
+	}
+	return false
+}
+
+// RemapDocumentID remaps a document ID or returns 0 if not in package
+func (c *ImportContext) RemapDocumentID(oldID int64) int64 {
+	if !c.IsInPackageDocument(oldID) {
+		return 0
+	}
+	if newID, ok := c.DocumentIDMap[oldID]; ok {
+		return newID
+	}
+	return 0
+}
+
+// IsInPackageFolder checks if a folder ID is in the package
+func (c *ImportContext) IsInPackageFolder(id int64) bool {
+	for _, fid := range c.PackageIDs.Folders {
+		if fid == id {
+			return true
+		}
+	}
+	return false
+}
+
+// RemapFolderID remaps a folder ID or returns 0 if not in package
+func (c *ImportContext) RemapFolderID(oldID int64) int64 {
+	if !c.IsInPackageFolder(oldID) {
+		return 0
+	}
+	if newID, ok := c.FolderIDMap[oldID]; ok {
+		return newID
+	}
+	return 0
+}
+
+// IsInPackageExternalKnowledge checks if an external knowledge ID is in the package
+func (c *ImportContext) IsInPackageExternalKnowledge(id int64) bool {
+	for _, eid := range c.PackageIDs.ExternalKnowledge {
+		if eid == id {
+			return true
+		}
+	}
+	return false
+}
+
+// RemapExternalKnowledgeID remaps an external knowledge ID or returns 0 if not in package
+func (c *ImportContext) RemapExternalKnowledgeID(oldID int64) int64 {
+	if !c.IsInPackageExternalKnowledge(oldID) {
+		return 0
+	}
+	if newID, ok := c.ExternalKnowledgeIDMap[oldID]; ok {
+		return newID
+	}
+	return 0
 }
 
 // GetEffectiveModelID returns the model ID to use for an agent

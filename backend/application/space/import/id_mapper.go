@@ -41,13 +41,18 @@ func NewIDMapper(idGen idgen.IDGenerator) *IDMapper {
 // GenerateMapping generates new IDs for all resources and creates the mapping
 func (m *IDMapper) GenerateMapping(ctx context.Context, resources *export.SpaceResources, registry *export.IDRegistry) (*ImportContext, error) {
 	importCtx := &ImportContext{
-		AgentIDMap:           make(map[int64]int64),
-		PluginIDMap:          make(map[int64]int64),
-		WorkflowIDMap:        make(map[int64]int64),
-		VariableIDMap:        make(map[int64]int64),
-		SpaceModelIDMap:      make(map[int64]int64),
-		CreatedSpaceModelIDs: make(map[int64]bool),
-		PackageIDs:           registry,
+		AgentIDMap:             make(map[int64]int64),
+		PluginIDMap:            make(map[int64]int64),
+		WorkflowIDMap:          make(map[int64]int64),
+		VariableIDMap:          make(map[int64]int64),
+		SpaceModelIDMap:        make(map[int64]int64),
+		CreatedSpaceModelIDs:   make(map[int64]bool),
+		KnowledgeIDMap:         make(map[int64]int64),
+		DocumentIDMap:          make(map[int64]int64),
+		FolderIDMap:            make(map[int64]int64),
+		ExternalKnowledgeIDMap: make(map[int64]int64),
+		FileURIMap:             make(map[int64]string),
+		PackageIDs:             registry,
 	}
 
 	// Generate new IDs for agents
@@ -100,9 +105,50 @@ func (m *IDMapper) GenerateMapping(ctx context.Context, resources *export.SpaceR
 		logs.CtxDebugf(ctx, "SpaceModel ID mapping: %d -> %d", spaceModel.ID, newID)
 	}
 
-	logs.CtxInfof(ctx, "Generated ID mappings: agents=%d, plugins=%d, workflows=%d, variables=%d, space_models=%d",
+	// Generate new IDs for knowledge bases and their documents
+	for _, kb := range resources.KnowledgeBases {
+		newID, err := m.idGenerator.GenID(ctx)
+		if err != nil {
+			return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "knowledge_base"))
+		}
+		importCtx.KnowledgeIDMap[kb.ID] = newID
+		logs.CtxDebugf(ctx, "KnowledgeBase ID mapping: %d -> %d", kb.ID, newID)
+
+		// Generate new IDs for documents within this knowledge base
+		for _, doc := range kb.Documents {
+			newDocID, err := m.idGenerator.GenID(ctx)
+			if err != nil {
+				return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "document"))
+			}
+			importCtx.DocumentIDMap[doc.ID] = newDocID
+			logs.CtxDebugf(ctx, "Document ID mapping: %d -> %d", doc.ID, newDocID)
+		}
+	}
+
+	// Generate new IDs for folders
+	for _, folder := range resources.Folders {
+		newID, err := m.idGenerator.GenID(ctx)
+		if err != nil {
+			return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "folder"))
+		}
+		importCtx.FolderIDMap[folder.ID] = newID
+		logs.CtxDebugf(ctx, "Folder ID mapping: %d -> %d", folder.ID, newID)
+	}
+
+	// Generate new IDs for external knowledge
+	for _, ek := range resources.ExternalKnowledge {
+		newID, err := m.idGenerator.GenID(ctx)
+		if err != nil {
+			return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "external_knowledge"))
+		}
+		importCtx.ExternalKnowledgeIDMap[ek.ID] = newID
+		logs.CtxDebugf(ctx, "ExternalKnowledge ID mapping: %d -> %d", ek.ID, newID)
+	}
+
+	logs.CtxInfof(ctx, "Generated ID mappings: agents=%d, plugins=%d, workflows=%d, variables=%d, space_models=%d, knowledge=%d, documents=%d, folders=%d, external_knowledge=%d",
 		len(importCtx.AgentIDMap), len(importCtx.PluginIDMap),
-		len(importCtx.WorkflowIDMap), len(importCtx.VariableIDMap), len(importCtx.SpaceModelIDMap))
+		len(importCtx.WorkflowIDMap), len(importCtx.VariableIDMap), len(importCtx.SpaceModelIDMap),
+		len(importCtx.KnowledgeIDMap), len(importCtx.DocumentIDMap), len(importCtx.FolderIDMap), len(importCtx.ExternalKnowledgeIDMap))
 
 	// Log package IDs for debugging
 	if registry != nil {

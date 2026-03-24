@@ -109,11 +109,34 @@ func (r *ReferenceRewriter) RewriteAgent(ctx context.Context, agent *export.Expo
 		logs.CtxDebugf(ctx, "Agent %d workflow refs after rewrite: %d", agent.ID, len(agent.WorkflowRefs))
 	}
 
-	// Clear knowledge references (not exported)
-	agent.KnowledgeRefs = nil
+	// Rewrite knowledge references
+	if agent.KnowledgeRefs != nil && agent.KnowledgeRefs.KnowledgeInfo != nil {
+		validKnowledgeInfo := make([]*bot_common.KnowledgeInfo, 0, len(agent.KnowledgeRefs.KnowledgeInfo))
+		for _, ki := range agent.KnowledgeRefs.KnowledgeInfo {
+			oldIDStr := ki.GetId()
+			if oldIDStr == "" {
+				continue
+			}
+			oldID, err := strconv.ParseInt(oldIDStr, 10, 64)
+			if err != nil {
+				logs.CtxWarnf(ctx, "Failed to parse knowledge_info id %q: %v", oldIDStr, err)
+				continue
+			}
+			if importCtx.IsInPackageKnowledge(oldID) {
+				newID := importCtx.RemapKnowledgeID(oldID)
+				newIDStr := strconv.FormatInt(newID, 10)
+				ki.Id = &newIDStr
+				validKnowledgeInfo = append(validKnowledgeInfo, ki)
+				logs.CtxDebugf(ctx, "Remapped knowledge ref: %d -> %d", oldID, newID)
+			} else {
+				logs.CtxWarnf(ctx, "Removing out-of-package knowledge ref %d from agent %d", oldID, agent.ID)
+			}
+		}
+		agent.KnowledgeRefs.KnowledgeInfo = validKnowledgeInfo
+	}
 
-	// Clear external knowledge references
-	agent.ExternalKnowledge = nil
+	// Keep external knowledge references as-is (exported with the package)
+	// agent.ExternalKnowledge is preserved
 
 	// Clear database references (not exported)
 	agent.DatabaseRefs = nil
@@ -266,9 +289,13 @@ func (r *ReferenceRewriter) rewriteNodeReferences(ctx context.Context, node map[
 		}
 	}
 
-	// Clear knowledge_id (not exported)
-	if _, ok := data["knowledge_id"]; ok {
-		data["knowledge_id"] = 0
+	// Rewrite knowledge_id
+	if knowledgeID, ok := getInt64FromInterface(data["knowledge_id"]); ok && knowledgeID != 0 {
+		if importCtx.IsInPackageKnowledge(knowledgeID) {
+			data["knowledge_id"] = importCtx.RemapKnowledgeID(knowledgeID)
+		} else {
+			data["knowledge_id"] = 0
+		}
 	}
 
 	// Clear database_id (not exported)
