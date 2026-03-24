@@ -109,6 +109,8 @@ space_export_{space_name}_{space_id}_{timestamp}.zip
   "agents": [105],
   "plugins": [],
   "workflows": [],
+  "variables": [],
+  "space_models": [],
   "knowledge_bases": [],
   "documents": [705, 706],
   "external_knowledge": [],
@@ -149,7 +151,7 @@ CREATE TABLE `space_sync_mapping` (
   `source_resource_id` bigint NOT NULL COMMENT '源资源ID',
   `target_resource_id` bigint NOT NULL COMMENT '目标资源ID',
   `source_updated_at` bigint NOT NULL DEFAULT 0 COMMENT '上次同步时源资源的 updated_at',
-  `content_hash` varchar(64) DEFAULT NULL COMMENT '资源内容摘要，用于变更检测',
+  `content_hash` varchar(64) DEFAULT NULL COMMENT '预留字段，当前未使用，后续可用于跳过无变更的 UPDATE 优化',
   `created_at` bigint NOT NULL,
   `updated_at` bigint NOT NULL,
   PRIMARY KEY (`id`),
@@ -261,7 +263,12 @@ Response:
 ### 导入 Token
 
 - TTL: 30 分钟（大包解析可能耗时）
-- 存储：内存缓存（与现有实现一致）
+- 存储策略：Preview 阶段将上传的 ZIP 存入对象存储（临时 key，30 分钟 TTL），内存中只保存轻量 token 引用（manifest + 临时文件 key）。Confirm 阶段从对象存储读取 ZIP 执行导入。避免大 ZIP 长时间占用内存，也解决服务器重启导致 token 丢失的问题。
+
+### 包体积限制
+
+- 最大包体积：2GB（超出时导出 API 返回错误，提示拆分空间）
+- 导入时流式解压，不将整个 ZIP 加载到内存
 
 ### 脚本使用示例
 
@@ -311,7 +318,9 @@ echo $RESULT | jq '.statistics'
 1. `ResourceCollector.CollectIncremental(spaceID, sinceTime)` 采集变更资源
    - 对每种资源：`WHERE space_id = ? AND updated_at > since_time AND deleted_at IS NULL`
 2. 采集已删除资源：
-   - `WHERE space_id = ? AND deleted_at IS NOT NULL AND deleted_at > since_time`
+   - 注意：`deleted_at` 是 `DATETIME(3)` 类型，而 `since_time` 是毫秒时间戳，需要类型转换
+   - 使用 `.Unscoped()` 绕过 GORM 的自动 `deleted_at IS NULL` 过滤
+   - 查询：`Unscoped().WHERE space_id = ? AND deleted_at IS NOT NULL AND UNIX_TIMESTAMP(deleted_at) * 1000 > ?`
    - 写入 `deleted_resources.json`
 3. 知识库增量以**文档为最小粒度**：
    - 知识库元数据变更 → 导出 meta.json
@@ -336,43 +345,63 @@ echo $RESULT | jq '.statistics'
 
 ### Step 2: Confirm（执行）
 
-#### 事务内执行顺序（按依赖关系）
+#### 执行阶段划分
+
+导入分为三个阶段，将 DB 事务与非事务性操作（对象存储、向量存储）分离：
 
 ```
-0. 处理删除 (deleted_resources)
-   → 对有映射的资源执行软删除
-   → 知识库文档删除：删 slices (DB) + 删向量存储 partition + 软删 document
-   → 知识库删除：删 collection + 软删 knowledge
-   → 清理 mapping 记录
+Phase 1: 预处理（事务外）
+   ├─ 上传所有知识库原始文件到目标对象存储
+   ├─ 记录新 URI 映射 (old_uri → new_uri)
+   └─ 失败时清理已上传文件
 
-1. Upsert Space Models
-   → 跨系统匹配：先按 ID，不存在则按 model_entity name 匹配
+Phase 2: 数据库事务
+   ├─ 0. 处理删除 (deleted_resources)
+   │     → 对有映射的资源执行软删除
+   │     → 知识库文档删除：删 slices (DB) + 软删 document
+   │     → 知识库删除：软删 knowledge
+   │     → 清理 mapping 记录
+   │
+   ├─ 1. Upsert Space Models
+   │     → 跨系统匹配：先按 ID，不存在则按 model_entity name 匹配
+   │
+   ├─ 2. Upsert Plugins
+   │     → CREATE: 创建 plugin + plugin_draft
+   │     → UPDATE: 更新 plugin_draft 的 manifest, openapi_doc 等
+   │
+   ├─ 3. Upsert Workflows
+   │     → CREATE: 创建 workflow_meta + workflow_draft + workflow_version
+   │     → UPDATE: 更新 workflow_draft 的 canvas, input/output_params
+   │     → 画布引用重写：plugin_id, workflow_id, knowledge_id
+   │
+   ├─ 4. Upsert Knowledge Bases (仅 DB 记录)
+   │     → 见下方详细流程（此阶段只写 DB，不写向量存储）
+   │
+   ├─ 5. Upsert External Knowledge Bindings
+   │
+   ├─ 6. Upsert Agents
+   │     → CREATE: 创建 single_agent_draft + agent_tool_draft
+   │     → UPDATE: 更新 single_agent_draft 的所有配置字段
+   │     → 引用重写：plugin_id, workflow_id, knowledge_id, model_id, variables_meta_id
+   │
+   ├─ 7. Upsert Variables
+   │
+   └─ 8. Upsert Folders + Resource Mappings
 
-2. Upsert Plugins
-   → CREATE: 创建 plugin + plugin_draft
-   → UPDATE: 更新 plugin_draft 的 manifest, openapi_doc 等
+   每步完成后写入/更新 space_sync_mapping 记录。
 
-3. Upsert Workflows
-   → CREATE: 创建 workflow_meta + workflow_draft + workflow_version
-   → UPDATE: 更新 workflow_draft 的 canvas, input/output_params
-   → 画布引用重写：plugin_id, workflow_id, knowledge_id
-
-4. Upsert Knowledge Bases
-   → 见下方详细流程
-
-5. Upsert External Knowledge Bindings
-
-6. Upsert Agents
-   → CREATE: 创建 single_agent_draft + agent_tool_draft
-   → UPDATE: 更新 single_agent_draft 的所有配置字段
-   → 引用重写：plugin_id, workflow_id, knowledge_id, model_id, variables_meta_id
-
-7. Upsert Variables
-
-8. Upsert Folders + Resource Mappings
+Phase 3: 后处理（事务外，事务提交成功后执行）
+   ├─ 向量存储操作
+   │     ├─ 删除的知识库：删除 collection
+   │     ├─ 删除的文档：删除向量存储 partition
+   │     ├─ 新增的知识库：创建 collection
+   │     └─ 新增/更新的文档：embedding + 写入向量索引
+   ├─ ES 搜索索引同步（Agents, Plugins, Workflows）
+   ├─ 记录 space_sync_history
+   └─ 失败时：记录错误到 history，向量不一致可通过重新导入修复
 ```
 
-每步完成后写入/更新 `space_sync_mapping` 记录。
+**设计原则**：参考现有 `datacopy.go` 的模式，DB 事务只管数据库操作，向量存储和文件操作在事务外处理，通过 deferred cleanup 保证一致性。
 
 #### 知识库导入详细流程
 
@@ -409,16 +438,22 @@ echo $RESULT | jq '.statistics'
     └─ 插入所有 mapping 记录
 ```
 
+#### 向量存储与 Embedding 处理
+
+**核心原则：导出包中不包含 embedding 向量，导入时使用目标空间的 embedding 模型重新生成。**
+
+原因：
+- 两个环境的 embedding 模型可能版本不同，向量不可直接复用
+- embedding 向量体积大，不打入 ZIP 包可显著减小包体积
+
 向量存储操作参考现有 `datacopy.go` 的 `copyDocument` 逻辑：
-- 调用 `getManagersForSpace()` 获取目标空间的向量引擎
-- 调用 `slice2Document()` 转换分片为向量文档
+- 调用 `getManagersForSpace()` 获取目标空间的向量引擎和 embedding 模型
+- 调用 `slice2Document()` 转换分片为向量文档（此过程触发 embedding 计算）
 - 调用 `ss.Store()` 写入向量索引
 
-#### 事务后处理
+**前置检查**：导入 preview 阶段检测目标空间是否配置了 embedding 模型（`space_embedding` 表），如果没有，返回 error 而非 warning，阻止导入。
 
-1. ES 搜索索引同步（Agents, Plugins, Workflows）
-2. 记录 `space_sync_history`
-3. 返回导入结果统计
+**大知识库处理**：向量重建在 Phase 3（事务后）执行，分批处理（100 条/批），单个文档失败不影响其他文档。失败的文档记录到导入结果的 `warnings` 中，用户可通过重新导入修复。
 
 ### Upsert 核心逻辑
 
@@ -491,9 +526,21 @@ type ImportContext struct {
     ExternalKnowledgeIDMap map[int64]int64  // 外部知识库绑定 ID 映射
 
     // Upsert 模式支持
-    SyncMode               string           // "create_only" | "upsert"
-    ExistingMappings       map[string]int64 // "type:sourceID" -> targetID
+    SyncMode               string                      // "create_only" | "upsert"
+    MappingStore           *SyncMappingStore            // 统一的映射查询/缓存层，preview 时加载一次
 }
+```
+
+`SyncMappingStore` 封装 `space_sync_mapping` 表的查询逻辑，preview 阶段一次性加载目标空间的所有映射到内存，避免导入过程中反复查表：
+
+```go
+type SyncMappingStore struct {
+    mappings map[string]int64 // key: "type:sourceID" → value: targetID
+}
+
+func (s *SyncMappingStore) GetTargetID(resourceType string, sourceID int64) (int64, bool)
+func (s *SyncMappingStore) SetMapping(resourceType string, sourceID, targetID int64)
+func (s *SyncMappingStore) RemoveMapping(resourceType string, sourceID int64)
 ```
 
 ---
@@ -560,4 +607,4 @@ docs/ynet-database-sql/
 - **选择性资源同步**：仅支持整个空间级别
 - **数据库连接跨环境迁移**：数据库连接信息与环境绑定，不迁移
 - **前端 UI**：生产环境通过脚本操作，测试环境的导出 UI 复用/扩展现有页面
-- **Skill 资源导出**：skill 表存在但当前未纳入导出范围，后续按需添加
+- **Skill 资源导出**：skill 表存在但当前未纳入导出范围，后续按需添加。如果 Agent 引用了 skill，导入时在 warnings 中提示需要手动配置
