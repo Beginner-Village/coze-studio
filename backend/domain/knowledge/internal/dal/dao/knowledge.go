@@ -74,7 +74,7 @@ func (dao *KnowledgeDAO) FilterEnableKnowledge(ctx context.Context, knowledgeIDs
 	}
 	k := dao.Query.Knowledge
 	knowledgeModels, err := k.WithContext(ctx).
-		Select(k.ID, k.FormatType).
+		Select(k.ID, k.FormatType, k.SpaceID).
 		Where(k.ID.In(knowledgeIDs...)).
 		Where(k.Status.Eq(int32(entity.DocumentStatusEnable))).
 		Find()

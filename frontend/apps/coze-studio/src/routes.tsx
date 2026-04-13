@@ -108,6 +108,9 @@ const ExportImportPage = lazy(() => import('./pages/space-export-import'));
 const SpaceEmbeddingConfig = lazy(
   () => import('./pages/space-embedding-config'),
 );
+const SpaceRerankConfig = lazy(
+  () => import('./pages/space-rerank-config'),
+);
 const ObservabilityPage = lazy(() => import('./pages/observability'));
 
 const WorkflowPage = lazy(() =>
@@ -280,6 +283,13 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   Component: SpaceEmbeddingConfig,
                   loader: () => ({
                     subMenuKey: SpaceSubModuleEnum.EMBEDDING,
+                  }),
+                },
+                {
+                  path: 'rerank-config',
+                  Component: SpaceRerankConfig,
+                  loader: () => ({
+                    subMenuKey: SpaceSubModuleEnum.RERANK,
                   }),
                 },
                 {

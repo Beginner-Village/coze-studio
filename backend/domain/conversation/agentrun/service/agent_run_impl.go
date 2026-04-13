@@ -134,7 +134,7 @@ const agentTracerName = "github.com/ynet-dev/ynet-studio/backend/domain/conversa
 		 span.SetAttributes(
 			 attribute.String("cozeloop.workspace_id", fmt.Sprintf("%d", arm.SpaceID)),
 			 attribute.String("cozeloop.span_type", "Agent"),
-			 attribute.String("cozeloop.input", currentInput),
+			 attribute.String("cozeloop.input", strings.ToValidUTF8(currentInput, "")),
 			 attribute.Int64("agent_id", arm.AgentID),
 			 attribute.Int64("conversation_id", arm.ConversationID),
 			 attribute.Int64("space_id", arm.SpaceID),
@@ -151,12 +151,12 @@ const agentTracerName = "github.com/ynet-dev/ynet-studio/backend/domain/conversa
 		 if rtDependence.historyContent != "" {
 			 fullInput := rtDependence.historyContent + "\n---\n[当前输入] " + currentInput
 			 span.SetAttributes(
-				 attribute.String("cozeloop.input", fullInput),
+				 attribute.String("cozeloop.input", strings.ToValidUTF8(fullInput, "")),
 			 )
 		 }
 		 if rtDependence.outputContent != "" {
 			 span.SetAttributes(
-				 attribute.String("cozeloop.output", rtDependence.outputContent),
+				 attribute.String("cozeloop.output", strings.ToValidUTF8(rtDependence.outputContent, "")),
 			 )
 		 }
 

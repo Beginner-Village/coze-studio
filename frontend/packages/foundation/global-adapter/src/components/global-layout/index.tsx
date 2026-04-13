@@ -36,7 +36,7 @@ import { GlobalLayoutComposed } from '@/components/global-layout-composed';
 export const GlobalLayout: FC = () => {
   const userInfo = useUserInfo();
   const update = useUpdate();
-  const currentLocale = userInfo?.locale ?? navigator.language ?? 'en-US';
+  const currentLocale = userInfo?.locale ?? localStorage.getItem('i18next') ?? 'zh-CN';
 
   // For historical reasons, en-US needs to be converted to en.
   const transformedCurrentLocale =

@@ -134,8 +134,20 @@ func (d *dynamicWSExporter) ExportSpans(ctx context.Context, spans []sdktrace.Re
 		}
 		logs.Infof("otel: exporting %d spans to workspace %s", len(batch), ws)
 		if err := exp.ExportSpans(ctx, batch); err != nil {
-			logs.Warnf("otel: failed to export spans for workspace %s: %v", ws, err)
-			errs = append(errs, err)
+			if strings.Contains(err.Error(), "invalid UTF-8") {
+				// Retry with sanitized spans: export one by one, skip bad ones
+				logs.Warnf("otel: UTF-8 error, retrying spans individually for workspace %s", ws)
+				for _, s := range batch {
+					if err2 := exp.ExportSpans(ctx, []sdktrace.ReadOnlySpan{s}); err2 != nil {
+						logs.Warnf("otel: skipping span %s due to: %v", s.Name(), err2)
+					} else {
+						logs.Infof("otel: exported span %s individually", s.Name())
+					}
+				}
+			} else {
+				logs.Warnf("otel: failed to export spans for workspace %s: %v", ws, err)
+				errs = append(errs, err)
+			}
 		} else {
 			logs.Infof("otel: successfully exported %d spans to workspace %s", len(batch), ws)
 		}
@@ -157,6 +169,11 @@ func (d *dynamicWSExporter) Shutdown(ctx context.Context) error {
 }
 
 func (d *dynamicWSExporter) extractWorkspaceID(s sdktrace.ReadOnlySpan) string {
+	// Private deployment: always use the configured Loop workspace ID
+	// to ensure spans are routed to the correct Loop workspace
+	if d.fallbackWS != "" {
+		return d.fallbackWS
+	}
 	for _, attr := range s.Attributes() {
 		if string(attr.Key) == wsAttrKey {
 			v := attr.Value.AsString()

@@ -922,7 +922,7 @@
   "creators": "创作者",
   "curl": "cURL",
   "customize_key_1": "自定义",
-  "data_error_msg": "请稍后重试或联系 coze 工作空间",
+  "data_error_msg": "请稍后重试或联系管理员",
   "data_error_title": "加载 {module} 失败",
   "data_filter_values": "过滤第 {filterPages} 页",
   "database_240227_01": "清空数据",

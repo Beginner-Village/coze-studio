@@ -19,8 +19,10 @@ package agentflow
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"slices"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -128,7 +130,13 @@ func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (
 			}
 			sw.Close()
 		}()
-		_, _ = r.runner.Stream(ctx, req, composeOpts...)
+		_, streamErr := r.runner.Stream(ctx, req, composeOpts...)
+		if streamErr != nil {
+			logs.CtxErrorf(ctx, "[AgentRunner] Stream returned error: %v", streamErr)
+			// Error will be propagated through callback's OnError;
+			// only send here if it's a setup-level error (before streaming starts)
+			sw.Send(nil, streamErr)
+		}
 	})
 
 	return sr, nil
@@ -275,19 +283,41 @@ func concatContentString(textContent string, unSupportTypeURL []schema.ChatMessa
 	if len(unSupportTypeURL) == 0 {
 		return textContent
 	}
+
+	// Build a human-readable notice about stripped content
+	var imageCount, fileCount, audioCount, videoCount int
 	for _, v := range unSupportTypeURL {
 		switch v.Type {
 		case schema.ChatMessagePartTypeImageURL:
-			textContent += "  this is a image:" + v.ImageURL.URL
+			imageCount++
 		case schema.ChatMessagePartTypeFileURL:
-			textContent += "  this is a file:" + v.FileURL.URL
+			fileCount++
 		case schema.ChatMessagePartTypeAudioURL:
-			textContent += "  this is a audio:" + v.AudioURL.URL
+			audioCount++
 		case schema.ChatMessagePartTypeVideoURL:
-			textContent += "  this is a video:" + v.VideoURL.URL
-		default:
+			videoCount++
 		}
 	}
+
+	var notices []string
+	if imageCount > 0 {
+		notices = append(notices, fmt.Sprintf("%d张图片", imageCount))
+	}
+	if fileCount > 0 {
+		notices = append(notices, fmt.Sprintf("%d个文件", fileCount))
+	}
+	if audioCount > 0 {
+		notices = append(notices, fmt.Sprintf("%d段音频", audioCount))
+	}
+	if videoCount > 0 {
+		notices = append(notices, fmt.Sprintf("%d个视频", videoCount))
+	}
+
+	if len(notices) > 0 {
+		notice := fmt.Sprintf("\n[系统提示: 当前模型不支持多模态输入，已自动忽略%s。如需处理这些内容，请切换至支持多模态的模型。]", strings.Join(notices, "、"))
+		textContent += notice
+	}
+
 	return textContent
 }
 

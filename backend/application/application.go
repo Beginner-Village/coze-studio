@@ -23,7 +23,9 @@ import (
 
 	"github.com/ynet-dev/ynet-studio/backend/api/handler/coze"
 	embeddingHandler "github.com/ynet-dev/ynet-studio/backend/api/handler/embedding"
+	rerankHandler "github.com/ynet-dev/ynet-studio/backend/api/handler/rerank"
 	embeddingApp "github.com/ynet-dev/ynet-studio/backend/application/embedding"
+	rerankApp "github.com/ynet-dev/ynet-studio/backend/application/rerank"
 	"github.com/ynet-dev/ynet-studio/backend/application/openauth"
 	"github.com/ynet-dev/ynet-studio/backend/application/template"
 	crosssearch "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/search"
@@ -174,6 +176,10 @@ func Init(ctx context.Context) (err error) {
 	// Initialize Space Embedding Service
 	spaceEmbeddingApp := embeddingApp.NewSpaceEmbeddingApp(infra.DB)
 	embeddingHandler.InitSpaceEmbeddingApp(spaceEmbeddingApp)
+
+	// Initialize Space Rerank Service
+	spaceRerankApp := rerankApp.NewSpaceRerankApp(infra.DB)
+	rerankHandler.InitSpaceRerankApp(spaceRerankApp)
 
 	return nil
 }

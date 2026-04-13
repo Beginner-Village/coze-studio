@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Layout,
@@ -28,6 +28,7 @@ import {
   Typography,
   Popconfirm,
   Checkbox,
+  Toast,
 } from '@coze-arch/coze-design';
 import { IconCozPlus } from '@coze-arch/coze-design/icons';
 import { space_embedding } from '@coze-studio/api-schema';
@@ -54,6 +55,7 @@ const Page: React.FC = () => {
   const [editingEmbedding, setEditingEmbedding] =
     useState<SpaceEmbeddingConfig | null>(null);
   const [selectedType, setSelectedType] = useState<EmbeddingType>('openai');
+  const formApiRef = useRef<any>(null);
 
   // Fetch embeddings list
   const fetchEmbeddings = useCallback(async () => {
@@ -294,33 +296,38 @@ const Page: React.FC = () => {
     }
   };
 
-  // Handle form submit
-  const handleSubmit = async (values: any) => {
+  // Handle form submit via manual validation
+  const handleSubmit = async () => {
     if (!spaceId) return;
 
-    const config: Record<string, any> = {
-      dims: parseInt(values.dims) || 0,
-    };
-
-    // Add type-specific config
-    if (selectedType === 'openai') {
-      config.base_url = values.base_url;
-      config.api_key = values.api_key;
-      config.model = values.model;
-      config.by_azure = values.by_azure || false;
-    } else if (selectedType === 'ark') {
-      config.base_url = values.base_url;
-      config.api_key = values.api_key;
-      config.model = values.model;
-      config.api_type = values.api_type || 'text';
-    } else if (selectedType === 'ollama') {
-      config.base_url = values.base_url;
-      config.model = values.model;
-    } else if (selectedType === 'http') {
-      config.addr = values.addr;
-    }
+    const formApi = formApiRef.current;
+    if (!formApi) return;
 
     try {
+      const values = await formApi.validate();
+
+      const config: Record<string, any> = {
+        dims: parseInt(values.dims) || 0,
+      };
+
+      // Add type-specific config
+      if (selectedType === 'openai') {
+        config.base_url = values.base_url;
+        config.api_key = values.api_key;
+        config.model = values.model;
+        config.by_azure = values.by_azure || false;
+      } else if (selectedType === 'ark') {
+        config.base_url = values.base_url;
+        config.api_key = values.api_key;
+        config.model = values.model;
+        config.api_type = values.api_type || 'text';
+      } else if (selectedType === 'ollama') {
+        config.base_url = values.base_url;
+        config.model = values.model;
+      } else if (selectedType === 'http') {
+        config.addr = values.addr;
+      }
+
       if (editingEmbedding) {
         // Update
         const response = await space_embedding.UpdateSpaceEmbedding({
@@ -334,6 +341,7 @@ const Page: React.FC = () => {
         });
 
         if (response.code === 0) {
+          Toast.success('更新成功');
           closeModal();
           fetchEmbeddings();
         }
@@ -350,14 +358,21 @@ const Page: React.FC = () => {
         });
 
         if (response.code === 0) {
+          Toast.success('创建成功');
           closeModal();
           fetchEmbeddings();
         }
       }
     } catch (error: any) {
       if (error.code === 0 || error.code === '0') {
+        Toast.success(editingEmbedding ? '更新成功' : '创建成功');
         closeModal();
         fetchEmbeddings();
+      } else if (error instanceof Object && !error.code) {
+        // Form validation error - Semi Design validate() rejects with field errors
+        // Errors are already shown inline by the Form component
+      } else {
+        Toast.error('操作失败: ' + (error.message || '未知错误'));
       }
     }
   };
@@ -479,7 +494,11 @@ const Page: React.FC = () => {
         footer={null}
         style={{ width: 560 }}
       >
-        <Form onSubmit={handleSubmit}>
+        <Form
+          layout="vertical"
+          autoComplete="off"
+          getFormApi={(api: any) => { formApiRef.current = api; }}
+        >
           <Form.Input
             field="name"
             label="名称"
@@ -526,7 +545,7 @@ const Page: React.FC = () => {
 
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
             <Button onClick={closeModal}>取消</Button>
-            <Button htmlType="submit" type="primary">
+            <Button type="primary" onClick={handleSubmit}>
               {editingEmbedding ? '保存' : '创建'}
             </Button>
           </div>

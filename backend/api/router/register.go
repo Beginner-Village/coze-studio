@@ -39,6 +39,7 @@ import (
 	coze "github.com/ynet-dev/ynet-studio/backend/api/router/coze"
 	embedding "github.com/ynet-dev/ynet-studio/backend/api/router/embedding"
 	external_knowledge "github.com/ynet-dev/ynet-studio/backend/api/router/external_knowledge"
+	rerankRouter "github.com/ynet-dev/ynet-studio/backend/api/router/rerank"
 	memory_config "github.com/ynet-dev/ynet-studio/backend/api/router/memory_config"
 	modelmgr "github.com/ynet-dev/ynet-studio/backend/api/router/modelmgr"
 	skill "github.com/ynet-dev/ynet-studio/backend/api/router/skill"
@@ -68,6 +69,7 @@ func GeneratedRegister(r *server.Hertz) {
 
 	coze.Register(r)
 	embedding.Register(r)
+	rerankRouter.Register(r)
 	external_knowledge.Register(r)
 	modelmgr.Register(r)
 	skill.Register(r)
@@ -192,8 +194,10 @@ func cozeLoopProxyRegister(r *server.Hertz) {
 		if token := os.Getenv("YNET_LOOP_TELEMETRY_TOKEN"); token != "" {
 			proxyReq.Header.Set("Authorization", "Bearer "+token)
 		}
-		// Use dev mode to bypass CozeLoop session validation
-		proxyReq.Header.Set("X-Dev-Mode", "true")
+		// Inject Loop session cookie for API requests that require session auth
+		if sessionKey := os.Getenv("YNET_LOOP_SESSION_KEY"); sessionKey != "" {
+			proxyReq.AddCookie(&http.Cookie{Name: "session_key", Value: sessionKey})
+		}
 
 		// Forward request
 		resp, err := httpClient.Do(proxyReq)

@@ -19,6 +19,7 @@ package redis
 import (
 	"context"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -29,34 +30,60 @@ import (
 func New() cache.Cmdable {
 	addr := os.Getenv("REDIS_ADDR")
 	password := os.Getenv("REDIS_PASSWORD")
+	mode := os.Getenv("REDIS_MODE") // "cluster" or "" (standalone)
 
+	if mode == "cluster" {
+		return NewCluster(addr, password)
+	}
 	return NewWithAddrAndPassword(addr, password)
+}
+
+// NewCluster 创建 Redis 集群客户端
+// addr 支持逗号分隔的多个地址，如 "host1:6379,host2:6379,host3:6379"
+func NewCluster(addrs, password string) cache.Cmdable {
+	cache.SetDefaultNilError(redis.Nil)
+
+	addrList := strings.Split(addrs, ",")
+	rdb := redis.NewClusterClient(&redis.ClusterOptions{
+		Addrs:    addrList,
+		Password: password,
+
+		PoolSize:        100,
+		MinIdleConns:    10,
+		MaxIdleConns:    30,
+		ConnMaxIdleTime: 5 * time.Minute,
+
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
+	})
+
+	return &redisImpl{client: rdb}
 }
 
 func NewWithAddrAndPassword(addr, password string) cache.Cmdable {
 	cache.SetDefaultNilError(redis.Nil)
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     addr, // Redis地址
-		DB:       0,    // 默认数据库
+		Addr:     addr,
+		DB:       0,
 		Password: password,
-		// connection pool configuration
-		PoolSize:        100,             // Maximum number of connections (recommended to set to CPU cores * 10)
-		MinIdleConns:    10,              // minimum idle connection
-		MaxIdleConns:    30,              // maximum idle connection
-		ConnMaxIdleTime: 5 * time.Minute, // Idle connection timeout
 
-		// timeout configuration
-		DialTimeout:  5 * time.Second, // Connection establishment timed out
-		ReadTimeout:  3 * time.Second, // read operation timed out
-		WriteTimeout: 3 * time.Second, // write operation timed out
+		PoolSize:        100,
+		MinIdleConns:    10,
+		MaxIdleConns:    30,
+		ConnMaxIdleTime: 5 * time.Minute,
+
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
 	})
 
 	return &redisImpl{client: rdb}
 }
 
 type redisImpl struct {
-	client *redis.Client
+	client redis.Cmdable // 支持 *redis.Client 和 *redis.ClusterClient
 }
 
 // Del implements cache.Cmdable.

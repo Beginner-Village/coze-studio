@@ -259,6 +259,12 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   lazy: () => import('../pages/space-embedding-config'),
                 },
 
+                // rerank configuration
+                {
+                  path: 'rerank-config',
+                  lazy: () => import('../pages/space-rerank-config'),
+                },
+
                 // hiagent management
                 {
                   path: 'hiagents/*',

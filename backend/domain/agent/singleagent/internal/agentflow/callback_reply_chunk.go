@@ -35,6 +35,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/modelerr"
 )
 
 func newReplyCallback(_ context.Context, executeID string, returnDirectlyTools map[string]struct{}) (clb callbacks.Handler,
@@ -121,7 +122,27 @@ func (r *replyChunkCallback) OnError(ctx context.Context, info *callbacks.RunInf
 		} else {
 			logs.CtxErrorf(ctx, "[AgentRunError] | node execute failed, component=%v, name=%v, err=%v",
 				info.Component, info.Name, err)
-			r.sw.Send(nil, err)
+
+			// Classify model errors and send user-friendly messages
+			errKind := modelerr.Classify(err)
+			if errKind != modelerr.ErrorKindUnknown {
+				userMsg := errKind.UserMessage(err.Error())
+				logs.CtxWarnf(ctx, "[AgentRunError] | classified as %v, user_msg=%s", errKind, userMsg)
+
+				sr, sw := schema.Pipe[*schema.Message](1)
+				sw.Send(&schema.Message{
+					Role:    schema.Assistant,
+					Content: userMsg,
+				}, nil)
+				sw.Close()
+
+				r.sw.Send(&entity.AgentEvent{
+					EventType:       singleagent.EventTypeOfChatModelAnswer,
+					ChatModelAnswer: sr,
+				}, nil)
+			} else {
+				r.sw.Send(nil, err)
+			}
 		}
 
 	}

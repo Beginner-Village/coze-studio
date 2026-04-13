@@ -159,6 +159,13 @@ const createSubMenuConfig = () => {
       dataTestId: 'navigation_workspace_embedding',
     },
     {
+      icon: <IconBotKnowledge />,
+      activeIcon: <IconBotKnowledgeActive />,
+      title: () => 'Rerank',
+      path: SpaceSubModuleEnum.RERANK,
+      dataTestId: 'navigation_workspace_rerank',
+    },
+    {
       icon: <IconBotPlugin />,
       activeIcon: <IconBotPluginActive />,
       title: () =>

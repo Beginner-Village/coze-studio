@@ -554,7 +554,17 @@ func (k *knowledgeSVC) reRankNode(ctx context.Context, resultMap map[string]any)
 		query = ptr.From(retrieveCtx.RewrittenQuery)
 	}
 
-	resp, err := k.reranker.Rerank(ctx, &rerank.Request{
+	// Select reranker: if EnableRerank and a model-based reranker is configured for the space, use it;
+	// otherwise fall back to the default reranker (RRF).
+	selectedReranker := k.reranker
+	if retrieveCtx.Strategy.EnableRerank && k.rerankProvider != nil {
+		if modelReranker, err := k.rerankProvider.GetReranker(ctx, retrieveCtx.SpaceID); err == nil && modelReranker != nil {
+			selectedReranker = modelReranker
+			logs.CtxInfof(ctx, "using model-based reranker for space %d", retrieveCtx.SpaceID)
+		}
+	}
+
+	resp, err := selectedReranker.Rerank(ctx, &rerank.Request{
 		Query: query,
 		Data:  retrieveResultArr,
 		TopN:  retrieveCtx.Strategy.TopK,

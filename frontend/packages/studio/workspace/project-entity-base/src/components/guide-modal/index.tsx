@@ -150,7 +150,8 @@ export const GuideModal: React.FC<GuideModalProps> = ({
         description={I18n.t('creat_project_agent_describe')}
         tip={!IS_OPEN_SOURCE ? I18n.t('agent_creat_tips') : null}
       />
-      <GuideButton
+      {/* TODO: 应用功能尚未完成，暂时隐藏入口 */}
+      {false && <GuideButton
         onClick={() => onChange('project')}
         assetSrc={ProjectAsset}
         title={
@@ -164,7 +165,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({
             ? I18n.t('creat_project_describe_open')
             : I18n.t('creat_project_describe')
         }
-      />
+      />}
       {extraButtonConfigs.map(({ onClick, ...config }, index) => (
         <GuideButton
           key={index}

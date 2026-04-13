@@ -37,6 +37,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/pkg/ctxcache"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/modelerr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/safego"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/sonic"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
@@ -629,6 +630,14 @@ func (r *nodeRunner[O]) invoke(ctx context.Context, input map[string]any, opts .
 			}
 
 			logs.CtxErrorf(ctx, "[invoke] node %s ID %s failed on %d attempt, err: %v", r.nodeName, r.nodeKey, n, err)
+
+			// Skip retry for non-retryable model errors (auth, content filter, invalid params, etc.)
+			errKind := modelerr.Classify(err)
+			if !errKind.Retryable() && errKind != modelerr.ErrorKindUnknown {
+				logs.CtxWarnf(ctx, "[invoke] node %s non-retryable error kind=%v, skipping retry", r.nodeName, errKind)
+				return nil, err
+			}
+
 			if r.maxRetry > n {
 				n++
 				if exeCtx := execute.GetExeCtx(ctx); exeCtx != nil && exeCtx.NodeCtx != nil {
@@ -659,7 +668,15 @@ func (r *nodeRunner[O]) stream(ctx context.Context, input map[string]any, opts .
 				return nil, err
 			}
 
-			logs.CtxErrorf(ctx, "[invoke] node %s ID %s failed on %d attempt, err: %v", r.nodeName, r.nodeKey, n, err)
+			logs.CtxErrorf(ctx, "[stream] node %s ID %s failed on %d attempt, err: %v", r.nodeName, r.nodeKey, n, err)
+
+			// Skip retry for non-retryable model errors
+			errKind := modelerr.Classify(err)
+			if !errKind.Retryable() && errKind != modelerr.ErrorKindUnknown {
+				logs.CtxWarnf(ctx, "[stream] node %s non-retryable error kind=%v, skipping retry", r.nodeName, errKind)
+				return nil, err
+			}
+
 			if r.maxRetry > n {
 				n++
 				if exeCtx := execute.GetExeCtx(ctx); exeCtx != nil && exeCtx.NodeCtx != nil {
@@ -702,7 +719,15 @@ func (r *nodeRunner[O]) collect(ctx context.Context, input *schema.StreamReader[
 				return nil, err
 			}
 
-			logs.CtxErrorf(ctx, "[invoke] node %s ID %s failed on %d attempt, err: %v", r.nodeName, r.nodeKey, n, err)
+			logs.CtxErrorf(ctx, "[collect] node %s ID %s failed on %d attempt, err: %v", r.nodeName, r.nodeKey, n, err)
+
+			// Skip retry for non-retryable model errors
+			errKind := modelerr.Classify(err)
+			if !errKind.Retryable() && errKind != modelerr.ErrorKindUnknown {
+				logs.CtxWarnf(ctx, "[collect] node %s non-retryable error kind=%v, skipping retry", r.nodeName, errKind)
+				return nil, err
+			}
+
 			if r.maxRetry > n {
 				n++
 				if exeCtx := execute.GetExeCtx(ctx); exeCtx != nil && exeCtx.NodeCtx != nil {

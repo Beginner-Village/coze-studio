@@ -52,7 +52,8 @@ func New(ctx context.Context) (Storage, error) {
 			os.Getenv(consts.TOSEndpoint),
 			os.Getenv(consts.TOSRegion),
 		)
-	case "s3":
+	case "s3", "sandstone":
+		// 杉岩(SandStone)兼容 S3 协议，直接复用 S3 实现
 		return s3.New(
 			ctx,
 			os.Getenv(consts.S3AccessKey),
@@ -87,7 +88,7 @@ func NewImagex(ctx context.Context) (imagex.ImageX, error) {
 			os.Getenv(consts.TOSEndpoint),
 			os.Getenv(consts.TOSRegion),
 		)
-	case "s3":
+	case "s3", "sandstone":
 		return s3.NewStorageImagex(
 			ctx,
 			os.Getenv(consts.S3AccessKey),

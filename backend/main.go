@@ -131,6 +131,11 @@ func loadEnv() (err error) {
 
 	logs.Infof("load env file: %s", fileName)
 
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		logs.Infof("env file %s not found, using environment variables only", fileName)
+		return nil
+	}
+
 	err = godotenv.Load(fileName)
 	if err != nil {
 		return fmt.Errorf("load env file(%s) failed, err=%w", fileName, err)

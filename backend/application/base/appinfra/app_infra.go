@@ -51,9 +51,13 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/parser/ppstructure"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/searchstore/elasticsearch"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/searchstore/milvus"
+	ssob "github.com/ynet-dev/ynet-studio/backend/infra/impl/document/searchstore/oceanbase"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/searchstore/vikingdb"
+	embeddingEntity "github.com/ynet-dev/ynet-studio/backend/domain/embedding/entity"
+	embeddingService "github.com/ynet-dev/ynet-studio/backend/domain/embedding/service"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/embedding/ark"
 	embeddingHttp "github.com/ynet-dev/ynet-studio/backend/infra/impl/embedding/http"
+	embeddingRepo "github.com/ynet-dev/ynet-studio/backend/infra/impl/embedding/repository"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/embedding/wrap"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/es"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/eventbus"
@@ -141,13 +145,19 @@ func Init(ctx context.Context) (*AppDependencies, error) {
 
 	deps.ParserManager = initParserManager(deps.TOSClient, deps.OCR, imageAnnotationModel)
 
-	emb, err := getEmbedding(ctx)
+	emb, err := getEmbeddingFromDB(ctx, deps.DB)
 	if err != nil {
-		logs.CtxWarnf(ctx, "init embedding failed, err=%v", err)
+		logs.CtxInfof(ctx, "no global embedding in DB (spaceID=0), falling back to env config: %v", err)
+		emb, err = getEmbedding(ctx)
+		if err != nil {
+			logs.CtxWarnf(ctx, "init embedding from env failed, err=%v", err)
+		}
+	} else {
+		logs.CtxInfof(ctx, "loaded global embedding from DB (spaceID=0)")
 	}
 	deps.Embedder = emb
 
-	deps.SearchStoreManagers, err = initSearchStoreManagers(ctx, deps.ESClient, emb)
+	deps.SearchStoreManagers, err = initSearchStoreManagers(ctx, deps.ESClient, emb, deps.DB)
 	if err != nil {
 		return nil, err
 	}
@@ -155,14 +165,15 @@ func Init(ctx context.Context) (*AppDependencies, error) {
 	return deps, nil
 }
 
-func initSearchStoreManagers(ctx context.Context, es es.Client, emb embedding.Embedder) ([]searchstore.Manager, error) {
+func initSearchStoreManagers(ctx context.Context, es es.Client, emb embedding.Embedder, db *gorm.DB) ([]searchstore.Manager, error) {
 	// es full text search
 	esSearchstoreManager := elasticsearch.NewManager(&elasticsearch.ManagerConfig{Client: es})
 
-	// vector search
-	mgr, err := getVectorStore(ctx, emb)
+	// vector search — optional when using space-level embedding (ManagerFactory handles it)
+	mgr, err := getVectorStore(ctx, emb, db)
 	if err != nil {
-		return nil, fmt.Errorf("init vector store failed, err=%w", err)
+		logs.CtxWarnf(ctx, "init legacy vector store failed (space-level ManagerFactory will be used): %v", err)
+		return []searchstore.Manager{esSearchstoreManager}, nil
 	}
 
 	if mgr == nil {
@@ -291,10 +302,25 @@ func initParserManager(storage storage.Storage, ocr ocr.OCR, imageAnnotationMode
 	return parserManager
 }
 
-func getVectorStore(ctx context.Context, emb embedding.Embedder) (searchstore.Manager, error) {
+func getVectorStore(ctx context.Context, emb embedding.Embedder, db *gorm.DB) (searchstore.Manager, error) {
 	vsType := os.Getenv("VECTOR_STORE_TYPE")
 
 	switch vsType {
+	case "oceanbase":
+		if emb == nil {
+			return nil, fmt.Errorf("embedding not configured for oceanbase")
+		}
+
+		mgr, err := ssob.NewManager(&ssob.ManagerConfig{
+			DB:        db,
+			Embedding: emb,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("init oceanbase vector store failed, err=%w", err)
+		}
+
+		return mgr, nil
+
 	case "milvus":
 		ctx, cancel := context.WithTimeout(ctx, time.Second*5)
 		defer cancel()
@@ -523,4 +549,94 @@ func getEmbedding(ctx context.Context) (embedding.Embedder, error) {
 	}
 
 	return emb, nil
+}
+
+// getEmbeddingFromDB tries to load a global embedding configuration from the database.
+// Global configs use spaceID=0 and can be managed from the web admin panel.
+func getEmbeddingFromDB(ctx context.Context, db *gorm.DB) (embedding.Embedder, error) {
+	if db == nil {
+		return nil, fmt.Errorf("db not initialized")
+	}
+
+	repo := embeddingRepo.NewSpaceEmbeddingRepository(db)
+	svc := embeddingService.NewSpaceEmbeddingService(repo)
+
+	// spaceID=0 represents the global default embedding configuration
+	embEntity, err := svc.GetDefaultSpaceEmbeddingEntity(ctx, 0)
+	if err != nil {
+		return nil, fmt.Errorf("get global embedding from DB failed: %w", err)
+	}
+	if embEntity == nil {
+		return nil, fmt.Errorf("no global embedding config found in DB (spaceID=0)")
+	}
+
+	config, err := embEntity.GetConfigStruct()
+	if err != nil {
+		return nil, fmt.Errorf("parse global embedding config failed: %w", err)
+	}
+
+	batchSize := config.MaxBatchSize
+	if batchSize <= 0 {
+		batchSize = 100
+	}
+
+	switch config.Type {
+	case embeddingEntity.EmbeddingTypeOpenAI:
+		if config.OpenAI == nil {
+			return nil, fmt.Errorf("OpenAI config is nil in DB")
+		}
+		cfg := config.OpenAI
+		openAICfg := &openai.EmbeddingConfig{
+			APIKey:     cfg.APIKey,
+			ByAzure:    cfg.ByAzure,
+			BaseURL:    cfg.BaseURL,
+			APIVersion: cfg.APIVersion,
+			Model:      cfg.Model,
+		}
+		if cfg.RequestDims > 0 {
+			openAICfg.Dimensions = &cfg.RequestDims
+		}
+		return wrap.NewOpenAIEmbedder(ctx, openAICfg, int64(cfg.Dims), batchSize)
+
+	case embeddingEntity.EmbeddingTypeArk:
+		if config.Ark == nil {
+			return nil, fmt.Errorf("ARK config is nil in DB")
+		}
+		cfg := config.Ark
+		apiType := ark.APITypeText
+		if cfg.APIType == "multimodal" {
+			apiType = ark.APITypeMultiModal
+		}
+		arkBatchSize := batchSize
+		if arkBatchSize > 10 {
+			arkBatchSize = 10
+		}
+		return ark.NewArkEmbedder(ctx, &ark.EmbeddingConfig{
+			APIKey:  cfg.APIKey,
+			Model:   cfg.Model,
+			BaseURL: cfg.BaseURL,
+			APIType: &apiType,
+		}, int64(cfg.Dims), arkBatchSize)
+
+	case embeddingEntity.EmbeddingTypeOllama:
+		if config.Ollama == nil {
+			return nil, fmt.Errorf("Ollama config is nil in DB")
+		}
+		cfg := config.Ollama
+		ollamaCfg := &ollama.EmbeddingConfig{
+			BaseURL: cfg.BaseURL,
+			Model:   cfg.Model,
+		}
+		return wrap.NewOllamaEmbedder(ctx, ollamaCfg, int64(cfg.Dims), batchSize)
+
+	case embeddingEntity.EmbeddingTypeHTTP:
+		if config.HTTP == nil {
+			return nil, fmt.Errorf("HTTP config is nil in DB")
+		}
+		cfg := config.HTTP
+		return embeddingHttp.NewEmbedding(cfg.Addr, int64(cfg.Dims), batchSize)
+
+	default:
+		return nil, fmt.Errorf("unsupported embedding type in DB: %s", config.Type)
+	}
 }

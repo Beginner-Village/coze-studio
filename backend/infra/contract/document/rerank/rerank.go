@@ -26,6 +26,12 @@ type Reranker interface {
 	Rerank(ctx context.Context, req *Request) (*Response, error)
 }
 
+// Provider provides a model-based Reranker for a given space.
+// Returns nil if no rerank model is configured for the space.
+type Provider interface {
+	GetReranker(ctx context.Context, spaceID uint64) (Reranker, error)
+}
+
 type Request struct {
 	Query string
 	Data  [][]*Data

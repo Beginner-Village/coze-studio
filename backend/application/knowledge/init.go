@@ -51,7 +51,11 @@ import (
 	chatmodelImpl "github.com/ynet-dev/ynet-studio/backend/infra/impl/chatmodel"
 	builtinNL2SQL "github.com/ynet-dev/ynet-studio/backend/infra/impl/document/nl2sql/builtin"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/rerank/rrf"
+	rerankProvider "github.com/ynet-dev/ynet-studio/backend/infra/impl/rerank/provider"
+	rerankRepo "github.com/ynet-dev/ynet-studio/backend/infra/impl/rerank/repository"
+	rerankService "github.com/ynet-dev/ynet-studio/backend/domain/rerank/service"
 	ssmilvus "github.com/ynet-dev/ynet-studio/backend/infra/impl/document/searchstore/milvus"
+	ssob "github.com/ynet-dev/ynet-studio/backend/infra/impl/document/searchstore/oceanbase"
 	ssvikingdb "github.com/ynet-dev/ynet-studio/backend/infra/impl/document/searchstore/vikingdb"
 	arkemb "github.com/ynet-dev/ynet-studio/backend/infra/impl/embedding/ark"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/embedding/http"
@@ -93,18 +97,22 @@ func InitService(c *ServiceComponents) (*KnowledgeApplicationService, error) {
 	// Use the provided search store managers
 	sManagers = append(sManagers, c.SearchStoreManagers...)
 
-	// vector search
-	mgr, err := getVectorStore(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("init vector store failed, err=%w", err)
-	}
-	sManagers = append(sManagers, mgr)
-
-	// Create ManagerFactory for space-level embedding support
+	// Create ManagerFactory for space-level embedding support (preferred)
 	managerFactory, err := createManagerFactory(ctx, c.DB)
 	if err != nil {
-		// Log warning but continue - factory is optional for backward compatibility
-		logs.CtxWarnf(ctx, "[InitService] failed to create manager factory: %v, using legacy managers", err)
+		logs.CtxWarnf(ctx, "[InitService] failed to create manager factory: %v, will try legacy managers", err)
+	}
+
+	// Legacy vector search (fallback when ManagerFactory is not available)
+	mgr, err := getVectorStore(ctx, c.DB)
+	if err != nil {
+		if managerFactory == nil {
+			return nil, fmt.Errorf("init vector store failed and no manager factory available, err=%w", err)
+		}
+		// ManagerFactory is available — space-level embedding will handle it
+		logs.CtxInfof(ctx, "[InitService] legacy vector store init failed (%v), using space-level ManagerFactory only", err)
+	} else {
+		sManagers = append(sManagers, mgr)
 	}
 
 	// Use the provided OCR implementation from ServiceComponents
@@ -157,6 +165,11 @@ func InitService(c *ServiceComponents) (*KnowledgeApplicationService, error) {
 		logs.CtxInfof(ctx, "[InitService] NL2SQL chat model not configured, NL2SQL will be disabled")
 	}
 
+	// Create space-level rerank provider
+	rrRepo := rerankRepo.NewSpaceRerankRepository(c.DB)
+	rrSvc := rerankService.NewSpaceRerankService(rrRepo)
+	rrProvider := rerankProvider.NewSpaceRerankProvider(rrSvc)
+
 	knowledgeDomainSVC, knowledgeEventHandler := knowledgeImpl.NewKnowledgeSVC(&knowledgeImpl.KnowledgeSVCConfig{
 		DB:                  c.DB,
 		IDGen:               c.IDGenSVC,
@@ -168,6 +181,7 @@ func InitService(c *ServiceComponents) (*KnowledgeApplicationService, error) {
 		Storage:             c.Storage,
 		Rewriter:            rewriter,
 		Reranker:            rrf.NewRRFReranker(0), // default rrf
+		RerankProvider:      rrProvider,             // space-level rerank model support
 		NL2Sql:              n2s,
 		OCR:                 c.OCR,
 		CacheCli:            c.CacheCli,
@@ -185,20 +199,16 @@ func InitService(c *ServiceComponents) (*KnowledgeApplicationService, error) {
 }
 
 // createManagerFactory creates a ManagerFactory for space-level embedding support
-// Currently only supports Milvus vector store
+// Supports Milvus and OceanBase vector stores
+// Global embedding from env is optional — space-level embedding configurations from DB take priority.
 func createManagerFactory(ctx context.Context, db *gorm.DB) (searchstore.ManagerFactory, error) {
 	vsType := os.Getenv("VECTOR_STORE_TYPE")
 
-	// Only support Milvus for now
-	if vsType != "milvus" {
-		logs.CtxInfof(ctx, "[createManagerFactory] vector store type %s does not support ManagerFactory yet", vsType)
-		return nil, nil
-	}
-
-	// Get global embedding
+	// Get global embedding as fallback (optional — space-level configs from DB take priority)
 	globalEmb, err := getEmbedding(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get global embedding: %w", err)
+		logs.CtxInfof(ctx, "[createManagerFactory] no global embedding from env: %v, space-level configs from DB will be used", err)
+		// globalEmb is nil — this is fine, spaces must have their own embedding config
 	}
 
 	// Create SpaceEmbeddingService
@@ -208,35 +218,75 @@ func createManagerFactory(ctx context.Context, db *gorm.DB) (searchstore.Manager
 	// Create SpaceEmbeddingProvider
 	provider := embeddingProvider.NewSpaceEmbeddingProvider(embSvc, globalEmb)
 
-	// Create Milvus client
-	cctx, cancel := context.WithTimeout(ctx, time.Second*5)
-	defer cancel()
+	switch vsType {
+	case "milvus":
+		// Create Milvus client
+		cctx, cancel := context.WithTimeout(ctx, time.Second*5)
+		defer cancel()
 
-	milvusAddr := os.Getenv("MILVUS_ADDR")
-	mc, err := milvusclient.New(cctx, &milvusclient.ClientConfig{Address: milvusAddr})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create milvus client: %w", err)
+		milvusAddr := os.Getenv("MILVUS_ADDR")
+		mc, err := milvusclient.New(cctx, &milvusclient.ClientConfig{Address: milvusAddr})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create milvus client: %w", err)
+		}
+
+		// Create ManagerFactory
+		enableHybrid := false
+		if globalEmb != nil {
+			enableHybrid = globalEmb.SupportStatus() == embedding.SupportDenseAndSparse
+		}
+		factory, err := ssmilvus.NewManagerFactory(&ssmilvus.ManagerFactoryConfig{
+			Client:            mc,
+			EmbeddingProvider: provider,
+			GlobalEmbedding:   globalEmb,
+			EnableHybrid:      ptr.Of(enableHybrid),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create manager factory: %w", err)
+		}
+
+		logs.CtxInfof(ctx, "[createManagerFactory] successfully created Milvus ManagerFactory with space-level embedding support")
+		return factory, nil
+
+	case "oceanbase":
+		factory, err := ssob.NewManagerFactory(&ssob.ManagerFactoryConfig{
+			DB:                db,
+			EmbeddingProvider: provider,
+			GlobalEmbedding:   globalEmb,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create oceanbase manager factory: %w", err)
+		}
+
+		logs.CtxInfof(ctx, "[createManagerFactory] successfully created OceanBase ManagerFactory with space-level embedding support")
+		return factory, nil
+
+	default:
+		logs.CtxInfof(ctx, "[createManagerFactory] vector store type %s does not support ManagerFactory yet", vsType)
+		return nil, nil
 	}
-
-	// Create ManagerFactory
-	factory, err := ssmilvus.NewManagerFactory(&ssmilvus.ManagerFactoryConfig{
-		Client:            mc,
-		EmbeddingProvider: provider,
-		GlobalEmbedding:   globalEmb,
-		EnableHybrid:      ptr.Of(globalEmb.SupportStatus() == embedding.SupportDenseAndSparse),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create manager factory: %w", err)
-	}
-
-	logs.CtxInfof(ctx, "[createManagerFactory] successfully created Milvus ManagerFactory with space-level embedding support")
-	return factory, nil
 }
 
-func getVectorStore(ctx context.Context) (searchstore.Manager, error) {
+func getVectorStore(ctx context.Context, db *gorm.DB) (searchstore.Manager, error) {
 	vsType := os.Getenv("VECTOR_STORE_TYPE")
 
 	switch vsType {
+	case "oceanbase":
+		emb, err := getEmbedding(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("init oceanbase embedding failed, err=%w", err)
+		}
+
+		mgr, err := ssob.NewManager(&ssob.ManagerConfig{
+			DB:        db,
+			Embedding: emb,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("init oceanbase vector store failed, err=%w", err)
+		}
+
+		return mgr, nil
+
 	case "milvus":
 		cctx, cancel := context.WithTimeout(ctx, time.Second*5)
 		defer cancel()

@@ -82,6 +82,7 @@ func NewKnowledgeSVC(config *KnowledgeSVCConfig) (Knowledge, eventbus.ConsumerHa
 		parseManager:        config.ParseManager,
 		storage:             config.Storage,
 		reranker:            config.Reranker,
+		rerankProvider:      config.RerankProvider,
 		rewriter:            config.Rewriter,
 		nl2Sql:              config.NL2Sql,
 		enableCompactTable:  ptr.FromOrDefault(config.EnableCompactTable, true),
@@ -110,6 +111,7 @@ type KnowledgeSVCConfig struct {
 	ModelFactory        chatmodel.Factory              // Required: Model factory
 	Rewriter            messages2query.MessagesToQuery // Optional: Do not overwrite when not configured
 	Reranker            rerank.Reranker                // Optional: default rrf when not configured
+	RerankProvider      rerank.Provider                // Optional: space-level rerank model support
 	NL2Sql              nl2sql.NL2SQL                  // Optional: Not supported by default when not configured
 	EnableCompactTable  *bool                          // Optional: Table data compression, default true
 	OCR                 ocr.OCR                        // Optional: ocr, ocr function is not available when not provided
@@ -131,6 +133,7 @@ type knowledgeSVC struct {
 	parseManager        parser.Manager
 	rewriter            messages2query.MessagesToQuery
 	reranker            rerank.Reranker
+	rerankProvider      rerank.Provider
 	storage             storage.Storage
 	nl2Sql              nl2sql.NL2SQL
 	cacheCli            cache.Cmdable

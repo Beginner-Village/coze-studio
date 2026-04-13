@@ -22,3 +22,5 @@ export * as ynet_agent from './idl/ynet-agent/ynet_agent';
 export * as statistics from './idl/statistics/statistics';
 export * as admin from './idl/admin/admin';
 export * as skill from './idl/skill/skill';
+export * as space_embedding from './idl/embedding/space_embedding';
+export * as space_rerank from './idl/rerank/space_rerank';

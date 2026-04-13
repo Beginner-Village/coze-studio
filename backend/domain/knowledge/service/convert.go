@@ -228,11 +228,18 @@ var s2dMapping = map[knowledge.DocumentType]slice2DocumentFn{
 		return doc, nil
 	},
 	// QA format: slice to document conversion
-	// Question (Content) is used for vector search, Answer is stored separately in DB
+	// Only Question is used for vector search, Answer is stored separately in DB
 	knowledge.DocumentTypeQA: func(ctx context.Context, slice *entity.Slice, columns []*entity.TableColumn, enableCompactTable bool) (doc *schema.Document, err error) {
+		// Extract only the question content for embedding, NOT the answer
+		// GetSliceContent() would combine Q+A which pollutes the vector space
+		question := ""
+		if len(slice.RawContent) > 0 && slice.RawContent[0].Type == knowledgeModel.SliceContentTypeText && slice.RawContent[0].Text != nil {
+			question = *slice.RawContent[0].Text
+		}
+
 		doc = &schema.Document{
 			ID:      strconv.FormatInt(slice.ID, 10),
-			Content: slice.GetSliceContent(),
+			Content: question,
 			MetaData: map[string]any{
 				document.MetaDataKeyCreatorID: slice.CreatorID,
 				document.MetaDataKeyExternalStorage: map[string]any{

@@ -20,6 +20,7 @@ export enum SpaceSubModuleEnum {
   MEMBERS = 'members',
   MODELS = 'models',
   EMBEDDING = 'embedding-config',
+  RERANK = 'rerank-config',
   HIAGENTS = 'hiagents',
   MCP = 'mcp',
   CARD = 'card',

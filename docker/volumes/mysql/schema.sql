@@ -2311,6 +2311,33 @@ CREATE TABLE `space_embedding` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `space_rerank`
+--
+
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE IF NOT EXISTS `space_rerank` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `space_id` bigint unsigned NOT NULL COMMENT '空间ID',
+  `user_id` bigint unsigned NOT NULL COMMENT '创建者ID',
+  `name` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '配置名称',
+  `description` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '配置描述',
+  `rerank_type` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Rerank类型: openai',
+  `config` json NOT NULL COMMENT 'Rerank配置(JSON格式)',
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '状态: 1启用 2禁用',
+  `is_default` tinyint NOT NULL DEFAULT '0' COMMENT '是否为默认配置: 0否 1是',
+  `created_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT '创建时间(毫秒)',
+  `updated_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT '更新时间(毫秒)',
+  `deleted_at` bigint unsigned DEFAULT NULL COMMENT '删除时间(毫秒)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_space_rerank_name` (`space_id`,`name`,`deleted_at`),
+  KEY `idx_space_rerank_status` (`space_id`,`status`),
+  KEY `idx_space_rerank_default` (`space_id`,`is_default`),
+  KEY `idx_rerank_creator_id` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='空间Rerank配置表';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `space_user`
 --
 
