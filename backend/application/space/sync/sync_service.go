@@ -229,6 +229,11 @@ func (s *SyncService) ImportConfirm(ctx context.Context, spaceID, userID int64, 
 		}
 	}
 
+	// Update sync mappings with source→target ID pairs
+	if importResult.IDMappings != nil {
+		s.updateSyncMappings(ctx, pending, importResult.IDMappings)
+	}
+
 	// Record sync history
 	s.recordSyncHistory(ctx, pending, validationResult.Resources, importResult)
 
@@ -551,6 +556,22 @@ func (s *SyncService) cleanupExpiredTokens() {
 			delete(s.pendingCache, token)
 		}
 	}
+}
+
+// updateSyncMappings records source→target ID mappings after a successful import.
+// This enables future incremental imports to detect existing resources.
+func (s *SyncService) updateSyncMappings(ctx context.Context, pending *PendingSyncImport, idMappings map[string]map[int64]int64) {
+	mappingStore := NewSyncMappingStore(s.db, pending.SourceSpaceID, pending.SpaceID)
+
+	for resourceType, mappings := range idMappings {
+		for sourceID, targetID := range mappings {
+			if err := mappingStore.UpsertMapping(ctx, nil, resourceType, sourceID, targetID, time.Now().UnixMilli()); err != nil {
+				logs.CtxWarnf(ctx, "Failed to upsert sync mapping %s:%d->%d: %v", resourceType, sourceID, targetID, err)
+			}
+		}
+	}
+
+	logs.CtxInfof(ctx, "Updated sync mappings for space_id=%d, source_space_id=%d", pending.SpaceID, pending.SourceSpaceID)
 }
 
 func generateSyncToken() (string, error) {
