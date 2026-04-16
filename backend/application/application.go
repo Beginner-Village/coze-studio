@@ -219,6 +219,8 @@ func initBasicServices(ctx context.Context, infra *appinfra.AppDependencies, e *
 	connectorSVC := connector.InitService(infra.TOSClient)
 	userSVC := user.InitService(ctx, infra.DB, infra.TOSClient, infra.IDGenSVC)
 	spaceapp.InitSpaceExportImportService(infra.DB, infra.TOSClient, infra.IDGenSVC, e.resourceEventBus, e.projectEventBus)
+	spaceapp.InitSyncService(infra.DB, infra.TOSClient, infra.IDGenSVC, e.resourceEventBus, e.projectEventBus)
+	spaceapp.InitReleaseService(infra.DB, infra.TOSClient)
 	templateSVC := template.InitService(ctx, &template.ServiceComponents{
 		DB:      infra.DB,
 		IDGen:   infra.IDGenSVC,

@@ -139,10 +139,17 @@ func (e *SpaceExporter) Export(ctx context.Context, req *ExportRequest) (*Export
 	}, nil
 }
 
-// ExportSync exports a space for sync (full or incremental) and returns the download URL
-func (e *SpaceExporter) ExportSync(ctx context.Context, req *SyncExportRequest) (*ExportResult, error) {
-	logs.CtxInfof(ctx, "Starting sync export for space_id=%d, mode=%s, since_time=%d", req.SpaceID, req.Mode, req.SinceTime)
+// SyncExportRawResult holds the raw output of a sync export (before upload)
+type SyncExportRawResult struct {
+	ZipContent []byte
+	Manifest   *Manifest
+	Resources  *SpaceResources
+	FileSize   int64
+}
 
+// exportSyncInternal collects resources and serializes to ZIP without uploading.
+// Shared by ExportSync and ExportSyncRaw.
+func (e *SpaceExporter) exportSyncInternal(ctx context.Context, req *SyncExportRequest) (*SyncExportRawResult, error) {
 	var (
 		resources *SpaceResources
 		deleted   *DeletedResources
@@ -166,19 +173,15 @@ func (e *SpaceExporter) ExportSync(ctx context.Context, req *SyncExportRequest) 
 		return nil, errorx.WrapByCode(fmt.Errorf("invalid sync mode: %s", req.Mode), errno.ErrSpaceExportFailedCode, errorx.KV("mode", req.Mode))
 	}
 
-	// Download knowledge base files from object storage
 	fileContents := e.downloadKnowledgeFiles(ctx, resources)
 
-	// Build sync manifest
 	manifest := e.serializer.BuildSyncManifest(req.SpaceID, req.SpaceName, req.Mode, req.SinceTime, resources)
 
-	// Build sync state
 	syncState := &SyncState{
 		ExportTime:    time.Now().Unix(),
 		SourceSpaceID: req.SpaceID,
 	}
 
-	// Serialize to sync ZIP
 	zipContent, err := e.serializer.SerializeToSyncZip(ctx, manifest, resources, fileContents, syncState, deleted)
 	if err != nil {
 		logs.CtxErrorf(ctx, "Failed to serialize sync export for space %d: %v", req.SpaceID, err)
@@ -186,8 +189,6 @@ func (e *SpaceExporter) ExportSync(ctx context.Context, req *SyncExportRequest) 
 	}
 
 	fileSize := int64(len(zipContent))
-
-	// Check size limit
 	if fileSize > SyncExportMaxSize {
 		return nil, errorx.WrapByCode(
 			fmt.Errorf("sync export size %d exceeds limit %d", fileSize, SyncExportMaxSize),
@@ -196,11 +197,35 @@ func (e *SpaceExporter) ExportSync(ctx context.Context, req *SyncExportRequest) 
 		)
 	}
 
+	return &SyncExportRawResult{
+		ZipContent: zipContent,
+		Manifest:   manifest,
+		Resources:  resources,
+		FileSize:   fileSize,
+	}, nil
+}
+
+// ExportSyncRaw exports a space for sync and returns raw ZIP bytes + manifest.
+// Unlike ExportSync, this does NOT upload to object storage — caller handles storage.
+func (e *SpaceExporter) ExportSyncRaw(ctx context.Context, req *SyncExportRequest) (*SyncExportRawResult, error) {
+	logs.CtxInfof(ctx, "Starting raw sync export for space_id=%d, mode=%s", req.SpaceID, req.Mode)
+	return e.exportSyncInternal(ctx, req)
+}
+
+// ExportSync exports a space for sync (full or incremental) and returns the download URL
+func (e *SpaceExporter) ExportSync(ctx context.Context, req *SyncExportRequest) (*ExportResult, error) {
+	logs.CtxInfof(ctx, "Starting sync export for space_id=%d, mode=%s, since_time=%d", req.SpaceID, req.Mode, req.SinceTime)
+
+	raw, err := e.exportSyncInternal(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
 	// Upload to object storage
 	fileName := e.generateFileName(req.SpaceID, req.SpaceName)
 	objectKey := fmt.Sprintf("%s/%s", SyncExportFilePrefix, fileName)
 
-	if err = e.objectStorage.PutObject(ctx, objectKey, zipContent); err != nil {
+	if err = e.objectStorage.PutObject(ctx, objectKey, raw.ZipContent); err != nil {
 		logs.CtxErrorf(ctx, "Failed to upload sync export file for space %d: %v", req.SpaceID, err)
 		return nil, errorx.WrapByCode(err, errno.ErrSpaceExportFailedCode, errorx.KV("msg", "failed to upload sync export file"))
 	}
@@ -215,14 +240,14 @@ func (e *SpaceExporter) ExportSync(ctx context.Context, req *SyncExportRequest) 
 	expiresAt := time.Now().Add(ExportFileTTL)
 
 	logs.CtxInfof(ctx, "Sync export completed for space_id=%d, mode=%s, file_size=%d, expires_at=%v",
-		req.SpaceID, req.Mode, fileSize, expiresAt)
+		req.SpaceID, req.Mode, raw.FileSize, expiresAt)
 
 	return &ExportResult{
 		DownloadURL: downloadURL,
 		FileName:    fileName,
-		FileSize:    fileSize,
+		FileSize:    raw.FileSize,
 		ExpiresAt:   expiresAt,
-		Statistics:  manifest.Statistics,
+		Statistics:  raw.Manifest.Statistics,
 	}, nil
 }
 

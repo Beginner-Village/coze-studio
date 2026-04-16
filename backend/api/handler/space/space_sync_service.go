@@ -180,6 +180,79 @@ func SyncLastExport(ctx context.Context, c *app.RequestContext) {
 	c.JSON(consts.StatusOK, resp)
 }
 
+// SyncRollback rolls back a space to a specified release version
+// @router /api/space/{space_id}/sync/rollback [POST]
+func SyncRollback(ctx context.Context, c *app.RequestContext) {
+	var req spaceModel.RollbackRequest
+	if err := c.BindAndValidate(&req); err != nil {
+		c.String(consts.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Look up the release to get its package key
+	releaseRecord, err := spaceApp.ReleaseSVC.GetRelease(ctx, req.SpaceID, req.TargetVersion)
+	if err != nil {
+		c.String(consts.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if releaseRecord.Release.Status != "published" {
+		c.String(consts.StatusBadRequest, "can only rollback to a published release, current status: "+releaseRecord.Release.Status)
+		return
+	}
+
+	result, err := spaceApp.SyncSVC.RollbackToVersion(ctx, req.SpaceID, 0, req.TargetVersion, releaseRecord.Release.PackageKey)
+	if err != nil {
+		c.String(consts.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(consts.StatusOK, &spaceModel.RollbackResponse{
+		Code: 0,
+		Msg:  "success",
+		Data: &spaceModel.RollbackData{
+			RolledBackFrom: result.RolledBackFrom,
+			RolledBackTo:   result.RolledBackTo,
+			SnapshotKey:    result.SnapshotKey,
+		},
+	})
+}
+
+// SyncCurrentVersion returns the current deployed version for a space
+// @router /api/space/{space_id}/sync/current-version [GET]
+func SyncCurrentVersion(ctx context.Context, c *app.RequestContext) {
+	spaceIDStr := c.Param("space_id")
+	spaceID, err := strconv.ParseInt(spaceIDStr, 10, 64)
+	if err != nil {
+		c.String(consts.StatusBadRequest, "invalid space_id")
+		return
+	}
+
+	record, err := spaceApp.SyncSVC.GetCurrentVersion(ctx, spaceID)
+	if err != nil {
+		c.String(consts.StatusInternalServerError, err.Error())
+		return
+	}
+
+	resp := &spaceModel.CurrentVersionResponse{
+		Code: 0,
+		Msg:  "success",
+	}
+
+	if record != nil && record.Version != nil {
+		importedAt := record.CreatedAt
+		if record.ImportTime != nil {
+			importedAt = *record.ImportTime
+		}
+		resp.Data = &spaceModel.CurrentVersionData{
+			Version:    *record.Version,
+			ImportedAt: importedAt,
+		}
+	}
+
+	c.JSON(consts.StatusOK, resp)
+}
+
 // SyncHistory gets the sync history for a space
 // @router /api/space/{space_id}/sync/history [GET]
 func SyncHistory(ctx context.Context, c *app.RequestContext) {

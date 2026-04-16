@@ -14,22 +14,19 @@
  * limitations under the License.
  */
 
-package errno
+package space
 
-// Space export/import error codes
-// Using 112xxxxx range for space operations
-const (
-	ErrSpaceInvalidParamCode   = 112000000
-	ErrSpacePermissionCode     = 112000001
-	ErrSpaceNotFoundCode       = 112000002
-	ErrSpaceExportFailedCode   = 112000003
-	ErrSpaceImportFailedCode   = 112000004
-	ErrSpaceImportTokenExpired = 112000005
-	ErrSpaceImportTokenInvalid = 112000006
+import (
+	"gorm.io/gorm"
 
-	// Release version management
-	ErrSpaceReleaseNotFoundCode   = 112000010
-	ErrSpaceReleaseExistsCode     = 112000011
-	ErrSpaceReleaseInvalidVersion = 112000012
-	ErrSpaceRollbackFailedCode    = 112000013
+	spaceexport "github.com/ynet-dev/ynet-studio/backend/application/space/export"
+	"github.com/ynet-dev/ynet-studio/backend/application/space/release"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
 )
+
+var ReleaseSVC *release.ReleaseService
+
+func InitReleaseService(db *gorm.DB, objectStorage storage.Storage) {
+	exporter := spaceexport.NewSpaceExporter(db, objectStorage)
+	ReleaseSVC = release.NewReleaseService(db, exporter, objectStorage)
+}

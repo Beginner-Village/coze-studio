@@ -88,7 +88,7 @@ func (s *SyncMappingStore) GetTargetID(resourceType string, sourceID int64) (int
 	return m.TargetResourceID, true
 }
 
-func (s *SyncMappingStore) UpsertMapping(ctx context.Context, tx *gorm.DB, resourceType string, sourceID, targetID, sourceUpdatedAt int64) error {
+func (s *SyncMappingStore) UpsertMapping(ctx context.Context, tx *gorm.DB, resourceType string, sourceID, targetID, sourceUpdatedAt int64, contentHash ...string) error {
 	db := s.db
 	if tx != nil {
 		db = tx
@@ -107,6 +107,9 @@ func (s *SyncMappingStore) UpsertMapping(ctx context.Context, tx *gorm.DB, resou
 		CreatedAt:        now,
 		UpdatedAt:        now,
 	}
+	if len(contentHash) > 0 {
+		record.ContentHash = contentHash[0]
+	}
 
 	err := db.WithContext(ctx).
 		Clauses(clause.OnConflict{
@@ -116,7 +119,7 @@ func (s *SyncMappingStore) UpsertMapping(ctx context.Context, tx *gorm.DB, resou
 				{Name: "source_resource_id"},
 			},
 			DoUpdates: clause.AssignmentColumns([]string{
-				"target_resource_id", "source_updated_at", "updated_at",
+				"target_resource_id", "source_updated_at", "content_hash", "updated_at",
 			}),
 		}).
 		Create(&record).Error
@@ -126,6 +129,16 @@ func (s *SyncMappingStore) UpsertMapping(ctx context.Context, tx *gorm.DB, resou
 
 	s.mappings[key] = &record
 	return nil
+}
+
+// GetContentHash returns the stored content hash for a mapping
+func (s *SyncMappingStore) GetContentHash(resourceType string, sourceID int64) string {
+	key := mappingKey(resourceType, sourceID)
+	m, ok := s.mappings[key]
+	if !ok {
+		return ""
+	}
+	return m.ContentHash
 }
 
 func (s *SyncMappingStore) RemoveMapping(ctx context.Context, resourceType string, sourceID int64) error {

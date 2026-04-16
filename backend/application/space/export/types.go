@@ -27,13 +27,15 @@ const ManifestVersion = "2.0.0"
 
 // Manifest represents the metadata of an exported space package
 type Manifest struct {
-	Version    string           `json:"version"`
-	SyncType   string           `json:"sync_type,omitempty"`
-	SinceTime  int64            `json:"since_time,omitempty"`
-	ExportTime string           `json:"export_time"`
-	Source     SourceInfo       `json:"source"`
-	Statistics Statistics       `json:"statistics"`
-	IDRegistry IDRegistry       `json:"id_registry"`
+	Version        string            `json:"version"`
+	SyncType       string            `json:"sync_type,omitempty"`
+	SinceTime      int64             `json:"since_time,omitempty"`
+	ExportTime     string            `json:"export_time"`
+	Source         SourceInfo        `json:"source"`
+	Statistics     Statistics        `json:"statistics"`
+	IDRegistry     IDRegistry        `json:"id_registry"`
+	ReleaseVersion string            `json:"release_version,omitempty"`
+	ResourceHashes map[string]string `json:"resource_hashes,omitempty"`
 }
 
 // SourceInfo contains information about the source space

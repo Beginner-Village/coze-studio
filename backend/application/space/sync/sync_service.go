@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -37,8 +38,9 @@ import (
 )
 
 const (
-	syncImportPrefix = "sync_imports"
-	syncImportTTL    = 30 * time.Minute
+	syncImportPrefix   = "sync_imports"
+	syncImportTTL      = 30 * time.Minute
+	snapshotPrefix     = "space_snapshots"
 )
 
 type PendingSyncImport struct {
@@ -69,6 +71,7 @@ type SyncService struct {
 	eventBus        service.ResourceEventBus
 	projectEventBus service.ProjectEventBus
 	pendingCache    map[string]*PendingSyncImport
+	mu              sync.Mutex
 }
 
 func NewSyncService(db *gorm.DB, exporter *spaceexport.SpaceExporter, importer *spaceimport.SpaceImporter,
@@ -135,10 +138,10 @@ func (s *SyncService) ImportPreview(ctx context.Context, spaceID, userID int64, 
 		Plan:          plan,
 		CreatedAt:     time.Now(),
 	}
+	s.mu.Lock()
 	s.pendingCache[token] = pending
-
-	// Clean up expired tokens
 	s.cleanupExpiredTokens()
+	s.mu.Unlock()
 
 	logs.CtxInfof(ctx, "Sync import preview completed, token=%s, plan=%+v", token, plan)
 
@@ -154,19 +157,24 @@ func (s *SyncService) ImportPreview(ctx context.Context, spaceID, userID int64, 
 func (s *SyncService) ImportConfirm(ctx context.Context, spaceID, userID int64, importToken string) (*SyncImportResult, error) {
 	logs.CtxInfof(ctx, "Starting sync import confirm for space_id=%d, token=%s", spaceID, importToken)
 
+	s.mu.Lock()
 	pending, ok := s.pendingCache[importToken]
 	if !ok {
+		s.mu.Unlock()
 		return nil, errorx.New(errno.ErrSpaceImportFailedCode, errorx.KV("msg", "invalid or expired sync import token"))
 	}
 
 	if pending.SpaceID != spaceID || pending.UserID != userID {
+		s.mu.Unlock()
 		return nil, errorx.New(errno.ErrSpaceImportFailedCode, errorx.KV("msg", "token does not match request"))
 	}
 
 	if time.Since(pending.CreatedAt) > syncImportTTL {
 		delete(s.pendingCache, importToken)
+		s.mu.Unlock()
 		return nil, errorx.New(errno.ErrSpaceImportFailedCode, errorx.KV("msg", "sync import token has expired"))
 	}
+	s.mu.Unlock()
 
 	// Read ZIP from object storage
 	fileContent, err := s.objectStorage.GetObject(ctx, pending.TempFileKey)
@@ -225,7 +233,9 @@ func (s *SyncService) ImportConfirm(ctx context.Context, spaceID, userID int64, 
 	s.recordSyncHistory(ctx, pending, validationResult.Resources, importResult)
 
 	// Clean up
+	s.mu.Lock()
 	delete(s.pendingCache, importToken)
+	s.mu.Unlock()
 	go func() {
 		if delErr := s.objectStorage.DeleteObject(context.Background(), pending.TempFileKey); delErr != nil {
 			logs.CtxWarnf(ctx, "Failed to delete temp sync import file %s: %v", pending.TempFileKey, delErr)
@@ -380,7 +390,13 @@ func (s *SyncService) buildImportPlan(resources *spaceexport.SpaceResources, map
 	return plan
 }
 
-func (s *SyncService) recordSyncHistory(ctx context.Context, pending *PendingSyncImport, resources *spaceexport.SpaceResources, result *spaceimport.ImportResult) {
+type recordHistoryOpts struct {
+	Version             string
+	SnapshotKey         string
+	RollbackFromVersion string
+}
+
+func (s *SyncService) recordSyncHistory(ctx context.Context, pending *PendingSyncImport, resources *spaceexport.SpaceResources, result *spaceimport.ImportResult, opts ...recordHistoryOpts) {
 	now := time.Now().Unix()
 	stats, _ := json.Marshal(map[string]interface{}{
 		"agents_created":    result.AgentsCreated,
@@ -407,9 +423,125 @@ func (s *SyncService) recordSyncHistory(ctx context.Context, pending *PendingSyn
 		CreatedAt:     now,
 	}
 
+	if len(opts) > 0 {
+		o := opts[0]
+		if o.Version != "" {
+			record.Version = &o.Version
+		}
+		if o.SnapshotKey != "" {
+			record.SnapshotKey = &o.SnapshotKey
+		}
+		if o.RollbackFromVersion != "" {
+			record.RollbackFromVersion = &o.RollbackFromVersion
+		}
+	}
+
 	if err := s.historyRepo.Create(ctx, record); err != nil {
 		logs.CtxWarnf(ctx, "Failed to record sync history: %v", err)
 	}
+}
+
+// CreateSnapshot exports the current state of a space as a full snapshot for rollback.
+// The snapshot is stored permanently in object storage.
+func (s *SyncService) CreateSnapshot(ctx context.Context, spaceID int64) (string, error) {
+	logs.CtxInfof(ctx, "Creating snapshot for space_id=%d", spaceID)
+
+	raw, err := s.exporter.ExportSyncRaw(ctx, &spaceexport.SyncExportRequest{
+		SpaceID: spaceID,
+		Mode:    "full",
+	})
+	if err != nil {
+		return "", fmt.Errorf("export snapshot: %w", err)
+	}
+
+	timestamp := time.Now().Format("20060102_150405")
+	snapshotKey := fmt.Sprintf("%s/%d/%s.zip", snapshotPrefix, spaceID, timestamp)
+
+	if err = s.objectStorage.PutObject(ctx, snapshotKey, raw.ZipContent); err != nil {
+		return "", fmt.Errorf("upload snapshot: %w", err)
+	}
+
+	logs.CtxInfof(ctx, "Snapshot created for space_id=%d, key=%s, size=%d", spaceID, snapshotKey, raw.FileSize)
+	return snapshotKey, nil
+}
+
+// RollbackToVersion rolls back a space to a previous version by importing its release package.
+// It creates a snapshot of the current state before rolling back.
+func (s *SyncService) RollbackToVersion(ctx context.Context, spaceID, userID int64, targetVersion, releasePackageKey string) (*RollbackResult, error) {
+	logs.CtxInfof(ctx, "Rolling back space_id=%d to version=%s", spaceID, targetVersion)
+
+	// Get current version
+	currentHistory, _ := s.historyRepo.GetCurrentVersion(ctx, spaceID)
+	currentVersion := ""
+	if currentHistory != nil && currentHistory.Version != nil {
+		currentVersion = *currentHistory.Version
+	}
+
+	// Create snapshot before rollback
+	snapshotKey, err := s.CreateSnapshot(ctx, spaceID)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("msg", "failed to create pre-rollback snapshot"))
+	}
+
+	// Read the release package from object storage
+	zipContent, err := s.objectStorage.GetObject(ctx, releasePackageKey)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("msg", "failed to read release package"))
+	}
+
+	// Execute import via standard preview+confirm flow
+	previewResult, err := s.importer.Preview(ctx, &spaceimport.PreviewRequest{
+		SpaceID:     spaceID,
+		UserID:      userID,
+		FileContent: zipContent,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	importResult, err := s.importer.Confirm(ctx, &spaceimport.ConfirmRequest{
+		SpaceID:     spaceID,
+		UserID:      userID,
+		ImportToken: previewResult.ImportToken,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Record sync history with rollback info
+	pending := &PendingSyncImport{
+		SpaceID:       spaceID,
+		UserID:        userID,
+		SourceSpaceID: 0,
+		Manifest:      previewResult.Manifest,
+		Plan:          &ImportPlan{},
+	}
+
+	s.recordSyncHistory(ctx, pending, nil, importResult, recordHistoryOpts{
+		Version:             targetVersion,
+		SnapshotKey:         snapshotKey,
+		RollbackFromVersion: currentVersion,
+	})
+
+	logs.CtxInfof(ctx, "Rollback completed for space_id=%d, from=%s to=%s", spaceID, currentVersion, targetVersion)
+
+	return &RollbackResult{
+		RolledBackFrom: currentVersion,
+		RolledBackTo:   targetVersion,
+		SnapshotKey:    snapshotKey,
+	}, nil
+}
+
+// GetCurrentVersion returns the current deployed version for a space
+func (s *SyncService) GetCurrentVersion(ctx context.Context, spaceID int64) (*SyncHistory, error) {
+	return s.historyRepo.GetCurrentVersion(ctx, spaceID)
+}
+
+// RollbackResult contains the result of a rollback operation
+type RollbackResult struct {
+	RolledBackFrom string `json:"rolled_back_from"`
+	RolledBackTo   string `json:"rolled_back_to"`
+	SnapshotKey    string `json:"snapshot_key"`
 }
 
 func (s *SyncService) cleanupExpiredTokens() {

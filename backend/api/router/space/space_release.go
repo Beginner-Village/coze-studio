@@ -21,19 +21,15 @@ import (
 	handler "github.com/ynet-dev/ynet-studio/backend/api/handler/space"
 )
 
-func RegisterSync(r *server.Hertz) {
+func RegisterRelease(r *server.Hertz) {
 	spaceGroup := r.Group("/api/space/:space_id")
-	syncGroup := spaceGroup.Group("/sync")
+	releaseGroup := spaceGroup.Group("/release")
 	{
-		syncGroup.POST("/export", handler.SyncExport)
-		syncGroup.GET("/last-export", handler.SyncLastExport)
-		importGroup := syncGroup.Group("/import")
-		{
-			importGroup.POST("/preview", handler.SyncImportPreview)
-			importGroup.POST("/confirm", handler.SyncImportConfirm)
-		}
-		syncGroup.GET("/history", handler.SyncHistory)
-		syncGroup.POST("/rollback", handler.SyncRollback)
-		syncGroup.GET("/current-version", handler.SyncCurrentVersion)
+		releaseGroup.POST("", handler.CreateRelease)
+		releaseGroup.GET("/list", handler.ListReleases)
+		releaseGroup.GET("/:version", handler.GetRelease)
+		releaseGroup.GET("/:version/diff", handler.DiffVersions)
+		releaseGroup.POST("/:version/publish", handler.PublishRelease)
+		releaseGroup.POST("/:version/deprecate", handler.DeprecateRelease)
 	}
 }
