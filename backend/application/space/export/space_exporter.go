@@ -70,11 +70,12 @@ type ExportRequest struct {
 
 // SyncExportRequest represents a request to export a space for sync
 type SyncExportRequest struct {
-	SpaceID   int64
-	UserID    int64
-	SpaceName string
-	Mode      string // "full" or "incremental"
-	SinceTime int64  // only used when Mode == "incremental"
+	SpaceID        int64
+	UserID         int64
+	SpaceName      string
+	Mode           string // "full" or "incremental"
+	SinceTime      int64  // only used when Mode == "incremental"
+	ReleaseVersion string // if set, embedded into manifest inside the ZIP
 }
 
 // Export exports a space to a ZIP file and returns the download URL
@@ -176,6 +177,9 @@ func (e *SpaceExporter) exportSyncInternal(ctx context.Context, req *SyncExportR
 	fileContents := e.downloadKnowledgeFiles(ctx, resources)
 
 	manifest := e.serializer.BuildSyncManifest(req.SpaceID, req.SpaceName, req.Mode, req.SinceTime, resources)
+	if req.ReleaseVersion != "" {
+		manifest.ReleaseVersion = req.ReleaseVersion
+	}
 
 	syncState := &SyncState{
 		ExportTime:    time.Now().Unix(),

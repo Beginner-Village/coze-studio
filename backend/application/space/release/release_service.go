@@ -117,18 +117,16 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *CreateReleaseRe
 	logs.CtxInfof(ctx, "Creating release %s for space_id=%d, sync_type=%s", version, req.SpaceID, syncType)
 
 	raw, err := s.exporter.ExportSyncRaw(ctx, &spaceexport.SyncExportRequest{
-		SpaceID:   req.SpaceID,
-		Mode:      syncType,
-		SinceTime: sinceTime,
+		SpaceID:        req.SpaceID,
+		Mode:           syncType,
+		SinceTime:      sinceTime,
+		ReleaseVersion: version,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Set release version in manifest
-	raw.Manifest.ReleaseVersion = version
-
-	// Compute package hash (before modifying manifest, so hash matches the actual ZIP)
+	// Compute package hash
 	contentHash := HashPackage(raw.ZipContent)
 
 	// Build resource hashes for diff capability.
