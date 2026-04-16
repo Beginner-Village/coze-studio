@@ -35,6 +35,9 @@ func HashPackage(zipContent []byte) string {
 // Returns a map keyed by "resourceType:resourceID" -> hash.
 func BuildResourceHashes(resources *spaceexport.SpaceResources) (map[string]string, error) {
 	hashes := make(map[string]string)
+	if resources == nil {
+		return hashes, nil
+	}
 
 	for _, a := range resources.Agents {
 		h, err := hashJSON(a)
