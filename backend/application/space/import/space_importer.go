@@ -299,6 +299,19 @@ func (s *SpaceImporter) executeImport(ctx context.Context, pending *PendingImpor
 		return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("msg", "import transaction failed"))
 	}
 
+	// Expose ID mappings for sync mapping updates
+	result.IDMappings = map[string]map[int64]int64{
+		"agent":              importCtx.AgentIDMap,
+		"plugin":             importCtx.PluginIDMap,
+		"workflow":           importCtx.WorkflowIDMap,
+		"variable":           importCtx.VariableIDMap,
+		"space_model":        importCtx.SpaceModelIDMap,
+		"knowledge":          importCtx.KnowledgeIDMap,
+		"document":           importCtx.DocumentIDMap,
+		"folder":             importCtx.FolderIDMap,
+		"external_knowledge": importCtx.ExternalKnowledgeIDMap,
+	}
+
 	// Sync to ES after successful transaction (outside transaction to avoid blocking)
 	s.syncToES(ctx, pending.Resources, importCtx)
 

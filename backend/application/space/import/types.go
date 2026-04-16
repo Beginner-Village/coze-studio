@@ -47,6 +47,8 @@ type ImportResult struct {
 	SpaceModelsCreated int            `json:"space_models_created"`
 	KnowledgeCreated   int            `json:"knowledge_created"`
 	Errors             []*ImportError `json:"errors,omitempty"`
+	// IDMappings maps resource type → (source ID → target ID) for sync mapping
+	IDMappings map[string]map[int64]int64 `json:"id_mappings,omitempty"`
 }
 
 // ImportError represents an error that occurred during import
