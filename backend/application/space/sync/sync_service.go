@@ -189,6 +189,19 @@ func (s *SyncService) ImportConfirm(ctx context.Context, spaceID, userID int64, 
 		return nil, err
 	}
 
+	// Detect release version from manifest
+	releaseVersion := pending.Manifest.ReleaseVersion
+	var snapshotKey string
+	if releaseVersion != "" {
+		logs.CtxInfof(ctx, "Importing release version %s into space_id=%d", releaseVersion, spaceID)
+		// Create pre-import snapshot for safety (non-blocking: if snapshot fails, still proceed)
+		snapshotKey, err = s.CreateSnapshot(ctx, spaceID)
+		if err != nil {
+			logs.CtxWarnf(ctx, "Failed to create pre-import snapshot for space_id=%d: %v (proceeding with import)", spaceID, err)
+			snapshotKey = ""
+		}
+	}
+
 	// Handle deleted resources before creating/updating
 	if validationResult.Deleted != nil {
 		if txErr := s.db.Transaction(func(tx *gorm.DB) error {
@@ -234,8 +247,15 @@ func (s *SyncService) ImportConfirm(ctx context.Context, spaceID, userID int64, 
 		s.updateSyncMappings(ctx, pending, importResult.IDMappings)
 	}
 
-	// Record sync history
-	s.recordSyncHistory(ctx, pending, validationResult.Resources, importResult)
+	// Record sync history with version info
+	var histOpts []recordHistoryOpts
+	if releaseVersion != "" {
+		histOpts = append(histOpts, recordHistoryOpts{
+			Version:     releaseVersion,
+			SnapshotKey: snapshotKey,
+		})
+	}
+	s.recordSyncHistory(ctx, pending, validationResult.Resources, importResult, histOpts...)
 
 	// Clean up
 	s.mu.Lock()
