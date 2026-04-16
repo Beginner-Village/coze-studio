@@ -126,6 +126,20 @@ func (s *SyncService) ImportPreview(ctx context.Context, spaceID, userID int64, 
 	// Build import plan
 	plan := s.buildImportPlan(validationResult.Resources, mappingStore)
 
+	// Detect version conflict
+	incomingVersion := manifest.ReleaseVersion
+	currentVersion := ""
+	if incomingVersion != "" {
+		current, _ := s.historyRepo.GetCurrentVersion(ctx, spaceID)
+		if current != nil && current.Version != nil {
+			currentVersion = *current.Version
+		}
+		if currentVersion != "" && !isNewerVersion(incomingVersion, currentVersion) {
+			validationResult.Warnings = append(validationResult.Warnings,
+				fmt.Sprintf("当前已部署版本 %s >= 即将导入的版本 %s，请确认是否需要降级", currentVersion, incomingVersion))
+		}
+	}
+
 	// Store pending import
 	pending := &PendingSyncImport{
 		Token:         token,
@@ -146,11 +160,13 @@ func (s *SyncService) ImportPreview(ctx context.Context, spaceID, userID int64, 
 	logs.CtxInfof(ctx, "Sync import preview completed, token=%s, plan=%+v", token, plan)
 
 	return &SyncPreviewResult{
-		ImportToken:    token,
-		Manifest:       manifest,
-		Plan:           plan,
-		Warnings:       validationResult.Warnings,
-		TokenExpiresAt: time.Now().Add(syncImportTTL).Unix(),
+		ImportToken:     token,
+		Manifest:        manifest,
+		Plan:            plan,
+		Warnings:        validationResult.Warnings,
+		TokenExpiresAt:  time.Now().Add(syncImportTTL).Unix(),
+		IncomingVersion: incomingVersion,
+		CurrentVersion:  currentVersion,
 	}, nil
 }
 
@@ -578,6 +594,49 @@ func (s *SyncService) cleanupExpiredTokens() {
 	}
 }
 
+// isNewerVersion returns true if version a is strictly newer than version b.
+// Uses semver parsing for correct multi-digit comparison (e.g., v1.0.10 > v1.0.9).
+func isNewerVersion(a, b string) bool {
+	aMaj, aMin, aPatch, aOk := parseSemverSimple(a)
+	bMaj, bMin, bPatch, bOk := parseSemverSimple(b)
+	if !aOk || !bOk {
+		return a > b // fallback to string comparison
+	}
+	if aMaj != bMaj {
+		return aMaj > bMaj
+	}
+	if aMin != bMin {
+		return aMin > bMin
+	}
+	return aPatch > bPatch
+}
+
+// parseSemverSimple parses a semver string like "v1.2.3" into components.
+func parseSemverSimple(version string) (major, minor, patch int, ok bool) {
+	if len(version) < 2 || version[0] != 'v' {
+		return 0, 0, 0, false
+	}
+	parts := [3]int{}
+	idx := 0
+	for _, ch := range version[1:] {
+		if ch == '.' {
+			idx++
+			if idx > 2 {
+				return 0, 0, 0, false
+			}
+			continue
+		}
+		if ch < '0' || ch > '9' {
+			return 0, 0, 0, false
+		}
+		parts[idx] = parts[idx]*10 + int(ch-'0')
+	}
+	if idx != 2 {
+		return 0, 0, 0, false
+	}
+	return parts[0], parts[1], parts[2], true
+}
+
 // updateSyncMappings records source→target ID mappings after a successful import.
 // This enables future incremental imports to detect existing resources.
 func (s *SyncService) updateSyncMappings(ctx context.Context, pending *PendingSyncImport, idMappings map[string]map[int64]int64) {
@@ -603,11 +662,14 @@ func generateSyncToken() (string, error) {
 }
 
 type SyncPreviewResult struct {
-	ImportToken    string               `json:"import_token"`
+	ImportToken    string                `json:"import_token"`
 	Manifest       *spaceexport.Manifest `json:"manifest"`
 	Plan           *ImportPlan           `json:"plan"`
 	Warnings       []string              `json:"warnings"`
 	TokenExpiresAt int64                 `json:"token_expires_at"`
+	// Version info for display
+	IncomingVersion string `json:"incoming_version,omitempty"`
+	CurrentVersion  string `json:"current_version,omitempty"`
 }
 
 type SyncImportResult struct {
