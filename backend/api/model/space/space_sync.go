@@ -47,10 +47,12 @@ type SyncImportPreviewResponse struct {
 }
 
 type SyncImportPreviewData struct {
-	ImportToken    string      `json:"import_token"`
-	Plan           *SyncPlan   `json:"plan"`
-	Warnings       []string    `json:"warnings"`
-	TokenExpiresAt int64       `json:"token_expires_at"`
+	ImportToken     string    `json:"import_token"`
+	Plan            *SyncPlan `json:"plan"`
+	Warnings        []string  `json:"warnings"`
+	TokenExpiresAt  int64     `json:"token_expires_at"`
+	IncomingVersion string    `json:"incoming_version,omitempty"`
+	CurrentVersion  string    `json:"current_version,omitempty"`
 }
 
 type SyncPlan struct {
@@ -92,11 +94,14 @@ type SyncHistoryResponse struct {
 }
 
 type SyncHistoryItem struct {
-	ID            uint64 `json:"id,string"`
-	SourceSpaceID int64  `json:"source_space_id,string"`
-	TargetSpaceID int64  `json:"target_space_id,string"`
-	SyncType      string `json:"sync_type"`
-	ExportTime    int64  `json:"export_time"`
-	ImportTime    *int64 `json:"import_time,omitempty"`
-	Status        int8   `json:"status"`
+	ID                  uint64  `json:"id,string"`
+	SourceSpaceID       int64   `json:"source_space_id,string"`
+	TargetSpaceID       int64   `json:"target_space_id,string"`
+	SyncType            string  `json:"sync_type"`
+	Version             *string `json:"version,omitempty"`
+	ExportTime          int64   `json:"export_time"`
+	ImportTime          *int64  `json:"import_time,omitempty"`
+	Status              int8    `json:"status"`
+	SnapshotKey         *string `json:"snapshot_key,omitempty"`
+	RollbackFromVersion *string `json:"rollback_from_version,omitempty"`
 }

@@ -105,8 +105,10 @@ func SyncImportPreview(ctx context.Context, c *app.RequestContext) {
 				Update: result.Plan.Update,
 				Delete: result.Plan.Delete,
 			},
-			Warnings:       result.Warnings,
-			TokenExpiresAt: result.TokenExpiresAt,
+			Warnings:        result.Warnings,
+			TokenExpiresAt:  result.TokenExpiresAt,
+			IncomingVersion: result.IncomingVersion,
+			CurrentVersion:  result.CurrentVersion,
 		},
 	})
 }
@@ -272,13 +274,16 @@ func SyncHistory(ctx context.Context, c *app.RequestContext) {
 	items := make([]*spaceModel.SyncHistoryItem, 0, len(records))
 	for _, r := range records {
 		items = append(items, &spaceModel.SyncHistoryItem{
-			ID:            r.ID,
-			SourceSpaceID: r.SourceSpaceID,
-			TargetSpaceID: r.TargetSpaceID,
-			SyncType:      r.SyncType,
-			ExportTime:    r.ExportTime,
-			ImportTime:    r.ImportTime,
-			Status:        r.Status,
+			ID:                  r.ID,
+			SourceSpaceID:       r.SourceSpaceID,
+			TargetSpaceID:       r.TargetSpaceID,
+			SyncType:            r.SyncType,
+			Version:             r.Version,
+			ExportTime:          r.ExportTime,
+			ImportTime:          r.ImportTime,
+			Status:              r.Status,
+			SnapshotKey:         r.SnapshotKey,
+			RollbackFromVersion: r.RollbackFromVersion,
 		})
 	}
 
