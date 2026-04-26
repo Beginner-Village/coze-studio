@@ -36,28 +36,25 @@ function getWebSdkScriptTagMD({
   version = '<version>',
 }: WebSdkGuideParams) {
   return `${'```'}html
-<script type="text/javascript">
-var webSdkScript = document.createElement('script');
-webSdkScript.src = '${getOpenSDKUrl(version)}';
-document.head.appendChild(webSdkScript);
-webSdkScript.onload = function () {
+<div id="chat-container" style="width: 400px; height: 600px;"></div>
+<script src="${getOpenSDKUrl(version)}"></script>
+<script>
   new CozeWebSDK.WebChatClient({
-    "config": {
-      "type": "app",
-      "appInfo": {
-        "appId": "${projectId}",
-        "workflowId": "${workflowId}"
+    config: {
+      bot_id: "${projectId}"${workflowId ? `,\n      workflowId: "${workflowId}"` : ''}
+    },
+    auth: {
+      type: "token",
+      token: "pat_********",
+      onRefreshToken: function () {
+        return "pat_********";
       }
     },
-    "auth": {
-      "type": "token",
-      "token": "pat_********",
-      onRefreshToken: function () {
-        return "pat_********"
-      }
+    el: "#chat-container",
+    onReady: function () {
+      console.log("Chat widget is ready");
     }
   });
-}
 </script>
 ${'```'}`;
 }

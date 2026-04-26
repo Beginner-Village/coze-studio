@@ -141,6 +141,7 @@ const AgentPublishPage = lazy(() =>
   })),
 );
 
+const AgentChatPage = lazy(() => import('./pages/agent-chat'));
 const DocsRedirect = lazy(() => import('./pages/docs'));
 
 const SpaceModelConfig = lazy(() => import('./pages/space-model-config'));
@@ -166,6 +167,14 @@ export const router: ReturnType<typeof createBrowserRouter> =
     {
       path: '/docs/*',
       Component: DocsRedirect,
+      loader: () => ({
+        hasSider: false,
+        requireAuth: false,
+      }),
+    },
+    {
+      path: '/agent-chat',
+      Component: AgentChatPage,
       loader: () => ({
         hasSider: false,
         requireAuth: false,

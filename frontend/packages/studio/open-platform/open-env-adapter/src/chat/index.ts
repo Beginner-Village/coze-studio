@@ -18,9 +18,11 @@
  * Dependency treeShaking Removes Extraneous Configuration (Argus)
  */
 const sdkRegion = 'cn';
-export const iframeAppHost = '';
+export const iframeAppHost =
+  typeof location !== 'undefined' ? location.origin : '';
 
-export const cozeOfficialHost = '';
+export const cozeOfficialHost =
+  typeof location !== 'undefined' ? location.origin : '';
 
 export const openApiCdnUrlByRegion = IS_OVERSEA
   ? // cp-disable-next-line
@@ -33,10 +35,12 @@ export const openApiHostByRegion =
   typeof location !== 'undefined' ? location.origin : 'https://api.xxx.com';
 export const openApiHostByRegionWithToken = openApiHostByRegion;
 
-export const openSdkPrefix = '';
-export const getOpenSDKUrl = (_version: string) => '';
+export const openSdkPrefix = '/static/sdk';
+export const getOpenSDKUrl = (_version: string) =>
+  `${openApiHostByRegion}${openSdkPrefix}/ynet-web-sdk.js`;
 
-export const getOpenSDKPath = (_version: string) => '';
+export const getOpenSDKPath = (_version: string) =>
+  `${openSdkPrefix}/ynet-web-sdk.js`;
 
 export const eventMeta = {
   region: sdkRegion,

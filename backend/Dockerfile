@@ -60,6 +60,8 @@ COPY docker/.env.example /app/.env
 
 # Copy frontend dist into static directory
 COPY --from=fe-builder /app/frontend/apps/coze-studio/dist /app/resources/static/
+# Copy SDK static assets (WebSDK JS etc.)
+COPY backend/static/static/sdk /app/resources/static/static/sdk/
 
 ENV PATH="/app/.venv/bin:${PATH}"
 
