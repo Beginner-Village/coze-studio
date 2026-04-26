@@ -38,6 +38,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/application/search"
 	embeddingService "github.com/ynet-dev/ynet-studio/backend/domain/embedding/service"
 	knowledgeImpl "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/service"
+	knowledgeRepo "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/repository"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document/nl2sql"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document/ocr"
@@ -191,6 +192,10 @@ func InitService(c *ServiceComponents) (*KnowledgeApplicationService, error) {
 	if err = eventbus.DefaultSVC().RegisterConsumer(nameServer, consts.RMQTopicKnowledge, consts.RMQConsumeGroupKnowledge, knowledgeEventHandler); err != nil {
 		return nil, fmt.Errorf("register knowledge consumer failed, err=%w", err)
 	}
+
+	reaper := knowledgeImpl.NewDocumentReaper(knowledgeRepo.NewKnowledgeDocumentDAO(c.DB))
+	go reaper.Start(context.Background())
+	logs.CtxInfof(ctx, "[InitService] DocumentReaper started")
 
 	KnowledgeSVC.DomainSVC = knowledgeDomainSVC
 	KnowledgeSVC.eventBus = c.EventBus
