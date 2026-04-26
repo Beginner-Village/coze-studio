@@ -24,14 +24,22 @@ import (
 	"github.com/cloudwego/eino/components/document/parser"
 	"github.com/cloudwego/eino/schema"
 
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	contract "github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 func ParseText(config *contract.Config) ParseFn {
 	return func(ctx context.Context, reader io.Reader, opts ...parser.Option) (docs []*schema.Document, err error) {
-		content, err := io.ReadAll(reader)
+		limited := io.LimitReader(reader, entity.MaxOtherFileSize+1)
+		content, err := io.ReadAll(limited)
 		if err != nil {
 			return nil, err
+		}
+		if int64(len(content)) > entity.MaxOtherFileSize {
+			return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+				errorx.KVf("msg", "file size exceeds %d bytes", entity.MaxOtherFileSize))
 		}
 
 		switch config.ChunkingStrategy.ChunkType {

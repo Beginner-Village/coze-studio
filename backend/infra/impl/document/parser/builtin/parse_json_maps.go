@@ -25,15 +25,23 @@ import (
 	"github.com/cloudwego/eino/components/document/parser"
 	"github.com/cloudwego/eino/schema"
 
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document"
 	contract "github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 func ParseJSONMaps(config *contract.Config) ParseFn {
 	return func(ctx context.Context, reader io.Reader, opts ...parser.Option) (docs []*schema.Document, err error) {
-		b, err := io.ReadAll(reader)
+		limited := io.LimitReader(reader, entity.MaxOtherFileSize+1)
+		b, err := io.ReadAll(limited)
 		if err != nil {
 			return nil, err
+		}
+		if int64(len(b)) > entity.MaxOtherFileSize {
+			return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+				errorx.KVf("msg", "JSON file size exceeds %d bytes", entity.MaxOtherFileSize))
 		}
 
 		var customContent []map[string]string
