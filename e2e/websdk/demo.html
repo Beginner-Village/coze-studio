@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>YNet WebSDK Embed Demo</title>
+</head>
+<body>
+  <h1>WebSDK Embed Test</h1>
+  <p>Page origin: <code id="page-origin"></code></p>
+  <p>Studio iframe origin: <code id="iframe-origin"></code></p>
+  <div id="chat-container" style="width: 400px; height: 600px; border: 1px solid #ccc;"></div>
+
+  <script>
+    document.getElementById('page-origin').textContent = location.origin;
+    document.getElementById('iframe-origin').textContent = 'http://localhost:8080';
+  </script>
+  <script src="http://localhost:8080/static/sdk/ynet-web-sdk.js"></script>
+  <script>
+    // Replace with a real test bot id and PAT before running.
+    const TEST_BOT_ID = window.TEST_BOT_ID || '<填写测试 bot id>';
+    const TEST_TOKEN  = window.TEST_TOKEN  || '<填写测试 PAT>';
+
+    new CozeWebSDK.WebChatClient({
+      config: { bot_id: TEST_BOT_ID },
+      auth: {
+        type: 'token',
+        token: TEST_TOKEN,
+        onRefreshToken: function () {
+          console.log('[demo] onRefreshToken called');
+          return TEST_TOKEN;
+        }
+      },
+      el: '#chat-container',
+      onReady: function () {
+        console.log('[demo] chat widget ready');
+      }
+    });
+  </script>
+</body>
+</html>
