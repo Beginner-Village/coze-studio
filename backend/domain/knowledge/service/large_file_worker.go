@@ -111,3 +111,13 @@ func (w *LargeFileWorker) Close() {
 	close(w.closed)
 	w.wg.Wait()
 }
+
+// isLargeFileExt 判断扩展名是否归类为大文件类型，需要走 LargeFileWorker。
+func isLargeFileExt(ext string) bool {
+	switch ext {
+	case ".pdf", ".doc", ".docx", ".ppt", ".pptx",
+		".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff":
+		return true
+	}
+	return false
+}
