@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Attack Origin</title></head>
+<body>
+  <h1>Hostile Origin Test</h1>
+  <p>This page tries to embed agent-chat without proper parent_origin.</p>
+  <iframe id="frame" src="http://localhost:8080/agent-chat?bot_id=ATTACK&token=fake&mode=websdk" style="width:400px;height:600px"></iframe>
+  <button onclick="injectFakeToken()">Inject Fake Token</button>
+  <pre id="log"></pre>
+  <script>
+    const log = (msg) => {
+      document.getElementById('log').textContent += msg + '\n';
+    };
+    function injectFakeToken() {
+      const frame = document.getElementById('frame');
+      frame.contentWindow.postMessage({ type: 'INIT', payload: { token: 'evil_token_xxx' } }, '*');
+      log('[attack] sent fake INIT message');
+    }
+    window.addEventListener('message', (e) => {
+      log('[attack] received from ' + e.origin + ': ' + JSON.stringify(e.data));
+    });
+  </script>
+</body>
+</html>

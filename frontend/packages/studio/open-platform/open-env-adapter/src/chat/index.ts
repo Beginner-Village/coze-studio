@@ -18,11 +18,22 @@
  * Dependency treeShaking Removes Extraneous Configuration (Argus)
  */
 const sdkRegion = 'cn';
-export const iframeAppHost =
-  typeof location !== 'undefined' ? location.origin : '';
 
-export const cozeOfficialHost =
-  typeof location !== 'undefined' ? location.origin : '';
+declare const STUDIO_HOST: string | undefined;
+
+const studioHost: string = (() => {
+  // Build-time injection takes priority; fall back to location.origin (dev mode)
+  if (typeof STUDIO_HOST !== 'undefined' && STUDIO_HOST) {
+    return STUDIO_HOST;
+  }
+  if (typeof location !== 'undefined') {
+    return location.origin;
+  }
+  return '';
+})();
+
+export const iframeAppHost = studioHost;
+export const cozeOfficialHost = studioHost;
 
 export const openApiCdnUrlByRegion = IS_OVERSEA
   ? // cp-disable-next-line
