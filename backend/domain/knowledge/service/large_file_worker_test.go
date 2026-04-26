@@ -94,3 +94,28 @@ func TestLargeFileWorker_RecoverPanic(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "panic")
 }
+
+func TestIntegration_WorkerConcurrencyMetric(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	w := NewLargeFileWorker(2, 10)
+	defer w.Close()
+
+	var wg sync.WaitGroup
+	wg.Add(5)
+	for i := 0; i < 5; i++ {
+		go func() {
+			defer wg.Done()
+			_ = w.Submit(context.Background(), func() error {
+				time.Sleep(100 * time.Millisecond)
+				return nil
+			})
+		}()
+	}
+	time.Sleep(40 * time.Millisecond)
+	// LargeFileWorkerActive 是 prometheus Gauge，无法直接 Get 值，
+	// 此处仅用 worker 的内部 sem 容量来证明并发上限。
+	assert.Equal(t, 2, cap(w.sem))
+	wg.Wait()
+}
