@@ -30,10 +30,13 @@ import (
 	"github.com/cloudwego/eino/components/document/parser"
 	"github.com/cloudwego/eino/schema"
 
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document/ocr"
 	contract "github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/parser/builtin"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 type ppstructureParser struct {
@@ -105,9 +108,14 @@ func (p *ppstructureParser) Parse(ctx context.Context, reader io.Reader, opts ..
 	// extracted from the images into consideration.
 	options := parser.GetCommonOptions(&parser.Options{ExtraMeta: map[string]any{}}, opts...)
 
-	fileBytes, err := io.ReadAll(reader)
+	limited := io.LimitReader(reader, entity.MaxOtherFileSize+1)
+	fileBytes, err := io.ReadAll(limited)
 	if err != nil {
 		return nil, fmt.Errorf("[Parse] failed to read the file bytes, %w", err)
+	}
+	if int64(len(fileBytes)) > entity.MaxOtherFileSize {
+		return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+			errorx.KVf("msg", "ppstructure file size exceeds %d bytes", entity.MaxOtherFileSize))
 	}
 
 	b64 := base64.StdEncoding.EncodeToString(fileBytes)
@@ -135,9 +143,14 @@ func (p *ppstructureParser) Parse(ctx context.Context, reader io.Reader, opts ..
 		return nil, fmt.Errorf("[Parse] request failed, %w", err)
 	}
 
-	respBody, err := io.ReadAll(resp.Body)
+	limitedRespBody := io.LimitReader(resp.Body, entity.MaxOtherFileSize+1)
+	respBody, err := io.ReadAll(limitedRespBody)
 	if err != nil {
 		return nil, fmt.Errorf("[Parse] failed to read the response body, %w", err)
+	}
+	if int64(len(respBody)) > entity.MaxOtherFileSize {
+		return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+			errorx.KVf("msg", "ppstructure response size exceeds %d bytes", entity.MaxOtherFileSize))
 	}
 
 	var res ppstructureResponse

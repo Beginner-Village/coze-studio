@@ -25,6 +25,7 @@ import (
 	"github.com/cloudwego/eino/components/document/parser"
 	"github.com/cloudwego/eino/schema"
 
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/chatmodel"
 	contract "github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
@@ -47,9 +48,14 @@ func ParseImage(config *contract.Config, model chatmodel.BaseChatModel) ParseFn 
 				return nil, errorx.New(errno.ErrKnowledgeNonRetryableCode, errorx.KV("reason", "model is not provided"))
 			}
 
-			bytes, err := io.ReadAll(reader)
+			limited := io.LimitReader(reader, entity.MaxImageFileSize+1)
+			bytes, err := io.ReadAll(limited)
 			if err != nil {
 				return nil, err
+			}
+			if int64(len(bytes)) > entity.MaxImageFileSize {
+				return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+					errorx.KVf("msg", "image size exceeds %d bytes", entity.MaxImageFileSize))
 			}
 
 			b64 := base64.StdEncoding.EncodeToString(bytes)
