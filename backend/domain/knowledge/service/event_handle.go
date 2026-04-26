@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -159,6 +160,30 @@ func (k *knowledgeSVC) indexDocument(ctx context.Context, event *entity.Event) (
 	if doc == nil {
 		return errorx.New(errno.ErrKnowledgeNonRetryableCode, errorx.KV("reason", "[indexDocument] document not provided"))
 	}
+
+	fileType := FileTypeForLabel(doc.Name)
+	parseStart := time.Now()
+	if doc.Size > 0 {
+		ParseFileSizeBytes.WithLabelValues(fileType).Observe(float64(doc.Size))
+	}
+	defer func() {
+		outcome := "success"
+		if err != nil {
+			outcome = "failure"
+			reason := "parse_error"
+			msg := err.Error()
+			switch {
+			case strings.Contains(msg, "exceeds"):
+				reason = "too_large"
+			case strings.Contains(msg, "panic"):
+				reason = "panic"
+			case strings.Contains(msg, "system busy") || strings.Contains(msg, "worker busy"):
+				reason = "system_busy"
+			}
+			ParseFailedTotal.WithLabelValues(fileType, reason).Inc()
+		}
+		ParseDurationSeconds.WithLabelValues(fileType, outcome).Observe(time.Since(parseStart).Seconds())
+	}()
 
 	// Get managers for space-level embedding
 	managers, err := k.getManagersForSpace(ctx, uint64(doc.SpaceID))
