@@ -58,6 +58,8 @@ const (
 	ErrKnowledgeParseResultEmptyCode           = 105000035
 	ErrKnowledgeCacheClientSetFailCode         = 105000036
 	ErrKnowledgeCheckTableSliceValidCode       = 105000037
+	ErrKnowledgeFileTooLargeCode               = 105000038
+	ErrKnowledgeSystemBusyCode                 = 105000039
 )
 
 func init() {
@@ -272,6 +274,18 @@ func init() {
 	code.Register(
 		ErrKnowledgeCheckTableSliceValidCode,
 		"slice content validation failed, please check if the input is correct:{msg}",
+		code.WithAffectStability(false),
+	)
+
+	code.Register(
+		ErrKnowledgeFileTooLargeCode,
+		"file too large: {msg}",
+		code.WithAffectStability(false),
+	)
+
+	code.Register(
+		ErrKnowledgeSystemBusyCode,
+		"system busy: {msg}",
 		code.WithAffectStability(false),
 	)
 }
