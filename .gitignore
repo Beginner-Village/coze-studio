@@ -45,7 +45,12 @@ bin/*
 
 docker/data/*
 
-backend/static
+backend/static/*
+!backend/static/static
+backend/static/static/*
+!backend/static/static/sdk
+backend/static/static/sdk/*
+!backend/static/static/sdk/ynet-web-sdk.js
 
 node_modules
 common/temp
