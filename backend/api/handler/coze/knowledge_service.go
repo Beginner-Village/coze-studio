@@ -20,6 +20,7 @@ package coze
 
 import (
 	"context"
+	"encoding/base64"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
@@ -138,6 +139,21 @@ func CreateDocument(ctx context.Context, c *app.RequestContext) {
 	if err != nil {
 		c.String(consts.StatusBadRequest, err.Error())
 		return
+	}
+
+	for _, db := range req.DocumentBases {
+		if db == nil || db.SourceInfo == nil || db.SourceInfo.FileBase64 == nil {
+			continue
+		}
+		decoded, derr := base64.StdEncoding.DecodeString(*db.SourceInfo.FileBase64)
+		if derr != nil {
+			invalidParamRequestResponse(c, derr.Error())
+			return
+		}
+		if err := checkUploadSize(db.Name, int64(len(decoded))); err != nil {
+			internalServerErrorResponse(ctx, c, err)
+			return
+		}
 	}
 
 	resp := new(dataset.CreateDocumentResponse)

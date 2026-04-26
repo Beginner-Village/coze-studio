@@ -18,6 +18,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -70,6 +71,7 @@ type KnowledgeDocumentRepo interface {
 	SetStatus(ctx context.Context, documentID int64, status int32, reason string) error
 	CreateWithTx(ctx context.Context, tx *gorm.DB, document []*model.KnowledgeDocument) error
 	UpdateDocumentSliceInfo(ctx context.Context, documentID int64) error
+	FindStuckChunking(ctx context.Context, threshold time.Duration) ([]int64, error)
 }
 
 type KnowledgeDocumentReviewRepo interface {

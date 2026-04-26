@@ -28,6 +28,7 @@ package dao
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "go.uber.org/mock/gomock"
 	gorm "gorm.io/gorm"
@@ -130,6 +131,21 @@ func (m *MockKnowledgeDocumentRepo) FindDocumentByCondition(ctx context.Context,
 func (mr *MockKnowledgeDocumentRepoMockRecorder) FindDocumentByCondition(ctx, opts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDocumentByCondition", reflect.TypeOf((*MockKnowledgeDocumentRepo)(nil).FindDocumentByCondition), ctx, opts)
+}
+
+// FindStuckChunking mocks base method.
+func (m *MockKnowledgeDocumentRepo) FindStuckChunking(ctx context.Context, threshold time.Duration) ([]int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindStuckChunking", ctx, threshold)
+	ret0, _ := ret[0].([]int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindStuckChunking indicates an expected call of FindStuckChunking.
+func (mr *MockKnowledgeDocumentRepoMockRecorder) FindStuckChunking(ctx, threshold any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindStuckChunking", reflect.TypeOf((*MockKnowledgeDocumentRepo)(nil).FindStuckChunking), ctx, threshold)
 }
 
 // GetByID mocks base method.

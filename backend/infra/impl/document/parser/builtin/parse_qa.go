@@ -30,8 +30,11 @@ import (
 	"github.com/dimchansky/utfbom"
 	"github.com/xuri/excelize/v2"
 
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document"
 	contract "github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 // QA column names (case-insensitive matching)
@@ -51,7 +54,16 @@ var (
 // while A column is stored in MetaData for retrieval response.
 func ParseQACSV(config *contract.Config) ParseFn {
 	return func(ctx context.Context, reader io.Reader, opts ...parser.Option) (docs []*schema.Document, err error) {
-		csvReader := csv.NewReader(utfbom.SkipOnly(reader))
+		limited := io.LimitReader(reader, entity.MaxOtherFileSize+1)
+		buf, err := io.ReadAll(limited)
+		if err != nil {
+			return nil, fmt.Errorf("[ParseQACSV] failed to read content: %w", err)
+		}
+		if int64(len(buf)) > entity.MaxOtherFileSize {
+			return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+				errorx.KVf("msg", "QA CSV file size exceeds %d bytes", entity.MaxOtherFileSize))
+		}
+		csvReader := csv.NewReader(utfbom.SkipOnly(strings.NewReader(string(buf))))
 		options := parser.GetCommonOptions(&parser.Options{}, opts...)
 
 		// Read header row
@@ -132,9 +144,14 @@ func ParseQACSV(config *contract.Config) ParseFn {
 // Supports flexible field names: q/question/问题 for questions, a/answer/答案 for answers.
 func ParseQAJSON(config *contract.Config) ParseFn {
 	return func(ctx context.Context, reader io.Reader, opts ...parser.Option) (docs []*schema.Document, err error) {
-		b, err := io.ReadAll(reader)
+		limited := io.LimitReader(reader, entity.MaxOtherFileSize+1)
+		b, err := io.ReadAll(limited)
 		if err != nil {
 			return nil, fmt.Errorf("[ParseQAJSON] failed to read content: %w", err)
+		}
+		if int64(len(b)) > entity.MaxOtherFileSize {
+			return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+				errorx.KVf("msg", "QA JSON file size exceeds %d bytes", entity.MaxOtherFileSize))
 		}
 
 		options := parser.GetCommonOptions(&parser.Options{}, opts...)

@@ -152,6 +152,17 @@ func (dao *KnowledgeDocumentDAO) SetStatus(ctx context.Context, documentID int64
 	return err
 }
 
+func (dao *KnowledgeDocumentDAO) FindStuckChunking(ctx context.Context, threshold time.Duration) ([]int64, error) {
+	cutoff := time.Now().Add(-threshold).UnixMilli()
+	k := dao.Query.KnowledgeDocument
+	var ids []int64
+	err := k.WithContext(ctx).
+		Where(k.Status.Eq(int32(entity.DocumentStatusChunking))).
+		Where(k.UpdatedAt.Lt(cutoff)).
+		Pluck(k.ID, &ids)
+	return ids, err
+}
+
 func (dao *KnowledgeDocumentDAO) CreateWithTx(ctx context.Context, tx *gorm.DB, documents []*model.KnowledgeDocument) error {
 	if len(documents) == 0 {
 		return nil

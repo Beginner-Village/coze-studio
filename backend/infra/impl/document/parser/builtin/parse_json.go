@@ -19,29 +19,34 @@ package builtin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/cloudwego/eino/components/document/parser"
 	"github.com/cloudwego/eino/schema"
 
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	contract "github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 func ParseJSON(config *contract.Config) ParseFn {
 	return func(ctx context.Context, reader io.Reader, opts ...parser.Option) (docs []*schema.Document, err error) {
-		b, err := io.ReadAll(reader)
+		counted := &countingReader{r: io.LimitReader(reader, entity.MaxOtherFileSize+1), max: entity.MaxOtherFileSize}
+
+		dec := json.NewDecoder(counted)
+		tok, err := dec.Token()
 		if err != nil {
+			if errors.Is(err, errFileTooLarge) {
+				return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+					errorx.KVf("msg", "JSON file size exceeds %d bytes", entity.MaxOtherFileSize))
+			}
 			return nil, err
 		}
-
-		var rawSlices []map[string]string
-		if err = json.Unmarshal(b, &rawSlices); err != nil {
-			return nil, err
-		}
-
-		if len(rawSlices) == 0 {
-			return nil, fmt.Errorf("[ParseJSON] json data is empty")
+		if d, ok := tok.(json.Delim); !ok || d != '[' {
+			return nil, fmt.Errorf("[ParseJSON] expected JSON array")
 		}
 
 		var header []string
@@ -49,49 +54,95 @@ func ParseJSON(config *contract.Config) ParseFn {
 			for _, col := range config.ParsingStrategy.Columns {
 				header = append(header, col.Name)
 			}
-		} else {
-			for k := range rawSlices[0] {
-				// Init takes the random order of keys in the first json item
-				header = append(header, k)
-			}
 		}
 
-		iter := &jsonIterator{
+		iter := &streamingJSONIterator{
+			dec:    dec,
 			header: header,
-			rows:   rawSlices,
-			i:      0,
 		}
 
 		return parseByRowIterator(iter, config, opts...)
 	}
 }
 
-type jsonIterator struct {
-	header []string
-	rows   []map[string]string
-	i      int
+// streamingJSONIterator 通过 json.Decoder 流式逐元素读取 JSON 数组。
+// 避免在 parse 阶段把整个数组一次性加载到内存。
+type streamingJSONIterator struct {
+	dec        *json.Decoder
+	header     []string
+	headerSent bool
+	emitted    bool
+	firstRow   map[string]string
 }
 
-func (j *jsonIterator) NextRow() (row []string, end bool, err error) {
-	if j.i == 0 {
-		j.i++
-		return j.header, false, nil
+func (s *streamingJSONIterator) NextRow() (row []string, end bool, err error) {
+	if !s.headerSent {
+		if len(s.header) == 0 {
+			// 尚未拿到 header：peek 第一条 record 推断 keys。
+			if !s.dec.More() {
+				return nil, false, errors.New("[ParseJSON] json data is empty")
+			}
+			var first map[string]string
+			if err := s.dec.Decode(&first); err != nil {
+				return nil, false, mapStreamError(err)
+			}
+			for k := range first {
+				s.header = append(s.header, k)
+			}
+			s.headerSent = true
+			s.emitted = true
+			s.firstRow = first
+			return append([]string{}, s.header...), false, nil
+		}
+		s.headerSent = true
+		return append([]string{}, s.header...), false, nil
 	}
 
-	if j.i == len(j.rows)+1 {
+	if s.firstRow != nil {
+		raw := s.firstRow
+		s.firstRow = nil
+		return s.rowFromMap(raw), false, nil
+	}
+
+	if !s.dec.More() {
 		return nil, true, nil
 	}
-
-	raw := j.rows[j.i-1]
-	j.i++
-	for _, h := range j.header {
-		val, found := raw[h]
-		if !found {
-			row = append(row, "")
-		} else {
-			row = append(row, val)
-		}
+	var item map[string]string
+	if err := s.dec.Decode(&item); err != nil {
+		return nil, false, mapStreamError(err)
 	}
+	return s.rowFromMap(item), false, nil
+}
 
-	return row, false, nil
+func mapStreamError(err error) error {
+	if errors.Is(err, errFileTooLarge) {
+		return errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+			errorx.KVf("msg", "JSON file size exceeds %d bytes", entity.MaxOtherFileSize))
+	}
+	return err
+}
+
+func (s *streamingJSONIterator) rowFromMap(item map[string]string) []string {
+	row := make([]string, 0, len(s.header))
+	for _, h := range s.header {
+		row = append(row, item[h])
+	}
+	return row
+}
+
+var errFileTooLarge = errors.New("file too large")
+
+type countingReader struct {
+	r   io.Reader
+	max int64
+	cnt int64
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.cnt += int64(n)
+	if c.cnt > c.max {
+		return n, errFileTooLarge
+	}
+	return n, err
 }

@@ -95,6 +95,7 @@ func NewKnowledgeSVC(config *KnowledgeSVCConfig) (Knowledge, eventbus.ConsumerHa
 	if svc.parseManager == nil {
 		svc.parseManager = builtin.NewManager(config.Storage, config.OCR, nil)
 	}
+	svc.largeFileWorker = NewLargeFileWorker(2, 10)
 
 	return svc, svc
 }
@@ -138,6 +139,7 @@ type knowledgeSVC struct {
 	nl2Sql              nl2sql.NL2SQL
 	cacheCli            cache.Cmdable
 	enableCompactTable  bool // Table data compression
+	largeFileWorker     *LargeFileWorker
 }
 
 // getManagersForSpace returns SearchStore managers for the given space
