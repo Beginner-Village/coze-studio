@@ -21,6 +21,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -53,6 +54,34 @@ func TestIntegration_RejectsOversizedUpload(t *testing.T) {
 	assert.Contains(t, err.Error(), "exceeds")
 	// errorx code propagates
 	assert.Contains(t, err.Error(), strings.TrimPrefix(""+itoa(errno.ErrKnowledgeFileTooLargeCode), ""))
+}
+
+// TestIntegration_LargeTextStreaming 验证 50MB 文本解析时的内存增量在合理范围内。
+// streamingTextChunker 直接走 bufio.Scanner，理论上常驻内存约几个 chunk。
+// 注意 ParseText 当前仍走 ChunkCustom（保留原行为），所以这里直接验证 streamingTextChunker。
+func TestIntegration_LargeTextStreaming(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	var memBefore, memAfter runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&memBefore)
+
+	// 50MB 文本
+	bigText := strings.Repeat("hello world\n", 50*1024*1024/12)
+
+	chunker := builtin.NewStreamingTextChunker(4096, 0)
+	docs, err := chunker.Chunk(context.Background(), strings.NewReader(bigText))
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(docs), 100)
+
+	runtime.GC()
+	runtime.ReadMemStats(&memAfter)
+	deltaMB := int64(memAfter.Alloc-memBefore.Alloc) / 1024 / 1024
+	t.Logf("memory delta: %d MB, chunks: %d", deltaMB, len(docs))
+	// 严格意义的内存上界包括 docs 切片本身，每条 chunk 是 string copy。50MB 文本切成 4KB chunk = ~13k chunks * 4KB = 50MB string memory.
+	// 这里阈值放宽到 200MB，主要验证不发生 OOM 数量级膨胀。
+	assert.LessOrEqual(t, deltaMB, int64(200), "memory delta should be under 200MB, got %d MB", deltaMB)
 }
 
 // itoa 辅助：避免引入额外包。

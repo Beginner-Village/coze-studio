@@ -24,6 +24,16 @@ import (
 	"github.com/cloudwego/eino/schema"
 )
 
+// StreamingTextChunker 暴露给跨包测试使用的接口。
+type StreamingTextChunker interface {
+	Chunk(ctx context.Context, reader io.Reader) ([]*schema.Document, error)
+}
+
+// NewStreamingTextChunker 构造一个流式文本切片器。
+func NewStreamingTextChunker(chunkSize, overlap int) StreamingTextChunker {
+	return &streamingTextChunker{chunkSize: chunkSize, overlap: overlap}
+}
+
 // streamingTextChunker 用 bufio.Scanner 按定长 chunk 流式读取文本，避免一次性加载整文件到内存。
 type streamingTextChunker struct {
 	chunkSize int
