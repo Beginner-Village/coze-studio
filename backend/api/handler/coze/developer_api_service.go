@@ -315,7 +315,11 @@ func UploadFile(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := checkUploadSize("file."+req.FileHead.FileType, int64(len(fileContent))); err != nil {
+	fileExt := ""
+	if req.FileHead != nil {
+		fileExt = req.FileHead.FileType
+	}
+	if err := checkUploadSize("file."+fileExt, int64(len(fileContent))); err != nil {
 		internalServerErrorResponse(ctx, c, err)
 		return
 	}
