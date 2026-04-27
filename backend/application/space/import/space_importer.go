@@ -21,8 +21,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -689,13 +691,42 @@ func (s *SpaceImporter) createSpaceModel(ctx context.Context, tx *gorm.DB, space
 	logs.CtxInfof(ctx, "Creating space_model: old_id=%d, new_id=%d, model_entity_id=%d (original=%d)",
 		spaceModel.ID, newID, modelEntityID, spaceModel.ModelEntityID)
 
+	// Try insert; on (space_id, model_entity_id) collision (re-import to a target
+	// that already has this model) reuse the existing space_model id so subsequent
+	// agent rewrites point at the right record. Without this the second import of
+	// a published version fails with `space_model.uniq_space_model` duplicate.
 	if err := tx.Table("space_model").Create(model).Error; err != nil {
-		return err
+		if !isDuplicateKeyErr(err) {
+			return err
+		}
+		var existingID int64
+		findErr := tx.Table("space_model").
+			Where("space_id = ? AND model_entity_id = ?", importCtx.TargetSpaceID, modelEntityID).
+			Select("id").
+			Take(&existingID).Error
+		if findErr != nil {
+			return fmt.Errorf("space_model duplicate but lookup failed: %w", findErr)
+		}
+		logs.CtxInfof(ctx, "space_model already exists for entity=%d, reusing id=%d (was going to create %d)",
+			modelEntityID, existingID, newID)
+		importCtx.SpaceModelIDMap[spaceModel.ID] = existingID
+		importCtx.MarkSpaceModelCreated(existingID)
+		return nil
 	}
 
 	// Mark this space model as actually created
 	importCtx.MarkSpaceModelCreated(newID)
 	return nil
+}
+
+// isDuplicateKeyErr matches MySQL/MariaDB duplicate key errors. We can't rely
+// on errors.Is/As across drivers, so pattern-match the message body.
+func isDuplicateKeyErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "Duplicate entry") || strings.Contains(msg, "Error 1062")
 }
 
 // createKnowledge creates a knowledge base with its documents and slices in the DB
