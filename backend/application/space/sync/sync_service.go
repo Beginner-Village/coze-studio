@@ -237,11 +237,14 @@ func (s *SyncService) ImportConfirm(ctx context.Context, spaceID, userID int64, 
 	// If the importer's Confirm doesn't find the token (since we're managing our own cache),
 	// fall back to using Preview+Confirm flow with the re-parsed data
 	if err != nil {
-		// Use Preview to register with the importer's cache
+		// Use Preview to register with the importer's cache. Forward the
+		// pre-loaded sync_mapping snapshot so the importer reuses target IDs
+		// for already-known source resources instead of duplicating rows.
 		previewResult, previewErr := s.importer.Preview(ctx, &spaceimport.PreviewRequest{
-			SpaceID:     spaceID,
-			UserID:      userID,
-			FileContent: fileContent,
+			SpaceID:          spaceID,
+			UserID:           userID,
+			FileContent:      fileContent,
+			ExistingMappings: pending.MappingStore.SnapshotMappings(),
 		})
 		if previewErr != nil {
 			return nil, previewErr

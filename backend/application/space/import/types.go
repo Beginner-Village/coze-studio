@@ -90,6 +90,12 @@ type ImportContext struct {
 	// File URI mapping (old document ID -> new object storage URI, set during Phase 1)
 	FileURIMap map[int64]string
 
+	// ReusedTargetIDs flags target IDs that came from a pre-existing
+	// sync_mapping. Importer treats these as updates (UPDATE) rather than
+	// fresh inserts (INSERT). Map is keyed by resource type ("agent",
+	// "plugin", ...) → target_id → true.
+	ReusedTargetIDs map[string]map[int64]bool
+
 	// Sync mode support
 	SyncMode string // "create_only" | "upsert"
 
@@ -117,8 +123,23 @@ func NewImportContext(targetSpaceID, userID int64, registry *export.IDRegistry) 
 		FolderIDMap:            make(map[int64]int64),
 		ExternalKnowledgeIDMap: make(map[int64]int64),
 		FileURIMap:             make(map[int64]string),
+		ReusedTargetIDs:        make(map[string]map[int64]bool),
 		PackageIDs:             registry,
 	}
+}
+
+// IsReused returns true when this target_id was reused from an existing
+// sync_mapping (vs freshly generated). Importer createX functions consult
+// this to decide between UPDATE and INSERT.
+func (c *ImportContext) IsReused(resourceType string, targetID int64) bool {
+	if c.ReusedTargetIDs == nil {
+		return false
+	}
+	perType, ok := c.ReusedTargetIDs[resourceType]
+	if !ok {
+		return false
+	}
+	return perType[targetID]
 }
 
 // IsInPackageAgent checks if an agent ID is in the package

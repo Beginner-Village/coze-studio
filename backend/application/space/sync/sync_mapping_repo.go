@@ -88,6 +88,20 @@ func (s *SyncMappingStore) GetTargetID(resourceType string, sourceID int64) (int
 	return m.TargetResourceID, true
 }
 
+// SnapshotMappings returns a deep-copy of the loaded mappings keyed by
+// resource type → source ID → target ID. Suitable for handing to the importer
+// so it can reuse target IDs without holding a reference to the store.
+func (s *SyncMappingStore) SnapshotMappings() map[string]map[int64]int64 {
+	out := make(map[string]map[int64]int64)
+	for _, m := range s.mappings {
+		if _, ok := out[m.ResourceType]; !ok {
+			out[m.ResourceType] = make(map[int64]int64)
+		}
+		out[m.ResourceType][m.SourceResourceID] = m.TargetResourceID
+	}
+	return out
+}
+
 func (s *SyncMappingStore) UpsertMapping(ctx context.Context, tx *gorm.DB, resourceType string, sourceID, targetID, sourceUpdatedAt int64, contentHash ...string) error {
 	db := s.db
 	if tx != nil {
