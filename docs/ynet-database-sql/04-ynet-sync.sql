@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS `space_sync_mapping` (
   `created_at` bigint NOT NULL,
   `updated_at` bigint NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_source` (`source_space_id`, `resource_type`, `source_resource_id`),
+  UNIQUE KEY `uk_source_target` (`source_space_id`, `target_space_id`, `resource_type`, `source_resource_id`),
   KEY `idx_target` (`target_space_id`, `resource_type`, `target_resource_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='跨环境空间同步ID映射';
 
