@@ -362,7 +362,49 @@ func (s *SpaceImporter) createPlugin(ctx context.Context, tx *gorm.DB, plugin *e
 		"updated_at":   now,
 	}
 
-	return tx.Table("plugin_draft").Create(draftModel).Error
+	if err := tx.Table("plugin_draft").Create(draftModel).Error; err != nil {
+		return err
+	}
+
+	// Recreate the plugin's tools so workflow nodes that call api_id can resolve.
+	// Each source tool gets a freshly generated ID; the mapping is stored on
+	// importCtx so the reference rewriter can rewrite api_id values in workflows.
+	for _, tool := range plugin.Tools {
+		newToolID, err := s.idGen.GenID(ctx)
+		if err != nil {
+			return err
+		}
+		toolRow := map[string]interface{}{
+			"id":               newToolID,
+			"plugin_id":        newID,
+			"sub_url":          tool.SubURL,
+			"method":           tool.Method,
+			"operation":        toJSON(tool.Operation),
+			"activated_status": 0,
+			"created_at":       now,
+			"updated_at":       now,
+		}
+		if err := tx.Table("tool").Create(toolRow).Error; err != nil {
+			return err
+		}
+		toolDraftRow := map[string]interface{}{
+			"id":               newToolID,
+			"plugin_id":        newID,
+			"sub_url":          tool.SubURL,
+			"method":           tool.Method,
+			"operation":        toJSON(tool.Operation),
+			"debug_status":     0,
+			"activated_status": 0,
+			"created_at":       now,
+			"updated_at":       now,
+		}
+		if err := tx.Table("tool_draft").Create(toolDraftRow).Error; err != nil {
+			return err
+		}
+		importCtx.ToolIDMap[tool.ToolID] = newToolID
+	}
+
+	return nil
 }
 
 // createWorkflow creates a workflow in the database

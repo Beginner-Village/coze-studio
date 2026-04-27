@@ -73,6 +73,7 @@ type ImportContext struct {
 	// ID mappings
 	AgentIDMap      map[int64]int64
 	PluginIDMap     map[int64]int64
+	ToolIDMap       map[int64]int64 // old tool.id -> new tool.id (populated when plugin is created)
 	WorkflowIDMap   map[int64]int64
 	VariableIDMap   map[int64]int64
 	SpaceModelIDMap map[int64]int64 // old space_model.id -> new space_model.id
@@ -106,6 +107,7 @@ func NewImportContext(targetSpaceID, userID int64, registry *export.IDRegistry) 
 		UserID:                 userID,
 		AgentIDMap:             make(map[int64]int64),
 		PluginIDMap:            make(map[int64]int64),
+		ToolIDMap:              make(map[int64]int64),
 		WorkflowIDMap:          make(map[int64]int64),
 		VariableIDMap:          make(map[int64]int64),
 		SpaceModelIDMap:        make(map[int64]int64),
@@ -179,6 +181,16 @@ func (c *ImportContext) RemapPluginID(oldID int64) int64 {
 		return newID
 	}
 	return 0
+}
+
+// RemapToolID remaps a tool ID using the ToolIDMap populated during plugin
+// import. Returns the original ID if no mapping exists (built-in or unknown
+// tools should be left untouched so the caller can decide what to do).
+func (c *ImportContext) RemapToolID(oldID int64) (int64, bool) {
+	if newID, ok := c.ToolIDMap[oldID]; ok {
+		return newID, true
+	}
+	return oldID, false
 }
 
 // RemapWorkflowID remaps a workflow ID or returns 0 if not in package

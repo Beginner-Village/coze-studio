@@ -50,22 +50,29 @@ func (r *ReferenceRewriter) RewriteAgent(ctx context.Context, agent *export.Expo
 	}
 	logs.CtxInfof(ctx, "WorkflowIDMap count: %d", len(importCtx.WorkflowIDMap))
 
-	// Rewrite plugin references
+	// Rewrite plugin references. Each ref carries both PluginId and ApiId
+	// (the ApiId is the tool inside the plugin). Remap them independently:
+	// PluginId via the plugin map, ApiId via the tool map (populated during
+	// plugin import). For built-in plugins both IDs are kept as-is so the
+	// target system, which ships the same built-ins, can still resolve them.
 	if agent.PluginRefs != nil {
 		for _, pluginRef := range agent.PluginRefs {
-			oldID := pluginRef.GetApiId()
+			oldApiID := pluginRef.GetApiId()
 			oldPluginID := pluginRef.GetPluginId()
-			if importCtx.IsInPackagePlugin(oldID) {
-				// Custom plugin in package - remap to new ID
-				newID := importCtx.RemapPluginID(oldID)
-				pluginRef.ApiId = &newID
-				pluginRef.PluginId = &newID
+			if importCtx.IsInPackagePlugin(oldPluginID) {
+				newPluginID := importCtx.RemapPluginID(oldPluginID)
+				pluginRef.PluginId = &newPluginID
+				if newToolID, mapped := importCtx.RemapToolID(oldApiID); mapped {
+					pluginRef.ApiId = &newToolID
+				} else {
+					var zero int64 = 0
+					pluginRef.ApiId = &zero
+					logs.CtxWarnf(ctx, "Plugin %d in-package but tool %d not mapped; clearing api_id", oldPluginID, oldApiID)
+				}
 			} else if isBuiltinPlugin(oldPluginID) {
-				// Built-in plugin - keep original reference (target system should have it)
-				logs.CtxDebugf(ctx, "Keeping built-in plugin reference: plugin_id=%d, api_id=%d", oldPluginID, oldID)
+				logs.CtxDebugf(ctx, "Keeping built-in plugin reference: plugin_id=%d, api_id=%d", oldPluginID, oldApiID)
 			} else {
-				// Out-of-package custom plugin - clear reference
-				logs.CtxWarnf(ctx, "Clearing out-of-package plugin reference: plugin_id=%d, api_id=%d", oldPluginID, oldID)
+				logs.CtxWarnf(ctx, "Clearing out-of-package plugin reference: plugin_id=%d, api_id=%d", oldPluginID, oldApiID)
 				var zero int64 = 0
 				pluginRef.ApiId = &zero
 				pluginRef.PluginId = &zero
@@ -277,6 +284,21 @@ func (r *ReferenceRewriter) rewriteNodeReferences(ctx context.Context, node map[
 			data["plugin_id"] = importCtx.RemapPluginID(pluginID)
 		} else {
 			data["plugin_id"] = 0
+		}
+	}
+
+	// Rewrite api_id (tool ID) using the tool mapping populated during plugin
+	// import. Source workflows reference plugin tools via api_id; without
+	// rewriting, the imported workflow points at the source tool ID which does
+	// not exist in the target space.
+	if apiID, ok := getInt64FromInterface(data["api_id"]); ok && apiID != 0 {
+		if newID, mapped := importCtx.RemapToolID(apiID); mapped {
+			data["api_id"] = newID
+		} else {
+			// Tool not in package (built-in or out-of-package). Mirror the
+			// existing plugin_id handling: clear so the node fails closed
+			// rather than silently calling a stale tool.
+			data["api_id"] = 0
 		}
 	}
 
