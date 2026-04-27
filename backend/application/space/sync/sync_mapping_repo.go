@@ -111,10 +111,15 @@ func (s *SyncMappingStore) UpsertMapping(ctx context.Context, tx *gorm.DB, resou
 		record.ContentHash = contentHash[0]
 	}
 
+	// Conflict key must include target_space_id; otherwise importing the same
+	// source space into a second target overwrites the first target's mapping
+	// instead of creating a new row, which leaves the second target's
+	// sync_mapping empty.
 	err := db.WithContext(ctx).
 		Clauses(clause.OnConflict{
 			Columns: []clause.Column{
 				{Name: "source_space_id"},
+				{Name: "target_space_id"},
 				{Name: "resource_type"},
 				{Name: "source_resource_id"},
 			},
