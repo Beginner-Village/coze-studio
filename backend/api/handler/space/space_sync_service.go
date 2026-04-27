@@ -191,8 +191,16 @@ func SyncRollback(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// Look up the release to get its package key
-	releaseRecord, err := spaceApp.ReleaseSVC.GetRelease(ctx, req.SpaceID, req.TargetVersion)
+	// In the cross-space sync flow, releases are owned by the SOURCE space,
+	// not the target. Look up the sync history entry on the target for the
+	// requested version to find which source space the release belongs to.
+	historyEntry, err := spaceApp.SyncSVC.FindHistoryByVersion(ctx, req.SpaceID, req.TargetVersion)
+	if err != nil {
+		c.String(consts.StatusInternalServerError, "failed to locate sync history for version "+req.TargetVersion+": "+err.Error())
+		return
+	}
+
+	releaseRecord, err := spaceApp.ReleaseSVC.GetRelease(ctx, historyEntry.SourceSpaceID, req.TargetVersion)
 	if err != nil {
 		c.String(consts.StatusInternalServerError, err.Error())
 		return

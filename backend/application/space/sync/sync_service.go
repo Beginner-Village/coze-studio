@@ -303,6 +303,20 @@ func (s *SyncService) GetHistory(ctx context.Context, spaceID int64) ([]SyncHist
 	return s.historyRepo.ListBySpace(ctx, spaceID, 50)
 }
 
+// FindHistoryByVersion looks up the sync history record on the target space
+// for a specific version. Used by the rollback handler to discover which
+// source space owns the underlying release package.
+func (s *SyncService) FindHistoryByVersion(ctx context.Context, targetSpaceID int64, version string) (*SyncHistory, error) {
+	record, err := s.historyRepo.GetByVersion(ctx, targetSpaceID, version)
+	if err != nil {
+		return nil, err
+	}
+	if record == nil {
+		return nil, fmt.Errorf("no completed sync history for version %s on space %d", version, targetSpaceID)
+	}
+	return record, nil
+}
+
 // handleDeletedResources processes deleted resources from the import package.
 // For each deleted resource that has a mapping in the target space, soft-delete it.
 func (s *SyncService) handleDeletedResources(ctx context.Context, tx *gorm.DB, deleted *spaceexport.DeletedResources, mappingStore *SyncMappingStore) error {
