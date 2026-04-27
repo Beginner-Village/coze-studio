@@ -45,3 +45,65 @@ SET @add_stmt = (
 PREPARE _stmt FROM @add_stmt;
 EXECUTE _stmt;
 DEALLOCATE PREPARE _stmt;
+
+-- 2026-04-27 (B6/B7): the version-aware columns on space_sync_history were
+-- added by GORM auto-migrate on 220 main but were never written into the
+-- SQL bootstrap, so a clean install (deploy.sh import) lacks them.
+-- Without them /sync/import/preview cannot detect version conflicts and
+-- /sync/rollback cannot resolve the source release for a given version.
+
+SET @add_version_col = (
+  SELECT IF(
+    NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'space_sync_history'
+                  AND COLUMN_NAME = 'version'),
+    'ALTER TABLE space_sync_history ADD COLUMN version VARCHAR(32) DEFAULT NULL COMMENT ''关联的 release version'' AFTER sync_type',
+    'SELECT 1'
+  )
+);
+PREPARE _stmt FROM @add_version_col;
+EXECUTE _stmt;
+DEALLOCATE PREPARE _stmt;
+
+SET @add_snapshot_col = (
+  SELECT IF(
+    NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'space_sync_history'
+                  AND COLUMN_NAME = 'snapshot_key'),
+    'ALTER TABLE space_sync_history ADD COLUMN snapshot_key VARCHAR(512) DEFAULT NULL COMMENT ''导入前 target 快照 key''',
+    'SELECT 1'
+  )
+);
+PREPARE _stmt FROM @add_snapshot_col;
+EXECUTE _stmt;
+DEALLOCATE PREPARE _stmt;
+
+SET @add_rollback_col = (
+  SELECT IF(
+    NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'space_sync_history'
+                  AND COLUMN_NAME = 'rollback_from_version'),
+    'ALTER TABLE space_sync_history ADD COLUMN rollback_from_version VARCHAR(32) DEFAULT NULL COMMENT ''回滚事件: 回滚自的版本''',
+    'SELECT 1'
+  )
+);
+PREPARE _stmt FROM @add_rollback_col;
+EXECUTE _stmt;
+DEALLOCATE PREPARE _stmt;
+
+SET @add_version_idx = (
+  SELECT IF(
+    NOT EXISTS (SELECT 1 FROM information_schema.STATISTICS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'space_sync_history'
+                  AND INDEX_NAME = 'idx_version'),
+    'ALTER TABLE space_sync_history ADD KEY idx_version (target_space_id, version)',
+    'SELECT 1'
+  )
+);
+PREPARE _stmt FROM @add_version_idx;
+EXECUTE _stmt;
+DEALLOCATE PREPARE _stmt;
