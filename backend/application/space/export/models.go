@@ -98,17 +98,17 @@ func (PluginDraftModel) TableName() string {
 
 // ToolDraftModel represents the tool_draft table
 // One plugin has many tools (each tool is one API/operation in the plugin).
+// Note: tool_draft has no soft-delete column; rows are removed outright.
 type ToolDraftModel struct {
-	ID              int64          `gorm:"column:id;primaryKey"`
-	PluginID        int64          `gorm:"column:plugin_id"`
-	SubURL          string         `gorm:"column:sub_url"`
-	Method          string         `gorm:"column:method"`
-	Operation       interface{}    `gorm:"column:operation;serializer:json"`
-	DebugStatus     int32          `gorm:"column:debug_status"`
-	ActivatedStatus int32          `gorm:"column:activated_status"`
-	CreatedAt       int64          `gorm:"column:created_at"`
-	UpdatedAt       int64          `gorm:"column:updated_at"`
-	DeletedAt       gorm.DeletedAt `gorm:"column:deleted_at"`
+	ID              int64       `gorm:"column:id;primaryKey"`
+	PluginID        int64       `gorm:"column:plugin_id"`
+	SubURL          string      `gorm:"column:sub_url"`
+	Method          string      `gorm:"column:method"`
+	Operation       interface{} `gorm:"column:operation;serializer:json"`
+	DebugStatus     int32       `gorm:"column:debug_status"`
+	ActivatedStatus int32       `gorm:"column:activated_status"`
+	CreatedAt       int64       `gorm:"column:created_at"`
+	UpdatedAt       int64       `gorm:"column:updated_at"`
 }
 
 func (ToolDraftModel) TableName() string {

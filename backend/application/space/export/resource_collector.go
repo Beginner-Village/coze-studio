@@ -261,7 +261,6 @@ func (c *ResourceCollector) collectPluginTools(ctx context.Context, pluginIDs []
 	err := c.db.WithContext(ctx).
 		Table("tool_draft").
 		Where("plugin_id IN ?", pluginIDs).
-		Where("deleted_at IS NULL").
 		Find(&toolDrafts).Error
 	if err != nil {
 		return nil, err
