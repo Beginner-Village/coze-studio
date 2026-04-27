@@ -269,7 +269,38 @@ func (r *ReferenceRewriter) rewriteNodeReferences(ctx context.Context, node map[
 		return node
 	}
 
-	// Rewrite agent_id
+	// Reference fields can show up at multiple depths inside node.data
+	// (e.g. data.agent_id at the top, data.inputs.fcParam.pluginFCParam.pluginList[].api_id
+	// nested several levels deep inside LLM nodes). Walk the whole subtree so
+	// we never miss one.
+	rewriteRefsRecursive(data, importCtx)
+	node["data"] = data
+	return node
+}
+
+// rewriteRefsRecursive walks an arbitrary JSON tree (decoded with UseNumber so
+// large IDs survive without precision loss) and rewrites any ID fields it
+// recognizes. It rewrites in place and returns nothing because callers own
+// the parent map/slice.
+func rewriteRefsRecursive(v interface{}, importCtx *ImportContext) {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		// Replace this node's own ID fields, then descend.
+		rewriteIDFields(val, importCtx)
+		for _, child := range val {
+			rewriteRefsRecursive(child, importCtx)
+		}
+	case []interface{}:
+		for _, item := range val {
+			rewriteRefsRecursive(item, importCtx)
+		}
+	}
+}
+
+// rewriteIDFields handles the actual remapping for ID fields that may exist on
+// a single map. Keep this aligned with the resource types tracked in
+// ImportContext.
+func rewriteIDFields(data map[string]interface{}, importCtx *ImportContext) {
 	if agentID, ok := getInt64FromInterface(data["agent_id"]); ok && agentID != 0 {
 		if importCtx.IsInPackageAgent(agentID) {
 			data["agent_id"] = importCtx.RemapAgentID(agentID)
@@ -278,31 +309,24 @@ func (r *ReferenceRewriter) rewriteNodeReferences(ctx context.Context, node map[
 		}
 	}
 
-	// Rewrite plugin_id
 	if pluginID, ok := getInt64FromInterface(data["plugin_id"]); ok && pluginID != 0 {
 		if importCtx.IsInPackagePlugin(pluginID) {
 			data["plugin_id"] = importCtx.RemapPluginID(pluginID)
 		} else {
-			data["plugin_id"] = 0
+			// Built-in / out-of-package plugins: leave alone so the target
+			// system's own copy (if any) can satisfy the reference. Workflows
+			// targeting unknown plugins will fail at runtime rather than be
+			// silently dropped.
 		}
 	}
 
-	// Rewrite api_id (tool ID) using the tool mapping populated during plugin
-	// import. Source workflows reference plugin tools via api_id; without
-	// rewriting, the imported workflow points at the source tool ID which does
-	// not exist in the target space.
 	if apiID, ok := getInt64FromInterface(data["api_id"]); ok && apiID != 0 {
 		if newID, mapped := importCtx.RemapToolID(apiID); mapped {
 			data["api_id"] = newID
-		} else {
-			// Tool not in package (built-in or out-of-package). Mirror the
-			// existing plugin_id handling: clear so the node fails closed
-			// rather than silently calling a stale tool.
-			data["api_id"] = 0
 		}
+		// Unmapped api_id: leave as-is for the same reason as plugin_id above.
 	}
 
-	// Rewrite workflow_id (for sub-workflow nodes)
 	if workflowID, ok := getInt64FromInterface(data["workflow_id"]); ok && workflowID != 0 {
 		if importCtx.IsInPackageWorkflow(workflowID) {
 			data["workflow_id"] = importCtx.RemapWorkflowID(workflowID)
@@ -311,7 +335,6 @@ func (r *ReferenceRewriter) rewriteNodeReferences(ctx context.Context, node map[
 		}
 	}
 
-	// Rewrite knowledge_id
 	if knowledgeID, ok := getInt64FromInterface(data["knowledge_id"]); ok && knowledgeID != 0 {
 		if importCtx.IsInPackageKnowledge(knowledgeID) {
 			data["knowledge_id"] = importCtx.RemapKnowledgeID(knowledgeID)
@@ -320,13 +343,10 @@ func (r *ReferenceRewriter) rewriteNodeReferences(ctx context.Context, node map[
 		}
 	}
 
-	// Clear database_id (not exported)
+	// database_id is not exported; always zero on import.
 	if _, ok := data["database_id"]; ok {
 		data["database_id"] = 0
 	}
-
-	node["data"] = data
-	return node
 }
 
 // RewriteVariable rewrites all references in a variable
