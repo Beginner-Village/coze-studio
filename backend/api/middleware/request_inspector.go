@@ -62,6 +62,7 @@ var staticFilePath = map[string]bool{
 	"/sign":        true,
 	"/favicon.png": true,
 	"/config.js":   true,
+	"/agent-chat":  true,
 }
 
 func isStaticFile(ctx *app.RequestContext) bool {
