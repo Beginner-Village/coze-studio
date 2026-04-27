@@ -43,6 +43,7 @@ func (m *IDMapper) GenerateMapping(ctx context.Context, resources *export.SpaceR
 	importCtx := &ImportContext{
 		AgentIDMap:             make(map[int64]int64),
 		PluginIDMap:            make(map[int64]int64),
+		ToolIDMap:              make(map[int64]int64),
 		WorkflowIDMap:          make(map[int64]int64),
 		VariableIDMap:          make(map[int64]int64),
 		SpaceModelIDMap:        make(map[int64]int64),
