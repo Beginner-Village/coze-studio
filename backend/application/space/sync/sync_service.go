@@ -25,7 +25,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	spaceexport "github.com/ynet-dev/ynet-studio/backend/application/space/export"
 	spaceimport "github.com/ynet-dev/ynet-studio/backend/application/space/import"
@@ -276,6 +278,18 @@ func (s *SyncService) ImportConfirm(ctx context.Context, spaceID, userID int64, 
 	}
 	s.recordSyncHistory(ctx, pending, validationResult.Resources, importResult, histOpts...)
 
+	// Cross-environment rollback support: when importing a versioned release,
+	// stash the same package_key (and ZIP contents) on the TARGET side so
+	// /sync/rollback can resolve `space_release` against target's MySQL even
+	// though the source release lives on a different DB. This mirrors source's
+	// release record on target. The package itself is re-uploaded under a
+	// target-scoped key so PROD does not depend on DEV's storage either.
+	if releaseVersion != "" {
+		if err := s.mirrorReleaseOnTarget(ctx, spaceID, releaseVersion, pending.Manifest, fileContent); err != nil {
+			logs.CtxWarnf(ctx, "Failed to mirror release on target space %d (rollback to %s may fail): %v", spaceID, releaseVersion, err)
+		}
+	}
+
 	// Clean up
 	s.mu.Lock()
 	delete(s.pendingCache, importToken)
@@ -497,6 +511,66 @@ func (s *SyncService) recordSyncHistory(ctx context.Context, pending *PendingSyn
 	if err := s.historyRepo.Create(ctx, record); err != nil {
 		logs.CtxWarnf(ctx, "Failed to record sync history: %v", err)
 	}
+}
+
+// mirrorReleaseOnTarget makes target self-sufficient for rollback by storing
+// a copy of the import package in target-scoped object storage and inserting
+// a space_release row on the target's MySQL pointing at it. After this,
+// /sync/rollback can satisfy GetRelease(target_space_id, version) locally
+// without contacting the source environment.
+func (s *SyncService) mirrorReleaseOnTarget(ctx context.Context, targetSpaceID int64, version string, manifest *spaceexport.Manifest, zipBytes []byte) error {
+	if manifest == nil || version == "" {
+		return nil
+	}
+	// Store ZIP under target-scoped key.
+	pkgKey := fmt.Sprintf("space_releases/%d/%s.zip", targetSpaceID, version)
+	if err := s.objectStorage.PutObject(ctx, pkgKey, zipBytes); err != nil {
+		return fmt.Errorf("put release zip on target: %w", err)
+	}
+
+	manifestJSON, err := sonic.Marshal(manifest)
+	if err != nil {
+		return fmt.Errorf("marshal manifest: %w", err)
+	}
+	statsJSON, err := sonic.Marshal(manifest.Statistics)
+	if err != nil {
+		return fmt.Errorf("marshal statistics: %w", err)
+	}
+
+	now := time.Now().Unix()
+	syncType := manifest.SyncType
+	if syncType == "" {
+		syncType = "full"
+	}
+	row := map[string]interface{}{
+		"space_id":     targetSpaceID,
+		"version":      version,
+		"sync_type":    syncType,
+		"manifest":     string(manifestJSON),
+		"statistics":   string(statsJSON),
+		"package_key":  pkgKey,
+		"package_size": int64(len(zipBytes)),
+		"content_hash": "", // mirrored; original hash is on source
+		"status":       "published",
+		"created_by":   0,
+		"published_at": now,
+		"created_at":   now,
+		"updated_at":   now,
+	}
+	// id is auto-increment; OnConflict on (space_id, version) keeps re-imports
+	// idempotent (re-importing the same release on a target updates the
+	// pointer in case the package was re-uploaded).
+	err = s.db.WithContext(ctx).Table("space_release").
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "space_id"}, {Name: "version"}},
+			DoUpdates: clause.AssignmentColumns([]string{"manifest", "statistics", "package_key", "package_size", "status", "published_at", "updated_at"}),
+		}).
+		Create(row).Error
+	if err != nil {
+		return fmt.Errorf("upsert space_release on target: %w", err)
+	}
+	logs.CtxInfof(ctx, "Mirrored release v%s on target space %d at %s (%d bytes)", version, targetSpaceID, pkgKey, len(zipBytes))
+	return nil
 }
 
 // CreateSnapshot exports the current state of a space as a full snapshot for rollback.
