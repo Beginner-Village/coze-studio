@@ -38,11 +38,16 @@ func NewIDMapper(idGen idgen.IDGenerator) *IDMapper {
 	}
 }
 
-// GenerateMapping generates new IDs for all resources and creates the mapping
-func (m *IDMapper) GenerateMapping(ctx context.Context, resources *export.SpaceResources, registry *export.IDRegistry) (*ImportContext, error) {
+// GenerateMapping generates new IDs for all resources and creates the mapping.
+// existing is an optional set of pre-existing source→target mappings keyed by
+// resource type ("agent", "plugin", ...). When a source ID is already mapped,
+// the existing target ID is reused so re-imports update the same target rows
+// instead of creating duplicates. Pass nil for first-time imports.
+func (m *IDMapper) GenerateMapping(ctx context.Context, resources *export.SpaceResources, registry *export.IDRegistry, existing map[string]map[int64]int64) (*ImportContext, error) {
 	importCtx := &ImportContext{
 		AgentIDMap:             make(map[int64]int64),
 		PluginIDMap:            make(map[int64]int64),
+		ToolIDMap:              make(map[int64]int64),
 		WorkflowIDMap:          make(map[int64]int64),
 		VariableIDMap:          make(map[int64]int64),
 		SpaceModelIDMap:        make(map[int64]int64),
@@ -52,97 +57,104 @@ func (m *IDMapper) GenerateMapping(ctx context.Context, resources *export.SpaceR
 		FolderIDMap:            make(map[int64]int64),
 		ExternalKnowledgeIDMap: make(map[int64]int64),
 		FileURIMap:             make(map[int64]string),
+		ReusedTargetIDs:        make(map[string]map[int64]bool),
 		PackageIDs:             registry,
 	}
 
-	// Generate new IDs for agents
-	for _, agent := range resources.Agents {
+	// resolve picks an existing target ID when one is recorded, otherwise asks
+	// the id generator for a fresh one. It also marks reused IDs so the
+	// importer knows to UPDATE instead of INSERT for that row.
+	resolve := func(resourceType, label string, sourceID int64) (int64, error) {
+		if existing != nil {
+			if perType, ok := existing[resourceType]; ok {
+				if targetID, ok := perType[sourceID]; ok && targetID != 0 {
+					if importCtx.ReusedTargetIDs[resourceType] == nil {
+						importCtx.ReusedTargetIDs[resourceType] = make(map[int64]bool)
+					}
+					importCtx.ReusedTargetIDs[resourceType][targetID] = true
+					logs.CtxDebugf(ctx, "%s reuse mapping: %d -> %d", label, sourceID, targetID)
+					return targetID, nil
+				}
+			}
+		}
 		newID, err := m.idGenerator.GenID(ctx)
 		if err != nil {
-			return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "agent"))
+			return 0, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", label))
+		}
+		logs.CtxDebugf(ctx, "%s new mapping: %d -> %d", label, sourceID, newID)
+		return newID, nil
+	}
+
+	for _, agent := range resources.Agents {
+		newID, err := resolve("agent", "Agent", agent.ID)
+		if err != nil {
+			return nil, err
 		}
 		importCtx.AgentIDMap[agent.ID] = newID
-		logs.CtxDebugf(ctx, "Agent ID mapping: %d -> %d", agent.ID, newID)
 	}
 
-	// Generate new IDs for plugins
 	for _, plugin := range resources.Plugins {
-		newID, err := m.idGenerator.GenID(ctx)
+		newID, err := resolve("plugin", "Plugin", plugin.ID)
 		if err != nil {
-			return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "plugin"))
+			return nil, err
 		}
 		importCtx.PluginIDMap[plugin.ID] = newID
-		logs.CtxDebugf(ctx, "Plugin ID mapping: %d -> %d", plugin.ID, newID)
 	}
 
-	// Generate new IDs for workflows
 	for _, workflow := range resources.Workflows {
-		newID, err := m.idGenerator.GenID(ctx)
+		newID, err := resolve("workflow", "Workflow", workflow.ID)
 		if err != nil {
-			return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "workflow"))
+			return nil, err
 		}
 		importCtx.WorkflowIDMap[workflow.ID] = newID
-		logs.CtxDebugf(ctx, "Workflow ID mapping: %d -> %d", workflow.ID, newID)
 	}
 
-	// Generate new IDs for variables
 	for _, variable := range resources.Variables {
-		newID, err := m.idGenerator.GenID(ctx)
+		newID, err := resolve("variable", "Variable", variable.ID)
 		if err != nil {
-			return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "variable"))
+			return nil, err
 		}
 		importCtx.VariableIDMap[variable.ID] = newID
-		logs.CtxDebugf(ctx, "Variable ID mapping: %d -> %d", variable.ID, newID)
 	}
 
-	// Generate new IDs for space models
 	for _, spaceModel := range resources.SpaceModels {
-		newID, err := m.idGenerator.GenID(ctx)
+		newID, err := resolve("space_model", "SpaceModel", spaceModel.ID)
 		if err != nil {
-			return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "space_model"))
+			return nil, err
 		}
 		importCtx.SpaceModelIDMap[spaceModel.ID] = newID
-		logs.CtxDebugf(ctx, "SpaceModel ID mapping: %d -> %d", spaceModel.ID, newID)
 	}
 
-	// Generate new IDs for knowledge bases and their documents
 	for _, kb := range resources.KnowledgeBases {
-		newID, err := m.idGenerator.GenID(ctx)
+		newID, err := resolve("knowledge", "KnowledgeBase", kb.ID)
 		if err != nil {
-			return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "knowledge_base"))
+			return nil, err
 		}
 		importCtx.KnowledgeIDMap[kb.ID] = newID
-		logs.CtxDebugf(ctx, "KnowledgeBase ID mapping: %d -> %d", kb.ID, newID)
 
-		// Generate new IDs for documents within this knowledge base
 		for _, doc := range kb.Documents {
-			newDocID, err := m.idGenerator.GenID(ctx)
+			newDocID, err := resolve("document", "Document", doc.ID)
 			if err != nil {
-				return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "document"))
+				return nil, err
 			}
 			importCtx.DocumentIDMap[doc.ID] = newDocID
-			logs.CtxDebugf(ctx, "Document ID mapping: %d -> %d", doc.ID, newDocID)
 		}
 	}
 
-	// Generate new IDs for folders
 	for _, folder := range resources.Folders {
-		newID, err := m.idGenerator.GenID(ctx)
+		newID, err := resolve("folder", "Folder", folder.ID)
 		if err != nil {
-			return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "folder"))
+			return nil, err
 		}
 		importCtx.FolderIDMap[folder.ID] = newID
-		logs.CtxDebugf(ctx, "Folder ID mapping: %d -> %d", folder.ID, newID)
 	}
 
-	// Generate new IDs for external knowledge
 	for _, ek := range resources.ExternalKnowledge {
-		newID, err := m.idGenerator.GenID(ctx)
+		newID, err := resolve("external_knowledge", "ExternalKnowledge", ek.ID)
 		if err != nil {
-			return nil, errorx.WrapByCode(err, errno.ErrSpaceImportFailedCode, errorx.KV("resource", "external_knowledge"))
+			return nil, err
 		}
 		importCtx.ExternalKnowledgeIDMap[ek.ID] = newID
-		logs.CtxDebugf(ctx, "ExternalKnowledge ID mapping: %d -> %d", ek.ID, newID)
 	}
 
 	logs.CtxInfof(ctx, "Generated ID mappings: agents=%d, plugins=%d, workflows=%d, variables=%d, space_models=%d, knowledge=%d, documents=%d, folders=%d, external_knowledge=%d",

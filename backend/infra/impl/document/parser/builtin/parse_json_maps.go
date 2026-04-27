@@ -19,26 +19,35 @@ package builtin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/cloudwego/eino/components/document/parser"
 	"github.com/cloudwego/eino/schema"
 
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document"
 	contract "github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 func ParseJSONMaps(config *contract.Config) ParseFn {
 	return func(ctx context.Context, reader io.Reader, opts ...parser.Option) (docs []*schema.Document, err error) {
-		b, err := io.ReadAll(reader)
+		counted := &countingReader{r: io.LimitReader(reader, entity.MaxOtherFileSize+1), max: entity.MaxOtherFileSize}
+
+		dec := json.NewDecoder(counted)
+		tok, err := dec.Token()
 		if err != nil {
+			if errors.Is(err, errFileTooLarge) {
+				return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+					errorx.KVf("msg", "JSON file size exceeds %d bytes", entity.MaxOtherFileSize))
+			}
 			return nil, err
 		}
-
-		var customContent []map[string]string
-		if err = json.Unmarshal(b, &customContent); err != nil {
-			return nil, err
+		if d, ok := tok.(json.Delim); !ok || d != '[' {
+			return nil, fmt.Errorf("[ParseJSONMaps] expected JSON array")
 		}
 
 		if config.ParsingStrategy == nil {
@@ -50,10 +59,8 @@ func ParseJSONMaps(config *contract.Config) ParseFn {
 		}
 
 		iter := &customContentContainer{
-			i:             0,
-			colIdx:        nil,
-			customContent: customContent,
-			curColumns:    config.ParsingStrategy.Columns,
+			dec:        dec,
+			curColumns: config.ParsingStrategy.Columns,
 		}
 
 		newConfig := &contract.Config{
@@ -74,19 +81,22 @@ func ParseJSONMaps(config *contract.Config) ParseFn {
 }
 
 type customContentContainer struct {
-	i             int
-	colIdx        map[string]int
-	customContent []map[string]string
-	curColumns    []*document.Column
+	dec        *json.Decoder
+	colIdx     map[string]int
+	curColumns []*document.Column
+	pending    map[string]string
 }
 
 func (c *customContentContainer) NextRow() (row []string, end bool, err error) {
-	if c.i == 0 && c.colIdx == nil {
-		if len(c.customContent) == 0 {
+	if c.colIdx == nil {
+		if !c.dec.More() {
 			return nil, false, fmt.Errorf("[customContentContainer] data is nil")
 		}
+		var headerRow map[string]string
+		if err := c.dec.Decode(&headerRow); err != nil {
+			return nil, false, mapStreamError(err)
+		}
 
-		headerRow := c.customContent[0]
 		founded := make(map[string]struct{})
 		colIdx := make(map[string]int, len(headerRow))
 
@@ -106,17 +116,24 @@ func (c *customContentContainer) NextRow() (row []string, end bool, err error) {
 		}
 
 		c.colIdx = colIdx
+		c.pending = headerRow
 		return row, false, nil
 	}
 
-	if c.i >= len(c.customContent) {
-		return nil, true, nil
+	var content map[string]string
+	if c.pending != nil {
+		content = c.pending
+		c.pending = nil
+	} else {
+		if !c.dec.More() {
+			return nil, true, nil
+		}
+		if err := c.dec.Decode(&content); err != nil {
+			return nil, false, mapStreamError(err)
+		}
 	}
 
-	content := c.customContent[c.i]
-	c.i++
 	row = make([]string, len(content))
-
 	for k, v := range content {
 		idx, found := c.colIdx[k]
 		if !found {

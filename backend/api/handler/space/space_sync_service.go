@@ -191,11 +191,23 @@ func SyncRollback(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// Look up the release to get its package key
+	// Releases are mirrored on target during import (see SyncService
+	// .mirrorReleaseOnTarget) so the target's MySQL is the primary source of
+	// truth for cross-environment rollback. Try target first; fall back to
+	// the original source space (for legacy imports done before mirroring,
+	// when source and target share a DB).
 	releaseRecord, err := spaceApp.ReleaseSVC.GetRelease(ctx, req.SpaceID, req.TargetVersion)
 	if err != nil {
-		c.String(consts.StatusInternalServerError, err.Error())
-		return
+		historyEntry, hErr := spaceApp.SyncSVC.FindHistoryByVersion(ctx, req.SpaceID, req.TargetVersion)
+		if hErr != nil {
+			c.String(consts.StatusInternalServerError, "no release on target and no sync history for version "+req.TargetVersion+": "+hErr.Error())
+			return
+		}
+		releaseRecord, err = spaceApp.ReleaseSVC.GetRelease(ctx, historyEntry.SourceSpaceID, req.TargetVersion)
+		if err != nil {
+			c.String(consts.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 
 	if releaseRecord.Release.Status != "published" {

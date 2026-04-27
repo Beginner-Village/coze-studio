@@ -1,0 +1,17 @@
+# Knowledge parser / worker / reaper config
+# 当前为参考配置，代码暂以常量形式实现：
+#   - parser limits: backend/domain/knowledge/entity/limits.go
+#   - LargeFileWorker(2,10): backend/domain/knowledge/service/knowledge.go (NewKnowledgeSVC)
+#   - DocumentReaper interval/threshold 默认值: backend/domain/knowledge/service/reaper.go
+# TODO: 接入 viper 或现有 config loader 后改为运行时可配。
+parser:
+  streaming_enabled: true
+  max_image_size_bytes: 10485760     # 10 MB
+  max_other_size_bytes: 104857600    # 100 MB
+  large_file_worker:
+    max_concurrent: 2
+    max_queue: 10
+  reaper:
+    enabled: true
+    interval_seconds: 300            # 5 min
+    threshold_seconds: 1800          # 30 min

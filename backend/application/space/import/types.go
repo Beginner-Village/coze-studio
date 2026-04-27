@@ -73,6 +73,7 @@ type ImportContext struct {
 	// ID mappings
 	AgentIDMap      map[int64]int64
 	PluginIDMap     map[int64]int64
+	ToolIDMap       map[int64]int64 // old tool.id -> new tool.id (populated when plugin is created)
 	WorkflowIDMap   map[int64]int64
 	VariableIDMap   map[int64]int64
 	SpaceModelIDMap map[int64]int64 // old space_model.id -> new space_model.id
@@ -88,6 +89,12 @@ type ImportContext struct {
 
 	// File URI mapping (old document ID -> new object storage URI, set during Phase 1)
 	FileURIMap map[int64]string
+
+	// ReusedTargetIDs flags target IDs that came from a pre-existing
+	// sync_mapping. Importer treats these as updates (UPDATE) rather than
+	// fresh inserts (INSERT). Map is keyed by resource type ("agent",
+	// "plugin", ...) → target_id → true.
+	ReusedTargetIDs map[string]map[int64]bool
 
 	// Sync mode support
 	SyncMode string // "create_only" | "upsert"
@@ -106,6 +113,7 @@ func NewImportContext(targetSpaceID, userID int64, registry *export.IDRegistry) 
 		UserID:                 userID,
 		AgentIDMap:             make(map[int64]int64),
 		PluginIDMap:            make(map[int64]int64),
+		ToolIDMap:              make(map[int64]int64),
 		WorkflowIDMap:          make(map[int64]int64),
 		VariableIDMap:          make(map[int64]int64),
 		SpaceModelIDMap:        make(map[int64]int64),
@@ -115,8 +123,23 @@ func NewImportContext(targetSpaceID, userID int64, registry *export.IDRegistry) 
 		FolderIDMap:            make(map[int64]int64),
 		ExternalKnowledgeIDMap: make(map[int64]int64),
 		FileURIMap:             make(map[int64]string),
+		ReusedTargetIDs:        make(map[string]map[int64]bool),
 		PackageIDs:             registry,
 	}
+}
+
+// IsReused returns true when this target_id was reused from an existing
+// sync_mapping (vs freshly generated). Importer createX functions consult
+// this to decide between UPDATE and INSERT.
+func (c *ImportContext) IsReused(resourceType string, targetID int64) bool {
+	if c.ReusedTargetIDs == nil {
+		return false
+	}
+	perType, ok := c.ReusedTargetIDs[resourceType]
+	if !ok {
+		return false
+	}
+	return perType[targetID]
 }
 
 // IsInPackageAgent checks if an agent ID is in the package
@@ -179,6 +202,16 @@ func (c *ImportContext) RemapPluginID(oldID int64) int64 {
 		return newID
 	}
 	return 0
+}
+
+// RemapToolID remaps a tool ID using the ToolIDMap populated during plugin
+// import. Returns the original ID if no mapping exists (built-in or unknown
+// tools should be left untouched so the caller can decide what to do).
+func (c *ImportContext) RemapToolID(oldID int64) (int64, bool) {
+	if newID, ok := c.ToolIDMap[oldID]; ok {
+		return newID, true
+	}
+	return oldID, false
 }
 
 // RemapWorkflowID remaps a workflow ID or returns 0 if not in package

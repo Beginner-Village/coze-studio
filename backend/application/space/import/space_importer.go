@@ -21,11 +21,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/ynet-dev/ynet-studio/backend/application/space/export"
 	resCommon "github.com/ynet-dev/ynet-studio/backend/api/model/resource/common"
@@ -94,6 +97,11 @@ type PendingImport struct {
 	Resources   *export.SpaceResources
 	CreatedAt   time.Time
 	FileContent []byte
+	// ExistingMappings is the set of source→target mappings already known
+	// for this (source, target) pair. SyncService populates it from
+	// space_sync_mapping so the importer reuses target IDs and updates
+	// existing rows rather than creating duplicates.
+	ExistingMappings map[string]map[int64]int64
 }
 
 // NewSpaceImporter creates a new SpaceImporter
@@ -115,6 +123,9 @@ type PreviewRequest struct {
 	SpaceID     int64
 	UserID      int64
 	FileContent []byte
+	// ExistingMappings forwarded into the resulting PendingImport. See
+	// PendingImport.ExistingMappings for the full description.
+	ExistingMappings map[string]map[int64]int64
 }
 
 // Preview validates and previews an import
@@ -136,13 +147,14 @@ func (s *SpaceImporter) Preview(ctx context.Context, req *PreviewRequest) (*Prev
 
 	// Store pending import
 	s.pendingCache[token] = &PendingImport{
-		Token:       token,
-		SpaceID:     req.SpaceID,
-		UserID:      req.UserID,
-		Manifest:    validationResult.Manifest,
-		Resources:   validationResult.Resources,
-		CreatedAt:   time.Now(),
-		FileContent: req.FileContent,
+		Token:            token,
+		SpaceID:          req.SpaceID,
+		UserID:           req.UserID,
+		Manifest:         validationResult.Manifest,
+		Resources:        validationResult.Resources,
+		CreatedAt:        time.Now(),
+		FileContent:      req.FileContent,
+		ExistingMappings: req.ExistingMappings,
 	}
 
 	// Clean up expired tokens
@@ -205,8 +217,8 @@ func (s *SpaceImporter) Confirm(ctx context.Context, req *ConfirmRequest) (*Impo
 func (s *SpaceImporter) executeImport(ctx context.Context, pending *PendingImport) (*ImportResult, error) {
 	result := &ImportResult{}
 
-	// Generate ID mappings
-	importCtx, err := s.idMapper.GenerateMapping(ctx, pending.Resources, &pending.Manifest.IDRegistry)
+	// Generate ID mappings, reusing target IDs from prior syncs when available.
+	importCtx, err := s.idMapper.GenerateMapping(ctx, pending.Resources, &pending.Manifest.IDRegistry, pending.ExistingMappings)
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +355,7 @@ func (s *SpaceImporter) createPlugin(ctx context.Context, tx *gorm.DB, plugin *e
 		"updated_at":   now,
 	}
 
-	if err := tx.Table("plugin").Create(pluginModel).Error; err != nil {
+	if err := upsertOnID(tx, "plugin", pluginModel).Error; err != nil {
 		return err
 	}
 
@@ -362,7 +374,49 @@ func (s *SpaceImporter) createPlugin(ctx context.Context, tx *gorm.DB, plugin *e
 		"updated_at":   now,
 	}
 
-	return tx.Table("plugin_draft").Create(draftModel).Error
+	if err := upsertOnID(tx, "plugin_draft", draftModel).Error; err != nil {
+		return err
+	}
+
+	// Recreate the plugin's tools so workflow nodes that call api_id can resolve.
+	// Each source tool gets a freshly generated ID; the mapping is stored on
+	// importCtx so the reference rewriter can rewrite api_id values in workflows.
+	for _, tool := range plugin.Tools {
+		newToolID, err := s.idGen.GenID(ctx)
+		if err != nil {
+			return err
+		}
+		toolRow := map[string]interface{}{
+			"id":               newToolID,
+			"plugin_id":        newID,
+			"sub_url":          tool.SubURL,
+			"method":           tool.Method,
+			"operation":        toJSON(tool.Operation),
+			"activated_status": 0,
+			"created_at":       now,
+			"updated_at":       now,
+		}
+		if err := upsertOnID(tx, "tool", toolRow).Error; err != nil {
+			return err
+		}
+		toolDraftRow := map[string]interface{}{
+			"id":               newToolID,
+			"plugin_id":        newID,
+			"sub_url":          tool.SubURL,
+			"method":           tool.Method,
+			"operation":        toJSON(tool.Operation),
+			"debug_status":     0,
+			"activated_status": 0,
+			"created_at":       now,
+			"updated_at":       now,
+		}
+		if err := upsertOnID(tx, "tool_draft", toolDraftRow).Error; err != nil {
+			return err
+		}
+		importCtx.ToolIDMap[tool.ToolID] = newToolID
+	}
+
+	return nil
 }
 
 // createWorkflow creates a workflow in the database
@@ -393,7 +447,7 @@ func (s *SpaceImporter) createWorkflow(ctx context.Context, tx *gorm.DB, workflo
 		"updated_at":        now,
 	}
 
-	if err := tx.Table("workflow_meta").Create(metaModel).Error; err != nil {
+	if err := upsertOnID(tx, "workflow_meta", metaModel).Error; err != nil {
 		return err
 	}
 
@@ -410,7 +464,7 @@ func (s *SpaceImporter) createWorkflow(ctx context.Context, tx *gorm.DB, workflo
 		"commit_id":           "",
 	}
 
-	if err := tx.Table("workflow_version").Create(versionModel).Error; err != nil {
+	if err := upsertOnID(tx, "workflow_version", versionModel).Error; err != nil {
 		return err
 	}
 
@@ -426,7 +480,7 @@ func (s *SpaceImporter) createWorkflow(ctx context.Context, tx *gorm.DB, workflo
 		"updated_at":       now,
 	}
 
-	return tx.Table("workflow_draft").Create(draftModel).Error
+	return upsertOnID(tx, "workflow_draft", draftModel).Error
 }
 
 // createAgent creates an agent in the database
@@ -481,7 +535,7 @@ func (s *SpaceImporter) createAgent(ctx context.Context, tx *gorm.DB, agent *exp
 		"updated_at":                 now,
 	}
 
-	if err := tx.Table("single_agent_draft").Create(model).Error; err != nil {
+	if err := upsertOnID(tx, "single_agent_draft", model).Error; err != nil {
 		return err
 	}
 
@@ -512,7 +566,7 @@ func (s *SpaceImporter) createAgent(ctx context.Context, tx *gorm.DB, agent *exp
 			"created_at":   now,
 		}
 
-		if err := tx.Table("agent_tool_draft").Create(toolModel).Error; err != nil {
+		if err := upsertOnID(tx, "agent_tool_draft", toolModel).Error; err != nil {
 			return err
 		}
 	}
@@ -555,7 +609,7 @@ func (s *SpaceImporter) createAgent(ctx context.Context, tx *gorm.DB, agent *exp
 			"created_at":   now,
 		}
 
-		if err := tx.Table("agent_tool_draft").Create(builtinToolModel).Error; err != nil {
+		if err := upsertOnID(tx, "agent_tool_draft", builtinToolModel).Error; err != nil {
 			logs.CtxWarnf(ctx, "Failed to create agent_tool_draft for builtin plugin: %v", err)
 			// Continue with other plugins instead of failing the entire import
 			continue
@@ -609,7 +663,7 @@ func (s *SpaceImporter) createVariable(ctx context.Context, tx *gorm.DB, variabl
 		"updated_at":    now,
 	}
 
-	return tx.Table("variables_meta").Create(model).Error
+	return upsertOnID(tx, "variables_meta", model).Error
 }
 
 // createSpaceModel creates a space model in the database
@@ -647,13 +701,42 @@ func (s *SpaceImporter) createSpaceModel(ctx context.Context, tx *gorm.DB, space
 	logs.CtxInfof(ctx, "Creating space_model: old_id=%d, new_id=%d, model_entity_id=%d (original=%d)",
 		spaceModel.ID, newID, modelEntityID, spaceModel.ModelEntityID)
 
-	if err := tx.Table("space_model").Create(model).Error; err != nil {
-		return err
+	// Try insert; on (space_id, model_entity_id) collision (re-import to a target
+	// that already has this model) reuse the existing space_model id so subsequent
+	// agent rewrites point at the right record. Without this the second import of
+	// a published version fails with `space_model.uniq_space_model` duplicate.
+	if err := upsertOnID(tx, "space_model", model).Error; err != nil {
+		if !isDuplicateKeyErr(err) {
+			return err
+		}
+		var existingID int64
+		findErr := tx.Table("space_model").
+			Where("space_id = ? AND model_entity_id = ?", importCtx.TargetSpaceID, modelEntityID).
+			Select("id").
+			Take(&existingID).Error
+		if findErr != nil {
+			return fmt.Errorf("space_model duplicate but lookup failed: %w", findErr)
+		}
+		logs.CtxInfof(ctx, "space_model already exists for entity=%d, reusing id=%d (was going to create %d)",
+			modelEntityID, existingID, newID)
+		importCtx.SpaceModelIDMap[spaceModel.ID] = existingID
+		importCtx.MarkSpaceModelCreated(existingID)
+		return nil
 	}
 
 	// Mark this space model as actually created
 	importCtx.MarkSpaceModelCreated(newID)
 	return nil
+}
+
+// isDuplicateKeyErr matches MySQL/MariaDB duplicate key errors. We can't rely
+// on errors.Is/As across drivers, so pattern-match the message body.
+func isDuplicateKeyErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "Duplicate entry") || strings.Contains(msg, "Error 1062")
 }
 
 // createKnowledge creates a knowledge base with its documents and slices in the DB
@@ -674,7 +757,7 @@ func (s *SpaceImporter) createKnowledge(ctx context.Context, tx *gorm.DB, kb *ex
 		"icon_uri":    kb.IconURI,
 		"format_type": kb.FormatType,
 	}
-	if err := tx.Table("knowledge").Create(knowledgeModel).Error; err != nil {
+	if err := upsertOnID(tx, "knowledge", knowledgeModel).Error; err != nil {
 		return err
 	}
 
@@ -716,7 +799,7 @@ func (s *SpaceImporter) createDocument(ctx context.Context, tx *gorm.DB, doc *ex
 		"parse_rule":     toJSON(doc.ParseRule),
 		"table_info":     toJSON(doc.TableInfo),
 	}
-	if err := tx.Table("knowledge_document").Create(docModel).Error; err != nil {
+	if err := upsertOnID(tx, "knowledge_document", docModel).Error; err != nil {
 		return err
 	}
 
@@ -738,7 +821,7 @@ func (s *SpaceImporter) createDocument(ctx context.Context, tx *gorm.DB, doc *ex
 			"space_id":     importCtx.TargetSpaceID,
 			"status":       1,
 		}
-		if err := tx.Table("knowledge_document_slice").Create(sliceModel).Error; err != nil {
+		if err := upsertOnID(tx, "knowledge_document_slice", sliceModel).Error; err != nil {
 			return err
 		}
 	}
@@ -766,7 +849,7 @@ func (s *SpaceImporter) createFolder(ctx context.Context, tx *gorm.DB, folder *e
 		"created_at": now,
 		"updated_at": now,
 	}
-	return tx.Table("folder").Create(model).Error
+	return upsertOnID(tx, "folder", model).Error
 }
 
 // createFolderMapping creates a resource-to-folder mapping in the DB
@@ -809,7 +892,7 @@ func (s *SpaceImporter) createFolderMapping(ctx context.Context, tx *gorm.DB, ma
 		"folder_id":     newFolderID,
 		"created_at":    time.Now().UnixMilli(),
 	}
-	return tx.Table("resource_folder_mapping").Create(model).Error
+	return upsertOnID(tx, "resource_folder_mapping", model).Error
 }
 
 // getFirstSpaceModel gets the first available space_model in the target space
@@ -980,4 +1063,24 @@ func (s *SpaceImporter) syncToES(ctx context.Context, resources *export.SpaceRes
 	} else {
 		logs.CtxWarnf(ctx, "ProjectEventBus is nil, skipping agent ES sync for %d agents", len(resources.Agents))
 	}
+}
+
+// upsertOnID issues an INSERT ... ON DUPLICATE KEY UPDATE for a row whose
+// primary key column is "id". The DoUpdates list mirrors the map keys so the
+// columns we explicitly set are also the ones overwritten on conflict; "id"
+// and "created_at" are excluded so the original creation timestamp survives
+// re-imports. Used by all importer createX functions to make incremental
+// re-imports update existing target rows instead of creating duplicates.
+func upsertOnID(tx *gorm.DB, table string, model map[string]interface{}) *gorm.DB {
+	cols := make([]string, 0, len(model))
+	for k := range model {
+		if k == "id" || k == "created_at" {
+			continue
+		}
+		cols = append(cols, k)
+	}
+	return tx.Table(table).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
+		DoUpdates: clause.AssignmentColumns(cols),
+	}).Create(model)
 }

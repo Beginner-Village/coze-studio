@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { BuilderChat } from '@coze-studio/open-chat';
 
@@ -38,38 +38,56 @@ export default function AgentChatPage() {
   const botId = searchParams.get('bot_id') || '';
   const workflowId = searchParams.get('workflow_id') || '';
   const title = searchParams.get('title') || '';
-  const parentOrigin = useRef<string>('*');
+  const expectedParentOrigin = searchParams.get('parent_origin') || '';
+  const parentOrigin = useRef<string>(expectedParentOrigin);
 
   // Listen for postMessage from parent window
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      if (expectedParentOrigin && event.origin !== expectedParentOrigin) {
+        console.warn(
+          '[agent-chat] reject message from untrusted origin:',
+          event.origin,
+          'expected:',
+          expectedParentOrigin,
+        );
+        return;
+      }
       const { data } = event;
-      if (!data || !data.type || data.source === MESSAGE_SOURCE_IFRAME) return;
+      if (!data || !data.type || data.source === MESSAGE_SOURCE_IFRAME) {
+        return;
+      }
 
-      if (event.origin) parentOrigin.current = event.origin;
+      parentOrigin.current = event.origin;
 
       switch (data.type) {
         case 'INIT':
-          if (data.payload?.token) setToken(data.payload.token);
+          if (data.payload?.token) {
+            setToken(data.payload.token);
+          }
           break;
         case 'UPDATE_TOKEN':
-          if (data.payload?.token) setToken(data.payload.token);
+          if (data.payload?.token) {
+            setToken(data.payload.token);
+          }
+          break;
+        default:
           break;
       }
     };
 
     window.addEventListener('message', handleMessage);
 
-    // Notify parent that iframe is ready
-    if (window.parent !== window) {
+    // Notify parent that iframe is ready (only when parent_origin is known)
+    if (window.parent !== window && expectedParentOrigin) {
       window.parent.postMessage(
         { source: MESSAGE_SOURCE_IFRAME, type: 'READY', payload: {} },
-        '*',
+        expectedParentOrigin,
       );
     }
 
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [expectedParentOrigin]);
 
   const workflow = useMemo(
     () => ({
@@ -93,21 +111,21 @@ export default function AgentChatPage() {
       type: 'external' as const,
       token,
       refreshToken: () => {
-        // Request new token from parent
-        if (window.parent !== window) {
+        // Request new token from parent (only when parent_origin is known)
+        if (window.parent !== window && expectedParentOrigin) {
           window.parent.postMessage(
             {
               source: MESSAGE_SOURCE_IFRAME,
               type: 'TOKEN_EXPIRED',
               payload: {},
             },
-            parentOrigin.current,
+            expectedParentOrigin,
           );
         }
         return Promise.resolve('');
       },
     }),
-    [token],
+    [token, expectedParentOrigin],
   );
 
   if (!botId) {

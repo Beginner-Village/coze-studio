@@ -19,7 +19,7 @@ RUN chmod +x scripts/hooks/post-rush-install.sh && rm -rf /app/common/temp && ru
 RUN rush build --to @coze-studio/app
 
 # Stage 2: Build Go backend
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 

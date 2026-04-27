@@ -232,11 +232,72 @@ func (c *ResourceCollector) collectPlugins(ctx context.Context, spaceID int64) (
 	}
 
 	plugins := make([]*ExportedPlugin, 0, len(pluginDrafts))
+	pluginIDs := make([]int64, 0, len(pluginDrafts))
 	for _, plugin := range pluginDrafts {
 		plugins = append(plugins, c.convertPluginDraftToExported(&plugin))
+		pluginIDs = append(pluginIDs, plugin.ID)
+	}
+
+	if len(pluginIDs) > 0 {
+		toolsByPlugin, err := c.collectPluginTools(ctx, pluginIDs)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range plugins {
+			if tools, ok := toolsByPlugin[p.ID]; ok {
+				p.Tools = tools
+			}
+		}
 	}
 
 	return plugins, nil
+}
+
+// collectPluginTools loads tool_draft rows for the given plugins. Each plugin
+// has many tools (one per API operation). Without this, plugin imports lose
+// their operations and any workflow node referencing api_id ends up dangling.
+func (c *ResourceCollector) collectPluginTools(ctx context.Context, pluginIDs []int64) (map[int64][]*ExportedTool, error) {
+	var toolDrafts []ToolDraftModel
+	err := c.db.WithContext(ctx).
+		Table("tool_draft").
+		Where("plugin_id IN ?", pluginIDs).
+		Find(&toolDrafts).Error
+	if err != nil {
+		return nil, err
+	}
+
+	out := make(map[int64][]*ExportedTool, len(pluginIDs))
+	for _, t := range toolDrafts {
+		exported := &ExportedTool{
+			ToolID:    t.ID,
+			SubURL:    t.SubURL,
+			Method:    t.Method,
+			Operation: t.Operation,
+		}
+		extractToolNameDesc(t.Operation, exported)
+		out[t.PluginID] = append(out[t.PluginID], exported)
+	}
+	return out, nil
+}
+
+// extractToolNameDesc pulls a human-readable name/description out of the OpenAPI
+// operation JSON when present so the export package is self-describing.
+func extractToolNameDesc(operation interface{}, target *ExportedTool) {
+	op, ok := operation.(map[string]interface{})
+	if !ok {
+		return
+	}
+	if v, ok := op["operationId"].(string); ok {
+		target.ToolName = v
+	}
+	if target.ToolName == "" {
+		if v, ok := op["summary"].(string); ok {
+			target.ToolName = v
+		}
+	}
+	if v, ok := op["description"].(string); ok {
+		target.ToolDesc = v
+	}
 }
 
 // collectWorkflows collects all workflow drafts from a space

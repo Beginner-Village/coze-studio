@@ -21,7 +21,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -160,6 +162,30 @@ func (k *knowledgeSVC) indexDocument(ctx context.Context, event *entity.Event) (
 		return errorx.New(errno.ErrKnowledgeNonRetryableCode, errorx.KV("reason", "[indexDocument] document not provided"))
 	}
 
+	fileType := FileTypeForLabel(doc.Name)
+	parseStart := time.Now()
+	if doc.Size > 0 {
+		ParseFileSizeBytes.WithLabelValues(fileType).Observe(float64(doc.Size))
+	}
+	defer func() {
+		outcome := "success"
+		if err != nil {
+			outcome = "failure"
+			reason := "parse_error"
+			msg := err.Error()
+			switch {
+			case strings.Contains(msg, "exceeds"):
+				reason = "too_large"
+			case strings.Contains(msg, "panic"):
+				reason = "panic"
+			case strings.Contains(msg, "system busy") || strings.Contains(msg, "worker busy"):
+				reason = "system_busy"
+			}
+			ParseFailedTotal.WithLabelValues(fileType, reason).Inc()
+		}
+		ParseDurationSeconds.WithLabelValues(fileType, outcome).Observe(time.Since(parseStart).Seconds())
+	}()
+
 	// Get managers for space-level embedding
 	managers, err := k.getManagersForSpace(ctx, uint64(doc.SpaceID))
 	if err != nil {
@@ -250,14 +276,30 @@ func (k *knowledgeSVC) indexDocument(ctx context.Context, event *entity.Event) (
 		return errorx.New(errno.ErrKnowledgeGetParserFailCode, errorx.KV("msg", fmt.Sprintf("get parser failed, err: %v", err)))
 	}
 
-	parseResult, err := docParser.Parse(ctx, bytes.NewReader(bodyBytes), parser.WithExtraMeta(map[string]any{
-		document.MetaDataKeyCreatorID: doc.CreatorID,
-		document.MetaDataKeyExternalStorage: map[string]any{
-			"document_id": doc.ID,
-		},
-	}))
-	if err != nil {
-		return errorx.New(errno.ErrKnowledgeParserParseFailCode, errorx.KV("msg", fmt.Sprintf("parse document failed, err: %v", err)))
+	var parseResult []*schema.Document
+	doParse := func() error {
+		var pErr error
+		parseResult, pErr = docParser.Parse(ctx, bytes.NewReader(bodyBytes), parser.WithExtraMeta(map[string]any{
+			document.MetaDataKeyCreatorID: doc.CreatorID,
+			document.MetaDataKeyExternalStorage: map[string]any{
+				"document_id": doc.ID,
+			},
+		}))
+		return pErr
+	}
+
+	if isLargeFileExt(strings.ToLower(filepath.Ext(doc.Name))) && k.largeFileWorker != nil {
+		if err := k.largeFileWorker.Submit(ctx, doParse); err != nil {
+			if errors.Is(err, ErrSystemBusy) {
+				return errorx.New(errno.ErrKnowledgeSystemBusyCode,
+					errorx.KV("msg", "large file worker busy"))
+			}
+			return errorx.New(errno.ErrKnowledgeParserParseFailCode, errorx.KV("msg", fmt.Sprintf("parse document failed, err: %v", err)))
+		}
+	} else {
+		if err := doParse(); err != nil {
+			return errorx.New(errno.ErrKnowledgeParserParseFailCode, errorx.KV("msg", fmt.Sprintf("parse document failed, err: %v", err)))
+		}
 	}
 
 	if doc.Type == knowledge.DocumentTypeTable {

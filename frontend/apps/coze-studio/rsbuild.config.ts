@@ -18,6 +18,8 @@ import path from 'path';
 
 import { defineConfig } from '@coze-arch/rsbuild-config';
 import { GLOBAL_ENVS } from '@coze-arch/bot-env';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- rsbuild config supports CommonJS only
 const { codeInspectorPlugin } = require('code-inspector-plugin');
 
 // 常量定义
@@ -109,8 +111,15 @@ const mergedConfig = defineConfig({
       'process.env.RUNTIME_ENTRY': JSON.stringify('@coze-dev/runtime'),
       'process.env.TARO_ENV': JSON.stringify('h5'),
       // RAGFlow External Knowledge Base Configuration
-      'process.env.RAGFLOW_API_URL': JSON.stringify('https://ynetflow-agent.finmall.com'),
-      'process.env.RAGFLOW_WEB_URL': JSON.stringify('https://ynetflow-agent.finmall.com'),
+      'process.env.RAGFLOW_API_URL': JSON.stringify(
+        'https://ynetflow-agent.finmall.com',
+      ),
+      'process.env.RAGFLOW_WEB_URL': JSON.stringify(
+        'https://ynetflow-agent.finmall.com',
+      ),
+      // STUDIO_HOST: build-time injected origin for the WebSDK iframe host.
+      // Falls back to runtime location.origin (dev mode) when empty.
+      STUDIO_HOST: JSON.stringify(process.env.STUDIO_HOST || ''),
       ENABLE_COVERAGE: JSON.stringify(false),
     },
     include: [

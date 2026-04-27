@@ -114,6 +114,9 @@ importers:
       '@coze-studio/default-slardar':
         specifier: workspace:*
         version: link:../../packages/arch/default-slardar
+      '@coze-studio/open-chat':
+        specifier: workspace:*
+        version: link:../../packages/studio/open-platform/open-chat
       '@coze-studio/project-publish':
         specifier: workspace:*
         version: link:../../packages/studio/workspace/project-publish

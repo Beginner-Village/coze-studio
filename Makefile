@@ -1,4 +1,5 @@
-.PHONY: debug fe server sync_db dump_db middleware web down clean python help
+.PHONY: debug fe server sync_db dump_db middleware web down clean python help \
+        test-unit test-integration test-all test-space-cover
 
 # 定义脚本路径
 SCRIPTS_DIR := ./scripts
@@ -100,6 +101,21 @@ setup_es_index:
 	@. $(ENV_FILE); \
 	bash $(ES_SETUP_SCRIPT) --index-dir $(ES_INDEX_SCHEMA) --docker-host false --es-address "$$ES_ADDR"
 
+test-unit:
+	@echo "Running unit tests..."
+	@cd backend && go test -short -timeout 5m ./application/space/...
+
+test-integration:
+	@echo "Running integration tests (testcontainers, requires Docker)..."
+	@cd backend && go test -tags integration -timeout 15m ./test/integration/...
+
+test-all: test-unit test-integration
+
+test-space-cover:
+	@echo "Computing coverage for space packages..."
+	@cd backend && go test -short -coverprofile=cover.out -timeout 5m ./application/space/...
+	@cd backend && go tool cover -func=cover.out | tail -1
+
 help:
 	@echo "Usage: make [target]"
 	@echo ""
@@ -120,4 +136,8 @@ help:
 	@echo "  python           - Setup python environment."
 	@echo "  atlas-hash       - Rehash atlas migration files."
 	@echo "  setup_es_index   - Setup elasticsearch index."
+	@echo "  test-unit        - Run unit tests for space packages."
+	@echo "  test-integration - Run integration tests (testcontainers, requires Docker)."
+	@echo "  test-all         - Run unit + integration tests."
+	@echo "  test-space-cover - Show coverage of space packages."
 	@echo "  help             - Show this help message."

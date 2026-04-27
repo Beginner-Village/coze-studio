@@ -37,6 +37,7 @@ import (
 	application "github.com/ynet-dev/ynet-studio/backend/application/singleagent"
 	"github.com/ynet-dev/ynet-studio/backend/application/upload"
 	"github.com/ynet-dev/ynet-studio/backend/application/user"
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
@@ -314,6 +315,15 @@ func UploadFile(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	fileExt := ""
+	if req.FileHead != nil {
+		fileExt = req.FileHead.FileType
+	}
+	if err := checkUploadSize("file."+fileExt, int64(len(fileContent))); err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
+
 	// 支持 Session 和 API Key 两种认证方式
 	userID := ctxutil.GetUIDFromCtx(ctx)
 	if userID == nil {
@@ -436,4 +446,15 @@ func GetTypeList(ctx context.Context, c *app.RequestContext) {
 	}
 
 	c.JSON(consts.StatusOK, resp)
+}
+
+// checkUploadSize 校验上传文件大小是否超过对应类型的上限。
+// filename 用于按扩展名挑选 limit（图片 vs 其他）。
+func checkUploadSize(filename string, size int64) error {
+	limit := entity.MaxFileSizeFor(filename)
+	if size > limit {
+		return errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+			errorx.KVf("msg", "file %q size %d bytes exceeds limit %d bytes", filename, size, limit))
+	}
+	return nil
 }

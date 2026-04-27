@@ -32,19 +32,27 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
 
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/document/ocr"
 	contract "github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 func ParseMarkdown(config *contract.Config, storage storage.Storage, ocr ocr.OCR) ParseFn {
 	return func(ctx context.Context, reader io.Reader, opts ...parser.Option) (docs []*schema.Document, err error) {
 		options := parser.GetCommonOptions(&parser.Options{}, opts...)
 		mdParser := goldmark.DefaultParser()
-		b, err := io.ReadAll(reader)
+		limited := io.LimitReader(reader, entity.MaxOtherFileSize+1)
+		b, err := io.ReadAll(limited)
 		if err != nil {
 			return nil, err
+		}
+		if int64(len(b)) > entity.MaxOtherFileSize {
+			return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+				errorx.KVf("msg", "markdown file size exceeds %d bytes", entity.MaxOtherFileSize))
 		}
 
 		node := mdParser.Parse(text.NewReader(b))
@@ -118,9 +126,14 @@ func ParseMarkdown(config *contract.Config, storage storage.Storage, ocr ocr.OCR
 				return nil, fmt.Errorf("failed to download image, status code: %d", resp.StatusCode)
 			}
 
-			data, err := io.ReadAll(resp.Body)
+			limitedBody := io.LimitReader(resp.Body, entity.MaxImageFileSize+1)
+			data, err := io.ReadAll(limitedBody)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read image content: %w", err)
+			}
+			if int64(len(data)) > entity.MaxImageFileSize {
+				return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+					errorx.KVf("msg", "downloaded image size exceeds %d bytes", entity.MaxImageFileSize))
 			}
 
 			return data, nil

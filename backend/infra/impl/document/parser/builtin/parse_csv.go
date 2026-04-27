@@ -17,6 +17,7 @@
 package builtin
 
 import (
+	"bytes"
 	"context"
 	"encoding/csv"
 	"errors"
@@ -26,12 +27,24 @@ import (
 	"github.com/cloudwego/eino/schema"
 	"github.com/dimchansky/utfbom"
 
+	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	contract "github.com/ynet-dev/ynet-studio/backend/infra/contract/document/parser"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 func ParseCSV(config *contract.Config) ParseFn {
 	return func(ctx context.Context, reader io.Reader, opts ...parser.Option) (docs []*schema.Document, err error) {
-		iter := &csvIterator{csv.NewReader(utfbom.SkipOnly(reader))}
+		limited := io.LimitReader(reader, entity.MaxOtherFileSize+1)
+		buf, err := io.ReadAll(limited)
+		if err != nil {
+			return nil, err
+		}
+		if int64(len(buf)) > entity.MaxOtherFileSize {
+			return nil, errorx.New(errno.ErrKnowledgeFileTooLargeCode,
+				errorx.KVf("msg", "CSV file size exceeds %d bytes", entity.MaxOtherFileSize))
+		}
+		iter := &csvIterator{csv.NewReader(utfbom.SkipOnly(bytes.NewReader(buf)))}
 		return parseByRowIterator(iter, config, opts...)
 	}
 }
