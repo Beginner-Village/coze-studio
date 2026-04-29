@@ -32,9 +32,11 @@ import (
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/cloudwego/hertz/pkg/common/adaptor"
 	"github.com/cloudwego/hertz/pkg/common/config"
 	"github.com/hertz-contrib/cors"
 	"github.com/joho/godotenv"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/ynet-dev/ynet-studio/backend/api/middleware"
 	"github.com/ynet-dev/ynet-studio/backend/api/router"
@@ -43,6 +45,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ternary"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/observability"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/safego"
 	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 )
@@ -104,6 +107,10 @@ func startHttpServer() {
 
 	s := server.Default(opts...)
 
+	// /metrics endpoint for Prometheus scraping (registered before middleware
+	// so it bypasses request-inspector / auth and stays cheap).
+	s.GET("/metrics", adaptor.HertzHandler(promhttp.Handler()))
+
 	// cors option
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
@@ -111,8 +118,9 @@ func startHttpServer() {
 	corsHandler := cors.New(config)
 
 	// Middleware order matters
-	s.Use(middleware.ContextCacheMW())     // must be first
-	s.Use(middleware.RequestInspectorMW()) // must be second
+	s.Use(observability.HTTPRequestsMiddleware()) // RED metrics, must be early
+	s.Use(middleware.ContextCacheMW())            // must be first business mw
+	s.Use(middleware.RequestInspectorMW())        // must be second
 	s.Use(middleware.SetHostMW())
 	s.Use(middleware.SetLogIDMW())
 	s.Use(corsHandler)
