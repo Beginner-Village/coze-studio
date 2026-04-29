@@ -25,28 +25,27 @@
 
 ---
 
-## 整体架构（220 开发环境）
+## 整体架构
 
 ```
-                    ┌─────── 10.10.10.220 ──────────────────┐
-                    │                                          │
-   docker host net  │                                          │   /data/logs/  (host volume)
-   ┌────────────────┘                                          │   ├─ studio/
-   │  Studio    :8888  GET /metrics  ──┐                       │   │   ├─ app.log (current)
-   │  Loop      :TBD   GET /metrics  ──┤                       │   │   ├─ app.log.1.gz
-   │  Guard-go  :8180  GET /metrics  ──┤◄── scrape (15s)       │   │   └─ ...
-   │  Intent-Hub:8000  GET /metrics  ──┤                       │   ├─ loop/
-   │                                   │                       │   ├─ guard-go/
-   │  ┌──────── obs-stack (compose) ───┤                       │   └─ intent-hub/
-   │  │  ├─ prometheus    :9090   ◄────┘                       │
-   │  │  ├─ grafana       :3000   ──── UI                      │
-   │  │  └─ node-exporter :9100   ──── 主机指标                │
-   │  └────────────────────────────────────────────────────────┘
-   └─────────────────────────────────────────────────────────────┘
+   ┌─────── 4 个被监控应用（任意主机）─────────┐    ┌─── obs-stack (任意主机) ───┐
+   │                                            │    │                            │
+   │  Studio     10.10.10.220:8888 /metrics ◄───┼────┤  prometheus  :9090         │
+   │  Loop       10.10.10.220:8889 /metrics ◄───┼────┤  (scrape via host IP+port) │
+   │  Guard-go   10.10.10.220:8180 /metrics ◄───┼────┤                            │
+   │  Intent-Hub 10.10.10.220:8000 /metrics ◄───┼────┤  grafana     :3000   ── UI │
+   │  node_exp   10.10.10.220:9100 /metrics ◄───┼────┤                            │
+   │                                            │    │  bridge network (独立)     │
+   │  /data/logs/<svc>/app.log（host volume）   │    │  仅 expose grafana:3000    │
+   └────────────────────────────────────────────┘    └────────────────────────────┘
+
+   PoC 阶段（v1）：两边都跑在 220 上
+   推广阶段（v2）：obs-stack 可独立部署到 226 / 任意机器，scrape 配置只改 IP
 ```
 
 **关键决策**：
-- **Host network**：4 个 app + obs-stack 都 host net，scrape 走 `localhost:<port>`，避免 docker 跨网络发现复杂度
+- **obs-stack 完全独立**：自己 bridge 网络，不依赖被监控应用的网络。**通过宿主机 IP+端口** scrape，未来想搬到 226/独立机零迁移成本
+- **被监控应用怎么跑都行**：host network 也可、bridge+ports 也可；Prometheus 只关心 `<host_ip>:<port>` 能通就行
 - **双写日志**：stdout 保留（`docker logs` 可用），同时落盘到 `/data/logs/<svc>/app.log`
 - **Prometheus 数据保留 30 天**，单实例，无 HA（开发够用）
 - **Grafana provisioning** via JSON：dashboards 入仓库，重启不丢
@@ -195,13 +194,17 @@ LOG_COMPRESS            # 旧文件 gzip，默认 true（仅 Go 三家有效）
 
 ### docker-compose.yml
 
+obs-stack 用**独立 bridge 网络**，对外只 expose Grafana（3000）和 Prometheus（9090，可选用于调试）：
+
 ```yaml
 services:
   prometheus:
     image: prom/prometheus:v2.55.0
     container_name: obs-prometheus
-    network_mode: host
     restart: unless-stopped
+    networks: [obs-net]
+    ports:
+      - "9090:9090"      # 可选：仅供调试访问，正式可去掉
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prom-data:/prometheus
@@ -213,8 +216,10 @@ services:
   grafana:
     image: grafana/grafana:11.3.0
     container_name: obs-grafana
-    network_mode: host
     restart: unless-stopped
+    networks: [obs-net]
+    ports:
+      - "3000:3000"      # 用户访问入口
     volumes:
       - grafana-data:/var/lib/grafana
       - ./dashboards:/etc/grafana/provisioning/dashboards:ro
@@ -224,6 +229,9 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "false"
 
   node-exporter:
+    # node_exporter 必须 host network 才能采到主机指标。它跑在被监控的机器上，
+    # 不属于 "obs-stack 独立性" 的范畴。如果将来 obs-stack 搬到其他机，
+    # 这个 node-exporter 留在被监控机上，作为被 scrape 的 target 之一。
     image: prom/node-exporter:v1.8.2
     container_name: obs-node-exporter
     network_mode: host
@@ -234,6 +242,10 @@ services:
     command:
       - --path.rootfs=/host
 
+networks:
+  obs-net:
+    driver: bridge
+
 volumes:
   prom-data:
   grafana-data:
@@ -241,39 +253,44 @@ volumes:
 
 ### prometheus.yml
 
+**target 用宿主机 IP，不用 `localhost`**。这样 obs-stack 容器在自己的 bridge 网络里也能访问，更重要的是**未来 obs-stack 搬到任何机器都不用改 target 写法**，只改 IP 即可。
+
 ```yaml
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+# TARGET_HOST 默认 10.10.10.220（PoC 阶段被监控应用都在这台）
+# 推广到 224 / CDRCB 时只需改这个 IP
+
 scrape_configs:
   - job_name: studio
     static_configs:
-      - targets: ["localhost:8888"]
+      - targets: ["10.10.10.220:8888"]
         labels: { service: studio, env: dev-220 }
 
   - job_name: loop
     static_configs:
-      - targets: ["localhost:LOOP_PORT_TBD"]
+      - targets: ["10.10.10.220:8889"]    # 从默认 8888 调整，避免与 Studio 冲突
         labels: { service: loop, env: dev-220 }
 
   - job_name: guard-go
     static_configs:
-      - targets: ["localhost:8180"]
+      - targets: ["10.10.10.220:8180"]
         labels: { service: guard-go, env: dev-220 }
 
   - job_name: intent-hub
     static_configs:
-      - targets: ["localhost:8000"]
+      - targets: ["10.10.10.220:8000"]
         labels: { service: intent-hub, env: dev-220 }
 
   - job_name: node
     static_configs:
-      - targets: ["localhost:9100"]
+      - targets: ["10.10.10.220:9100"]
         labels: { service: host, env: dev-220 }
 ```
 
-> Loop 端口在 220 上的实际映射要在实施时 `docker ps` 查一下补上。
+> 推广模板：当 obs-stack 要监控多个环境（如同时看 220 dev + 224 prod），每个 env 一组 `static_configs`，`labels.env` 区分；Grafana 看板用 `env` 变量切环境。
 
 ### Grafana 数据源（datasources/prometheus.yml）
 
@@ -435,18 +452,19 @@ curl http://localhost:3000/api/health # Grafana ok
 
 ## 开放问题（实施时确认）
 
-1. **Loop 在 220 上实际监听端口**——配置文件里默认 8888，但和 Studio 冲突，220 上可能映射到 8889 / 8890。`docker ps` 查实际值。
-2. **Studio 现有 `knowledge_parse_*` 指标是否已暴露 `/metrics`** —— 代码注册了 promauto 但没看到 mux 注册，需要补 endpoint
-3. **Intent-Hub 的 `prometheus-fastapi-instrumentator` 依赖** —— 加到 `pyproject.toml`，确认不与现有依赖冲突
-4. **Loop 端口若已被占用，是否调整**——最坏情况让 Loop 跑 8889
-5. **Grafana admin 默认密码**——environment 留 `${GRAFANA_ADMIN_PASS:-admin}`，部署时给一个强密码
+1. ~~**Loop 在 220 上实际监听端口**~~ — **已定：改成 8889**（Studio 占了 8888）。Loop 项目的配置/dockerfile 里把默认 LISTEN 改成 `:8889`
+2. **Studio 现有 `knowledge_parse_*` 指标是否已暴露 `/metrics`** — 代码注册了 promauto 但没看到 mux 注册，需要补 endpoint
+3. **Intent-Hub 的 `prometheus-fastapi-instrumentator` 依赖** — 加到 `pyproject.toml`，确认不与现有依赖冲突
+4. **Grafana admin 默认密码** — `environment` 留 `${GRAFANA_ADMIN_PASS:-admin}`，部署时给强密码
+5. **是否将 prometheus 9090 端口也对外 expose** — 默认开（方便调试 `/api/v1/targets`），生产推广可关掉
 
 ---
 
 ## 后续扩展（明确 out-of-scope）
 
+- **v2 — obs-stack 独立部署**：本设计已经支持，只需把 obs-stack 这个 compose 拷到目标机（226 中间件机 / 任何独立机），改 `prometheus.yml` 的 IP 即可。**4 个 app 不用动**。
 - v2：Alertmanager + 告警规则（Lark webhook 集成）
-- v2：copy 这套到 224 生产
+- v2：扩展 prometheus.yml 加 224 prod target（不需要 copy 整套）
 - v2：Loki + Promtail，把 `/data/logs/` 接进来
 - v3：CDRCB 离线包（要求银行那边 docker 镜像离线导入）
 - v3：OpenTelemetry trace（jaeger / tempo）
