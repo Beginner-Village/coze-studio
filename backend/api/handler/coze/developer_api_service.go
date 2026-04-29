@@ -40,6 +40,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/observability"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
@@ -323,6 +324,8 @@ func UploadFile(ctx context.Context, c *app.RequestContext) {
 		internalServerErrorResponse(ctx, c, err)
 		return
 	}
+
+	observability.StudioFileUploadSize.WithLabelValues(observability.ClassifyUploadKind(fileExt)).Observe(float64(len(fileContent)))
 
 	// 支持 Session 和 API Key 两种认证方式
 	userID := ctxutil.GetUIDFromCtx(ctx)
