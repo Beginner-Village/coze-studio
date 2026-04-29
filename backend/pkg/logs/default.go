@@ -26,7 +26,7 @@ import (
 
 var logger FullLogger = &defaultLogger{
 	level:  LevelInfo,
-	stdlog: log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile|log.Lmicroseconds),
+	stdlog: log.New(NewWriter(), "", log.LstdFlags|log.Lshortfile|log.Lmicroseconds),
 }
 
 // SetOutput sets the output of default logs. By default, it is stderr.
