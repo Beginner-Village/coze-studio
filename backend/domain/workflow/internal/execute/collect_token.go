@@ -25,8 +25,27 @@ import (
 	"github.com/cloudwego/eino/schema"
 	callbacks2 "github.com/cloudwego/eino/utils/callbacks"
 
+	"github.com/ynet-dev/ynet-studio/backend/pkg/observability"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/safego"
 )
+
+// recordLLMTokenMetrics emits prompt/completion counters keyed by model name.
+// Safe to call with nil usage; defaults the model label to "unknown" when
+// the caller does not know it (e.g. CallbackOutput.Config absent).
+func recordLLMTokenMetrics(modelName string, usage *model.TokenUsage) {
+	if usage == nil {
+		return
+	}
+	if modelName == "" {
+		modelName = "unknown"
+	}
+	if usage.PromptTokens > 0 {
+		observability.StudioLLMTokensTotal.WithLabelValues(modelName, "prompt").Add(float64(usage.PromptTokens))
+	}
+	if usage.CompletionTokens > 0 {
+		observability.StudioLLMTokensTotal.WithLabelValues(modelName, "completion").Add(float64(usage.CompletionTokens))
+	}
+}
 
 type TokenCollector struct {
 	Key    string
@@ -95,6 +114,11 @@ func GetTokenCallbackHandler() callbacks.Handler {
 				c.wg.Done()
 				return ctx
 			}
+			modelName := ""
+			if output.Config != nil {
+				modelName = output.Config.Model
+			}
+			recordLLMTokenMetrics(modelName, output.TokenUsage)
 			c.addTokenUsage(output.TokenUsage)
 			c.wg.Done()
 			return ctx
@@ -112,6 +136,7 @@ func GetTokenCallbackHandler() callbacks.Handler {
 				}()
 
 				newC := &model.TokenUsage{}
+				modelName := ""
 
 				for {
 					chunk, err := output.Recv()
@@ -119,6 +144,9 @@ func GetTokenCallbackHandler() callbacks.Handler {
 						break
 					}
 
+					if modelName == "" && chunk.Config != nil {
+						modelName = chunk.Config.Model
+					}
 					if chunk.TokenUsage == nil {
 						continue
 					}
@@ -127,6 +155,7 @@ func GetTokenCallbackHandler() callbacks.Handler {
 					newC.TotalTokens += chunk.TokenUsage.TotalTokens
 				}
 
+				recordLLMTokenMetrics(modelName, newC)
 				c.addTokenUsage(newC)
 			})
 			return ctx
