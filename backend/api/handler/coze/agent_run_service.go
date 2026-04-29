@@ -31,6 +31,7 @@ import (
 	sseImpl "github.com/ynet-dev/ynet-studio/backend/infra/impl/sse"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/observability"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
@@ -61,6 +62,7 @@ func AgentRun(ctx context.Context, c *app.RequestContext) {
 
 	err = conversation.ConversationSVC.Run(ctx, sseSender, &req)
 	if err != nil {
+		observability.StudioAgentChatTotal.WithLabelValues("error").Inc()
 		errData := run.ErrorData{
 			Code: errno.ErrConversationAgentRunError,
 			Msg:  err.Error(),
@@ -70,7 +72,9 @@ func AgentRun(ctx context.Context, c *app.RequestContext) {
 			Event: run.RunEventError,
 			Data:  ed,
 		})
+		return
 	}
+	observability.StudioAgentChatTotal.WithLabelValues("success").Inc()
 }
 
 func checkParams(_ context.Context, ar *run.AgentRunRequest) error {
@@ -109,12 +113,14 @@ func ChatV3(ctx context.Context, c *app.RequestContext) {
 		// 非流式模式
 		resp, err := conversation.ConversationOpenAPISVC.OpenapiAgentRunNoStream(ctx, &req)
 		if err != nil {
+			observability.StudioAgentChatTotal.WithLabelValues("error").Inc()
 			c.JSON(http.StatusInternalServerError, &run.ErrorData{
 				Code: errno.ErrConversationAgentRunError,
 				Msg:  err.Error(),
 			})
 			return
 		}
+		observability.StudioAgentChatTotal.WithLabelValues("success").Inc()
 		c.JSON(http.StatusOK, resp)
 		return
 	}
@@ -127,6 +133,7 @@ func ChatV3(ctx context.Context, c *app.RequestContext) {
 	sseSender := sseImpl.NewSSESender(sse.NewStream(c))
 	err = conversation.ConversationOpenAPISVC.OpenapiAgentRun(ctx, sseSender, &req)
 	if err != nil {
+		observability.StudioAgentChatTotal.WithLabelValues("error").Inc()
 		errData := run.ErrorData{
 			Code: errno.ErrConversationAgentRunError,
 			Msg:  err.Error(),
@@ -136,8 +143,9 @@ func ChatV3(ctx context.Context, c *app.RequestContext) {
 			Event: run.RunEventError,
 			Data:  ed,
 		})
+		return
 	}
-
+	observability.StudioAgentChatTotal.WithLabelValues("success").Inc()
 }
 
 func checkParamsV3(_ context.Context, ar *run.ChatV3Request) error {

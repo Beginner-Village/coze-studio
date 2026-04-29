@@ -39,6 +39,26 @@ func TestStudioLLMTokensIncrement(t *testing.T) {
 	}
 }
 
+func TestStudioAgentChatTotalIncrement(t *testing.T) {
+	before := testutil.ToFloat64(StudioAgentChatTotal.WithLabelValues("success"))
+	StudioAgentChatTotal.WithLabelValues("success").Inc()
+	StudioAgentChatTotal.WithLabelValues("error").Inc()
+	after := testutil.ToFloat64(StudioAgentChatTotal.WithLabelValues("success"))
+	if after-before != 1 {
+		t.Fatalf("expected success +1, got +%v", after-before)
+	}
+	if got := testutil.ToFloat64(StudioAgentChatTotal.WithLabelValues("error")); got < 1 {
+		t.Fatalf("expected error counter >= 1, got %v", got)
+	}
+}
+
+func TestStudioFileUploadSizeObserve(t *testing.T) {
+	// Histogram observe should not panic and should be retrievable as a Summary.
+	StudioFileUploadSize.WithLabelValues("image").Observe(2048)
+	StudioFileUploadSize.WithLabelValues("doc").Observe(1024 * 100)
+	StudioFileUploadSize.WithLabelValues("other").Observe(1)
+}
+
 func TestMetricNamesNoCollision(t *testing.T) {
 	names := []string{
 		"http_requests_total",
