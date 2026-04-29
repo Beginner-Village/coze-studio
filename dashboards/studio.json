@@ -1,0 +1,120 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Studio Up",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "up{service=\"studio\"}", "legendFormat": "up"}
+      ],
+      "options": {"colorMode": "value"},
+      "fieldConfig": {"defaults": {"thresholds": {"steps": [{"value": 0, "color": "red"}, {"value": 1, "color": "green"}]}}}
+    },
+    {
+      "type": "stat",
+      "title": "QPS (5m)",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "sum(rate(http_requests_total{service=\"studio\"}[5m]))", "legendFormat": "qps"}
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "P99 latency",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{service=\"studio\"}[5m])))", "legendFormat": "p99"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "type": "stat",
+      "title": "Error rate (5m)",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "sum(rate(http_requests_total{service=\"studio\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{service=\"studio\"}[5m]))", "legendFormat": "err"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests/sec by path",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "topk(10, sum by (path) (rate(http_requests_total{service=\"studio\"}[5m])))", "legendFormat": "{{path}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency P50/P90/P99",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket{service=\"studio\"}[5m])))", "legendFormat": "p50"},
+        {"expr": "histogram_quantile(0.90, sum by (le) (rate(http_request_duration_seconds_bucket{service=\"studio\"}[5m])))", "legendFormat": "p90"},
+        {"expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{service=\"studio\"}[5m])))", "legendFormat": "p99"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "LLM tokens/sec by model",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "sum by (model, kind) (rate(studio_llm_tokens_total[5m]))", "legendFormat": "{{model}}-{{kind}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "File upload size (P95)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum by (le, kind) (rate(studio_file_upload_size_bytes_bucket[5m])))", "legendFormat": "{{kind}}"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "decbytes"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Agent chat / sec",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "sum by (result) (rate(studio_agent_chat_total[5m]))", "legendFormat": "{{result}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Knowledge parse duration P95",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum by (le) (rate(knowledge_parse_duration_seconds_bucket[5m])))", "legendFormat": "p95"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["ynet", "studio"],
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "",
+  "title": "Studio",
+  "uid": "ynet-studio",
+  "version": 1,
+  "weekStart": ""
+}
