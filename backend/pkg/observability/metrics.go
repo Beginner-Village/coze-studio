@@ -17,9 +17,20 @@
 package observability
 
 import (
+	"os"
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
+
+// IsMetricsEnabled reports whether Prometheus exposure is enabled.
+// Opt-in: only true when METRICS_ENABLED is set to "true"/"1"/"on"/"yes"
+// (case-insensitive). Default (env empty or any other value) is disabled.
+func IsMetricsEnabled() bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv("METRICS_ENABLED")))
+	return v == "true" || v == "1" || v == "on" || v == "yes"
+}
 
 // Generic RED: shared by every HTTP handler.
 var (

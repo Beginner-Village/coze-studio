@@ -107,9 +107,12 @@ func startHttpServer() {
 
 	s := server.Default(opts...)
 
-	// /metrics endpoint for Prometheus scraping (registered before middleware
-	// so it bypasses request-inspector / auth and stays cheap).
-	s.GET("/metrics", adaptor.HertzHandler(promhttp.Handler()))
+	// /metrics endpoint for Prometheus scraping. Opt-in via METRICS_ENABLED=true.
+	// When disabled (default), the endpoint is not registered at all.
+	if observability.IsMetricsEnabled() {
+		s.GET("/metrics", adaptor.HertzHandler(promhttp.Handler()))
+		logs.Infof("metrics: /metrics endpoint enabled")
+	}
 
 	// cors option
 	config := cors.DefaultConfig()
