@@ -26,5 +26,8 @@ export enum SpaceSubModuleEnum {
   CARD = 'card',
   EXPORT_IMPORT = 'export-import',
   OBSERVABILITY = 'observability',
+  OBSERVABILITY_EVALUATION_SETS = 'observability/evaluation-sets',
+  OBSERVABILITY_EVALUATORS = 'observability/evaluators',
+  OBSERVABILITY_EXPERIMENTS = 'observability/experiments',
   SKILLS = 'skills',
 }

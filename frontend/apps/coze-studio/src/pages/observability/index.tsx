@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* eslint-disable curly, max-lines, @coze-arch/max-line-per-function */
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Button,
+  Modal,
   Select,
   Spin,
+  Toast,
 } from '@coze-arch/coze-design';
 import {
   IconCozRefresh,
@@ -30,6 +33,11 @@ import copy from 'copy-to-clipboard';
 import type { OutputSpan } from '@coze-arch/idl/stone_cozeloop_observability_api';
 
 import { listSpans } from './api';
+import {
+  exportTracesToDataset,
+  listEvaluationSets,
+  type EvaluationSet,
+} from './loop-eval-api';
 import { TraceDetail } from './trace-detail';
 
 // 时间范围预设
@@ -92,6 +100,10 @@ function formatStartTime(startedAt: string): string {
   const d = new Date(ms);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function getErrorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
 }
 
 // ── 小组件 ──
@@ -205,6 +217,10 @@ const Page: React.FC = () => {
   const [hasMore, setHasMore] = useState(false);
   const [selectedSpan, setSelectedSpan] = useState<OutputSpan | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [exportVisible, setExportVisible] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [evalSets, setEvalSets] = useState<EvaluationSet[]>([]);
+  const [selectedEvalSetId, setSelectedEvalSetId] = useState('');
   const tableRef = useRef<HTMLDivElement>(null);
 
   const fetchSpans = useCallback(
@@ -255,6 +271,50 @@ const Page: React.FC = () => {
     setPageToken('');
     fetchSpans(false);
   }, [fetchSpans]);
+
+  const displayedTraceIds = useMemo(
+    () => Array.from(new Set(spans.map(span => span.trace_id).filter(Boolean))),
+    [spans],
+  );
+
+  const openExportModal = useCallback(async () => {
+    if (!spaceId) {
+      return;
+    }
+    setExportVisible(true);
+    try {
+      const res = await listEvaluationSets({
+        workspace_id: spaceId,
+        page_size: 20,
+        page_number: 1,
+      });
+      const sets = res.evaluation_sets || [];
+      setEvalSets(sets);
+      setSelectedEvalSetId(String(sets[0]?.evaluation_set_id || sets[0]?.id || ''));
+    } catch (err: unknown) {
+      Toast.error(getErrorMessage(err, '加载评估集失败'));
+    }
+  }, [spaceId]);
+
+  const handleExport = useCallback(async () => {
+    if (!spaceId || displayedTraceIds.length === 0) {
+      return;
+    }
+    setExporting(true);
+    try {
+      await exportTracesToDataset({
+        workspace_id: spaceId,
+        trace_ids: displayedTraceIds,
+        evaluation_set_id: selectedEvalSetId || undefined,
+      });
+      Toast.success('导出成功');
+      setExportVisible(false);
+    } catch (err: unknown) {
+      Toast.error(getErrorMessage(err, '导出失败'));
+    } finally {
+      setExporting(false);
+    }
+  }, [displayedTraceIds, selectedEvalSetId, spaceId]);
 
   // 滚动加载更多
   const handleScroll = useCallback(
@@ -335,6 +395,14 @@ const Page: React.FC = () => {
           <span style={{ fontSize: 13, color: '#86909c' }}>
             {spans.length} 条{hasMore ? '+' : ''}
           </span>
+
+          <Button
+            size="small"
+            disabled={displayedTraceIds.length === 0}
+            onClick={openExportModal}
+          >
+            导出到评估集
+          </Button>
 
           <Button
             theme="borderless"
@@ -474,6 +542,52 @@ const Page: React.FC = () => {
           onNext={selectedIndex < spans.length - 1 ? handleNext : undefined}
         />
       )}
+
+      <Modal
+        title="导出到评估集"
+        visible={exportVisible}
+        onCancel={() => setExportVisible(false)}
+        footer={null}
+        style={{ width: 480 }}
+      >
+        <div className="flex flex-col gap-4">
+          <div>
+            <div className="text-sm text-gray-700 mb-2">评估集</div>
+            <Select
+              value={selectedEvalSetId}
+              onChange={v => setSelectedEvalSetId(v as string)}
+              style={{ width: '100%' }}
+              optionList={evalSets.map(set => ({
+                label: set.name || set.evaluation_set_id || set.id || '-',
+                value: String(set.evaluation_set_id || set.id || ''),
+              }))}
+              placeholder="请选择评估集"
+            />
+          </div>
+          <div className="text-sm text-gray-500">
+            将导出当前列表中的 {displayedTraceIds.length} 个 Trace。
+          </div>
+          <div
+            className="rounded-[4px] border p-2 text-xs text-gray-600"
+            style={{ maxHeight: 120, overflow: 'auto', fontFamily: 'monospace' }}
+          >
+            {displayedTraceIds.map(traceId => (
+              <div key={traceId}>{traceId}</div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button onClick={() => setExportVisible(false)}>取消</Button>
+            <Button
+              type="primary"
+              loading={exporting}
+              disabled={!selectedEvalSetId || displayedTraceIds.length === 0}
+              onClick={handleExport}
+            >
+              导出
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

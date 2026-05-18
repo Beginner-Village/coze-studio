@@ -194,6 +194,9 @@ const createSubMenuConfig = () => {
       path: SpaceSubModuleEnum.OBSERVABILITY,
       dataTestId: 'navigation_workspace_observability',
     },
+    { icon: <IconCozAnalytics />, activeIcon: <IconCozAnalytics />, title: () => '评估集', path: SpaceSubModuleEnum.OBSERVABILITY_EVALUATION_SETS, dataTestId: 'navigation_workspace_observability_evaluation_sets' },
+    { icon: <IconCozAnalytics />, activeIcon: <IconCozAnalytics />, title: () => '评估器', path: SpaceSubModuleEnum.OBSERVABILITY_EVALUATORS, dataTestId: 'navigation_workspace_observability_evaluators' },
+    { icon: <IconCozAnalytics />, activeIcon: <IconCozAnalytics />, title: () => '实验', path: SpaceSubModuleEnum.OBSERVABILITY_EXPERIMENTS, dataTestId: 'navigation_workspace_observability_experiments' },
   ];
 
   // 过滤掉 false 值（被 feature flag 隐藏的菜单项）
