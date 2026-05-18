@@ -16,7 +16,13 @@
 /* eslint-disable curly, max-lines, @coze-arch/max-line-per-function */
 
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
+
+// Eager imports of evaluation sub-pages (chunk splitting via lazy was unreliable
+// in our rsbuild setup — see notes in commit feat(observability) follow-up).
+import EvaluationSetsPage from './evaluation-sets/index';
+import EvaluatorsPage from './evaluators/index';
+import ExperimentsPage from './experiments/index';
 import {
   Button,
   Modal,
@@ -592,5 +598,17 @@ const Page: React.FC = () => {
   );
 };
 
-export { Page as Component };
-export default Page;
+// Tab dispatcher: render the right sub-page based on ?tab query.
+// This avoids the (unreliable in our rsbuild) lazy-chunk route registration
+// and keeps everything in the existing /observability chunk.
+const ObservabilityRoute: React.FC = () => {
+  const [params] = useSearchParams();
+  const tab = params.get('tab');
+  if (tab === 'evaluation-sets') return <EvaluationSetsPage />;
+  if (tab === 'evaluators') return <EvaluatorsPage />;
+  if (tab === 'experiments') return <ExperimentsPage />;
+  return <Page />;
+};
+
+export { ObservabilityRoute as Component };
+export default ObservabilityRoute;

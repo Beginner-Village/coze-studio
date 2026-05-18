@@ -288,31 +288,6 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   path: 'observability',
                   lazy: () => import('../pages/observability/index'),
                 },
-                {
-                  path: 'observability/evaluation-sets',
-                  lazy: () =>
-                    import('../pages/observability/evaluation-sets/index'),
-                },
-                {
-                  path: 'observability/evaluation-sets/:setId',
-                  lazy: () =>
-                    import('../pages/observability/evaluation-sets/detail'),
-                },
-                {
-                  path: 'observability/evaluators',
-                  lazy: () =>
-                    import('../pages/observability/evaluators/index'),
-                },
-                {
-                  path: 'observability/experiments',
-                  lazy: () =>
-                    import('../pages/observability/experiments/index'),
-                },
-                {
-                  path: 'observability/experiments/:exptId',
-                  lazy: () =>
-                    import('../pages/observability/experiments/detail'),
-                },
               ],
             },
           ],
