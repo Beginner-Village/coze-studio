@@ -19,6 +19,7 @@ package coze
 import (
 	"context"
 	"errors"
+	"path"
 	"strconv"
 	"strings"
 
@@ -28,6 +29,14 @@ import (
 	crossknowledge "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
 	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
 	knowledgecontract "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
+)
+
+// Extra keys mirror backend/domain/knowledge/internal/consts. Kept as private
+// string literals here because that package is internal to the knowledge domain.
+const (
+	extraKnowledgeName = "knowledge_name"
+	extraDocumentURL   = "document_url"
+	extraDocumentURI   = "document_uri"
 )
 
 type RetrieveTestRequest struct {
@@ -53,13 +62,16 @@ type RetrieveTestResultSet struct {
 }
 
 type RetrieveTestHit struct {
-	SliceID      string  `json:"slice_id"`
-	KnowledgeID  string  `json:"knowledge_id"`
-	DocumentID   string  `json:"document_id"`
-	DocumentName string  `json:"document_name"`
-	Content      string  `json:"content"`
-	Answer       string  `json:"answer,omitempty"`
-	Score        float64 `json:"score"`
+	SliceID       string  `json:"slice_id"`
+	KnowledgeID   string  `json:"knowledge_id"`
+	KnowledgeName string  `json:"knowledge_name"`
+	DocumentID    string  `json:"document_id"`
+	DocumentName  string  `json:"document_name"`
+	DocumentURI   string  `json:"document_uri"`
+	DocumentURL   string  `json:"document_url,omitempty"`
+	Content       string  `json:"content"`
+	Answer        string  `json:"answer,omitempty"`
+	Score         float64 `json:"score"`
 }
 
 // RetrieveTest .
@@ -152,14 +164,34 @@ func RetrieveTest(ctx context.Context, c *app.RequestContext) {
 			continue
 		}
 		s := item.Slice
+		knowledgeName := ""
+		docURI := ""
+		docURL := ""
+		if s.Extra != nil {
+			knowledgeName = s.Extra[extraKnowledgeName]
+			docURI = s.Extra[extraDocumentURI]
+			docURL = s.Extra[extraDocumentURL]
+		}
+		docName := strings.TrimSpace(s.DocumentName)
+		if docName == "" {
+			if uri := strings.TrimSpace(docURI); uri != "" {
+				docName = path.Base(uri)
+			}
+		}
+		if docName == "" {
+			docName = "未命名文档"
+		}
 		result.Hits = append(result.Hits, &RetrieveTestHit{
-			SliceID:      strconv.FormatInt(s.ID, 10),
-			KnowledgeID:  strconv.FormatInt(s.KnowledgeID, 10),
-			DocumentID:   strconv.FormatInt(s.DocumentID, 10),
-			DocumentName: s.DocumentName,
-			Content:      s.GetSliceContent(),
-			Answer:       s.Answer,
-			Score:        item.Score,
+			SliceID:       strconv.FormatInt(s.ID, 10),
+			KnowledgeID:   strconv.FormatInt(s.KnowledgeID, 10),
+			KnowledgeName: knowledgeName,
+			DocumentID:    strconv.FormatInt(s.DocumentID, 10),
+			DocumentName:  docName,
+			DocumentURI:   docURI,
+			DocumentURL:   docURL,
+			Content:       s.GetSliceContent(),
+			Answer:        s.Answer,
+			Score:         item.Score,
 		})
 	}
 	result.Total = int32(len(result.Hits))

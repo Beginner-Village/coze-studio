@@ -692,6 +692,7 @@ func (k *knowledgeSVC) packResults(ctx context.Context, retrieveResult []*schema
 		sliceEntity.Extra = map[string]string{
 			consts.KnowledgeName: kn.Name,
 			consts.DocumentURL:   docURL,
+			consts.DocumentURI:   docUri,
 		}
 		switch knowledgeModel.DocumentType(doc.DocumentType) {
 		case knowledgeModel.DocumentTypeText:

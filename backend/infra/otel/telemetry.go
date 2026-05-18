@@ -52,18 +52,30 @@ const (
 
 // Init configures the global OTEL TracerProvider, returning a shutdown function when enabled.
 func Init(ctx context.Context) (func(context.Context) error, error) {
+	// Private-deployment default: telemetry ON unless explicitly disabled.
+	// In open-source release this stays opt-in (envEnable unset → off in upstream),
+	// but for ynet-studio we want trace ingestion working out of the box.
 	enabled := strings.ToLower(strings.TrimSpace(os.Getenv(envEnable)))
-	if enabled == "" || enabled == "0" || enabled == "false" {
-		logs.Infof("otel: telemetry disabled (%s not truthy)", envEnable)
+	if enabled == "0" || enabled == "false" {
+		logs.Infof("otel: telemetry disabled (%s=%s)", envEnable, enabled)
 		return nil, nil
 	}
 
 	endpoint := strings.TrimSpace(os.Getenv(envEndpoint))
+	if endpoint == "" {
+		// Private-deployment default: Loop runs in the same namespace,
+		// expose its OTel ingest endpoint via Service DNS.
+		endpoint = "http://ynet-loop-app:8888/v1/loop/opentelemetry/v1/traces"
+		logs.Infof("otel: %s not set, defaulting to %s", envEndpoint, endpoint)
+	}
 	fallbackWS := strings.TrimSpace(os.Getenv(envWorkspace))
 	token := strings.TrimSpace(os.Getenv(envToken))
-	if endpoint == "" || token == "" {
-		logs.Warnf("otel: missing endpoint/token, telemetry not started")
-		return nil, nil
+	if token == "" {
+		// Loop OtelIngestTraces does not require a bearer token in the
+		// private deployment (see backend/api/router/.../coze.loop.apis.go:
+		// _otelingesttracesMw returns nil). Send a placeholder so existing
+		// header construction still works.
+		token = "private"
 	}
 
 	exporter := &dynamicWSExporter{

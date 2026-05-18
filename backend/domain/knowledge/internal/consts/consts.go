@@ -21,6 +21,7 @@ const (
 	RDBFieldID             = "_knowledge_document_slice_id"
 	KnowledgeName          = "knowledge_name"
 	DocumentURL            = "document_url"
+	DocumentURI            = "document_uri"
 	DefaultChunkSize       = 800
 	DefaultSeparator       = "\n"
 	DefaultOverlap         = 10

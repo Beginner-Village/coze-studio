@@ -1,10 +1,31 @@
+/*
+ * Copyright 2025 ynet-dev Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { useMemo, useState } from 'react';
 
 type RetrieveTestHit = {
   slice_id: string;
+  knowledge_id: string;
+  knowledge_name?: string;
   document_id: string;
   document_name: string;
+  document_uri?: string;
+  document_url?: string;
   content: string;
+  answer?: string;
   score: number;
 };
 
@@ -229,15 +250,78 @@ export const KnowledgeRetrieveTester = ({
                   style={{
                     border: '1px solid #eef0f3',
                     borderRadius: 8,
-                    padding: 8,
+                    padding: 10,
                     marginBottom: 8,
                     background: '#fcfcfd',
                   }}
                 >
-                  <div style={{ fontSize: 12, color: '#4e5969', marginBottom: 4 }}>
-                    score: {item.score.toFixed(4)} | doc: {item.document_name || item.document_id}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      marginBottom: 6,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: '#0f172a',
+                        wordBreak: 'break-all',
+                        lineHeight: '18px',
+                      }}
+                      title={item.document_name || '未命名文档'}
+                    >
+                      📄 {item.document_name || '未命名文档'}
+                    </div>
+                    <div
+                      style={{
+                        flexShrink: 0,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: '#1d4ed8',
+                        background: '#dbeafe',
+                        borderRadius: 6,
+                        padding: '2px 6px',
+                        lineHeight: '16px',
+                      }}
+                    >
+                      {item.score.toFixed(4)}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 13, color: '#1f2937', whiteSpace: 'pre-wrap' }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4, wordBreak: 'break-all' }}>
+                    {item.knowledge_name ? <span>知识库: {item.knowledge_name} · </span> : null}
+                    doc_id: {item.document_id} · slice_id: {item.slice_id}
+                  </div>
+                  {item.document_uri ? (
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: '#475569',
+                        background: '#f1f5f9',
+                        borderRadius: 4,
+                        padding: '2px 6px',
+                        marginBottom: 6,
+                        wordBreak: 'break-all',
+                        fontFamily:
+                          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      }}
+                      title={item.document_uri}
+                    >
+                      {item.document_uri}
+                    </div>
+                  ) : null}
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: '#1f2937',
+                      whiteSpace: 'pre-wrap',
+                      borderTop: '1px dashed #e5e7eb',
+                      paddingTop: 6,
+                    }}
+                  >
                     {item.content || '-'}
                   </div>
                 </div>
