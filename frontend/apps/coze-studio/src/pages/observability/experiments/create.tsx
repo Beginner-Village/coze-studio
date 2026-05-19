@@ -83,6 +83,7 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [targetVersionId, setTargetVersionId] = useState('');
   const [evalSetId, setEvalSetId] = useState('');
   const [evaluatorVersionIds, setEvaluatorVersionIds] = useState<string[]>([]);
   const [evalSets, setEvalSets] = useState<EvaluationSet[]>([]);
@@ -187,6 +188,7 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
         description: description.trim() || undefined,
         eval_set_id: evalSetId,
         evaluator_version_ids: evaluatorVersionIds,
+        target_version_id: targetVersionId.trim() || undefined,
       });
       Toast.success('创建成功');
       setSearchParams?.({ tab: 'experiments' });
@@ -244,6 +246,13 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
                     disabled
                     optionList={[{ label: '工作流', value: 1 }]}
                     style={{ width: '100%' }}
+                  />
+                </FieldLabel>
+                <FieldLabel label="评测对象版本 ID (target_version_id)">
+                  <Input
+                    value={targetVersionId}
+                    onChange={value => setTargetVersionId(String(value))}
+                    placeholder="可选: 现有 eval_target_version 的 ID"
                   />
                 </FieldLabel>
               </div>

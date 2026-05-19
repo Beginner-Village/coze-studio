@@ -250,6 +250,8 @@ export interface CreateExperimentRequest {
   description?: string;
   eval_set_id: string;
   evaluator_version_ids: string[];
+  target_version_id?: string;
+  target_id?: string;
 }
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
@@ -368,12 +370,14 @@ export function listExperiments(req: {
 export function createExperiment(
   req: CreateExperimentRequest,
 ): Promise<{ experiment_id?: string; expt_id?: string }> {
-  return post(`${EVALUATION_BASE}/experiments`, {
+  return post(`${EVALUATION_BASE}/experiments/submit`, {
     workspace_id: req.workspace_id,
     name: req.name,
     desc: req.description,
     eval_set_id: req.eval_set_id,
     evaluator_version_ids: req.evaluator_version_ids,
+    target_version_id: req.target_version_id,
+    target_id: req.target_id,
   });
 }
 

@@ -177,26 +177,7 @@ const Page: React.FC = () => {
     }
   };
 
-  if (evaluatorType === 'agent') {
-    return (
-      <Layout>
-        <Layout.Header className="pb-0">
-          <div className="flex items-center justify-between w-full">
-            <div>
-              <div className="font-[500] text-[20px]">新建 Agent 评估器</div>
-              <div className="text-sm text-gray-500 mt-1">敬请期待</div>
-            </div>
-            <Button onClick={backToList}>取消</Button>
-          </div>
-        </Layout.Header>
-        <Layout.Content>
-          <div className="text-center py-16 text-gray-500 border rounded-[6px]">
-            敬请期待
-          </div>
-        </Layout.Content>
-      </Layout>
-    );
-  }
+  // Agent uses the prompt evaluator pipeline with multi-turn message list.
 
   return (
     <Layout>
@@ -204,7 +185,13 @@ const Page: React.FC = () => {
         <div className="flex items-center justify-between w-full">
           <div>
             <div className="font-[500] text-[20px]">
-              新建{evaluatorType === 'code' ? ' Code ' : ' LLM '}评估器
+              新建
+              {evaluatorType === 'code'
+                ? ' Code '
+                : evaluatorType === 'agent'
+                  ? ' Agent '
+                  : ' LLM '}
+              评估器
             </div>
             <div className="text-sm text-gray-500 mt-1">
               创建 Studio 原生评估器
