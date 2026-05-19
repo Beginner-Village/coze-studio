@@ -134,7 +134,7 @@ export function listEvaluationSets(req: {
   page_size?: number;
   page_number?: number;
 }): Promise<ListResponse<EvaluationSet>> {
-  return post(`${EVALUATION_BASE}/evaluation_sets/list_evaluation_sets`, req);
+  return post(`${EVALUATION_BASE}/evaluation_sets/list`, req);
 }
 
 export function createEvaluationSet(
@@ -147,7 +147,7 @@ export function getEvaluationSet(req: {
   workspace_id: string;
   evaluation_set_id: string;
 }): Promise<{ evaluation_set?: EvaluationSet }> {
-  return post(`${EVALUATION_BASE}/evaluation_sets/get_evaluation_set`, req);
+  return post(`${EVALUATION_BASE}/evaluation_sets`, req);
 }
 
 export function listEvaluationSetItems(req: {
@@ -167,7 +167,7 @@ export function listEvaluators(req: {
   page_size?: number;
   page_number?: number;
 }): Promise<ListResponse<Evaluator>> {
-  return post(`${EVALUATION_BASE}/evaluators/list_evaluators`, req);
+  return post(`${EVALUATION_BASE}/evaluators/list`, req);
 }
 
 export function listExperiments(req: {
@@ -175,14 +175,14 @@ export function listExperiments(req: {
   page_size?: number;
   page_number?: number;
 }): Promise<ListResponse<Experiment>> {
-  return post(`${EVALUATION_BASE}/experiments/list_experiments`, req);
+  return post(`${EVALUATION_BASE}/experiments/list`, req);
 }
 
 export function getExperiment(req: {
   workspace_id: string;
   experiment_id: string;
 }): Promise<{ experiment?: Experiment }> {
-  return post(`${EVALUATION_BASE}/experiments/get_experiment`, req);
+  return post(`${EVALUATION_BASE}/experiments`, req);
 }
 
 export function getExperimentAggrResult(req: {
@@ -197,7 +197,7 @@ export function listTrajectoryConfigs(req: {
   page_size?: number;
   page_number?: number;
 }): Promise<ListResponse<TrajectoryConfig>> {
-  return post(`${OBSERVABILITY_BASE}/trajectory_config/list_trajectory_configs`, req);
+  return post(`${OBSERVABILITY_BASE}/traces/trajectory`, req);
 }
 
 export function exportTracesToDataset(
