@@ -29,6 +29,14 @@ import {
   Toast,
 } from '@coze-arch/coze-design';
 
+import {
+  createExperiment,
+  listEvaluationSets,
+  listEvaluators,
+  type EvaluationSet,
+  type Evaluator,
+} from '../loop-eval-api';
+
 const FieldLabel: React.FC<{
   label: string;
   required?: boolean;
@@ -42,14 +50,6 @@ const FieldLabel: React.FC<{
     {children}
   </div>
 );
-
-import {
-  createExperiment,
-  listEvaluationSets,
-  listEvaluators,
-  type EvaluationSet,
-  type Evaluator,
-} from '../loop-eval-api';
 
 const PAGE_SIZE = 50;
 
