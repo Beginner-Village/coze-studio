@@ -196,8 +196,9 @@ const Page: React.FC = () => {
             size="small"
             theme="borderless"
             onClick={() =>
-              navigate(
-                `/space/${spaceId}/observability/experiments/${getExperimentId(record)}`,
+              window.open(
+                `http://10.10.10.220:8082/console/enterprise/personal/space/${spaceId}/evaluation/experiments/${getExperimentId(record)}`,
+                '_blank',
               )
             }
           >

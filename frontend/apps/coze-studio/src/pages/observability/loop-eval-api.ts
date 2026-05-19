@@ -92,10 +92,23 @@ export interface ListResponse<T> {
   trajectory_configs?: T[];
 }
 
+export interface FieldSchema {
+  key: string;
+  name: string;
+  description?: string;
+  content_type?: string;
+  default_display_format?: number;
+}
+
+export interface EvaluationSetSchema {
+  field_schemas?: FieldSchema[];
+}
+
 export interface CreateEvaluationSetRequest {
   workspace_id: string;
   name: string;
   description?: string;
+  evaluation_set_schema?: EvaluationSetSchema;
 }
 
 export interface ExportTracesToDatasetRequest {

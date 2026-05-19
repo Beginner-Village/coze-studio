@@ -290,7 +290,7 @@ const Page: React.FC = () => {
     setExportVisible(true);
     try {
       const res = await listEvaluationSets({
-        workspace_id: spaceId,
+        workspace_id: Number(spaceId) as unknown as string,
         page_size: 20,
         page_number: 1,
       });
@@ -309,7 +309,7 @@ const Page: React.FC = () => {
     setExporting(true);
     try {
       await exportTracesToDataset({
-        workspace_id: spaceId,
+        workspace_id: Number(spaceId) as unknown as string,
         trace_ids: displayedTraceIds,
         evaluation_set_id: selectedEvalSetId || undefined,
       });

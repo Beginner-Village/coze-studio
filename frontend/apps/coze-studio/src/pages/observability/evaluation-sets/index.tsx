@@ -124,10 +124,33 @@ const Page: React.FC = () => {
     try {
       const values = await formApiRef.current.validate();
       setCreating(true);
+      // Loop expects workspace_id as int64; the param is a string in the
+      // URL so cast it.
       await createEvaluationSet({
-        workspace_id: spaceId,
+        workspace_id: Number(spaceId) as unknown as string,
         name: values.name,
         description: values.description,
+        // Loop requires a non-empty schema. Default to a simple
+        // input + reference_output text pair; users can edit later
+        // via Loop's native UI.
+        evaluation_set_schema: {
+          field_schemas: [
+            {
+              key: 'input',
+              name: 'input',
+              description: '输入',
+              content_type: 'Text',
+              default_display_format: 1,
+            },
+            {
+              key: 'reference_output',
+              name: 'reference_output',
+              description: '参考输出',
+              content_type: 'Text',
+              default_display_format: 1,
+            },
+          ],
+        },
       });
       Toast.success('创建成功');
       setCreateVisible(false);
@@ -194,8 +217,9 @@ const Page: React.FC = () => {
             size="small"
             theme="borderless"
             onClick={() =>
-              navigate(
-                `/space/${spaceId}/observability/evaluation-sets/${getSetId(record)}`,
+              window.open(
+                `http://10.10.10.220:8082/console/enterprise/personal/space/${spaceId}/evaluation/evaluation-sets/${getSetId(record)}`,
+                '_blank',
               )
             }
           >
