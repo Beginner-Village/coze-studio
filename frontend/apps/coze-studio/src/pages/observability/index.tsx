@@ -39,7 +39,10 @@ import {
 } from './loop-eval-api';
 import ExperimentsPage from './experiments/index';
 import ExperimentDetailPage from './experiments/detail';
+import ExperimentCreatePage from './experiments/create';
 import EvaluatorsPage from './evaluators/index';
+import EvaluatorDetailPage from './evaluators/detail';
+import EvaluatorCreatePage from './evaluators/create';
 import EvaluationSetsPage from './evaluation-sets/index';
 import EvaluationSetDetailPage from './evaluation-sets/detail';
 import { listSpans } from './api';
@@ -679,14 +682,28 @@ const Page: React.FC = () => {
 // This avoids the (unreliable in our rsbuild) lazy-chunk route registration
 // and keeps everything in the existing /observability chunk.
 const ObservabilityRoute: React.FC = () => {
-  const [params] = useSearchParams();
+  const [params, setSearchParams] = useSearchParams();
+  const { space_id: workspaceId } = useParams<{ space_id: string }>();
   const tab = params.get('tab');
   const id = params.get('id');
   if (tab === 'evaluation-sets') {
     return id ? <EvaluationSetDetailPage /> : <EvaluationSetsPage />;
   }
-  if (tab === 'evaluators') return <EvaluatorsPage />;
+  if (tab === 'evaluators') {
+    if (params.get('action') === 'create') {
+      return <EvaluatorCreatePage />;
+    }
+    return id ? <EvaluatorDetailPage /> : <EvaluatorsPage />;
+  }
   if (tab === 'experiments') {
+    if (params.get('action') === 'create') {
+      return (
+        <ExperimentCreatePage
+          setSearchParams={setSearchParams}
+          workspaceId={workspaceId}
+        />
+      );
+    }
     return id ? <ExperimentDetailPage /> : <ExperimentsPage />;
   }
   return <Page />;

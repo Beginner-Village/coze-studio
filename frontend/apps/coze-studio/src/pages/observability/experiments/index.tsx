@@ -36,7 +36,6 @@ import {
 } from '../loop-eval-api';
 
 const PAGE_SIZE = 20;
-const LOOP_BASE = 'http://10.10.10.220:8082/console/enterprise/personal';
 
 function getErrorMessage(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback;
@@ -136,11 +135,7 @@ const Page: React.FC = () => {
     if (!spaceId) {
       return;
     }
-    window.open(
-      `${LOOP_BASE}/space/${spaceId}/evaluation/experiments/create`,
-      '_blank',
-      'noopener,noreferrer',
-    );
+    setSearchParams({ tab: 'experiments', action: 'create' });
   };
 
   const columns = useMemo(

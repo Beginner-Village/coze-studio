@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* eslint-disable @coze-arch/max-line-per-function */
 
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { IconCozPlus, IconCozRefresh } from '@coze-arch/coze-design/icons';
@@ -36,7 +37,6 @@ import {
 } from '../loop-eval-api';
 
 const PAGE_SIZE = 20;
-const LOOP_BASE = 'http://10.10.10.220:8082/console/enterprise/personal';
 
 function getErrorMessage(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback;
@@ -90,6 +90,7 @@ function formatEvaluatorType(type?: string | number): string {
 
 const Page: React.FC = () => {
   const { space_id: spaceId } = useParams<{ space_id: string }>();
+  const [, setSearchParams] = useSearchParams();
   const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -120,11 +121,7 @@ const Page: React.FC = () => {
     if (!spaceId) {
       return;
     }
-    window.open(
-      `${LOOP_BASE}/space/${spaceId}/evaluation/evaluators/create?type=${type}`,
-      '_blank',
-      'noopener,noreferrer',
-    );
+    setSearchParams({ tab: 'evaluators', action: 'create', type });
   };
 
   const columns = useMemo(
@@ -165,8 +162,27 @@ const Page: React.FC = () => {
         width: 180,
         render: formatTime,
       },
+      {
+        title: '操作',
+        key: 'actions',
+        width: 120,
+        render: (_: unknown, record: Evaluator) => (
+          <Button
+            size="small"
+            theme="borderless"
+            onClick={() =>
+              setSearchParams({
+                tab: 'evaluators',
+                id: getEvaluatorId(record),
+              })
+            }
+          >
+            查看详情
+          </Button>
+        ),
+      },
     ],
-    [],
+    [setSearchParams],
   );
 
   return (
