@@ -15,36 +15,34 @@
  */
 /* eslint-disable curly, max-lines, @coze-arch/max-line-per-function */
 
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 
 // Eager imports of evaluation sub-pages (chunk splitting via lazy was unreliable
 // in our rsbuild setup — see notes in commit feat(observability) follow-up).
-import EvaluationSetsPage from './evaluation-sets/index';
-import EvaluatorsPage from './evaluators/index';
-import ExperimentsPage from './experiments/index';
-import {
-  Button,
-  Modal,
-  Select,
-  Spin,
-  Toast,
-} from '@coze-arch/coze-design';
-import {
-  IconCozRefresh,
-  IconCozCopy,
-} from '@coze-arch/coze-design/icons';
 import copy from 'copy-to-clipboard';
-
 import type { OutputSpan } from '@coze-arch/idl/stone_cozeloop_observability_api';
+import { IconCozRefresh, IconCozCopy } from '@coze-arch/coze-design/icons';
+import { Button, Modal, Select, Spin, Toast } from '@coze-arch/coze-design';
 
-import { listSpans } from './api';
+import { TraceDetail } from './trace-detail';
 import {
   exportTracesToDataset,
   listEvaluationSets,
   type EvaluationSet,
 } from './loop-eval-api';
-import { TraceDetail } from './trace-detail';
+import ExperimentsPage from './experiments/index';
+import ExperimentDetailPage from './experiments/detail';
+import EvaluatorsPage from './evaluators/index';
+import EvaluationSetsPage from './evaluation-sets/index';
+import EvaluationSetDetailPage from './evaluation-sets/detail';
+import { listSpans } from './api';
 
 // 时间范围预设
 const TIME_RANGES = [
@@ -93,9 +91,9 @@ function truncateContent(text: string, maxLen = 120): string {
   try {
     const parsed = JSON.parse(text);
     const str = typeof parsed === 'string' ? parsed : JSON.stringify(parsed);
-    return str.length <= maxLen ? str : str.slice(0, maxLen) + '...';
+    return str.length <= maxLen ? str : `${str.slice(0, maxLen)}...`;
   } catch {
-    return text.length <= maxLen ? text : text.slice(0, maxLen) + '...';
+    return text.length <= maxLen ? text : `${text.slice(0, maxLen)}...`;
   }
 }
 
@@ -127,9 +125,12 @@ const StatusIcon: React.FC<{ code: number }> = ({ code }) => (
 );
 
 const CopyableId: React.FC<{ id: string }> = ({ id }) => {
-  const display = id ? id.slice(0, 10) + '...' : '-';
+  const display = id ? `${id.slice(0, 10)}...` : '-';
   return (
-    <span className="flex items-center gap-1" style={{ fontFamily: 'monospace', fontSize: 13 }}>
+    <span
+      className="flex items-center gap-1"
+      style={{ fontFamily: 'monospace', fontSize: 13 }}
+    >
       {display}
       <span
         style={{ cursor: 'pointer', opacity: 0.5, fontSize: 12 }}
@@ -148,17 +149,19 @@ const SpanTypeTag: React.FC<{ type: string }> = ({ type }) => {
   if (!type) return <span style={{ color: '#c9cdd4' }}>-</span>;
   const color = SPAN_TYPE_COLORS[type] || '#86909c';
   return (
-    <span style={{
-      display: 'inline-block',
-      padding: '1px 6px',
-      borderRadius: 3,
-      fontSize: 12,
-      lineHeight: '18px',
-      color,
-      background: `${color}14`,
-      border: `1px solid ${color}33`,
-      fontWeight: 500,
-    }}>
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '1px 6px',
+        borderRadius: 3,
+        fontSize: 12,
+        lineHeight: '18px',
+        color,
+        background: `${color}14`,
+        border: `1px solid ${color}33`,
+        fontWeight: 500,
+      }}
+    >
       {type}
     </span>
   );
@@ -240,7 +243,11 @@ const Page: React.FC = () => {
         const filters = spanTypeFilter
           ? {
               filter_fields: [
-                { field_name: 'span_type', values: [spanTypeFilter], query_type: 'eq' },
+                {
+                  field_name: 'span_type',
+                  values: [spanTypeFilter],
+                  query_type: 'eq',
+                },
               ],
             }
           : undefined;
@@ -255,7 +262,9 @@ const Page: React.FC = () => {
           filters,
           order_bys: [{ field: 'started_at', is_asc: false }],
         });
-        setSpans(prev => (append ? [...prev, ...(res.spans || [])] : (res.spans || [])));
+        setSpans(prev =>
+          append ? [...prev, ...(res.spans || [])] : res.spans || [],
+        );
         setPageToken(res.next_page_token);
         setHasMore(res.has_more);
       } catch (err) {
@@ -296,7 +305,9 @@ const Page: React.FC = () => {
       });
       const sets = res.evaluation_sets || [];
       setEvalSets(sets);
-      setSelectedEvalSetId(String(sets[0]?.evaluation_set_id || sets[0]?.id || ''));
+      setSelectedEvalSetId(
+        String(sets[0]?.evaluation_set_id || sets[0]?.id || ''),
+      );
     } catch (err: unknown) {
       Toast.error(getErrorMessage(err, '加载评估集失败'));
     }
@@ -334,13 +345,10 @@ const Page: React.FC = () => {
     [hasMore, loading, fetchSpans],
   );
 
-  const handleRowClick = useCallback(
-    (record: OutputSpan, index: number) => {
-      setSelectedSpan(record);
-      setSelectedIndex(index);
-    },
-    [],
-  );
+  const handleRowClick = useCallback((record: OutputSpan, index: number) => {
+    setSelectedSpan(record);
+    setSelectedIndex(index);
+  }, []);
 
   // 上一条/下一条导航
   const handlePrev = useCallback(() => {
@@ -358,10 +366,15 @@ const Page: React.FC = () => {
   }, [selectedIndex, spans]);
 
   return (
-    <div className="h-full w-full flex flex-col overflow-hidden" style={{ minWidth: 980 }}>
+    <div
+      className="h-full w-full flex flex-col overflow-hidden"
+      style={{ minWidth: 980 }}
+    >
       {/* 页面头部 */}
       <div style={{ padding: '20px 24px 0' }}>
-        <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>Trace</div>
+        <div style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>
+          Trace
+        </div>
 
         {/* 筛选栏 */}
         <div className="flex items-center gap-2" style={{ marginBottom: 16 }}>
@@ -372,7 +385,10 @@ const Page: React.FC = () => {
               setPageToken('');
             }}
             style={{ width: 144 }}
-            optionList={TIME_RANGES.map(r => ({ label: r.label, value: r.value }))}
+            optionList={TIME_RANGES.map(r => ({
+              label: r.label,
+              value: r.value,
+            }))}
             size="small"
           />
           <Select
@@ -382,7 +398,10 @@ const Page: React.FC = () => {
               setPageToken('');
             }}
             style={{ width: 128 }}
-            optionList={SPAN_LIST_TYPES.map(r => ({ label: r.label, value: r.value }))}
+            optionList={SPAN_LIST_TYPES.map(r => ({
+              label: r.label,
+              value: r.value,
+            }))}
             size="small"
           />
           <Select
@@ -392,7 +411,10 @@ const Page: React.FC = () => {
               setPageToken('');
             }}
             style={{ width: 128 }}
-            optionList={SPAN_TYPE_OPTIONS.map(r => ({ label: r.label, value: r.value }))}
+            optionList={SPAN_TYPE_OPTIONS.map(r => ({
+              label: r.label,
+              value: r.value,
+            }))}
             size="small"
           />
 
@@ -448,13 +470,20 @@ const Page: React.FC = () => {
           <div style={{ width: 140, flexShrink: 0 }}>TraceID</div>
           <div style={{ flex: 1, minWidth: 160 }}>Input</div>
           <div style={{ flex: 1, minWidth: 160 }}>Output</div>
-          <div style={{ width: 100, flexShrink: 0, paddingLeft: 12 }}>Latency</div>
-          <div style={{ width: 140, flexShrink: 0, paddingLeft: 12 }}>Start Time</div>
+          <div style={{ width: 100, flexShrink: 0, paddingLeft: 12 }}>
+            Latency
+          </div>
+          <div style={{ width: 140, flexShrink: 0, paddingLeft: 12 }}>
+            Start Time
+          </div>
         </div>
 
         {/* 数据行 */}
         {loading && spans.length === 0 ? (
-          <div className="flex items-center justify-center" style={{ height: 200 }}>
+          <div
+            className="flex items-center justify-center"
+            style={{ height: 200 }}
+          >
             <Spin />
           </div>
         ) : spans.length === 0 ? (
@@ -482,7 +511,8 @@ const Page: React.FC = () => {
               }}
               onMouseEnter={e => {
                 if (selectedSpan?.span_id !== span.span_id) {
-                  e.currentTarget.style.background = 'var(--coz-bg-hover, #f7f8fa)';
+                  e.currentTarget.style.background =
+                    'var(--coz-bg-hover, #f7f8fa)';
                 }
               }}
               onMouseLeave={e => {
@@ -494,7 +524,18 @@ const Page: React.FC = () => {
               <div style={{ width: 48, flexShrink: 0, textAlign: 'center' }}>
                 <StatusIcon code={span.status_code} />
               </div>
-              <div style={{ width: 150, flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 500, color: '#1d2129' }}>
+              <div
+                style={{
+                  width: 150,
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: '#1d2129',
+                }}
+              >
                 {span.span_name || '-'}
               </div>
               <div style={{ width: 80, flexShrink: 0 }}>
@@ -503,16 +544,38 @@ const Page: React.FC = () => {
               <div style={{ width: 140, flexShrink: 0 }}>
                 <CopyableId id={span.trace_id} />
               </div>
-              <div style={{ flex: 1, minWidth: 160, paddingRight: 8, overflow: 'hidden' }}>
+              <div
+                style={{
+                  flex: 1,
+                  minWidth: 160,
+                  paddingRight: 8,
+                  overflow: 'hidden',
+                }}
+              >
                 <ContentCell text={span.input} />
               </div>
-              <div style={{ flex: 1, minWidth: 160, paddingRight: 8, overflow: 'hidden' }}>
+              <div
+                style={{
+                  flex: 1,
+                  minWidth: 160,
+                  paddingRight: 8,
+                  overflow: 'hidden',
+                }}
+              >
                 <ContentCell text={span.output} />
               </div>
               <div style={{ width: 100, flexShrink: 0, paddingLeft: 12 }}>
                 <LatencyCell duration={span.duration} />
               </div>
-              <div style={{ width: 140, flexShrink: 0, paddingLeft: 12, fontSize: 13, color: '#4e5969' }}>
+              <div
+                style={{
+                  width: 140,
+                  flexShrink: 0,
+                  paddingLeft: 12,
+                  fontSize: 13,
+                  color: '#4e5969',
+                }}
+              >
                 {formatStartTime(span.started_at)}
               </div>
             </div>
@@ -520,22 +583,32 @@ const Page: React.FC = () => {
         )}
 
         {/* 加载更多指示器 */}
-        {loading && spans.length > 0 && (
-          <div className="flex items-center justify-center" style={{ height: 48 }}>
+        {loading && spans.length > 0 ? (
+          <div
+            className="flex items-center justify-center"
+            style={{ height: 48 }}
+          >
             <Spin size="small" />
           </div>
-        )}
+        ) : null}
 
         {/* 无更多数据 */}
         {!loading && !hasMore && spans.length > 0 && (
-          <div style={{ textAlign: 'center', padding: '12px 0', color: '#c9cdd4', fontSize: 12 }}>
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '12px 0',
+              color: '#c9cdd4',
+              fontSize: 12,
+            }}
+          >
             — 没有更多数据 —
           </div>
         )}
       </div>
 
       {/* 详情面板 */}
-      {selectedSpan && spaceId && (
+      {selectedSpan && spaceId ? (
         <TraceDetail
           span={selectedSpan}
           spaceId={spaceId}
@@ -547,7 +620,7 @@ const Page: React.FC = () => {
           onPrev={selectedIndex > 0 ? handlePrev : undefined}
           onNext={selectedIndex < spans.length - 1 ? handleNext : undefined}
         />
-      )}
+      ) : null}
 
       <Modal
         title="导出到评估集"
@@ -575,7 +648,11 @@ const Page: React.FC = () => {
           </div>
           <div
             className="rounded-[4px] border p-2 text-xs text-gray-600"
-            style={{ maxHeight: 120, overflow: 'auto', fontFamily: 'monospace' }}
+            style={{
+              maxHeight: 120,
+              overflow: 'auto',
+              fontFamily: 'monospace',
+            }}
           >
             {displayedTraceIds.map(traceId => (
               <div key={traceId}>{traceId}</div>
@@ -604,9 +681,14 @@ const Page: React.FC = () => {
 const ObservabilityRoute: React.FC = () => {
   const [params] = useSearchParams();
   const tab = params.get('tab');
-  if (tab === 'evaluation-sets') return <EvaluationSetsPage />;
+  const id = params.get('id');
+  if (tab === 'evaluation-sets') {
+    return id ? <EvaluationSetDetailPage /> : <EvaluationSetsPage />;
+  }
   if (tab === 'evaluators') return <EvaluatorsPage />;
-  if (tab === 'experiments') return <ExperimentsPage />;
+  if (tab === 'experiments') {
+    return id ? <ExperimentDetailPage /> : <ExperimentsPage />;
+  }
   return <Page />;
 };
 

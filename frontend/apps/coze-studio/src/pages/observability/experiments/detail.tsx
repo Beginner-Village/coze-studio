@@ -16,7 +16,7 @@
 /* eslint-disable @coze-arch/max-line-per-function */
 /* eslint-disable complexity */
 
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -84,10 +84,9 @@ function stringify(value: unknown): string {
 }
 
 const Page: React.FC = () => {
-  const { space_id: spaceId, exptId } = useParams<{
-    space_id: string;
-    exptId: string;
-  }>();
+  const { space_id: spaceId } = useParams<{ space_id: string }>();
+  const [searchParams] = useSearchParams();
+  const exptId = searchParams.get('id') || '';
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [experiment, setExperiment] = useState<Experiment | null>(null);
@@ -121,7 +120,10 @@ const Page: React.FC = () => {
         setAggrResult(result);
         setResultUnavailable(false);
       } catch (err) {
-        console.error('[ExperimentDetail] Failed to fetch aggregate result:', err);
+        console.error(
+          '[ExperimentDetail] Failed to fetch aggregate result:',
+          err,
+        );
         setAggrResult(null);
         setResultUnavailable(true);
       }
@@ -137,7 +139,10 @@ const Page: React.FC = () => {
         );
         setTrajectoryUnavailable(false);
       } catch (err) {
-        console.error('[ExperimentDetail] Failed to fetch trajectory configs:', err);
+        console.error(
+          '[ExperimentDetail] Failed to fetch trajectory configs:',
+          err,
+        );
         setTrajectoryConfigs([]);
         setTrajectoryUnavailable(true);
       }
@@ -193,7 +198,7 @@ const Page: React.FC = () => {
           </div>
           <Button
             onClick={() =>
-              navigate(`/space/${spaceId}/observability/experiments`)
+              navigate(`/space/${spaceId}/observability?tab=experiments`)
             }
           >
             返回列表

@@ -15,7 +15,7 @@
  */
 /* eslint-disable @coze-arch/max-line-per-function */
 
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button, Layout, Spin, Table, Toast } from '@coze-arch/coze-design';
@@ -57,10 +57,9 @@ function stringify(value: unknown): string {
 }
 
 const Page: React.FC = () => {
-  const { space_id: spaceId, setId } = useParams<{
-    space_id: string;
-    setId: string;
-  }>();
+  const { space_id: spaceId } = useParams<{ space_id: string }>();
+  const [searchParams] = useSearchParams();
+  const setId = searchParams.get('id') || '';
   const navigate = useNavigate();
   const [evaluationSet, setEvaluationSet] = useState<EvaluationSet | null>(
     null,
@@ -152,7 +151,7 @@ const Page: React.FC = () => {
           </div>
           <Button
             onClick={() =>
-              navigate(`/space/${spaceId}/observability/evaluation-sets`)
+              navigate(`/space/${spaceId}/observability?tab=evaluation-sets`)
             }
           >
             返回列表

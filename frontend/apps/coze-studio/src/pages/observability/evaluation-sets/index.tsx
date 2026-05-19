@@ -15,7 +15,7 @@
  */
 /* eslint-disable @coze-arch/max-line-per-function */
 
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import React, {
   useCallback,
   useEffect,
@@ -88,6 +88,7 @@ function formatTime(value?: string | number): string {
 const Page: React.FC = () => {
   const { space_id: spaceId } = useParams<{ space_id: string }>();
   const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
   const formApiRef = useRef<FormApi | null>(null);
   const [sets, setSets] = useState<EvaluationSet[]>([]);
   const [loading, setLoading] = useState(false);
@@ -217,10 +218,10 @@ const Page: React.FC = () => {
             size="small"
             theme="borderless"
             onClick={() =>
-              window.open(
-                `http://10.10.10.220:8082/console/enterprise/personal/space/${spaceId}/evaluation/evaluation-sets/${getSetId(record)}`,
-                '_blank',
-              )
+              setSearchParams({
+                tab: 'evaluation-sets',
+                id: getSetId(record),
+              })
             }
           >
             查看详情
