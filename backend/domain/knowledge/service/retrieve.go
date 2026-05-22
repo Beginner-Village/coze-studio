@@ -600,7 +600,35 @@ func (k *knowledgeSVC) reRankNode(ctx context.Context, resultMap map[string]any)
 		retrieveResult = append(retrieveResult, doc)
 	}
 
+	// Dump query + per-channel top3 + final top3 for bad case mining.
+	// Use [retrieve-dump] prefix so it's grep-able.
+	logs.CtxInfof(ctx, "[retrieve-dump] query=%q vector_top3=%s es_top3=%s nl2sql_top3=%s final_top3=%s",
+		query,
+		topNScoreSummary(vectorRetrieveResult, 3),
+		topNScoreSummary(esRetrieveResult, 3),
+		topNScoreSummary(nl2SqlRetrieveResult, 3),
+		topNScoreSummary(retrieveResult, 3),
+	)
+
 	return retrieveResult, nil
+}
+
+// topNScoreSummary returns a short string showing the top-N (slice_id, score) of a docs list.
+// Used in retrieval debug logs to capture per-channel top hits for bad case mining.
+func topNScoreSummary(docs []*schema.Document, n int) string {
+	if len(docs) == 0 {
+		return "[]"
+	}
+	limit := n
+	if len(docs) < limit {
+		limit = len(docs)
+	}
+	parts := make([]string, 0, limit)
+	for i := 0; i < limit; i++ {
+		d := docs[i]
+		parts = append(parts, fmt.Sprintf("{%s:%.4f}", d.ID, d.Score()))
+	}
+	return "[" + strings.Join(parts, ",") + "]"
 }
 
 func (k *knowledgeSVC) packResults(ctx context.Context, retrieveResult []*schema.Document) (results []*knowledgeModel.RetrieveSlice, err error) {
