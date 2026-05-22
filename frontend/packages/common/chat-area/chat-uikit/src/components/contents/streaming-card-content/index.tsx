@@ -172,7 +172,7 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
   const getTargetOrigin = useCallback(() => {
     const cardUrl =
       window.APP_CONFIG?.CARD_URL ||
-      'https://agent.finmall.com/agent-h5-web/card/index.html';
+      '/agent-h5-web/card/index.html';
 
     try {
       if (cardUrl.startsWith('http')) {
@@ -422,7 +422,7 @@ export const StreamingCardContent: FC<StreamingCardContentProps> = props => {
   const generateIframeUrl = useCallback(() => {
     const baseUrl =
       window.APP_CONFIG?.CARD_URL ||
-      'https://agent.finmall.com/agent-h5-web/card/index.html';
+      '/agent-h5-web/card/index.html';
 
     // Extract spaceId from current URL
     let spaceId = '';

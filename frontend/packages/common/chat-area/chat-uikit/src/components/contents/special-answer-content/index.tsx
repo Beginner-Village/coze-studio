@@ -147,7 +147,7 @@ const SingleCardContent: FC<{
   // 计算目标 Origin
   const cardUrl =
     window.APP_CONFIG?.CARD_URL ||
-    'https://agent.finmall.com/agent-h5-web/card/index.html';
+    '/agent-h5-web/card/index.html';
   let targetOrigin = '';
   try {
     if (cardUrl.startsWith('http')) {
@@ -163,7 +163,7 @@ const SingleCardContent: FC<{
   const generateIframeUrl = useCallback(() => {
     const baseUrl =
       window.APP_CONFIG?.CARD_URL ||
-      'https://agent.finmall.com/agent-h5-web/card/index.html';
+      '/agent-h5-web/card/index.html';
 
     let spaceId = '';
     try {

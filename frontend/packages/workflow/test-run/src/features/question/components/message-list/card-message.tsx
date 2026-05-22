@@ -28,8 +28,7 @@ const DEFAULT_IFRAME_HEIGHT = 300;
 const MIN_HEIGHT_THRESHOLD = 50;
 const HEIGHT_PADDING = 10;
 const LOAD_TIMEOUT_MS = 10000; // 10秒超时
-const DEFAULT_CARD_URL =
-  'https://agent.finmall.com/agent-h5-web/card/index.html';
+const DEFAULT_CARD_URL = '/agent-h5-web/card/index.html';
 
 declare global {
   interface Window {

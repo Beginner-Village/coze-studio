@@ -29,8 +29,7 @@ const MIN_HEIGHT_THRESHOLD = 100;
 const HEIGHT_PADDING = 20;
 const JSON_INDENT = 2;
 const LOAD_TIMEOUT_MS = 10000; // 10秒超时
-const DEFAULT_CARD_URL =
-  'https://agent.finmall.com/agent-h5-web/card/index.html';
+const DEFAULT_CARD_URL = '/agent-h5-web/card/index.html';
 
 declare global {
   interface Window {
