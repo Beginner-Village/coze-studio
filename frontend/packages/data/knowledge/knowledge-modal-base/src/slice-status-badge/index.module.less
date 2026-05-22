@@ -1,0 +1,38 @@
+.badge {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+
+  padding: 2px 6px;
+
+  font-size: 12px;
+  line-height: 16px;
+
+  border-radius: 4px;
+}
+
+.spinner {
+  color: var(--coz-fg-secondary);
+  background: var(--coz-mg-secondary);
+}
+
+.failed {
+  gap: 6px;
+  color: var(--coz-fg-hglt-red);
+  background: var(--coz-mg-hglt-red);
+}
+
+.reason {
+  overflow: hidden;
+
+  max-width: 240px;
+
+  color: var(--coz-fg-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeout {
+  color: var(--coz-fg-hglt-yellow);
+  background: var(--coz-mg-hglt-yellow);
+}
