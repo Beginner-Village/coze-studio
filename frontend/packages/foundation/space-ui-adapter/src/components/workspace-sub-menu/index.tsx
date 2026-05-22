@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import {
   WorkspaceSubMenu as BaseWorkspaceSubMenu,
@@ -206,6 +206,15 @@ const createSubMenuConfig = () => {
 export const WorkspaceSubMenu = () => {
   const { subMenuKey } = useRouteConfig();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Highlight active sub-menu by URL. Routes that share a path but
+  // differ by ?tab= (e.g. observability/evaluation-sets/evaluators/
+  // experiments) need the tab query to disambiguate. Falls back to
+  // subMenuKey supplied by the route loader for everything else.
+  const lastSegment = location.pathname.split('/').filter(Boolean).pop() || '';
+  const tab = new URLSearchParams(location.search).get('tab');
+  const activeSubMenu = tab ? `${lastSegment}?tab=${tab}` : subMenuKey;
 
   const {
     space: currentSpace,
@@ -268,7 +277,7 @@ export const WorkspaceSubMenu = () => {
     <BaseWorkspaceSubMenu
       header={headerNode}
       menus={subMenu}
-      currentSubMenu={subMenuKey}
+      currentSubMenu={activeSubMenu}
     />
   );
 };

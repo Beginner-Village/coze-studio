@@ -32,8 +32,10 @@ import {
 
 import {
   listEvaluators,
+  mGetUserBasicInfo,
   type Evaluator,
   type LoopUser,
+  type UserBasicInfo,
 } from '../loop-eval-api';
 
 const PAGE_SIZE = 20;
@@ -46,20 +48,22 @@ function getEvaluatorId(record: Evaluator): string {
   return String(record.evaluator_id || record.id || '');
 }
 
-function formatCreator(creator?: string | LoopUser): string {
+function formatCreator(
+  creator?: string | LoopUser,
+  userMap?: Record<string, UserBasicInfo>,
+): string {
   if (!creator) {
     return '-';
   }
   if (typeof creator === 'string') {
-    return creator;
+    return userMap?.[creator]?.user_name || creator;
+  }
+  const id = creator.user_id || creator.id;
+  if (id && userMap?.[id]?.user_name) {
+    return userMap[id].user_name as string;
   }
   return (
-    creator.nickname ||
-    creator.name ||
-    creator.username ||
-    creator.user_id ||
-    creator.id ||
-    '-'
+    creator.nickname || creator.name || creator.username || id || '-'
   );
 }
 
@@ -93,6 +97,7 @@ const Page: React.FC = () => {
   const [, setSearchParams] = useSearchParams();
   const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
   const [loading, setLoading] = useState(false);
+  const [userMap, setUserMap] = useState<Record<string, UserBasicInfo>>({});
 
   const fetchEvaluators = useCallback(async () => {
     if (!spaceId) {
@@ -105,7 +110,27 @@ const Page: React.FC = () => {
         page_size: PAGE_SIZE,
         page_number: 1,
       });
-      setEvaluators(res.evaluators || []);
+      const list = res.evaluators || [];
+      setEvaluators(list);
+      const ids = list
+        .map(e => {
+          const c = e.creator;
+          if (typeof c === 'string') {
+            return c;
+          }
+          return (
+            c?.user_id ||
+            c?.id ||
+            e.base_info?.created_by?.user_id ||
+            e.base_info?.created_by?.id
+          );
+        })
+        .filter((id): id is string => !!id)
+        .map(String);
+      if (ids.length > 0) {
+        const map = await mGetUserBasicInfo(ids);
+        setUserMap(prev => ({ ...prev, ...map }));
+      }
     } catch (err: unknown) {
       Toast.error(getErrorMessage(err, '加载评估器失败'));
     } finally {
@@ -150,17 +175,20 @@ const Page: React.FC = () => {
       },
       {
         title: '创建人',
-        dataIndex: 'creator',
         key: 'creator',
         width: 160,
-        render: formatCreator,
+        render: (_: unknown, record: Evaluator) =>
+          formatCreator(
+            record.creator || record.base_info?.created_by,
+            userMap,
+          ),
       },
       {
         title: '创建时间',
-        dataIndex: 'created_at',
         key: 'created_at',
         width: 180,
-        render: formatTime,
+        render: (_: unknown, record: Evaluator) =>
+          formatTime(record.created_at || record.base_info?.created_at),
       },
       {
         title: '操作',
@@ -182,7 +210,7 @@ const Page: React.FC = () => {
         ),
       },
     ],
-    [setSearchParams],
+    [setSearchParams, userMap],
   );
 
   return (

@@ -32,10 +32,17 @@ export interface EvaluationSet {
   description?: string;
   version?: string;
   latest_version?: string;
-  item_count?: number;
+  item_count?: number | string;
   creator?: string | LoopUser;
   created_at?: string | number;
   updated_at?: string | number;
+  // Loop nests created/updated metadata under base_info for many entities.
+  base_info?: BaseInfo;
+  evaluation_set_version?: {
+    version?: string;
+    version_num?: string;
+    item_count?: number | string;
+  };
 }
 
 export interface EvaluationSetItem {
@@ -196,6 +203,7 @@ export interface Experiment {
     | { total?: number; finished?: number; success?: number };
   created_at?: string | number;
   description?: string;
+  base_info?: BaseInfo;
 }
 
 export interface TrajectoryConfig {
@@ -252,6 +260,45 @@ export interface CreateExperimentRequest {
   evaluator_version_ids: string[];
   target_version_id?: string;
   target_id?: string;
+}
+
+// Resolve user_id → display name via Studio's MGetUserBasicInfo.
+// Loop entities only carry user_id under base_info.created_by; Studio holds
+// the human-readable names, so we go through Studio's own endpoint.
+export interface UserBasicInfo {
+  user_id: string | number;
+  user_name?: string;
+  user_unique_name?: string;
+  user_avatar?: string;
+}
+
+export async function mGetUserBasicInfo(
+  userIds: string[],
+): Promise<Record<string, UserBasicInfo>> {
+  const ids = Array.from(new Set(userIds.filter(Boolean)));
+  if (ids.length === 0) {
+    return {};
+  }
+  const resp = await fetch('/api/playground_api/mget_user_info', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ user_ids: ids }),
+  });
+  if (!resp.ok) {
+    return {};
+  }
+  const json = await resp.json().catch(() => null);
+  const list: UserBasicInfo[] =
+    json?.data?.user_basic_info_list ||
+    json?.user_basic_info_list ||
+    json?.data ||
+    [];
+  const map: Record<string, UserBasicInfo> = {};
+  for (const u of list) {
+    map[String(u.user_id)] = u;
+  }
+  return map;
 }
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
