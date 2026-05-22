@@ -81,3 +81,15 @@ export { useMergeSlices } from './use-merge-slices';
 export type { MergeSliceInput, MergeResult } from './use-merge-slices';
 export { MergeSliceConfirmModal } from './merge-slice-confirm-modal';
 export type { MergeSliceConfirmModalProps } from './merge-slice-confirm-modal';
+export {
+  useMergeState,
+  MERGE_MIN_COUNT,
+  MergeToolbar,
+  MergeCandidateList,
+} from './merge-slice-state';
+export type {
+  MergeCandidate,
+  UseMergeStateOptions,
+  MergeToolbarProps,
+  MergeCandidateListProps,
+} from './merge-slice-state';
