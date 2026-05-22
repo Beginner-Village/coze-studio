@@ -60,6 +60,10 @@ func (k *knowledgeSVC) Retrieve(ctx context.Context, request *RetrieveRequest) (
 	if len(request.Query) == 0 {
 		return &knowledgeModel.RetrieveResponse{}, nil
 	}
+	if isJunkQuery(request.Query) {
+		logs.CtxInfof(ctx, "[retrieve] junk query filtered: %q", request.Query)
+		return &knowledgeModel.RetrieveResponse{}, nil
+	}
 	retrieveContext, err := k.newRetrieveContext(ctx, request)
 	if err != nil {
 		return nil, err
