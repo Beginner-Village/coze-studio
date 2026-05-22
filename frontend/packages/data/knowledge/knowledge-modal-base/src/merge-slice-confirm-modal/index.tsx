@@ -16,9 +16,12 @@
 
 import React from 'react';
 
+import { I18n } from '@coze-arch/i18n';
 import { Modal, Button } from '@coze-arch/coze-design';
 
 import type { MergeSliceInput } from '../use-merge-slices';
+
+import styles from './index.module.less';
 
 export interface MergeSliceConfirmModalProps {
   visible: boolean;
@@ -45,36 +48,32 @@ export const MergeSliceConfirmModal: React.FC<MergeSliceConfirmModalProps> = ({
   return (
     <Modal
       visible={visible}
-      title={`合并 ${slices.length} 个切片`}
+      title={I18n.t('knowledge_merge_slice_modal_title', {
+        num: slices.length,
+      })}
       onCancel={onCancel}
       footer={
         <>
-          <Button onClick={onCancel} disabled={loading}>
-            取消
+          <Button
+            data-testid="merge-cancel-btn"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            {I18n.t('datasets_createFileModel_CancelBtn')}
           </Button>
           <Button
+            data-testid="merge-confirm-btn"
             type="primary"
             onClick={onConfirm}
             loading={loading}
             disabled={loading}
           >
-            合并
+            {I18n.t('workflow_publish_multibranch_merge')}
           </Button>
         </>
       }
     >
-      <div
-        style={{
-          maxHeight: 400,
-          overflow: 'auto',
-          whiteSpace: 'pre-wrap',
-          padding: 12,
-          border: '1px solid #eee',
-          borderRadius: 4,
-        }}
-      >
-        {preview}
-      </div>
+      <div className={styles['preview-box']}>{preview}</div>
     </Modal>
   );
 };

@@ -19,6 +19,13 @@ import { render, screen, fireEvent } from '@testing-library/react';
 
 import '@testing-library/jest-dom';
 
+vi.mock('@coze-arch/i18n', () => ({
+  I18n: {
+    t: (key: string, params?: Record<string, unknown>) =>
+      params ? `${key}:${JSON.stringify(params)}` : key,
+  },
+}));
+
 vi.mock('@coze-arch/coze-design', () => ({
   // eslint-disable-next-line @typescript-eslint/naming-convention
   Modal: ({ visible, title, children, footer }: any) =>
@@ -30,12 +37,13 @@ vi.mock('@coze-arch/coze-design', () => ({
       </div>
     ) : null,
   // eslint-disable-next-line @typescript-eslint/naming-convention
-  Button: ({ children, onClick, disabled, loading, type }: any) => (
+  Button: ({ children, onClick, disabled, loading, type, ...rest }: any) => (
     <button
       onClick={onClick}
       disabled={disabled}
       data-loading={loading ? 'true' : 'false'}
       data-type={type}
+      {...rest}
     >
       {children}
     </button>
@@ -73,7 +81,7 @@ describe('MergeSliceConfirmModal', () => {
         onCancel={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByText('合并'));
+    fireEvent.click(screen.getByTestId('merge-confirm-btn'));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
@@ -87,7 +95,7 @@ describe('MergeSliceConfirmModal', () => {
         onCancel={onCancel}
       />,
     );
-    fireEvent.click(screen.getByText('取消'));
+    fireEvent.click(screen.getByTestId('merge-cancel-btn'));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
@@ -101,7 +109,7 @@ describe('MergeSliceConfirmModal', () => {
         onCancel={vi.fn()}
       />,
     );
-    const btn = screen.getByText('合并').closest('button');
+    const btn = screen.getByTestId('merge-confirm-btn');
     expect(btn).toBeDisabled();
   });
 });

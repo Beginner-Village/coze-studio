@@ -1662,6 +1662,7 @@
   "knowledge_level_110": "图片内容",
   "knowledge_level_adjust": "分段层级",
   "knowledge_limit_20": "表格类型单元最多50列，请删除不需要保留的列",
+  "knowledge_merge_slice_modal_title": "合并 {num} 个切片",
   "knowledge_multi_index": "1、用户Query会和索引字段内容做对比,根据相似度匹配。\n2、支持设置多个索引,用于匹配，到更多字段的信息。\n3、注意:过多的索引可能会导致精准度的下降。",
   "knowledge_multi_index_noti": "请至少配置1个索引,用于匹配用户Query",
   "knowledge_new_001": "查看或调整配置",
