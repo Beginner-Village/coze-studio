@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import classnames from 'classnames';
 import {
@@ -27,9 +27,8 @@ import {
   MergeToolbar,
   MergeCandidateList,
   MERGE_MIN_COUNT,
-  SliceStatusBadge,
-  useSliceStatusPolling,
-  type SliceBadgeStatus,
+  ReindexStatusBar,
+  useReindexTracking,
   type MergeCandidate,
 } from '@coze-data/knowledge-modal-base';
 import { KnowledgeE2e } from '@coze-data/e2e';
@@ -73,69 +72,6 @@ const useTableMergeState = (
 
   const merge = useMergeState(mergeCandidates, { onMergeSuccess });
   return { mergeCandidates, ...merge };
-};
-
-interface ReindexStatusBarProps {
-  watchedIds: string[];
-  statusMap: Record<string, SliceBadgeStatus>;
-  testId?: string;
-}
-
-// Aggregates the per-slice statusMap into a single bar shown above the table.
-// Returns null when there's nothing to show. TableView doesn't expose a
-// per-row slot for badges, so we surface counts instead.
-const ReindexStatusBar: React.FC<ReindexStatusBarProps> = ({
-  watchedIds,
-  statusMap,
-  testId,
-}) => {
-  const reindexingCount = watchedIds.filter(id => {
-    const s = statusMap[id];
-    return s === 'Init' || s === 'Processing';
-  }).length;
-  const failedCount = watchedIds.filter(
-    id => statusMap[id] === 'Failed',
-  ).length;
-  const timeoutCount = watchedIds.filter(
-    id => statusMap[id] === 'Timeout',
-  ).length;
-  if (reindexingCount === 0 && failedCount === 0 && timeoutCount === 0) {
-    return null;
-  }
-  return (
-    <div className={styles['reindex-bar']} data-testid={testId}>
-      {reindexingCount > 0 ? <SliceStatusBadge status="Processing" /> : null}
-      {failedCount > 0 ? (
-        <span>
-          {I18n.t('knowledge_slice_reindex_failed_count', {
-            count: failedCount,
-          })}
-        </span>
-      ) : null}
-      {timeoutCount > 0 ? (
-        <span>
-          {I18n.t('knowledge_slice_reindex_timeout_count', {
-            count: timeoutCount,
-          })}
-        </span>
-      ) : null}
-    </div>
-  );
-};
-
-const useReindexTracking = (documentId: string) => {
-  const [editedIds, setEditedIds] = useState<string[]>([]);
-  const handleSliceEdited = useCallback((sliceId: string) => {
-    if (!sliceId) {
-      return;
-    }
-    setEditedIds(prev => (prev.includes(sliceId) ? prev : [...prev, sliceId]));
-  }, []);
-  const { statusMap } = useSliceStatusPolling({
-    documentId,
-    watchedIds: editedIds,
-  });
-  return { editedIds, statusMap, handleSliceEdited };
 };
 
 // Table Content Component

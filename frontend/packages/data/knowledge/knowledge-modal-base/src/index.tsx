@@ -100,3 +100,9 @@ export type {
   SliceStatusBadgeProps,
 } from './slice-status-badge';
 export { useSliceStatusPolling } from './use-slice-status-polling';
+
+export { useReindexTracking, ReindexStatusBar } from './reindex-status-bar';
+export type {
+  UseReindexTrackingResult,
+  ReindexStatusBarProps,
+} from './reindex-status-bar';
