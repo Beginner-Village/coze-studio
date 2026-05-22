@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import classnames from 'classnames';
 import {
@@ -27,6 +27,9 @@ import {
   MergeToolbar,
   MergeCandidateList,
   MERGE_MIN_COUNT,
+  SliceStatusBadge,
+  useSliceStatusPolling,
+  type SliceBadgeStatus,
   type MergeCandidate,
 } from '@coze-data/knowledge-modal-base';
 import { KnowledgeE2e } from '@coze-data/e2e';
@@ -54,6 +57,7 @@ import { useTableActions } from '../context/table-actions-context';
 // text join, backend treats merged result as text content).
 const useTableMergeState = (
   slices: ReturnType<typeof useTableData>['sliceListData']['list'],
+  onMergeSuccess?: (sliceId: string) => void,
 ) => {
   const mergeCandidates: MergeCandidate[] = useMemo(
     () =>
@@ -67,8 +71,71 @@ const useTableMergeState = (
     [slices],
   );
 
-  const merge = useMergeState(mergeCandidates);
+  const merge = useMergeState(mergeCandidates, { onMergeSuccess });
   return { mergeCandidates, ...merge };
+};
+
+interface ReindexStatusBarProps {
+  watchedIds: string[];
+  statusMap: Record<string, SliceBadgeStatus>;
+  testId?: string;
+}
+
+// Aggregates the per-slice statusMap into a single bar shown above the table.
+// Returns null when there's nothing to show. TableView doesn't expose a
+// per-row slot for badges, so we surface counts instead.
+const ReindexStatusBar: React.FC<ReindexStatusBarProps> = ({
+  watchedIds,
+  statusMap,
+  testId,
+}) => {
+  const reindexingCount = watchedIds.filter(id => {
+    const s = statusMap[id];
+    return s === 'Init' || s === 'Processing';
+  }).length;
+  const failedCount = watchedIds.filter(
+    id => statusMap[id] === 'Failed',
+  ).length;
+  const timeoutCount = watchedIds.filter(
+    id => statusMap[id] === 'Timeout',
+  ).length;
+  if (reindexingCount === 0 && failedCount === 0 && timeoutCount === 0) {
+    return null;
+  }
+  return (
+    <div className={styles['reindex-bar']} data-testid={testId}>
+      {reindexingCount > 0 ? <SliceStatusBadge status="Processing" /> : null}
+      {failedCount > 0 ? (
+        <span>
+          {I18n.t('knowledge_slice_reindex_failed_count', {
+            count: failedCount,
+          })}
+        </span>
+      ) : null}
+      {timeoutCount > 0 ? (
+        <span>
+          {I18n.t('knowledge_slice_reindex_timeout_count', {
+            count: timeoutCount,
+          })}
+        </span>
+      ) : null}
+    </div>
+  );
+};
+
+const useReindexTracking = (documentId: string) => {
+  const [editedIds, setEditedIds] = useState<string[]>([]);
+  const handleSliceEdited = useCallback((sliceId: string) => {
+    if (!sliceId) {
+      return;
+    }
+    setEditedIds(prev => (prev.includes(sliceId) ? prev : [...prev, sliceId]));
+  }, []);
+  const { statusMap } = useSliceStatusPolling({
+    documentId,
+    watchedIds: editedIds,
+  });
+  return { editedIds, statusMap, handleSliceEdited };
 };
 
 // Table Content Component
@@ -76,32 +143,25 @@ const TableContent = () => {
   const knowledgeIDEBiz = useKnowledgeParamsStore(state => state.params.biz);
   const documentList = useKnowledgeStore(state => state.documentList);
   const curDoc = documentList?.[0];
-
   const { tableViewRef, isLoadingMoreSliceList, isLoadingSliceList } =
     useTableUI();
-
   const { sliceListData } = useTableData();
-
   const slices = sliceListData?.list;
-
   const { loadMoreSliceList } = useTableActions();
-
   const canEdit = Boolean(useKnowledgeStore(state => state.canEdit));
-
-  // Delete slice pop-up
+  // Track slice ids that were edited or merged so we can poll re-index status.
+  const { editedIds, statusMap, handleSliceEdited } = useReindexTracking(
+    String(curDoc?.document_id ?? ''),
+  );
   const { deleteSliceModalNode, openDeleteSliceModal } = useDeleteSliceModal();
-
-  // Edit slice pop-up
-  const { tableSegmentModalNode, openTableSegmentModal } =
-    useTableSegmentModal();
-
-  // Get table manipulation method
+  const { tableSegmentModalNode, openTableSegmentModal } = useTableSegmentModal(
+    { onAfterEdit: handleSliceEdited },
+  );
   const { deleteSlice, rowUpdateSliceData, modalEditSlice } =
     useTableSliceOperations({
       openDeleteSliceModal,
       openTableSegmentModal,
     });
-
   const { tableH } = useTableHeight();
 
   const {
@@ -118,7 +178,7 @@ const TableContent = () => {
     toggleSelected,
     exitMergeMode,
     handleMerge,
-  } = useTableMergeState(slices);
+  } = useTableMergeState(slices, handleSliceEdited);
 
   // If there is no data, return to empty directly
   if (!slices?.length) {
@@ -160,6 +220,12 @@ const TableContent = () => {
           onToggle={toggleSelected}
         />
       ) : null}
+
+      <ReindexStatusBar
+        watchedIds={editedIds}
+        statusMap={statusMap}
+        testId="table-reindex-status-bar"
+      />
 
       <div
         className={classnames(

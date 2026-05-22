@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import classnames from 'classnames';
 import { IllustrationNoResult } from '@douyinfe/semi-illustrations';
@@ -28,6 +28,9 @@ import {
   MergeToolbar,
   MergeCandidateList,
   MERGE_MIN_COUNT,
+  SliceStatusBadge,
+  useSliceStatusPolling,
+  type SliceBadgeStatus,
   type MergeCandidate,
 } from '@coze-data/knowledge-modal-base';
 import { LevelTextKnowledgeEditor } from '@coze-data/knowledge-common-components/text-knowledge-editor';
@@ -46,6 +49,71 @@ export interface LevelContentProps {
   onLevelSegmentsChange: (chunks: ILevelSegment[]) => void;
   onLevelSegmentDelete: (chunk: ILevelSegment) => void;
 }
+
+interface ReindexStatusBarProps {
+  watchedIds: string[];
+  statusMap: Record<string, SliceBadgeStatus>;
+  testId?: string;
+}
+
+// Small UI helper that aggregates the per-slice statusMap into a single bar
+// shown above the editor / table. Returns null when there's nothing to show.
+const ReindexStatusBar: React.FC<ReindexStatusBarProps> = ({
+  watchedIds,
+  statusMap,
+  testId,
+}) => {
+  const reindexingCount = watchedIds.filter(id => {
+    const s = statusMap[id];
+    return s === 'Init' || s === 'Processing';
+  }).length;
+  const failedCount = watchedIds.filter(
+    id => statusMap[id] === 'Failed',
+  ).length;
+  const timeoutCount = watchedIds.filter(
+    id => statusMap[id] === 'Timeout',
+  ).length;
+  if (reindexingCount === 0 && failedCount === 0 && timeoutCount === 0) {
+    return null;
+  }
+  return (
+    <div className={styles['reindex-bar']} data-testid={testId}>
+      {reindexingCount > 0 ? <SliceStatusBadge status="Processing" /> : null}
+      {failedCount > 0 ? (
+        <span>
+          {I18n.t('knowledge_slice_reindex_failed_count', {
+            count: failedCount,
+          })}
+        </span>
+      ) : null}
+      {timeoutCount > 0 ? (
+        <span>
+          {I18n.t('knowledge_slice_reindex_timeout_count', {
+            count: timeoutCount,
+          })}
+        </span>
+      ) : null}
+    </div>
+  );
+};
+
+// Bundles the editedIds bookkeeping + polling for a workspace. Returns the
+// statusMap (for rendering) and a stable handler the caller passes to merge
+// state and any edit callbacks.
+const useReindexTracking = (documentId: string) => {
+  const [editedIds, setEditedIds] = useState<string[]>([]);
+  const handleSliceEdited = useCallback((sliceId: string) => {
+    if (!sliceId) {
+      return;
+    }
+    setEditedIds(prev => (prev.includes(sliceId) ? prev : [...prev, sliceId]));
+  }, []);
+  const { statusMap } = useSliceStatusPolling({
+    documentId,
+    watchedIds: editedIds,
+  });
+  return { editedIds, statusMap, handleSliceEdited };
+};
 
 export const LevelContent: React.FC<LevelContentProps> = ({
   isProcessing,
@@ -75,6 +143,37 @@ export const LevelContent: React.FC<LevelContentProps> = ({
     [levelSegments],
   );
 
+  // Track slice ids that have been edited/merged so we can poll their re-index
+  // status. We accumulate ids (dedup) and rely on useSliceStatusPolling to
+  // transition each one to "Done" — at which point we hide it from the bar.
+  const { editedIds, statusMap, handleSliceEdited } =
+    useReindexTracking(documentId);
+
+  // Diff incoming chunks against current levelSegments to detect which slice
+  // text was edited (LevelTextKnowledgeEditor doesn't expose a per-chunk
+  // edited callback, so we intercept the existing onChange).
+  const handleLevelSegmentsChange = useCallback(
+    (chunks: ILevelSegment[]) => {
+      const prevMap = new Map(
+        levelSegments
+          .filter(s => Boolean(s.slice_id))
+          .map(s => [String(s.slice_id), s.text ?? '']),
+      );
+      for (const c of chunks) {
+        if (!c.slice_id) {
+          continue;
+        }
+        const id = String(c.slice_id);
+        const prevText = prevMap.get(id);
+        if (prevText !== undefined && prevText !== (c.text ?? '')) {
+          handleSliceEdited(id);
+        }
+      }
+      onLevelSegmentsChange(chunks);
+    },
+    [levelSegments, onLevelSegmentsChange, handleSliceEdited],
+  );
+
   const {
     mergeMode,
     setMergeMode,
@@ -88,7 +187,9 @@ export const LevelContent: React.FC<LevelContentProps> = ({
     toggleSelected,
     exitMergeMode,
     handleMerge,
-  } = useMergeState(mergeCandidates);
+  } = useMergeState(mergeCandidates, {
+    onMergeSuccess: handleSliceEdited,
+  });
 
   if (levelSegments.length === 0) {
     return (
@@ -138,12 +239,18 @@ export const LevelContent: React.FC<LevelContentProps> = ({
         />
       ) : null}
 
+      <ReindexStatusBar
+        watchedIds={editedIds}
+        statusMap={statusMap}
+        testId="text-reindex-status-bar"
+      />
+
       <LevelTextKnowledgeEditor
         chunks={renderLevelSegmentsData}
         selectionIDs={selectionIDs}
         documentId={documentId}
         readonly={!canEdit}
-        onChange={onLevelSegmentsChange}
+        onChange={handleLevelSegmentsChange}
         onDeleteChunk={onLevelSegmentDelete}
       />
 

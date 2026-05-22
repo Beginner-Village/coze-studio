@@ -93,3 +93,10 @@ export type {
   MergeToolbarProps,
   MergeCandidateListProps,
 } from './merge-slice-state';
+
+export { SliceStatusBadge } from './slice-status-badge';
+export type {
+  SliceBadgeStatus,
+  SliceStatusBadgeProps,
+} from './slice-status-badge';
+export { useSliceStatusPolling } from './use-slice-status-polling';

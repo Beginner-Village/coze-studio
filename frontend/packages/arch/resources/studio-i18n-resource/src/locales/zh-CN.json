@@ -1716,6 +1716,8 @@
   "knowledge_segment_config_table": "配置表结构",
   "knowledge_semantic_search_title": "语义",
   "knowledge_semantic_search_tooltip": "基于向量的文本相关性查询，推荐在需要理解语义关联度和跨语言查询的场景使用。",
+  "knowledge_slice_reindex_failed_count": "重新索引失败：{count} 个",
+  "knowledge_slice_reindex_timeout_count": "重新索引超时：{count} 个",
   "knowledge_slice_status_failed": "索引失败",
   "knowledge_slice_status_reindexing": "重新索引中",
   "knowledge_slice_status_retry": "重试",

@@ -1694,6 +1694,8 @@
   "knowledge_segment_config_table": "Modify table structure",
   "knowledge_semantic_search_title": "Semantics",
   "knowledge_semantic_search_tooltip": "The vector-based search for text relevance. It is recommended to use it in scenarios requiring an understanding of semantics relevance and cross-language searches.",
+  "knowledge_slice_reindex_failed_count": "Re-index failed: {count}",
+  "knowledge_slice_reindex_timeout_count": "Re-index timed out: {count}",
   "knowledge_slice_status_failed": "Indexing failed",
   "knowledge_slice_status_reindexing": "Re-indexing...",
   "knowledge_slice_status_retry": "Retry",
