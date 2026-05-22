@@ -53,6 +53,18 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
+// MinScoreFloor is the hard-coded lower bound for MinScore in retrieval.
+// Callers may pass a higher value via Strategy.MinScore; lower values are
+// raised to this floor to prevent low-confidence hits from being returned.
+const MinScoreFloor = 0.3
+
+func effectiveMinScore(strategy float64) float64 {
+	if strategy < MinScoreFloor {
+		return MinScoreFloor
+	}
+	return strategy
+}
+
 func (k *knowledgeSVC) Retrieve(ctx context.Context, request *RetrieveRequest) (response *RetrieveResponse, err error) {
 	if request == nil {
 		return nil, errorx.New(errno.ErrKnowledgeInvalidParamCode, errorx.KV("msg", "request is nil"))
@@ -580,7 +592,7 @@ func (k *knowledgeSVC) reRankNode(ctx context.Context, resultMap map[string]any)
 
 	retrieveResult = make([]*schema.Document, 0, len(resp.SortedData))
 	for _, item := range resp.SortedData {
-		if item.Score < ptr.From(retrieveCtx.Strategy.MinScore) {
+		if item.Score < effectiveMinScore(ptr.From(retrieveCtx.Strategy.MinScore)) {
 			continue
 		}
 		doc := item.Document
