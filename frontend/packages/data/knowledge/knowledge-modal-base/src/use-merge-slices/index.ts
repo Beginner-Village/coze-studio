@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { DataNamespace, dataReporter } from '@coze-data/reporter';
+import { REPORT_EVENTS } from '@coze-arch/report-events';
 import { KnowledgeApi } from '@coze-arch/bot-api';
 
 export interface MergeSliceInput {
@@ -48,6 +50,10 @@ export const useMergeSlices = () => {
         raw_text: mergedContent,
       });
     } catch (error) {
+      dataReporter.errorEvent(DataNamespace.KNOWLEDGE, {
+        eventName: REPORT_EVENTS.KnowledgeUpdateSlice,
+        error: error as Error,
+      });
       return { ok: false, stage: 'update', error: error as Error };
     }
 
@@ -58,6 +64,10 @@ export const useMergeSlices = () => {
       try {
         await KnowledgeApi.DeleteSlice({ slice_ids: otherIds });
       } catch (secondErr) {
+        dataReporter.errorEvent(DataNamespace.KNOWLEDGE, {
+          eventName: REPORT_EVENTS.KnowledgeDeleteSlice,
+          error: secondErr as Error,
+        });
         return {
           ok: false,
           stage: 'delete',

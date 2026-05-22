@@ -76,3 +76,6 @@ export { useTextResegmentModal } from './text-resegment-modal';
 export { useEditUnitNameModal } from './edit-unit-name-modal';
 export { FilterKnowledgeType } from '@coze-data/utils';
 export { useSetAppendFrequencyModal } from './set-append-frequency-modal';
+
+export { useMergeSlices } from './use-merge-slices';
+export type { MergeSliceInput, MergeResult } from './use-merge-slices';
