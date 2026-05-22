@@ -79,3 +79,5 @@ export { useSetAppendFrequencyModal } from './set-append-frequency-modal';
 
 export { useMergeSlices } from './use-merge-slices';
 export type { MergeSliceInput, MergeResult } from './use-merge-slices';
+export { MergeSliceConfirmModal } from './merge-slice-confirm-modal';
+export type { MergeSliceConfirmModalProps } from './merge-slice-confirm-modal';
