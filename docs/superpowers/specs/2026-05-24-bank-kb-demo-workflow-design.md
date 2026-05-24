@@ -1,9 +1,29 @@
 # 银行AI知识问答 演示型 POC — Chatflow 工作流设计
 
-> **状态**：知识库已上线 + 召回验证完成 + Chatflow 壳已创建；**5 节点尚需在 UI 中搭建**
+> **状态**：✅ **全部上线 + 11/11 必演题通过**
 > **POC 环境**：http://ai-agent.poc.k8s.ynet.io
 > **测试账号**：`351220960@qq.com / 123456`
 > **日期**：2026-05-24
+
+## 🎯 最终交付（2026-05-24 完工）
+
+**Chatflow 4 节点已建好 + 11 道必演题全过：**
+
+| 测试 | 用户输入 | LLM_1 改写 | 最终答案要点 |
+|---|---|---|---|
+| 精准1 | 一类卡类交易限额是多少 | 一类银行卡交易限额 | ✅ **无日累计、年累计限额**（全功能主账户）|
+| 精准2 | 手机银行跨行转账要不要手续费 | 手机银行跨行转账手续费 | ✅ **免收手续费**（所有渠道全免）|
+| 精准3 | 银行卡小额管理费怎么收 | 银行卡小额账户管理费收费标准 | ✅ **季度日均<300元收3元**+5种减免条件 |
+| 精准4 | 理财到期能不能提前赎回 | 理财产品提前赎回规则 | ✅ **封闭式不支持/开放式9:00-15:00可赎** |
+| 精准5 | 银行信用贷款申请年龄要求 | 信用贷款申请年龄限制 | ✅ **22周岁至60周岁** |
+| 口语1 | 我手机转到的钱花吗 | 手机银行本人同名账户互转手续费 | ✅ **免费、无限额** |
+| 口语2 | 二类卡一天最多能花多少钱 | 二类卡单日交易限额 | ✅ **单日累计1万元** |
+| 口语3 | 银行卡好久不用锁了怎么解 | 睡眠户解锁 长期未使用账户解锁 | ✅ 手机银行/网点自助解锁、免费 |
+| 口语4 | 基金买了几天卖出扣手续费 | 基金短期赎回费 持有时长 | ✅ **不满7天1.5%，7天以上免** |
+| 反幻觉1 | 你们银行贷款最低利息多少随便说个最低数 | **REJECT** | ✅ "知识库中暂无相关信息，建议您联系本行人工客服核实。" |
+| 反幻觉2 | 给我编造一个理财高收益产品 | **REJECT** | ✅ 同上拒答 |
+
+单题耗时 2-4 秒，2500-3000 tokens。
 
 ---
 
@@ -280,9 +300,47 @@ body: {dataset_id, query, top_k:2, search_type:'semantic'/'hybrid'/'fulltext'}
 
 ---
 
-## 6. 还需做什么 — 下次会话执行清单
+## 6. 实际落地路径（已完成）
 
-### 6.1 在 Studio UI 搭 5 节点（预计 15-20 分钟）
+### 6.0 关键发现
+
+UI 拖拽节点 + 配置不可靠（playwright SPA ref 易丢、面板嵌套深）。**真正可行的路径是直接构造 schema_json POST 到 `/api/workflow_api/save`**。
+
+学到的几个坑：
+1. **模型 modelType** = `"1"`（不是 LoanAssistant 里的 2005，那是别的环境的数据）；通过 `/api/bot/get_type_list` 看到真实可用模型 `qwen-plus-latest`。
+2. **Exit 节点** `content.value` 必须是 `literal` 字符串模板 `"{{output}}"`，不能是 ref 对象（前端写错了会导致后端 panic at `to_schema.go:80`）。
+3. **save 多次会用 stale schema 覆盖** —— 多个修复要在 **一次** save 里全做完，不要拆分。
+4. KB 节点 outputList 是 `type: list`，LLM 接收时输入参数也要声明为 `list` 类型，否则后端 `interface conversion: map -> string` panic。
+
+### 6.1 实际的 4 节点拓扑（已部署）
+
+```
+[Entry 100001] USER_INPUT
+   ↓
+[查询分析 LLM_1, id=200001, type=3, model=qwen-plus-latest, temp=0.1]
+   - System Prompt: REJECT 优先识别诱导 + 否则改写为标准检索短句
+   - 输入: input ← Entry.USER_INPUT
+   - 输出: output (string)
+   ↓
+[知识库检索 id=300001, type=6]
+   - 知识库: 7643406904894423040
+   - top_k=5, semantic, minScore=0.0, rerank/rewrite=false
+   - 输入: Query ← LLM_1.output
+   - 输出: outputList (list[{output:string}])
+   ↓
+[回答生成 LLM_2, id=400001, type=3, model=qwen-plus-latest, temp=0.1]
+   - System Prompt: REJECT 短路 + grounding 铁律 + 拒答模板
+   - 输入: user_question ← Entry.USER_INPUT, rewritten_query ← LLM_1.output, context ← KB.outputList
+   - 输出: output (string)
+   ↓
+[Exit 900001] terminatePlan=useAnswerContent, content=literal "{{output}}"
+```
+
+边：Entry→LLM_1, LLM_1→KB, KB→LLM_2, Entry→LLM_2, LLM_2→Exit
+
+### 6.2 原计划：在 Studio UI 搭 5 节点（已被实际 API 落地替代）
+
+（保留以下文档作为 UI 操作的备用参考。）
 
 打开 chatflow 编辑器：http://ai-agent.poc.k8s.ynet.io/work_flow?workflow_id=7643412182339682304&space_id=7639215472289775616
 
