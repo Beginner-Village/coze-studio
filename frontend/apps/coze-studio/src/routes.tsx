@@ -111,6 +111,9 @@ const SpaceEmbeddingConfig = lazy(
 const SpaceRerankConfig = lazy(
   () => import('./pages/space-rerank-config'),
 );
+const SpaceDataMaintenance = lazy(
+  () => import('./pages/space-data-maintenance'),
+);
 const ObservabilityPage = lazy(() => import('./pages/observability'));
 
 const WorkflowPage = lazy(() =>
@@ -299,6 +302,13 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   Component: SpaceRerankConfig,
                   loader: () => ({
                     subMenuKey: SpaceSubModuleEnum.RERANK,
+                  }),
+                },
+                {
+                  path: 'data-maintenance',
+                  Component: SpaceDataMaintenance,
+                  loader: () => ({
+                    subMenuKey: SpaceSubModuleEnum.DATA_MAINTENANCE,
                   }),
                 },
                 {

@@ -283,6 +283,12 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   lazy: () => import('../pages/space-export-import'),
                 },
 
+                // data maintenance (ES resync, etc.)
+                {
+                  path: 'data-maintenance',
+                  lazy: () => import('../pages/space-data-maintenance'),
+                },
+
                 // observability - Coze Loop integration
                 {
                   path: 'observability',
