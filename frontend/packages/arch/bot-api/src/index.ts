@@ -83,7 +83,12 @@ export { StoneEvaluationApi } from './stone-fornax-evaluation';
 export { fornaxObApi } from './fornax-ob-api';
 export { fornaxApi } from './fornax-api';
 export { evaluationApi } from './fornax-evaluation-api';
-export { cozeSpaceApi } from './coze-space-api';
+export { cozeSpaceApi, SpaceApi } from './coze-space-api';
+export type {
+  ResyncESRequest,
+  ResyncESCounts,
+  ResyncESResponse,
+} from './coze-space-api';
 export { templateApi } from './template-api';
 export type {
   PublishAsTemplateRequest,

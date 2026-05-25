@@ -28,3 +28,46 @@ export const cozeSpaceApi = new CozeSpaceApiService<BotAPIRequestConfig>({
     return axiosInstance.request({ ...params, ...config, headers: reqHeaders });
   },
 });
+
+// Space 数据维护接口（非 IDL 生成，走 /api/space/*）
+
+export interface ResyncESRequest {
+  space_id: string; // 使用字符串避免 JS bigint 精度丢失
+}
+
+export interface ResyncESCounts {
+  project_draft: number;
+  coze_resource: number;
+  kb_entries: number;
+  slice_reindex_jobs: number;
+}
+
+export interface ResyncESResponse {
+  code: number;
+  msg: string;
+  counts: ResyncESCounts | null;
+}
+
+class SpaceApiService {
+  /**
+   * Re-sync all ES indices for the given space from MySQL.
+   *
+   * Drops + rebuilds project_draft / coze_resource / kb_entries; for each KB
+   * drops the openynet_<kb_id> index and queues all slices for re-embedding
+   * via the existing IndexSliceEvent pipeline.
+   *
+   * Only the space owner can call this — backend returns code != 0 otherwise.
+   */
+  async resyncES(
+    data: ResyncESRequest,
+    config?: BotAPIRequestConfig,
+  ): Promise<ResyncESResponse> {
+    return await axiosInstance.post('/api/space/resync_es', data, {
+      headers: { 'Agw-Js-Conv': 'str' },
+      ...config,
+    });
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const SpaceApi = new SpaceApiService();
