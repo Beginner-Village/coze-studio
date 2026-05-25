@@ -3902,5 +3902,13 @@
   "workspace_mcp": "Mcp Management",
   "workspace_card": "Card Management",
   "workspace_card_template": "Card Template",
-  "card_manage_edit_tooltip": "Click to enter the card editor"
+  "card_manage_edit_tooltip": "Click to enter the card editor",
+  "space_data_maintenance": "Data Maintenance",
+  "space_resync_es_title": "Re-sync ES indices",
+  "space_resync_es_desc": "Drops all ES indices for this space and rebuilds them from MySQL. Use when: lists are missing entries, retrieval results don't match expectations, or after importing data from a backup.",
+  "space_resync_es_button": "Re-sync",
+  "space_resync_es_confirm_title": "Re-sync ES indices for this space?",
+  "space_resync_es_confirm_desc": "This will drop all ES indices for this space and rebuild them from MySQL. List queries may return empty results and knowledge-base retrieval may be incomplete for 1-5 minutes. Only the space owner can perform this action.",
+  "space_resync_success": "Re-sync completed: {agents} agents / {resources} resources / {kbs} knowledge bases / {slices} slice re-index jobs queued",
+  "space_resync_failed": "Re-sync failed: {msg}"
 }

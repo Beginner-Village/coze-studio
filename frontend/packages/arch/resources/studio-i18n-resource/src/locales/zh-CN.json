@@ -3950,5 +3950,13 @@
   "workspace_mcp": "MCP管理",
   "workspace_card": "卡片管理",
   "workspace_card_template": "卡片模板",
-  "card_manage_edit_tooltip": "点击进入卡片编辑器"
+  "card_manage_edit_tooltip": "点击进入卡片编辑器",
+  "space_data_maintenance": "数据维护",
+  "space_resync_es_title": "重新同步 ES 索引",
+  "space_resync_es_desc": "清空本空间所有 ES 索引并从 MySQL 重写。适用于：列表数据展示不全、检索结果跟实际不符、从备份导入数据后等场景。",
+  "space_resync_es_button": "重新同步",
+  "space_resync_es_confirm_title": "确认重新同步 ES 索引？",
+  "space_resync_es_confirm_desc": "将清空本空间所有 ES 索引并从 MySQL 重写。期间 1-5 分钟内列表查询可能为空，知识库检索结果可能不完整。仅 space owner 可执行。",
+  "space_resync_success": "同步完成: 智能体 {agents} / 资源 {resources} / 知识库 {kbs} / 切片重新索引中 {slices}",
+  "space_resync_failed": "同步失败: {msg}"
 }
