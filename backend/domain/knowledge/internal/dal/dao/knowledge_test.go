@@ -85,3 +85,42 @@ func (suite *KnowledgeSuite) TestCRUD() {
 		So(k.Name, ShouldEqual, "testtest")
 	})
 }
+
+func (suite *KnowledgeSuite) TestListBySpaceID() {
+	PatchConvey("test list by space id", suite.T(), func() {
+		ctx := suite.ctx
+
+		// Seed 3 records in space 100
+		for i, id := range []int64{201, 202, 203} {
+			So(suite.dao.Create(ctx, &model.Knowledge{
+				ID:      id,
+				SpaceID: 100,
+				Name:    "k" + string(rune('a'+i)),
+			}), ShouldBeNil)
+		}
+		// Seed 1 record in space 200
+		So(suite.dao.Create(ctx, &model.Knowledge{
+			ID:      301,
+			SpaceID: 200,
+			Name:    "other",
+		}), ShouldBeNil)
+
+		// List space 100 - no limit
+		got, err := suite.dao.ListBySpaceID(ctx, 100, 0)
+		So(err, ShouldBeNil)
+		So(len(got), ShouldEqual, 3)
+		// Verify ASC ID ordering
+		So(got[0].ID, ShouldEqual, 201)
+		So(got[2].ID, ShouldEqual, 203)
+
+		// List space 100 - limit 2
+		got, err = suite.dao.ListBySpaceID(ctx, 100, 2)
+		So(err, ShouldBeNil)
+		So(len(got), ShouldEqual, 2)
+
+		// List space 999 - empty
+		got, err = suite.dao.ListBySpaceID(ctx, 999, 0)
+		So(err, ShouldBeNil)
+		So(len(got), ShouldEqual, 0)
+	})
+}

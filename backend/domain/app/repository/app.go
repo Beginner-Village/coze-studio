@@ -29,6 +29,9 @@ type AppRepository interface {
 	CheckDraftAPPExist(ctx context.Context, appID int64) (exist bool, err error)
 	DeleteDraftAPP(ctx context.Context, appID int64) (err error)
 	UpdateDraftAPP(ctx context.Context, app *entity.APP) (err error)
+	// ListBySpaceID returns all draft apps in the given space.
+	// limit=0 means no limit.
+	ListBySpaceID(ctx context.Context, spaceID int64, limit int) (apps []*entity.APP, err error)
 
 	GetPublishRecord(ctx context.Context, req *GetPublishRecordRequest) (record *entity.PublishRecord, exist bool, err error)
 	CheckAPPVersionExist(ctx context.Context, appID int64, version string) (exist bool, err error)

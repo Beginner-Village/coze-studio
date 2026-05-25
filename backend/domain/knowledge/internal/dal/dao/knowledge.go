@@ -178,3 +178,12 @@ func (dao *KnowledgeDAO) GetByID(ctx context.Context, id int64) (*model.Knowledg
 	}
 	return knowledge, nil
 }
+
+func (dao *KnowledgeDAO) ListBySpaceID(ctx context.Context, spaceID int64, limit int) ([]*model.Knowledge, error) {
+	k := dao.Query.Knowledge
+	q := k.WithContext(ctx).Where(k.SpaceID.Eq(spaceID)).Order(k.ID.Asc())
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+	return q.Find()
+}

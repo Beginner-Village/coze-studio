@@ -87,6 +87,21 @@ func (mr *MockKnowledgeRepoMockRecorder) Delete(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockKnowledgeRepo)(nil).Delete), ctx, id)
 }
 
+// ListBySpaceID mocks base method.
+func (m *MockKnowledgeRepo) ListBySpaceID(ctx context.Context, spaceID int64, limit int) ([]*model.Knowledge, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListBySpaceID", ctx, spaceID, limit)
+	ret0, _ := ret[0].([]*model.Knowledge)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListBySpaceID indicates an expected call of ListBySpaceID.
+func (mr *MockKnowledgeRepoMockRecorder) ListBySpaceID(ctx, spaceID, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBySpaceID", reflect.TypeOf((*MockKnowledgeRepo)(nil).ListBySpaceID), ctx, spaceID, limit)
+}
+
 // FilterEnableKnowledge mocks base method.
 func (m *MockKnowledgeRepo) FilterEnableKnowledge(ctx context.Context, ids []int64) ([]*model.Knowledge, error) {
 	m.ctrl.T.Helper()

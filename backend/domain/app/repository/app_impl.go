@@ -98,6 +98,10 @@ func (a *appRepoImpl) UpdateDraftAPP(ctx context.Context, app *entity.APP) (err 
 	return a.appDraftDAO.Update(ctx, app)
 }
 
+func (a *appRepoImpl) ListBySpaceID(ctx context.Context, spaceID int64, limit int) (apps []*entity.APP, err error) {
+	return a.appDraftDAO.ListBySpaceID(ctx, spaceID, limit)
+}
+
 func (a *appRepoImpl) GetPublishRecord(ctx context.Context, req *GetPublishRecordRequest) (record *entity.PublishRecord, exist bool, err error) {
 	var app *entity.APP
 	if req.RecordID != nil {

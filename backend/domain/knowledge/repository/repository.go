@@ -56,6 +56,9 @@ type KnowledgeRepo interface {
 	InitTx() (tx *gorm.DB, err error)
 	UpdateWithTx(ctx context.Context, tx *gorm.DB, knowledgeID int64, updateMap map[string]interface{}) error
 	FindKnowledgeByCondition(ctx context.Context, opts *entity.WhereKnowledgeOption) ([]*model.Knowledge, int64, error)
+	// ListBySpaceID returns all (non-deleted) knowledge entries in the given space.
+	// limit=0 means no limit.
+	ListBySpaceID(ctx context.Context, spaceID int64, limit int) ([]*model.Knowledge, error)
 }
 
 //go:generate mockgen -destination ../internal/mock/dal/dao/knowledge_document.go --package dao -source knowledge_document.go

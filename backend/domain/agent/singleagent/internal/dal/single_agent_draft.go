@@ -130,6 +130,24 @@ func (sa *SingleAgentDraftDAO) Delete(ctx context.Context, spaceID, agentID int6
 	return err
 }
 
+func (sa *SingleAgentDraftDAO) ListBySpaceID(ctx context.Context, spaceID int64, limit int) ([]*entity.SingleAgent, error) {
+	po := sa.dbQuery.SingleAgentDraft
+	q := po.WithContext(ctx).Where(po.SpaceID.Eq(spaceID)).Order(po.ID.Asc())
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+	pos, err := q.Find()
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrAgentGetCode)
+	}
+
+	dos := make([]*entity.SingleAgent, 0, len(pos))
+	for _, p := range pos {
+		dos = append(dos, sa.singleAgentDraftPo2Do(p))
+	}
+	return dos, nil
+}
+
 func (sa *SingleAgentDraftDAO) singleAgentDraftPo2Do(po *model.SingleAgentDraft) *entity.SingleAgent {
 	return &entity.SingleAgent{
 		SingleAgent: &singleagent.SingleAgent{

@@ -46,6 +46,9 @@ type SingleAgentDraftRepo interface {
 	MGet(ctx context.Context, agentIDs []int64) ([]*entity.SingleAgent, error)
 	Delete(ctx context.Context, spaceID, agentID int64) (err error)
 	Save(ctx context.Context, agentInfo *entity.SingleAgent) (err error)
+	// ListBySpaceID returns all (non-deleted) single agent drafts in the given space.
+	// limit=0 means no limit.
+	ListBySpaceID(ctx context.Context, spaceID int64, limit int) ([]*entity.SingleAgent, error)
 
 	GetDisplayInfo(ctx context.Context, userID, agentID int64) (*entity.AgentDraftDisplayInfo, error)
 	UpdateDisplayInfo(ctx context.Context, userID int64, e *entity.AgentDraftDisplayInfo) error

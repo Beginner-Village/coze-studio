@@ -142,3 +142,21 @@ func (a *APPDraftDAO) Update(ctx context.Context, app *entity.APP) (err error) {
 	}
 	return nil
 }
+
+func (a *APPDraftDAO) ListBySpaceID(ctx context.Context, spaceID int64, limit int) ([]*entity.APP, error) {
+	table := a.query.AppDraft
+	q := table.WithContext(ctx).Where(table.SpaceID.Eq(spaceID)).Order(table.ID.Asc())
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+	pos, err := q.Find()
+	if err != nil {
+		return nil, err
+	}
+
+	apps := make([]*entity.APP, 0, len(pos))
+	for _, p := range pos {
+		apps = append(apps, appDraftPO(*p).ToDO())
+	}
+	return apps, nil
+}
