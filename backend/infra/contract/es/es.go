@@ -24,6 +24,7 @@ type Client interface {
 	Create(ctx context.Context, index, id string, document any) error
 	Update(ctx context.Context, index, id string, document any) error
 	Delete(ctx context.Context, index, id string) error
+	DeleteByQuery(ctx context.Context, index string, query map[string]any) (deletedCount int64, err error)
 	Search(ctx context.Context, index string, req *Request) (*Response, error)
 	Exists(ctx context.Context, index string) (bool, error)
 	CreateIndex(ctx context.Context, index string, properties map[string]any) error

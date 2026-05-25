@@ -103,6 +103,44 @@ func (c *es7Client) Delete(ctx context.Context, index, id string) error {
 	return err
 }
 
+func (c *es7Client) DeleteByQuery(ctx context.Context, index string, query map[string]any) (int64, error) {
+	body, err := json.Marshal(map[string]any{"query": query})
+	if err != nil {
+		return 0, fmt.Errorf("[DeleteByQuery] marshal query: %w", err)
+	}
+
+	req := esapi.DeleteByQueryRequest{
+		Index:   []string{index},
+		Body:    bytes.NewReader(body),
+		Refresh: ptr.Of(true),
+	}
+
+	logs.CtxDebugf(ctx, "[DeleteByQuery] req : %s", string(body))
+
+	res, err := req.Do(ctx, c.esClient)
+	if err != nil {
+		return 0, fmt.Errorf("[DeleteByQuery] %s: %w", index, err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		buf, _ := io.ReadAll(res.Body)
+		return 0, fmt.Errorf("[DeleteByQuery] %s: %s: %s", index, res.Status(), string(buf))
+	}
+
+	respBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return 0, fmt.Errorf("[DeleteByQuery] read response: %w", err)
+	}
+	var result struct {
+		Deleted int64 `json:"deleted"`
+	}
+	if err := json.Unmarshal(respBytes, &result); err != nil {
+		return 0, fmt.Errorf("[DeleteByQuery] decode response: %w", err)
+	}
+	return result.Deleted, nil
+}
+
 func (c *es7Client) Exists(ctx context.Context, index string) (bool, error) {
 	req := esapi.IndicesExistsRequest{Index: []string{index}}
 	logs.CtxDebugf(ctx, "[Exists] req : %s", conv.DebugJsonToStr(req))

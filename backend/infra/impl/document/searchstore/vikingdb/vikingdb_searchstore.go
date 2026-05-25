@@ -159,6 +159,13 @@ func (v *vkSearchStore) Delete(ctx context.Context, ids []string) error {
 	return nil
 }
 
+// DeleteByQuery is not supported by the VikingDB vector store. The ES path is
+// the only consumer of DeleteByQuery today; vector wipes should go through the
+// regular Delete with explicit ID lists.
+func (v *vkSearchStore) DeleteByQuery(ctx context.Context, index string, query map[string]any) (int64, error) {
+	return 0, fmt.Errorf("[DeleteByQuery] not supported by vikingdb searchstore")
+}
+
 func (v *vkSearchStore) document2DataWithoutVector(doc *schema.Document) (data vikingdb.Data, err error) {
 	creatorID, err := document.GetDocumentCreatorID(doc)
 	if err != nil {

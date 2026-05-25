@@ -16,7 +16,14 @@
 
 package elasticsearch
 
-import "testing"
+import (
+	"context"
+	"errors"
+	"reflect"
+	"testing"
+
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/es"
+)
 
 // TestExtractDocsFromHitsPreservesRawBM25 guards against the regression where
 // ES top1 score was always 1.0 (score/firstScore). RRF + downstream filtering
@@ -50,5 +57,75 @@ func TestExtractDocsFromHitsEmpty(t *testing.T) {
 	docs := extractDocsFromHits(nil)
 	if len(docs) != 0 {
 		t.Fatalf("expected 0 docs from nil input, got %d", len(docs))
+	}
+}
+
+// fakeESClient is a minimal es.Client used to verify that esSearchStore
+// forwards DeleteByQuery's index/query untouched and returns the underlying
+// client's deleted count / error. Only DeleteByQuery is exercised — other
+// methods panic if invoked, which surfaces accidental wiring changes.
+type fakeESClient struct {
+	gotIndex   string
+	gotQuery   map[string]any
+	retDeleted int64
+	retErr     error
+}
+
+func (f *fakeESClient) DeleteByQuery(_ context.Context, index string, query map[string]any) (int64, error) {
+	f.gotIndex = index
+	f.gotQuery = query
+	return f.retDeleted, f.retErr
+}
+
+func (f *fakeESClient) Create(context.Context, string, string, any) error { panic("not used") }
+func (f *fakeESClient) Update(context.Context, string, string, any) error { panic("not used") }
+func (f *fakeESClient) Delete(context.Context, string, string) error      { panic("not used") }
+func (f *fakeESClient) Search(context.Context, string, *es.Request) (*es.Response, error) {
+	panic("not used")
+}
+func (f *fakeESClient) Exists(context.Context, string) (bool, error) { panic("not used") }
+func (f *fakeESClient) CreateIndex(context.Context, string, map[string]any) error {
+	panic("not used")
+}
+func (f *fakeESClient) DeleteIndex(context.Context, string) error          { panic("not used") }
+func (f *fakeESClient) Types() es.Types                                    { panic("not used") }
+func (f *fakeESClient) NewBulkIndexer(string) (es.BulkIndexer, error)      { panic("not used") }
+
+func TestESSearchStore_DeleteByQuery_DelegatesToClient(t *testing.T) {
+	fake := &fakeESClient{retDeleted: 42}
+	store := &esSearchStore{
+		config:    &ManagerConfig{Client: fake},
+		indexName: "ignored_bound_index",
+	}
+
+	idx := "kb_text_space_100"
+	query := map[string]any{"term": map[string]any{"space_id": int64(100)}}
+
+	deleted, err := store.DeleteByQuery(context.Background(), idx, query)
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if deleted != 42 {
+		t.Errorf("deleted = %d, want 42", deleted)
+	}
+	if fake.gotIndex != idx {
+		t.Errorf("forwarded index = %q, want %q", fake.gotIndex, idx)
+	}
+	if !reflect.DeepEqual(fake.gotQuery, query) {
+		t.Errorf("forwarded query = %#v, want %#v", fake.gotQuery, query)
+	}
+}
+
+func TestESSearchStore_DeleteByQuery_PropagatesError(t *testing.T) {
+	wantErr := errors.New("boom")
+	fake := &fakeESClient{retErr: wantErr}
+	store := &esSearchStore{
+		config:    &ManagerConfig{Client: fake},
+		indexName: "any",
+	}
+
+	_, err := store.DeleteByQuery(context.Background(), "x", map[string]any{"match_all": map[string]any{}})
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("err = %v, want %v", err, wantErr)
 	}
 }

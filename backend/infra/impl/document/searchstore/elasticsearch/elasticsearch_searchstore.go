@@ -157,6 +157,14 @@ func (e *esSearchStore) Delete(ctx context.Context, ids []string) error {
 	return bi.Close(ctx)
 }
 
+// DeleteByQuery delegates to the underlying es.Client. The `index` argument
+// overrides the searchstore's own indexName, allowing callers to wipe an
+// arbitrary collection (used by space-wide resync to target text indices that
+// don't correspond to this store's bound index).
+func (e *esSearchStore) DeleteByQuery(ctx context.Context, index string, query map[string]any) (int64, error) {
+	return e.config.Client.DeleteByQuery(ctx, index, query)
+}
+
 func (e *esSearchStore) travDSL(query *es.Query, dsl *searchstore.DSL) error {
 	if dsl == nil {
 		return nil

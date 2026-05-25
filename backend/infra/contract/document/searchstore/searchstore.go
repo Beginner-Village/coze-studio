@@ -29,4 +29,11 @@ type SearchStore interface {
 	retriever.Retriever
 
 	Delete(ctx context.Context, ids []string) error
+
+	// DeleteByQuery removes all documents in `index` matching the ES query DSL.
+	// The query argument follows Elasticsearch _delete_by_query body shape, e.g.:
+	//   map[string]any{"term": map[string]any{"space_id": 123}}
+	//   map[string]any{"terms": map[string]any{"kb_id": []int64{1,2,3}}}
+	// Returns the count of deleted documents.
+	DeleteByQuery(ctx context.Context, index string, query map[string]any) (deletedCount int64, err error)
 }

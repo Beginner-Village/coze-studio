@@ -17,12 +17,15 @@
 package es
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/esutil"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/core/deletebyquery"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/create"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/delete"
@@ -82,6 +85,28 @@ func (c *es8Client) Update(ctx context.Context, index, id string, document any) 
 func (c *es8Client) Delete(ctx context.Context, index, id string) error {
 	_, err := c.esClient.Delete(index, id).Do(ctx)
 	return err
+}
+
+func (c *es8Client) DeleteByQuery(ctx context.Context, index string, query map[string]any) (int64, error) {
+	body, err := json.Marshal(map[string]any{"query": query})
+	if err != nil {
+		return 0, fmt.Errorf("[DeleteByQuery] marshal query: %w", err)
+	}
+
+	logs.CtxDebugf(ctx, "[DeleteByQuery] req : %s", string(body))
+
+	resp, err := deletebyquery.NewDeleteByQueryFunc(c.esClient)(index).
+		Raw(bytes.NewReader(body)).
+		Refresh(true).
+		Do(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("[DeleteByQuery] %s: %w", index, err)
+	}
+
+	if resp.Deleted == nil {
+		return 0, nil
+	}
+	return *resp.Deleted, nil
 }
 
 func (c *es8Client) Exists(ctx context.Context, index string) (bool, error) {

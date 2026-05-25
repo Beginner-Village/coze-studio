@@ -83,6 +83,21 @@ func (m *multiClient) Delete(ctx context.Context, index, id string) error {
 	return nil
 }
 
+func (m *multiClient) DeleteByQuery(ctx context.Context, index string, query map[string]any) (int64, error) {
+	deleted, err := m.primary.DeleteByQuery(ctx, index, query)
+	if err != nil {
+		return 0, err
+	}
+	for _, cli := range m.secondaries {
+		go func(c Client) {
+			if _, err := c.DeleteByQuery(ctx, index, query); err != nil {
+				logs.CtxWarnf(ctx, "ES dual-write DeleteByQuery failed: %v", err)
+			}
+		}(cli)
+	}
+	return deleted, nil
+}
+
 // Search 只走主实例
 func (m *multiClient) Search(ctx context.Context, index string, req *es.Request) (*es.Response, error) {
 	return m.primary.Search(ctx, index, req)

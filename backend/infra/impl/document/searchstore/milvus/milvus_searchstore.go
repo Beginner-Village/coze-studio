@@ -256,6 +256,13 @@ func (m *milvusSearchStore) Delete(ctx context.Context, ids []string) error {
 	return err
 }
 
+// DeleteByQuery is not supported by the Milvus vector store. The ES path is
+// the only consumer of DeleteByQuery today; vector wipes should go through the
+// regular Delete with explicit ID lists.
+func (m *milvusSearchStore) DeleteByQuery(ctx context.Context, index string, query map[string]any) (int64, error) {
+	return 0, fmt.Errorf("[DeleteByQuery] not supported by milvus searchstore")
+}
+
 func (m *milvusSearchStore) documents2Columns(ctx context.Context, docs []*schema.Document, indexingFields sets.Set[string]) (
 	cols []column.Column, err error) {
 
