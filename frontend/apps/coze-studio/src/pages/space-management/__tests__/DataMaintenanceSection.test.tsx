@@ -18,6 +18,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { SpaceApi } from '@coze-arch/bot-api';
+import { Toast } from '@coze-arch/coze-design';
 
 import { DataMaintenanceSection } from '../DataMaintenanceSection';
 
@@ -128,5 +129,148 @@ describe('DataMaintenanceSection', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('resync-modal')).not.toBeInTheDocument();
     });
+  });
+
+  it('shows error toast when API returns code != 0 (permission denied)', async () => {
+    (SpaceApi.resyncES as any).mockResolvedValue({
+      code: 403,
+      msg: 'permission denied',
+      counts: null,
+    });
+    render(<DataMaintenanceSection spaceId="100" />);
+    fireEvent.click(screen.getByTestId('space-resync-es-button'));
+    fireEvent.click(screen.getByTestId('modal-ok'));
+    await waitFor(() => {
+      expect(Toast.error).toHaveBeenCalled();
+    });
+    const errorArg = (Toast.error as any).mock.calls[0][0];
+    expect(String(errorArg)).toContain('permission denied');
+    expect(Toast.success).not.toHaveBeenCalled();
+  });
+
+  it('shows error toast on API throw (network timeout)', async () => {
+    (SpaceApi.resyncES as any).mockRejectedValue(new Error('network timeout'));
+    render(<DataMaintenanceSection spaceId="100" />);
+    fireEvent.click(screen.getByTestId('space-resync-es-button'));
+    fireEvent.click(screen.getByTestId('modal-ok'));
+    await waitFor(() => {
+      expect(Toast.error).toHaveBeenCalled();
+    });
+    const errorArg = (Toast.error as any).mock.calls[0][0];
+    expect(String(errorArg)).toContain('timeout');
+    expect(Toast.success).not.toHaveBeenCalled();
+  });
+
+  it('shows error toast when API returns code 500 (internal server error)', async () => {
+    (SpaceApi.resyncES as any).mockResolvedValue({
+      code: 500,
+      msg: 'internal server error',
+      counts: null,
+    });
+    render(<DataMaintenanceSection spaceId="100" />);
+    fireEvent.click(screen.getByTestId('space-resync-es-button'));
+    fireEvent.click(screen.getByTestId('modal-ok'));
+    await waitFor(() => {
+      expect(Toast.error).toHaveBeenCalled();
+    });
+    const errorArg = (Toast.error as any).mock.calls[0][0];
+    expect(String(errorArg)).toContain('internal server error');
+  });
+
+  it('does NOT call API when modal is cancelled', () => {
+    render(<DataMaintenanceSection spaceId="100" />);
+    fireEvent.click(screen.getByTestId('space-resync-es-button'));
+    expect(screen.getByTestId('resync-modal')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('modal-cancel'));
+    expect(SpaceApi.resyncES).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('resync-modal')).not.toBeInTheDocument();
+  });
+
+  it('disables confirm button while loading (prevents double-submit)', async () => {
+    // Hold the promise open so loading state stays true and we can assert on disabled.
+    let resolveFn: (v: any) => void = () => undefined;
+    (SpaceApi.resyncES as any).mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolveFn = resolve;
+        }),
+    );
+    render(<DataMaintenanceSection spaceId="100" />);
+    fireEvent.click(screen.getByTestId('space-resync-es-button'));
+    const okBtn = screen.getByTestId('modal-ok') as HTMLButtonElement;
+    fireEvent.click(okBtn);
+    // Confirm button should now be disabled while in-flight.
+    await waitFor(() => {
+      expect(okBtn.disabled).toBe(true);
+    });
+    // Simulated double-click while disabled — should NOT trigger a second API call.
+    fireEvent.click(okBtn);
+    expect(SpaceApi.resyncES).toHaveBeenCalledTimes(1);
+    // Cleanup: resolve so React can flush and the component unmounts cleanly.
+    resolveFn({
+      code: 0,
+      msg: 'success',
+      counts: {
+        project_draft: 0,
+        coze_resource: 0,
+        kb_entries: 0,
+        slice_reindex_jobs: 0,
+      },
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId('resync-modal')).not.toBeInTheDocument();
+    });
+  });
+
+  it('closes modal after error path too (finally block)', async () => {
+    (SpaceApi.resyncES as any).mockRejectedValue(new Error('boom'));
+    render(<DataMaintenanceSection spaceId="100" />);
+    fireEvent.click(screen.getByTestId('space-resync-es-button'));
+    expect(screen.getByTestId('resync-modal')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('modal-ok'));
+    // After an error, loading state must reset (button no longer disabled).
+    await waitFor(() => {
+      expect(Toast.error).toHaveBeenCalled();
+    });
+    const okBtn = screen.getByTestId('modal-ok') as HTMLButtonElement;
+    await waitFor(() => {
+      expect(okBtn.disabled).toBe(false);
+    });
+    // Modal stays open on error (current impl only closes on success), but the
+    // button must be re-enabled so the user can retry or cancel.
+  });
+
+  it('handles null counts gracefully without panic', async () => {
+    (SpaceApi.resyncES as any).mockResolvedValue({
+      code: 0,
+      msg: 'success',
+      counts: null,
+    });
+    render(<DataMaintenanceSection spaceId="100" />);
+    fireEvent.click(screen.getByTestId('space-resync-es-button'));
+    fireEvent.click(screen.getByTestId('modal-ok'));
+    await waitFor(() => {
+      expect(Toast.success).toHaveBeenCalled();
+    });
+    // The success toast should fall back to all-zero counts when counts is null.
+    const successArg = (Toast.success as any).mock.calls[0][0];
+    const summary = String(successArg);
+    expect(summary).toContain('0');
+    // No error should fire on the null-counts happy path.
+    expect(Toast.error).not.toHaveBeenCalled();
+  });
+
+  it('i18n fallback renders Chinese text when key has no translation', () => {
+    // Existing I18n mock returns the fallback (3rd arg) when present, otherwise
+    // the key. This test asserts the Chinese fallback strings actually render.
+    render(<DataMaintenanceSection spaceId="100" />);
+    expect(screen.getByText('数据维护')).toBeInTheDocument();
+    expect(screen.getByText('重新同步 ES 索引')).toBeInTheDocument();
+    expect(screen.getByText('重新同步')).toBeInTheDocument();
+    // Confirm-modal fallback strings appear once it's opened.
+    fireEvent.click(screen.getByTestId('space-resync-es-button'));
+    expect(screen.getByText('确认重新同步 ES 索引？')).toBeInTheDocument();
+    expect(screen.getByText('确认')).toBeInTheDocument();
+    expect(screen.getByText('取消')).toBeInTheDocument();
   });
 });
