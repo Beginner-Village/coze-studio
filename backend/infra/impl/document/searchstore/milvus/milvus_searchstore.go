@@ -263,6 +263,14 @@ func (m *milvusSearchStore) DeleteByQuery(ctx context.Context, index string, que
 	return 0, fmt.Errorf("[DeleteByQuery] not supported by milvus searchstore")
 }
 
+// DeleteIndex is a no-op for the Milvus vector store. The ES path is the only
+// owner of openynet_<kb_id> indices; Milvus collection drops happen via
+// Manager.Drop. Returning nil lets the resync loop iterate all managers
+// uniformly without per-type branching.
+func (m *milvusSearchStore) DeleteIndex(ctx context.Context, index string) error {
+	return nil
+}
+
 func (m *milvusSearchStore) documents2Columns(ctx context.Context, docs []*schema.Document, indexingFields sets.Set[string]) (
 	cols []column.Column, err error) {
 

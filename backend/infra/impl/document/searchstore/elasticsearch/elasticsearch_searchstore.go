@@ -165,6 +165,14 @@ func (e *esSearchStore) DeleteByQuery(ctx context.Context, index string, query m
 	return e.config.Client.DeleteByQuery(ctx, index, query)
 }
 
+// DeleteIndex delegates to the underlying es.Client. The `index` argument
+// overrides the searchstore's own indexName so callers can drop arbitrary
+// collections (e.g. openynet_<kb_id> chunk indices during per-space resync).
+// Missing-index errors are absorbed by the es.Client implementations.
+func (e *esSearchStore) DeleteIndex(ctx context.Context, index string) error {
+	return e.config.Client.DeleteIndex(ctx, index)
+}
+
 func (e *esSearchStore) travDSL(query *es.Query, dsl *searchstore.DSL) error {
 	if dsl == nil {
 		return nil

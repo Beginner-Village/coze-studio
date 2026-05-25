@@ -87,6 +87,20 @@ func (mr *MockKnowledgeRepoMockRecorder) Delete(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockKnowledgeRepo)(nil).Delete), ctx, id)
 }
 
+// Upsert mocks base method.
+func (m *MockKnowledgeRepo) Upsert(ctx context.Context, knowledge *model.Knowledge) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Upsert", ctx, knowledge)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Upsert indicates an expected call of Upsert.
+func (mr *MockKnowledgeRepoMockRecorder) Upsert(ctx, knowledge any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upsert", reflect.TypeOf((*MockKnowledgeRepo)(nil).Upsert), ctx, knowledge)
+}
+
 // ListBySpaceID mocks base method.
 func (m *MockKnowledgeRepo) ListBySpaceID(ctx context.Context, spaceID int64, limit int) ([]*model.Knowledge, error) {
 	m.ctrl.T.Helper()

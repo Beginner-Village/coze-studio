@@ -353,3 +353,11 @@ func (s *obSearchStore) Delete(ctx context.Context, ids []string) error {
 func (s *obSearchStore) DeleteByQuery(ctx context.Context, index string, query map[string]any) (int64, error) {
 	return 0, fmt.Errorf("[DeleteByQuery] not supported by oceanbase searchstore")
 }
+
+// DeleteIndex is a no-op for the OceanBase vector store. The ES path is the
+// only owner of openynet_<kb_id> indices; OceanBase vector wipes happen via
+// Manager.Drop / SQL delete, not via DeleteIndex. Returning nil lets the
+// resync loop iterate all managers uniformly without per-type branching.
+func (s *obSearchStore) DeleteIndex(ctx context.Context, index string) error {
+	return nil
+}

@@ -61,6 +61,15 @@ type Knowledge interface {
 	CreateDocumentReview(ctx context.Context, request *CreateDocumentReviewRequest) (response *CreateDocumentReviewResponse, err error)
 	MGetDocumentReview(ctx context.Context, request *MGetDocumentReviewRequest) (response *MGetDocumentReviewResponse, err error)
 	SaveDocumentReview(ctx context.Context, request *SaveDocumentReviewRequest) error
+
+	// ResyncSpaceSlices drops the openynet_<kb_id> ES index of every KB in the
+	// given space, sets every slice's status back to Init, and publishes an
+	// IndexSliceEvent per slice so the existing indexSlice consumer
+	// (event_handle.go) re-embeds and writes ES from scratch.
+	//
+	// Used by the per-space ES resync flow (one-click "rebuild ES"). Returns
+	// the count of slices queued for re-indexing across all KBs.
+	ResyncSpaceSlices(ctx context.Context, spaceID int64) (queued int, err error)
 }
 
 type CreateKnowledgeRequest struct {

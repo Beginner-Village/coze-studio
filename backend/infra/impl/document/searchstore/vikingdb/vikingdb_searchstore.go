@@ -166,6 +166,14 @@ func (v *vkSearchStore) DeleteByQuery(ctx context.Context, index string, query m
 	return 0, fmt.Errorf("[DeleteByQuery] not supported by vikingdb searchstore")
 }
 
+// DeleteIndex is a no-op for the VikingDB vector store. The ES path is the
+// only owner of openynet_<kb_id> indices; VikingDB collection drops happen via
+// Manager.Drop. Returning nil lets the resync loop iterate all managers
+// uniformly without per-type branching.
+func (v *vkSearchStore) DeleteIndex(ctx context.Context, index string) error {
+	return nil
+}
+
 func (v *vkSearchStore) document2DataWithoutVector(doc *schema.Document) (data vikingdb.Data, err error) {
 	creatorID, err := document.GetDocumentCreatorID(doc)
 	if err != nil {

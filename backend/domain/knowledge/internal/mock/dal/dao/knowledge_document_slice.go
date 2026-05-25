@@ -159,6 +159,50 @@ func (mr *MockKnowledgeDocumentSliceRepoMockRecorder) GetDocumentSliceIDs(ctx, d
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDocumentSliceIDs", reflect.TypeOf((*MockKnowledgeDocumentSliceRepo)(nil).GetDocumentSliceIDs), ctx, docIDs)
 }
 
+// GetLastSequence mocks base method.
+func (m *MockKnowledgeDocumentSliceRepo) GetLastSequence(ctx context.Context, documentID int64) (float64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastSequence", ctx, documentID)
+	ret0, _ := ret[0].(float64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastSequence indicates an expected call of GetLastSequence.
+func (mr *MockKnowledgeDocumentSliceRepoMockRecorder) GetLastSequence(ctx, documentID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastSequence", reflect.TypeOf((*MockKnowledgeDocumentSliceRepo)(nil).GetLastSequence), ctx, documentID)
+}
+
+// GetSliceHitByKnowledgeID mocks base method.
+func (m *MockKnowledgeDocumentSliceRepo) GetSliceHitByKnowledgeID(ctx context.Context, knowledgeID int64) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSliceHitByKnowledgeID", ctx, knowledgeID)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSliceHitByKnowledgeID indicates an expected call of GetSliceHitByKnowledgeID.
+func (mr *MockKnowledgeDocumentSliceRepoMockRecorder) GetSliceHitByKnowledgeID(ctx, knowledgeID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSliceHitByKnowledgeID", reflect.TypeOf((*MockKnowledgeDocumentSliceRepo)(nil).GetSliceHitByKnowledgeID), ctx, knowledgeID)
+}
+
+// IncrementHitCount mocks base method.
+func (m *MockKnowledgeDocumentSliceRepo) IncrementHitCount(ctx context.Context, sliceIDs []int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementHitCount", ctx, sliceIDs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementHitCount indicates an expected call of IncrementHitCount.
+func (mr *MockKnowledgeDocumentSliceRepoMockRecorder) IncrementHitCount(ctx, sliceIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementHitCount", reflect.TypeOf((*MockKnowledgeDocumentSliceRepo)(nil).IncrementHitCount), ctx, sliceIDs)
+}
+
 // GetSliceBySequence mocks base method.
 func (m *MockKnowledgeDocumentSliceRepo) GetSliceBySequence(ctx context.Context, documentID, sequence int64) ([]*model.KnowledgeDocumentSlice, error) {
 	m.ctrl.T.Helper()

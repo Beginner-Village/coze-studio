@@ -36,4 +36,12 @@ type SearchStore interface {
 	//   map[string]any{"terms": map[string]any{"kb_id": []int64{1,2,3}}}
 	// Returns the count of deleted documents.
 	DeleteByQuery(ctx context.Context, index string, query map[string]any) (deletedCount int64, err error)
+
+	// DeleteIndex removes the entire index. Safe to call on a non-existent index
+	// (the call returns nil). Used by the per-space resync flow to drop a KB's
+	// chunk index (openynet_<kb_id>) before re-embedding from MySQL.
+	//
+	// Non-ES stores (Milvus / OceanBase / VikingDB) treat this as a no-op since
+	// vector wipes go through the searchstore Manager.Drop path instead.
+	DeleteIndex(ctx context.Context, index string) error
 }
