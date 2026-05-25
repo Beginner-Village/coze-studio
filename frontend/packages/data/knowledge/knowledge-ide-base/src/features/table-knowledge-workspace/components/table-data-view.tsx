@@ -14,11 +14,23 @@
  * limitations under the License.
  */
 
+import { useMemo } from 'react';
+
 import classnames from 'classnames';
 import {
   useKnowledgeParamsStore,
   useKnowledgeStore,
 } from '@coze-data/knowledge-stores';
+import {
+  MergeSliceConfirmModal,
+  useMergeState,
+  MergeToolbar,
+  MergeCandidateList,
+  MERGE_MIN_COUNT,
+  ReindexStatusBar,
+  useReindexTracking,
+  type MergeCandidate,
+} from '@coze-data/knowledge-modal-base';
 import { KnowledgeE2e } from '@coze-data/e2e';
 import { TableView } from '@coze-common/table-view';
 import { I18n } from '@coze-arch/i18n';
@@ -38,38 +50,71 @@ import { useTableUI } from '../context/table-ui-context';
 import { useTableData } from '../context/table-data-context';
 import { useTableActions } from '../context/table-actions-context';
 
+// Merge candidates derived from table slice list. Table row content is JSON-stringified
+// (`{column_id: value}`) - we surface it as text for the toolbar/preview and persist
+// it as a text concatenation in the merged slice (option Q in design doc - simple
+// text join, backend treats merged result as text content).
+const useTableMergeState = (
+  slices: ReturnType<typeof useTableData>['sliceListData']['list'],
+  onMergeSuccess?: (sliceId: string) => void,
+) => {
+  const mergeCandidates: MergeCandidate[] = useMemo(
+    () =>
+      (slices ?? [])
+        .filter(s => Boolean(s.slice_id))
+        .map(s => ({
+          slice_id: String(s.slice_id),
+          sequence: Number(s.sequence ?? 0),
+          content: s.content ?? '',
+        })),
+    [slices],
+  );
+
+  const merge = useMergeState(mergeCandidates, { onMergeSuccess });
+  return { mergeCandidates, ...merge };
+};
+
 // Table Content Component
 const TableContent = () => {
   const knowledgeIDEBiz = useKnowledgeParamsStore(state => state.params.biz);
   const documentList = useKnowledgeStore(state => state.documentList);
   const curDoc = documentList?.[0];
-
   const { tableViewRef, isLoadingMoreSliceList, isLoadingSliceList } =
     useTableUI();
-
   const { sliceListData } = useTableData();
-
   const slices = sliceListData?.list;
-
   const { loadMoreSliceList } = useTableActions();
-
   const canEdit = Boolean(useKnowledgeStore(state => state.canEdit));
-
-  // Delete slice pop-up
+  // Track slice ids that were edited or merged so we can poll re-index status.
+  const { editedIds, statusMap, handleSliceEdited } = useReindexTracking(
+    String(curDoc?.document_id ?? ''),
+  );
   const { deleteSliceModalNode, openDeleteSliceModal } = useDeleteSliceModal();
-
-  // Edit slice pop-up
-  const { tableSegmentModalNode, openTableSegmentModal } =
-    useTableSegmentModal();
-
-  // Get table manipulation method
+  const { tableSegmentModalNode, openTableSegmentModal } = useTableSegmentModal(
+    { onAfterEdit: handleSliceEdited },
+  );
   const { deleteSlice, rowUpdateSliceData, modalEditSlice } =
     useTableSliceOperations({
       openDeleteSliceModal,
       openTableSegmentModal,
     });
-
   const { tableH } = useTableHeight();
+
+  const {
+    mergeCandidates,
+    mergeMode,
+    setMergeMode,
+    selectedSliceIds,
+    mergeModalOpen,
+    setMergeModalOpen,
+    merging,
+    selectedSlices,
+    isContiguous,
+    canMerge,
+    toggleSelected,
+    exitMergeMode,
+    handleMerge,
+  } = useTableMergeState(slices, handleSliceEdited);
 
   // If there is no data, return to empty directly
   if (!slices?.length) {
@@ -88,46 +133,84 @@ const TableContent = () => {
     tableKey: tableKey || '',
   });
 
+  const showMergeToolbar = canEdit && mergeCandidates.length >= MERGE_MIN_COUNT;
+
   return (
-    <div
-      className={classnames(
-        styles['table-view-container-box'],
-        'table-view-box',
-      )}
-      style={{ height: tableH }}
-    >
-      <TableView
-        tableKey={tableKey}
-        ref={tableViewRef}
-        className={classnames(
-          `${styles['unit-table-view']} ${
-            isLoadingMoreSliceList ? styles['table-view-loading'] : ''
-          }`,
-          knowledgeIDEBiz === 'project'
-            ? styles['table-preview-max']
-            : styles['table-preview-secondary'],
-        )}
-        resizable
-        dataSource={dataSource}
-        loading={isLoadingSliceList}
-        columns={columns}
-        rowSelect={canEdit}
-        isVirtualized
-        rowOperation={canEdit}
-        scrollToBottom={() => {
-          if (!isLoadingSliceList && !isLoadingMoreSliceList) {
-            loadMoreSliceList();
-          }
-        }}
-        editProps={{
-          onDelete: indexs => deleteSlice(indexs as number[]),
-          onEdit: (record, index) => {
-            modalEditSlice(record, index as number);
-          },
-        }}
+    <div className="flex flex-col gap-2 w-full">
+      {showMergeToolbar ? (
+        <MergeToolbar
+          mergeMode={mergeMode}
+          selectedCount={selectedSlices.length}
+          isContiguous={isContiguous}
+          canMerge={canMerge}
+          onEnterMode={() => setMergeMode(true)}
+          onCancel={exitMergeMode}
+          onOpenConfirm={() => setMergeModalOpen(true)}
+        />
+      ) : null}
+
+      {mergeMode ? (
+        <MergeCandidateList
+          candidates={mergeCandidates}
+          selectedSliceIds={selectedSliceIds}
+          onToggle={toggleSelected}
+        />
+      ) : null}
+
+      <ReindexStatusBar
+        watchedIds={editedIds}
+        statusMap={statusMap}
+        testId="table-reindex-status-bar"
       />
-      {deleteSliceModalNode}
-      {tableSegmentModalNode}
+
+      <div
+        className={classnames(
+          styles['table-view-container-box'],
+          'table-view-box',
+        )}
+        style={{ height: tableH }}
+      >
+        <TableView
+          tableKey={tableKey}
+          ref={tableViewRef}
+          className={classnames(
+            `${styles['unit-table-view']} ${
+              isLoadingMoreSliceList ? styles['table-view-loading'] : ''
+            }`,
+            knowledgeIDEBiz === 'project'
+              ? styles['table-preview-max']
+              : styles['table-preview-secondary'],
+          )}
+          resizable
+          dataSource={dataSource}
+          loading={isLoadingSliceList}
+          columns={columns}
+          rowSelect={canEdit}
+          isVirtualized
+          rowOperation={canEdit}
+          scrollToBottom={() => {
+            if (!isLoadingSliceList && !isLoadingMoreSliceList) {
+              loadMoreSliceList();
+            }
+          }}
+          editProps={{
+            onDelete: indexs => deleteSlice(indexs as number[]),
+            onEdit: (record, index) => {
+              modalEditSlice(record, index as number);
+            },
+          }}
+        />
+        {deleteSliceModalNode}
+        {tableSegmentModalNode}
+      </div>
+
+      <MergeSliceConfirmModal
+        visible={mergeModalOpen}
+        slices={selectedSlices}
+        loading={merging}
+        onConfirm={handleMerge}
+        onCancel={() => setMergeModalOpen(false)}
+      />
     </div>
   );
 };

@@ -200,6 +200,9 @@ func (kr *Retrieve) Invoke(ctx context.Context, input map[string]any) (map[strin
 	if err != nil {
 		return nil, err
 	}
+	if len(response.RetrieveSlices) == 0 {
+		logs.CtxInfof(ctx, "[retrieve] empty result: query=%q knowledge_ids=%v", query, kr.knowledgeIDs)
+	}
 	result := make(map[string]any)
 	result[outputList] = slices.Transform(response.RetrieveSlices, func(m *knowledge.RetrieveSlice) any {
 		return map[string]any{

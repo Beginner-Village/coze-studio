@@ -31,6 +31,7 @@ import (
 	crossknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
 	knowledgeEntity "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 const (
@@ -107,6 +108,10 @@ func (k *knowledgeTool) Retrieve(ctx context.Context, req *RetrieveRequest) ([]*
 	resp, err := crossknowledge.DefaultSVC().Retrieve(ctx, rr)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(resp.RetrieveSlices) == 0 {
+		logs.CtxInfof(ctx, "[retrieve] empty result: query=%q knowledge_ids=%v", k.Input.Content, req.KnowledgeIDs)
 	}
 
 	docs, err := convertDocument(ctx, resp.RetrieveSlices)

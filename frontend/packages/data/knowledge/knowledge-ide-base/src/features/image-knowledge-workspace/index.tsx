@@ -113,6 +113,12 @@ export const ImageKnowledgeWorkspace: FC<
     });
   };
 
+  // Task 3.3: SliceStatusBadge + useSliceStatusPolling are NOT wired here
+  // because PhotoInfo (see arch/idl document.ts) does not expose slice_id —
+  // the photo card list keys off document_id only. The existing
+  // reloadAsync() after onSubmit / progressMap polling already refreshes
+  // caption + status, so per-spec we fallback to "no badge, refresh via
+  // reloadAsync". Revisit if backend exposes per-photo slice_id.
   const { node, open } = usePhotoDetailModal({
     photo: curPhoto,
     progressMap,

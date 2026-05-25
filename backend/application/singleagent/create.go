@@ -106,7 +106,7 @@ func (s *SingleAgentApplicationService) newDefaultSingleAgentWithSpace(ctx conte
 			Plugin:         []*bot_common.PluginInfo{},
 			Knowledge: &bot_common.Knowledge{
 				TopK:           ptr.Of(int64(1)),
-				MinScore:       ptr.Of(0.01),
+				MinScore:       ptr.Of(0.3),
 				SearchStrategy: ptr.Of(bot_common.SearchStrategy_SemanticSearch),
 				RecallStrategy: &bot_common.RecallStrategy{
 					UseNl2sql:  ptr.Of(true),
@@ -140,7 +140,7 @@ func (s *SingleAgentApplicationService) newDefaultSingleAgent(ctx context.Contex
 			Plugin:         []*bot_common.PluginInfo{},
 			Knowledge: &bot_common.Knowledge{
 				TopK:           ptr.Of(int64(1)),
-				MinScore:       ptr.Of(0.01),
+				MinScore:       ptr.Of(0.3),
 				SearchStrategy: ptr.Of(bot_common.SearchStrategy_SemanticSearch),
 				RecallStrategy: &bot_common.RecallStrategy{
 					UseNl2sql:  ptr.Of(true),

@@ -213,10 +213,41 @@ func (e *esSearchStore) travDSL(query *es.Query, dsl *searchstore.DSL) error {
 	return nil
 }
 
+// esHit is a slim, decoded view of one Elasticsearch hit. Source_ JSON has
+// already been parsed into Content + MetaData so downstream score handling is
+// trivially testable without spinning up an ES client.
+type esHit struct {
+	ID       string
+	Content  string
+	Score    float64
+	MetaData map[string]any
+}
+
+// extractDocsFromHits converts decoded ES hits into schema.Documents while
+// preserving the raw BM25 score on each doc. Do NOT normalize here: RRF and
+// downstream min-score filtering depend on the raw value (the previous
+// score/firstScore normalization made top1 always 1.0 and poisoned fusion).
+func extractDocsFromHits(hits []esHit) []*schema.Document {
+	docs := make([]*schema.Document, 0, len(hits))
+	for _, h := range hits {
+		md := h.MetaData
+		if md == nil {
+			md = map[string]any{}
+		}
+		doc := &schema.Document{
+			ID:       h.ID,
+			Content:  h.Content,
+			MetaData: md,
+		}
+		doc.WithScore(h.Score)
+		docs = append(docs, doc)
+	}
+	return docs
+}
+
 func (e *esSearchStore) parseSearchResult(resp *es.Response) (docs []*schema.Document, err error) {
-	docs = make([]*schema.Document, 0, len(resp.Hits.Hits))
-	firstScore := 0.0
-	for i, hit := range resp.Hits.Hits {
+	hits := make([]esHit, 0, len(resp.Hits.Hits))
+	for _, hit := range resp.Hits.Hits {
 		var src map[string]any
 		d := json.NewDecoder(bytes.NewReader(hit.Source_))
 		d.UseNumber()
@@ -225,18 +256,19 @@ func (e *esSearchStore) parseSearchResult(resp *es.Response) (docs []*schema.Doc
 		}
 
 		ext := make(map[string]any)
-		doc := &schema.Document{MetaData: map[string]any{document.MetaDataKeyExternalStorage: ext}}
+		md := map[string]any{document.MetaDataKeyExternalStorage: ext}
+		var content string
 
 		for field, val := range src {
 			ok := true
 			switch field {
 			case searchstore.FieldTextContent:
-				doc.Content, ok = val.(string)
+				content, ok = val.(string)
 			case searchstore.FieldCreatorID:
 				var jn json.Number
 				jn, ok = val.(json.Number)
 				if ok {
-					doc.MetaData[document.MetaDataKeyCreatorID], ok = assertJSONNumber(jn).(int64)
+					md[document.MetaDataKeyCreatorID], ok = assertJSONNumber(jn).(int64)
 				}
 			default:
 				if jn, jok := val.(json.Number); jok {
@@ -249,22 +281,19 @@ func (e *esSearchStore) parseSearchResult(resp *es.Response) (docs []*schema.Doc
 				return nil, fmt.Errorf("[parseSearchResult] type assertion failed, field=%s, val=%v", field, val)
 			}
 		}
+
+		h := esHit{Content: content, MetaData: md}
 		if hit.Id_ != nil {
-			doc.ID = *hit.Id_
+			h.ID = *hit.Id_
 		}
 		if hit.Score_ == nil { // unexpected
 			return nil, fmt.Errorf("[parseSearchResult] es retrieve score not found")
 		}
-		score := float64(ptr.From(hit.Score_))
-		if i == 0 {
-			firstScore = score
-		}
-		doc.WithScore(score / firstScore)
-
-		docs = append(docs, doc)
+		h.Score = float64(ptr.From(hit.Score_))
+		hits = append(hits, h)
 	}
 
-	return docs, nil
+	return extractDocsFromHits(hits), nil
 }
 
 func (e *esSearchStore) fromDocument(doc *schema.Document) (map[string]any, error) {

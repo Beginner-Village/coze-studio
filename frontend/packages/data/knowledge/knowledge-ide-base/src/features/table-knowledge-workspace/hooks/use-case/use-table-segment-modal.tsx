@@ -26,12 +26,23 @@ import { SliceStatus } from '@coze-arch/bot-api/knowledge';
 import { useTableData } from '../../context/table-data-context';
 import { useTableActions } from '../../context/table-actions-context';
 
-export const useTableSegmentModal = () => {
+interface UseTableSegmentModalOptions {
+  /**
+   * Fired after a successful Edit submit, with the edited slice id.
+   * Used by Task 3.3 to drive re-index status polling.
+   */
+  onAfterEdit?: (sliceId: string) => void;
+}
+
+export const useTableSegmentModal = (
+  options: UseTableSegmentModalOptions = {},
+) => {
   const documentList = useKnowledgeStore(state => state.documentList);
 
   const { sliceListData, curIndex, curSliceId } = useTableData();
   const { mutateSliceListData } = useTableActions();
   const curDoc = documentList?.[0];
+  const { onAfterEdit } = options;
 
   // table segmentation pop-up
   const {
@@ -73,6 +84,9 @@ export const useTableSegmentModal = () => {
             ...sliceListData,
             list: newList,
           });
+        }
+        if (curSliceId) {
+          onAfterEdit?.(curSliceId);
         }
       }
     },

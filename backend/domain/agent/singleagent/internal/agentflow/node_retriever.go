@@ -32,6 +32,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/slices"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 type retrieverConfig struct {
@@ -74,6 +75,10 @@ func (r *knowledgeRetriever) Retrieve(ctx context.Context, req *AgentRequest) ([
 	resp, err := crossknowledge.DefaultSVC().Retrieve(ctx, kr)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(resp.RetrieveSlices) == 0 {
+		logs.CtxInfof(ctx, "[retrieve] empty result: query=%q knowledge_ids=%v", req.Input.Content, knowledgeIDs)
 	}
 
 	docs, err := convertDocument(ctx, resp.RetrieveSlices)

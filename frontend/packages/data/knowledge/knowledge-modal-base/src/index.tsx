@@ -76,3 +76,33 @@ export { useTextResegmentModal } from './text-resegment-modal';
 export { useEditUnitNameModal } from './edit-unit-name-modal';
 export { FilterKnowledgeType } from '@coze-data/utils';
 export { useSetAppendFrequencyModal } from './set-append-frequency-modal';
+
+export { useMergeSlices } from './use-merge-slices';
+export type { MergeSliceInput, MergeResult } from './use-merge-slices';
+export { MergeSliceConfirmModal } from './merge-slice-confirm-modal';
+export type { MergeSliceConfirmModalProps } from './merge-slice-confirm-modal';
+export {
+  useMergeState,
+  MERGE_MIN_COUNT,
+  MergeToolbar,
+  MergeCandidateList,
+} from './merge-slice-state';
+export type {
+  MergeCandidate,
+  UseMergeStateOptions,
+  MergeToolbarProps,
+  MergeCandidateListProps,
+} from './merge-slice-state';
+
+export { SliceStatusBadge } from './slice-status-badge';
+export type {
+  SliceBadgeStatus,
+  SliceStatusBadgeProps,
+} from './slice-status-badge';
+export { useSliceStatusPolling } from './use-slice-status-polling';
+
+export { useReindexTracking, ReindexStatusBar } from './reindex-status-bar';
+export type {
+  UseReindexTrackingResult,
+  ReindexStatusBarProps,
+} from './reindex-status-bar';

@@ -53,11 +53,27 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
+// MinScoreFloor is the hard-coded lower bound for MinScore in retrieval.
+// Callers may pass a higher value via Strategy.MinScore; lower values are
+// raised to this floor to prevent low-confidence hits from being returned.
+const MinScoreFloor = 0.3
+
+func effectiveMinScore(strategy float64) float64 {
+	if strategy < MinScoreFloor {
+		return MinScoreFloor
+	}
+	return strategy
+}
+
 func (k *knowledgeSVC) Retrieve(ctx context.Context, request *RetrieveRequest) (response *RetrieveResponse, err error) {
 	if request == nil {
 		return nil, errorx.New(errno.ErrKnowledgeInvalidParamCode, errorx.KV("msg", "request is nil"))
 	}
 	if len(request.Query) == 0 {
+		return &knowledgeModel.RetrieveResponse{}, nil
+	}
+	if isJunkQuery(request.Query) {
+		logs.CtxInfof(ctx, "[retrieve] junk query filtered: %q", request.Query)
 		return &knowledgeModel.RetrieveResponse{}, nil
 	}
 	retrieveContext, err := k.newRetrieveContext(ctx, request)
@@ -564,6 +580,26 @@ func (k *knowledgeSVC) reRankNode(ctx context.Context, resultMap map[string]any)
 		}
 	}
 
+	// Defensive guard: skip rerank when there are no documents to rank or
+	// when the query is blank. Upstream rerank services (e.g. vLLM) reject
+	// empty query/documents with 400 "The decoder prompt cannot be empty",
+	// which surfaces as a confusing model-config error to the user.
+	totalDocs := 0
+	nonBlankDocs := 0
+	for _, ch := range retrieveResultArr {
+		totalDocs += len(ch)
+		for _, d := range ch {
+			if d != nil && d.Document != nil && d.Document.Content != "" {
+				nonBlankDocs++
+			}
+		}
+	}
+	if query == "" || nonBlankDocs == 0 {
+		logs.CtxInfof(ctx, "[retrieve-dump] query=%q query_blank=%v total_docs=%d non_blank_docs=%d skip rerank",
+			query, query == "", totalDocs, nonBlankDocs)
+		return []*schema.Document{}, nil
+	}
+
 	resp, err := selectedReranker.Rerank(ctx, &rerank.Request{
 		Query: query,
 		Data:  retrieveResultArr,
@@ -576,7 +612,7 @@ func (k *knowledgeSVC) reRankNode(ctx context.Context, resultMap map[string]any)
 
 	retrieveResult = make([]*schema.Document, 0, len(resp.SortedData))
 	for _, item := range resp.SortedData {
-		if item.Score < ptr.From(retrieveCtx.Strategy.MinScore) {
+		if item.Score < effectiveMinScore(ptr.From(retrieveCtx.Strategy.MinScore)) {
 			continue
 		}
 		doc := item.Document
@@ -584,7 +620,35 @@ func (k *knowledgeSVC) reRankNode(ctx context.Context, resultMap map[string]any)
 		retrieveResult = append(retrieveResult, doc)
 	}
 
+	// Dump query + per-channel top3 + final top3 for bad case mining.
+	// Use [retrieve-dump] prefix so it's grep-able.
+	logs.CtxInfof(ctx, "[retrieve-dump] query=%q vector_top3=%s es_top3=%s nl2sql_top3=%s final_top3=%s",
+		query,
+		topNScoreSummary(vectorRetrieveResult, 3),
+		topNScoreSummary(esRetrieveResult, 3),
+		topNScoreSummary(nl2SqlRetrieveResult, 3),
+		topNScoreSummary(retrieveResult, 3),
+	)
+
 	return retrieveResult, nil
+}
+
+// topNScoreSummary returns a short string showing the top-N (slice_id, score) of a docs list.
+// Used in retrieval debug logs to capture per-channel top hits for bad case mining.
+func topNScoreSummary(docs []*schema.Document, n int) string {
+	if len(docs) == 0 {
+		return "[]"
+	}
+	limit := n
+	if len(docs) < limit {
+		limit = len(docs)
+	}
+	parts := make([]string, 0, limit)
+	for i := 0; i < limit; i++ {
+		d := docs[i]
+		parts = append(parts, fmt.Sprintf("{%s:%.4f}", d.ID, d.Score()))
+	}
+	return "[" + strings.Join(parts, ",") + "]"
 }
 
 func (k *knowledgeSVC) packResults(ctx context.Context, retrieveResult []*schema.Document) (results []*knowledgeModel.RetrieveSlice, err error) {
