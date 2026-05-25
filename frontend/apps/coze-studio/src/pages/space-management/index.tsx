@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import { useSpaceManagement } from './hooks/useSpaceManagement';
-import { CreateSpaceModal } from './CreateSpaceModal';
+import React, { useState } from 'react';
+
+import { SpaceCard } from './SpaceCard';
 import { MemberModal } from './MemberModal';
 import { ImportModal } from './ImportModal';
-import { SpaceCard } from './SpaceCard';
+import { useSpaceManagement } from './hooks/useSpaceManagement';
+import { DataMaintenanceSection } from './DataMaintenanceSection';
+import { CreateSpaceModal } from './CreateSpaceModal';
 
 const SpaceManagementPage: React.FC = () => {
+  const [maintenanceSpaceId, setMaintenanceSpaceId] = useState<string>('');
   const {
     spaceList,
     loading,
@@ -123,6 +126,38 @@ const SpaceManagementPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Data Maintenance */}
+      {spaceList.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md mt-8">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold">数据维护</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              对指定空间执行 ES 重新同步等维护操作
+            </p>
+          </div>
+          <div className="p-6">
+            <div className="mb-4">
+              <label className="text-sm text-gray-700 mr-2">选择空间:</label>
+              <select
+                value={maintenanceSpaceId}
+                onChange={e => setMaintenanceSpaceId(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="">-- 请选择 --</option>
+                {spaceList.map(sp => (
+                  <option key={sp.space_id} value={String(sp.space_id)}>
+                    {sp.name} (ID: {sp.space_id})
+                  </option>
+                ))}
+              </select>
+            </div>
+            {maintenanceSpaceId ? (
+              <DataMaintenanceSection spaceId={maintenanceSpaceId} />
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
