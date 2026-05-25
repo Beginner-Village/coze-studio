@@ -346,3 +346,199 @@ func TestSearchSvc_ResyncSpace_PartialCreateFailureContinues(t *testing.T) {
 		t.Errorf("KbEntries = %d, want 2 (skip the failing kb)", counts.KbEntries)
 	}
 }
+
+// TestSearchSvc_ResyncSpace_FirstDeleteFails: first delete (project_draft) fails.
+// Expectation: returns err immediately, counts is nil, no subsequent delete or
+// create traffic happens.
+func TestSearchSvc_ResyncSpace_FirstDeleteFails(t *testing.T) {
+	spaceID := int64(610)
+	wantErr := errors.New("boom-project-delete")
+
+	fakeES := &fakeResyncESClient{
+		deleteErr: map[string]error{projectIndexName: wantErr},
+	}
+	svc := &searchImpl{
+		esClient:  fakeES,
+		agentRepo: &fakeAgentLister{ret: []*agententity.SingleAgent{newAgent(1, spaceID, 7, "should-not-index")}},
+		appRepo:   &fakeAppLister{ret: []*appentity.APP{{ID: 99, SpaceID: spaceID, Name: ptr.Of("nope")}}},
+		kbRepo:    &fakeKbLister{ret: nil},
+	}
+
+	counts, err := svc.ResyncSpace(context.Background(), spaceID)
+	if err == nil {
+		t.Fatal("expected err, got nil")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("err = %v, want wraps %v", err, wantErr)
+	}
+	if counts != nil {
+		t.Errorf("counts = %+v, want nil on early-abort", counts)
+	}
+	// Exactly 1 delete (the failing project_draft) — no coze_resource, no kb_entries.
+	if len(fakeES.deletes) != 1 || fakeES.deletes[0].index != projectIndexName {
+		t.Errorf("deletes = %+v, want only project_draft attempted", fakeES.deletes)
+	}
+	if len(fakeES.creates) != 0 {
+		t.Errorf("creates = %+v, want no index writes after first-delete failure", fakeES.creates)
+	}
+}
+
+// TestSearchSvc_ResyncSpace_SecondDeleteFails: project_draft delete OK, then
+// coze_resource delete fails. We assert that:
+//   - the error propagates
+//   - the project_draft delete *did* execute (partial-inconsistency state is the
+//     trade-off, and the caller is expected to log it)
+//   - no create traffic happens (index rewrites are skipped on abort)
+func TestSearchSvc_ResyncSpace_SecondDeleteFails(t *testing.T) {
+	spaceID := int64(620)
+	wantErr := errors.New("boom-resource-delete")
+
+	fakeES := &fakeResyncESClient{
+		deleteErr: map[string]error{resourceIndexName: wantErr},
+	}
+	svc := &searchImpl{
+		esClient:  fakeES,
+		agentRepo: &fakeAgentLister{ret: []*agententity.SingleAgent{newAgent(2, spaceID, 7, "a")}},
+		appRepo:   &fakeAppLister{ret: []*appentity.APP{{ID: 50, SpaceID: spaceID, Name: ptr.Of("nope")}}},
+		kbRepo:    &fakeKbLister{ret: nil},
+	}
+
+	_, err := svc.ResyncSpace(context.Background(), spaceID)
+	if err == nil {
+		t.Fatal("expected err, got nil")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("err = %v, want wraps %v", err, wantErr)
+	}
+	// Two deletes attempted (project_draft cleared OK, coze_resource failed).
+	if len(fakeES.deletes) != 2 {
+		t.Fatalf("deletes count = %d, want 2 (got %+v)", len(fakeES.deletes), fakeES.deletes)
+	}
+	gotIdx := []string{fakeES.deletes[0].index, fakeES.deletes[1].index}
+	if gotIdx[0] != projectIndexName || gotIdx[1] != resourceIndexName {
+		t.Errorf("delete order = %v, want [%s, %s]", gotIdx, projectIndexName, resourceIndexName)
+	}
+	// No create writes — abort before index rebuild step.
+	if len(fakeES.creates) != 0 {
+		t.Errorf("creates = %+v, want none after delete abort", fakeES.creates)
+	}
+}
+
+// TestSearchSvc_ResyncSpace_KbEntriesDeleteFails_WhenKbsExist exercises the
+// 3rd delete (kb_entries terms). All prior steps succeed, but the terms-based
+// delete blows up.
+func TestSearchSvc_ResyncSpace_KbEntriesDeleteFails_WhenKbsExist(t *testing.T) {
+	spaceID := int64(630)
+	wantErr := errors.New("boom-kb-entries-delete")
+
+	kbs := []*KbInfo{
+		{ID: 7001, SpaceID: spaceID, Name: "kb-a"},
+		{ID: 7002, SpaceID: spaceID, Name: "kb-b"},
+	}
+
+	fakeES := &fakeResyncESClient{
+		deleteErr: map[string]error{kbEntriesIndex: wantErr},
+	}
+	svc := &searchImpl{
+		esClient:  fakeES,
+		agentRepo: &fakeAgentLister{},
+		appRepo:   &fakeAppLister{},
+		kbRepo:    &fakeKbLister{ret: kbs},
+	}
+
+	_, err := svc.ResyncSpace(context.Background(), spaceID)
+	if err == nil {
+		t.Fatal("expected err, got nil")
+	}
+	if !errors.Is(err, wantErr) {
+		t.Errorf("err = %v, want wraps %v", err, wantErr)
+	}
+	// All 3 deletes attempted.
+	if len(fakeES.deletes) != 3 {
+		t.Fatalf("deletes count = %d, want 3 (got %+v)", len(fakeES.deletes), fakeES.deletes)
+	}
+	// Verify kb_entries delete used the terms filter with the right kb_id list.
+	for _, d := range fakeES.deletes {
+		if d.index != kbEntriesIndex {
+			continue
+		}
+		terms, ok := d.query["terms"].(map[string]any)
+		if !ok {
+			t.Errorf("kb_entries delete missing terms clause: %+v", d.query)
+			break
+		}
+		ids, ok := terms["kb_id"].([]int64)
+		if !ok || len(ids) != 2 || ids[0] != 7001 || ids[1] != 7002 {
+			t.Errorf("kb_entries delete kb_id = %v, want [7001 7002]", terms["kb_id"])
+		}
+	}
+	// No index rewrites after abort.
+	if len(fakeES.creates) != 0 {
+		t.Errorf("creates = %+v, want none after kb_entries delete abort", fakeES.creates)
+	}
+}
+
+// TestSearchSvc_ResyncSpace_KbEntriesDelete_Skipped_WhenZeroKbs guards against
+// the empty-terms footgun: an empty kb_id array would either no-op or 400 in
+// real ES. The impl must skip the call entirely when there are no KBs.
+func TestSearchSvc_ResyncSpace_KbEntriesDelete_Skipped_WhenZeroKbs(t *testing.T) {
+	spaceID := int64(640)
+
+	fakeES := &fakeResyncESClient{}
+	svc := &searchImpl{
+		esClient:  fakeES,
+		agentRepo: &fakeAgentLister{},
+		appRepo:   &fakeAppLister{},
+		kbRepo:    &fakeKbLister{ret: nil}, // zero KBs
+	}
+
+	if _, err := svc.ResyncSpace(context.Background(), spaceID); err != nil {
+		t.Fatalf("ResyncSpace err: %v", err)
+	}
+
+	for _, d := range fakeES.deletes {
+		if d.index == kbEntriesIndex {
+			t.Errorf("MUST NOT call DeleteByQuery(kb_entries) when zero KBs (got %+v)", d)
+		}
+	}
+}
+
+// TestSearchSvc_ResyncSpace_EmptySpace_ZeroAgentsResourcesKbs covers the
+// "scratch space" case: no agents, no apps, no KBs. project_draft +
+// coze_resource deletes still fire (they're keyed on space_id, not on result
+// presence), kb_entries is skipped, and no index writes happen.
+func TestSearchSvc_ResyncSpace_EmptySpace_ZeroAgentsResourcesKbs(t *testing.T) {
+	spaceID := int64(650)
+
+	fakeES := &fakeResyncESClient{}
+	svc := &searchImpl{
+		esClient:  fakeES,
+		agentRepo: &fakeAgentLister{ret: nil},
+		appRepo:   &fakeAppLister{ret: nil},
+		kbRepo:    &fakeKbLister{ret: nil},
+	}
+
+	counts, err := svc.ResyncSpace(context.Background(), spaceID)
+	if err != nil {
+		t.Fatalf("ResyncSpace returned err: %v", err)
+	}
+	if counts == nil {
+		t.Fatal("counts nil on empty space — expected zeroed struct")
+	}
+	if counts.ProjectDraft != 0 || counts.CozeResource != 0 || counts.KbEntries != 0 {
+		t.Errorf("counts = %+v, want all zeros", counts)
+	}
+	// Exactly 2 deletes (project_draft + coze_resource); no kb_entries terms.
+	if len(fakeES.deletes) != 2 {
+		t.Fatalf("deletes count = %d, want 2 (got %+v)", len(fakeES.deletes), fakeES.deletes)
+	}
+	for _, d := range fakeES.deletes {
+		if d.index == kbEntriesIndex {
+			t.Errorf("kb_entries delete fired on empty space: %+v", d)
+		}
+	}
+	// Zero index helper calls.
+	if len(fakeES.creates) != 0 {
+		t.Errorf("creates = %+v, want none on empty space", fakeES.creates)
+	}
+}

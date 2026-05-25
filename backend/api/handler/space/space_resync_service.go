@@ -26,6 +26,22 @@ import (
 	spaceApp "github.com/ynet-dev/ynet-studio/backend/application/space"
 )
 
+// resyncESInvoker is the minimal contract the handler needs from the
+// application-layer ResyncSVC. Pulled out as an interface so tests can swap
+// in a fake without booting the full application.Init wiring.
+type resyncESInvoker interface {
+	ResyncES(ctx context.Context, req *resyncmodel.ResyncESRequest) (*resyncmodel.ResyncESResponse, error)
+}
+
+// resyncSvcGetter returns the active invoker. Production reads the global
+// spaceApp.ResyncSVC at call-time; tests override this to inject a fake.
+var resyncSvcGetter = func() resyncESInvoker {
+	if spaceApp.ResyncSVC == nil {
+		return nil
+	}
+	return spaceApp.ResyncSVC
+}
+
 // ResyncES drops all ES docs for the given space and replays writes from MySQL.
 // Only the space owner can trigger this — non-owners get ErrSpacePermissionCode.
 // @router /api/space/resync_es [POST]
@@ -36,7 +52,13 @@ func ResyncES(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := spaceApp.ResyncSVC.ResyncES(ctx, &req)
+	svc := resyncSvcGetter()
+	if svc == nil {
+		c.String(consts.StatusInternalServerError, "resync service not initialized")
+		return
+	}
+
+	resp, err := svc.ResyncES(ctx, &req)
 	if err != nil {
 		c.String(consts.StatusInternalServerError, err.Error())
 		return

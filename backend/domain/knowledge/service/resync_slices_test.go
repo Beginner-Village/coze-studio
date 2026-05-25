@@ -311,6 +311,142 @@ func TestResyncSpaceSlices_PerKbFailuresAreSkipped(t *testing.T) {
 	}
 }
 
+// TestResyncSpaceSlices_MQPublishMiddleFails verifies the per-slice resilience
+// contract: if producer.Send returns an error for one slice in the middle of
+// the loop, the function MUST keep going for the rest and count only the
+// successful publishes (4 out of 5).
+func TestResyncSpaceSlices_MQPublishMiddleFails(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	const spaceID int64 = 5050
+
+	kbRepo := mockDao.NewMockKnowledgeRepo(ctrl)
+	sliceRepo := mockDao.NewMockKnowledgeDocumentSliceRepo(ctrl)
+	producer := mockEventbus.NewMockProducer(ctrl)
+
+	kbRepo.EXPECT().ListBySpaceID(gomock.Any(), spaceID, 0).Return([]*model.Knowledge{
+		{ID: 500, SpaceID: spaceID},
+	}, nil)
+
+	slices := []*model.KnowledgeDocumentSlice{
+		{ID: 1, KnowledgeID: 500, DocumentID: 10},
+		{ID: 2, KnowledgeID: 500, DocumentID: 10},
+		{ID: 3, KnowledgeID: 500, DocumentID: 11}, // this one will fail to publish
+		{ID: 4, KnowledgeID: 500, DocumentID: 12},
+		{ID: 5, KnowledgeID: 500, DocumentID: 13},
+	}
+	sliceRepo.EXPECT().
+		FindSliceByCondition(gomock.Any(), gomock.AssignableToTypeOf(&entity.WhereSliceOpt{})).
+		Return(slices, int64(len(slices)), nil)
+
+	sliceRepo.EXPECT().
+		BatchSetStatus(gomock.Any(), []int64{1, 2, 3, 4, 5}, int32(knowledgeModel.SliceStatusInit), "").
+		Return(nil)
+
+	// 5 producer.Send calls expected; the 3rd returns an error, others succeed.
+	// We use a counter to flip the response on the 3rd invocation.
+	var (
+		sendMu    sync.Mutex
+		sendCalls int
+	)
+	producer.EXPECT().
+		Send(gomock.Any(), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, _ []byte, _ ...any) error {
+			sendMu.Lock()
+			defer sendMu.Unlock()
+			sendCalls++
+			if sendCalls == 3 {
+				return errors.New("mq broker timeout")
+			}
+			return nil
+		}).
+		Times(len(slices))
+
+	svc := &knowledgeSVC{
+		knowledgeRepo:       kbRepoAsRepo(kbRepo),
+		sliceRepo:           sliceRepoAsRepo(sliceRepo),
+		producer:            producer,
+		searchStoreManagers: nil,
+	}
+
+	got, err := svc.ResyncSpaceSlices(context.Background(), spaceID)
+	if err != nil {
+		t.Fatalf("ResyncSpaceSlices returned err: %v (single-publish failures must NOT abort)", err)
+	}
+	if got != len(slices)-1 {
+		t.Fatalf("count = %d, want %d (skip 1 failed publish)", got, len(slices)-1)
+	}
+	if sendCalls != len(slices) {
+		t.Errorf("send was invoked %d times, want %d (loop must NOT short-circuit)", sendCalls, len(slices))
+	}
+}
+
+// TestResyncSpaceSlices_DeleteIndexFails_StillProceedsWithEvents covers the
+// resilience contract for step (1): if searchStore.DeleteIndex returns an
+// error, the function MUST log a warn and continue with steps (2)–(4) so the
+// per-doc upsert flow can self-heal ES.
+func TestResyncSpaceSlices_DeleteIndexFails_StillProceedsWithEvents(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	const spaceID int64 = 6060
+
+	kbRepo := mockDao.NewMockKnowledgeRepo(ctrl)
+	sliceRepo := mockDao.NewMockKnowledgeDocumentSliceRepo(ctrl)
+	producer := mockEventbus.NewMockProducer(ctrl)
+
+	kbRepo.EXPECT().ListBySpaceID(gomock.Any(), spaceID, 0).Return([]*model.Knowledge{
+		{ID: 600, SpaceID: spaceID},
+	}, nil)
+
+	slices := []*model.KnowledgeDocumentSlice{
+		{ID: 1, KnowledgeID: 600, DocumentID: 10},
+		{ID: 2, KnowledgeID: 600, DocumentID: 11},
+	}
+	sliceRepo.EXPECT().
+		FindSliceByCondition(gomock.Any(), gomock.AssignableToTypeOf(&entity.WhereSliceOpt{})).
+		Return(slices, int64(len(slices)), nil)
+
+	sliceRepo.EXPECT().
+		BatchSetStatus(gomock.Any(), []int64{1, 2}, int32(knowledgeModel.SliceStatusInit), "").
+		Return(nil)
+
+	producer.EXPECT().
+		Send(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil).
+		Times(len(slices))
+
+	// Both ES + vector managers blow up on DeleteIndex — the slice publish
+	// loop must still run.
+	failingTextStore := &recordingSearchStore{deleteErr: errors.New("es index drop transient err")}
+	failingVectorStore := &recordingSearchStore{deleteErr: errors.New("vector store drop boom")}
+	textMgr := &fakeManager{storeType: searchstore.TypeTextStore, ss: failingTextStore}
+	vectorMgr := &fakeManager{storeType: searchstore.TypeVectorStore, ss: failingVectorStore}
+
+	svc := &knowledgeSVC{
+		knowledgeRepo:       kbRepoAsRepo(kbRepo),
+		sliceRepo:           sliceRepoAsRepo(sliceRepo),
+		producer:            producer,
+		searchStoreManagers: []searchstore.Manager{textMgr, vectorMgr},
+	}
+
+	got, err := svc.ResyncSpaceSlices(context.Background(), spaceID)
+	if err != nil {
+		t.Fatalf("ResyncSpaceSlices returned err: %v (DeleteIndex failure must not abort)", err)
+	}
+	if got != len(slices) {
+		t.Fatalf("count = %d, want %d — events must still publish even when DeleteIndex fails", got, len(slices))
+	}
+	// Both managers must have been called (and recorded the attempt).
+	if len(failingTextStore.dropped) != 1 || failingTextStore.dropped[0] != "openynet_600" {
+		t.Errorf("text store dropped = %v, want [openynet_600]", failingTextStore.dropped)
+	}
+	if len(failingVectorStore.dropped) != 1 || failingVectorStore.dropped[0] != "openynet_600" {
+		t.Errorf("vector store dropped = %v, want [openynet_600]", failingVectorStore.dropped)
+	}
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // helpers
 // ─────────────────────────────────────────────────────────────────────────────

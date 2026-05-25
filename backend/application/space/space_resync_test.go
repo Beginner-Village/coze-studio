@@ -234,3 +234,84 @@ func TestResyncES_NilCounts_StillPopulatesSliceJobs(t *testing.T) {
 	require.NotNil(t, resp.Counts)
 	assert.Equal(t, 9, resp.Counts.SliceReindexJobs)
 }
+
+// TestResyncES_PermissionDenied_CrossSpace ensures the error returned to a
+// non-owner caller does NOT leak the real owner's ID. The handler maps the
+// status err code to a generic "permission denied" message — but the inner
+// `errorx.KV("msg", ...)` payload itself must not contain owner identifiers.
+func TestResyncES_PermissionDenied_CrossSpace(t *testing.T) {
+	const realOwnerID int64 = 999
+	user := &fakeUserSVC{space: &userentity.Space{ID: 100, OwnerID: realOwnerID}}
+	search := &fakeSearchSVC{}
+	kb := &fakeKnowledgeSVC{}
+	svc := newTestSvc(user, search, kb)
+
+	_, err := svc.ResyncES(ctxWithUser(111), &spacemodel.ResyncESRequest{SpaceID: 100})
+	require.Error(t, err)
+	var statusErr errorx.StatusError
+	require.True(t, errors.As(err, &statusErr), "expected typed status err, got %T: %v", err, err)
+	assert.Equal(t, int32(errno.ErrSpacePermissionCode), statusErr.Code())
+
+	// Drill into the full error chain to confirm no owner-id leakage. The
+	// caller user id (111) is OK to surface to itself, but neither the real
+	// owner id (999) nor a hint like "owner is …" should appear anywhere.
+	msg := err.Error()
+	assert.NotContains(t, msg, "999", "error must not leak the owning user id: %s", msg)
+	assert.NotContains(t, msg, "owner is", "error must not name the owner: %s", msg)
+	// Both search + knowledge work must stay un-invoked.
+	assert.False(t, search.called, "search.ResyncSpace must not be called on permission denied")
+	assert.False(t, kb.called, "knowledge.ResyncSpaceSlices must not be called on permission denied")
+}
+
+// TestResyncES_OwnerOfDifferentSpace_AllowedOnly_OwnSpace verifies that being
+// the owner of *some* space doesn't grant cross-space access. Caller=42 owns
+// space A (100) but not space B (200).
+func TestResyncES_OwnerOfDifferentSpace_AllowedOnly_OwnSpace(t *testing.T) {
+	// case 1: caller owns the space → success.
+	{
+		user := &fakeUserSVC{space: &userentity.Space{ID: 100, OwnerID: 42}}
+		search := &fakeSearchSVC{counts: &spacemodel.ResyncESCounts{}}
+		kb := &fakeKnowledgeSVC{}
+		svc := newTestSvc(user, search, kb)
+
+		_, err := svc.ResyncES(ctxWithUser(42), &spacemodel.ResyncESRequest{SpaceID: 100})
+		require.NoError(t, err, "owner of space 100 should be allowed")
+		assert.True(t, search.called)
+	}
+	// case 2: same caller asks for a space they don't own → denied.
+	{
+		user := &fakeUserSVC{space: &userentity.Space{ID: 200, OwnerID: 99}}
+		search := &fakeSearchSVC{}
+		kb := &fakeKnowledgeSVC{}
+		svc := newTestSvc(user, search, kb)
+
+		_, err := svc.ResyncES(ctxWithUser(42), &spacemodel.ResyncESRequest{SpaceID: 200})
+		require.Error(t, err)
+		var statusErr errorx.StatusError
+		require.True(t, errors.As(err, &statusErr))
+		assert.Equal(t, int32(errno.ErrSpacePermissionCode), statusErr.Code())
+		assert.False(t, search.called, "search must not be called for a non-owned space")
+	}
+}
+
+// TestResyncES_OwnerID_Zero_StillRejects is a defense-in-depth check. If the
+// DB ever has space.OwnerID=0 (corrupt row) AND somehow user_id=0 sneaks past
+// the session check (it shouldn't — TestResyncES_NotLoggedIn covers that),
+// the permission gate would still wrongly equate them. We assert the session
+// guard *catches it first* so a 0==0 owner match never executes.
+func TestResyncES_OwnerID_Zero_StillRejects(t *testing.T) {
+	user := &fakeUserSVC{space: &userentity.Space{ID: 100, OwnerID: 0}}
+	search := &fakeSearchSVC{}
+	kb := &fakeKnowledgeSVC{}
+	svc := newTestSvc(user, search, kb)
+
+	// ctxWithUser(0) is intentionally an empty session.
+	_, err := svc.ResyncES(ctxWithUser(0), &spacemodel.ResyncESRequest{SpaceID: 100})
+	require.Error(t, err)
+	var statusErr errorx.StatusError
+	require.True(t, errors.As(err, &statusErr), "expected typed status err, got %T: %v", err, err)
+	// The session layer must reject first — NOT a permission-code match.
+	assert.Equal(t, int32(errno.ErrUserSessionInvalidateCode), statusErr.Code(),
+		"empty session must be rejected by the session guard, not silently allowed via 0==0 owner match")
+	assert.False(t, search.called, "search must not be called when session check rejects")
+}
