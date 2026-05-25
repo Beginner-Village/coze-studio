@@ -58,6 +58,77 @@ const generateEventId = (): string => {
   return `${timestamp}_${counter}`;
 };
 
+// 自动高度参数
+const AUTO_HEIGHT_PADDING = 16;
+const AUTO_HEIGHT_MIN_THRESHOLD = 50;
+const AUTO_HEIGHT_POLL_MS = 300;
+const AUTO_HEIGHT_POLL_COUNT = 10; // 共 3s 兜底
+const MAX_AUTO_HEIGHT = 4000;
+
+/**
+ * 给 iframe 装上"自动高度"能力：
+ * 1) ResizeObserver 监听同域 body（首选，实时）
+ * 2) 兜底短期轮询（3s 内反复测量，处理图片/字体异步加载完后的高度变化）
+ * 3) 跨域情况下两者都不工作，依赖 iframe 内部 postMessage resize（已有）
+ */
+const setupAutoHeight = (
+  iframe: HTMLIFrameElement,
+  applyHeight: (h: number) => void,
+): (() => void) => {
+  let observer: ResizeObserver | null = null;
+  let pollTimer: number | null = null;
+
+  const measure = () => {
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!doc) return;
+      const body = doc.body;
+      const html = doc.documentElement;
+      const h = Math.max(
+        body?.scrollHeight || 0,
+        body?.offsetHeight || 0,
+        html?.clientHeight || 0,
+        html?.scrollHeight || 0,
+      );
+      if (h > AUTO_HEIGHT_MIN_THRESHOLD) {
+        applyHeight(Math.min(h + AUTO_HEIGHT_PADDING, MAX_AUTO_HEIGHT));
+      }
+    } catch (err) {
+      // 跨域，依赖 postMessage 兜底
+      console.debug('[Card] measure skipped (cross-origin):', err);
+    }
+  };
+
+  measure();
+
+  try {
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (doc?.body && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => measure());
+      observer.observe(doc.body);
+    }
+  } catch (err) {
+    console.debug('[Card] ResizeObserver setup skipped:', err);
+  }
+
+  let pollCount = 0;
+  pollTimer = window.setInterval(() => {
+    measure();
+    pollCount += 1;
+    if (pollCount >= AUTO_HEIGHT_POLL_COUNT && pollTimer !== null) {
+      window.clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }, AUTO_HEIGHT_POLL_MS);
+
+  return () => {
+    observer?.disconnect();
+    if (pollTimer !== null) {
+      window.clearInterval(pollTimer);
+    }
+  };
+};
+
 /**
  * Parse JSON string values in fields to actual objects/arrays
  * Handles multiple formats:
@@ -234,6 +305,7 @@ const SingleCardContent: FC<{
       }
     };
 
+    let teardownAutoHeight: (() => void) | null = null;
     const handleIframeLoad = () => {
       console.log(`✅ [Card ${index}] iframe load 事件触发`);
       setIframeLoaded(true);
@@ -241,6 +313,9 @@ const SingleCardContent: FC<{
       sendCardData();
       setTimeout(sendCardData, 100);
       setTimeout(sendCardData, 500);
+      // 启动自动高度（ResizeObserver + 轮询兜底）
+      teardownAutoHeight?.();
+      teardownAutoHeight = setupAutoHeight(iframe, h => setIframeHeight(h));
     };
 
     const handleMessage = (event: MessageEvent) => {
@@ -296,6 +371,7 @@ const SingleCardContent: FC<{
     return () => {
       iframe.removeEventListener('load', handleIframeLoad);
       window.removeEventListener('message', handleMessage);
+      teardownAutoHeight?.();
     };
   }, [content, targetOrigin, index]);
 

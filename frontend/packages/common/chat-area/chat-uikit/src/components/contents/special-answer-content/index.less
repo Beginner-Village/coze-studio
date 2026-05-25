@@ -28,10 +28,16 @@
 .single-card-wrapper {
   position: relative;
   border: 1px solid var(--semi-color-border, #e0e0e0);
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   background: var(--semi-color-bg-2, #ffffff);
   margin: 8px 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 8px 20px rgba(0, 0, 0, 0.06);
+  }
 
   // Card header with template name
   .single-card-header {
@@ -49,16 +55,37 @@
     }
   }
 
-  // Card iframe container
+  // Card iframe container - scrollable when iframe height exceeds max
   .single-card-iframe-container {
     position: relative;
-    min-height: 80px; // Reduced from 500px to match streaming-card
+    overflow: auto;
+    max-height: calc(100vh - 240px);
+    min-height: 80px;
+
+    // Polished scrollbar (webkit)
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      border-radius: 3px;
+      background-color: var(--semi-color-border, #e0e0e0);
+
+      &:hover {
+        background-color: var(--semi-color-text-3, #c9cdd4);
+      }
+    }
+    &::-webkit-scrollbar-track {
+      background-color: transparent;
+    }
 
     iframe {
       display: block;
       border: none;
       width: 100%;
       min-height: 80px;
+      background: transparent;
+      transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .iframe-loading-overlay {
@@ -74,8 +101,24 @@
       z-index: 1;
       color: var(--semi-color-text-2, #666666);
       font-size: 14px;
+
+      &::before {
+        content: '';
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        margin-right: 8px;
+        border: 2px solid var(--semi-color-border, #e0e0e0);
+        border-top-color: var(--semi-color-text-1, #4e5969);
+        border-radius: 50%;
+        animation: special-card-spin 0.8s linear infinite;
+      }
     }
   }
+}
+
+@keyframes special-card-spin {
+  to { transform: rotate(360deg); }
 }
 
 // Debug section (development only)

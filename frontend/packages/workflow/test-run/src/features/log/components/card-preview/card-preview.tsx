@@ -24,12 +24,15 @@ import { extractCardContentList, type CardContentItem } from './utils';
 import styles from './card-preview.module.less';
 
 // 常量定义
-const DEFAULT_IFRAME_HEIGHT = 400;
-const MIN_HEIGHT_THRESHOLD = 100;
-const HEIGHT_PADDING = 20;
+const DEFAULT_IFRAME_HEIGHT = 320;
+const MIN_HEIGHT_THRESHOLD = 80;
+const HEIGHT_PADDING = 12;
 const JSON_INDENT = 2;
 const LOAD_TIMEOUT_MS = 10000; // 10秒超时
 const DEFAULT_CARD_URL = '/agent-h5-web/card/index.html';
+const AUTO_HEIGHT_POLL_MS = 300;
+const AUTO_HEIGHT_POLL_COUNT = 10;
+const MAX_AUTO_HEIGHT = 4000;
 
 declare global {
   interface Window {
@@ -162,6 +165,57 @@ const tryGetIframeHeight = (iframe: HTMLIFrameElement): number | null => {
 };
 
 /**
+ * 给 iframe 装上"自动高度"能力：
+ * 1) ResizeObserver 监听同域 body（首选，实时）
+ * 2) 兜底短期轮询（3s 内反复测量，处理图片/字体异步加载）
+ * 3) 跨域情况下两者都不工作，依赖 iframe 内部 postMessage resize（已有）
+ */
+const setupAutoHeight = (
+  iframe: HTMLIFrameElement,
+  applyHeight: (h: number) => void,
+): (() => void) => {
+  let observer: ResizeObserver | null = null;
+  let pollTimer: number | null = null;
+
+  const measure = () => {
+    const h = tryGetIframeHeight(iframe);
+    if (h !== null) {
+      applyHeight(Math.min(h, MAX_AUTO_HEIGHT));
+    }
+  };
+
+  measure();
+
+  try {
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (doc?.body && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => measure());
+      observer.observe(doc.body);
+    }
+  } catch (err) {
+    // 跨域无法监听，依赖 postMessage 兜底
+    console.debug('[CardPreview] ResizeObserver setup skipped:', err);
+  }
+
+  let pollCount = 0;
+  pollTimer = window.setInterval(() => {
+    measure();
+    pollCount += 1;
+    if (pollCount >= AUTO_HEIGHT_POLL_COUNT && pollTimer !== null) {
+      window.clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }, AUTO_HEIGHT_POLL_MS);
+
+  return () => {
+    observer?.disconnect();
+    if (pollTimer !== null) {
+      window.clearInterval(pollTimer);
+    }
+  };
+};
+
+/**
  * 卡片预览组件 - 用于工作流试运行时渲染卡片输出
  * 复用智能体测试界面的 iframe 渲染逻辑
  */
@@ -192,15 +246,14 @@ export const CardPreview: FC<CardPreviewProps> = ({ data, className }) => {
     const cardUrl = getCardUrl();
     const targetOrigin = getTargetOrigin(cardUrl);
 
+    let teardownAutoHeight: (() => void) | null = null;
     const handleIframeLoad = () => {
       setIsLoading(false);
       sendCardDataToIframe(iframe, specialContent, targetOrigin);
 
-      // 尝试获取高度
-      const height = tryGetIframeHeight(iframe);
-      if (height) {
-        setIframeHeight(height);
-      }
+      // 启动自动高度（ResizeObserver + 轮询兜底）
+      teardownAutoHeight?.();
+      teardownAutoHeight = setupAutoHeight(iframe, h => setIframeHeight(h));
     };
 
     // iframe加载失败处理
@@ -295,6 +348,7 @@ export const CardPreview: FC<CardPreviewProps> = ({ data, className }) => {
       iframe.removeEventListener('error', handleIframeError);
       window.removeEventListener('message', handleMessage);
       clearTimeout(timeoutId);
+      teardownAutoHeight?.();
     };
   }, [specialContent, viewMode, isLoading]);
 

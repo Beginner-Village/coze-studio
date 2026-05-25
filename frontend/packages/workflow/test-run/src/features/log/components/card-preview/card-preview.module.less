@@ -70,25 +70,50 @@
 }
 
 .card-iframe-container {
-  overflow: hidden;
+  position: relative;
+  overflow: auto;
+  max-height: calc(100vh - 280px);
 
   width: 100%;
   max-width: 375px; // 手机屏幕宽度
   margin: 0 auto;
 
   border: 1px solid var(--coz-stroke-secondary, #e5e6eb);
-  border-radius: 8px;
+  border-radius: 12px;
   background-color: var(--coz-bg-white, #fff);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 6px 16px rgb(0 0 0 / 6%);
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 2px 6px rgb(0 0 0 / 6%), 0 12px 28px rgb(0 0 0 / 8%);
+  }
+
+  // 美化滚动条
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background-color: var(--coz-stroke-secondary, #e5e6eb);
+
+    &:hover {
+      background-color: var(--coz-stroke-primary, #c9cdd4);
+    }
+  }
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
 
   iframe {
     display: block;
     width: 100%;
-    min-height: 300px;
+    min-height: 280px;
 
     border: none;
-    background-color: var(--coz-bg-white, #fff);
+    background-color: transparent;
 
-    transition: height 0.3s ease;
+    transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -165,4 +190,20 @@
   min-height: 200px;
   color: var(--coz-fg-tertiary, #86909c);
   font-size: 13px;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    border: 2px solid var(--coz-stroke-secondary, #e5e6eb);
+    border-top-color: var(--coz-fg-secondary, #4e5969);
+    border-radius: 50%;
+    animation: card-preview-spin 0.8s linear infinite;
+  }
+}
+
+@keyframes card-preview-spin {
+  to { transform: rotate(360deg); }
 }
