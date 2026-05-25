@@ -40,4 +40,8 @@ type Search interface {
 	// Resync deps must have been wired in via SetResyncDeps; otherwise
 	// returns an error.
 	ResyncSpace(ctx context.Context, spaceID int64) (*space.ResyncESCounts, error)
+	// SetResyncDeps wires in the per-space resync dependencies. Called by
+	// the application layer once during init after the relevant domain
+	// repos exist. Must be invoked before ResyncSpace can run.
+	SetResyncDeps(agentRepo AgentLister, appRepo AppLister, kbRepo KbLister)
 }

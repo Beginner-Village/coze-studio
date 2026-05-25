@@ -29,6 +29,10 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/application/openauth"
 	"github.com/ynet-dev/ynet-studio/backend/application/template"
 	crosssearch "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/search"
+	agentrepository "github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/repository"
+	apprepository "github.com/ynet-dev/ynet-studio/backend/domain/app/repository"
+	knowledgerepository "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/repository"
+	knowledgesvc "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/service"
 	modelrepository "github.com/ynet-dev/ynet-studio/backend/domain/model/repository"
 	modelservice "github.com/ynet-dev/ynet-studio/backend/domain/model/service"
 
@@ -180,6 +184,29 @@ func Init(ctx context.Context) (err error) {
 	// Initialize Space Rerank Service
 	spaceRerankApp := rerankApp.NewSpaceRerankApp(infra.DB)
 	rerankHandler.InitSpaceRerankApp(spaceRerankApp)
+
+	// Wire per-space ES resync.
+	//
+	// Has to happen after both searchSVC and knowledgeSVC exist (search needs
+	// agent/app/kb listers to replay writes; kb adapter has to live in the
+	// knowledge domain because *model.Knowledge is internal-import-only).
+	agentResyncRepo := agentrepository.NewSingleAgentRepo(infra.DB, infra.IDGenSVC, infra.CacheCli)
+	appResyncRepo := apprepository.NewAPPRepo(&apprepository.APPRepoComponents{
+		IDGen:    infra.IDGenSVC,
+		DB:       infra.DB,
+		CacheCli: infra.CacheCli,
+	})
+	kbResyncRepo := knowledgerepository.NewKnowledgeDAO(infra.DB)
+	complexServices.searchSVC.DomainSVC.SetResyncDeps(
+		agentResyncRepo,
+		appResyncRepo,
+		knowledgesvc.NewKbInfoLister(kbResyncRepo),
+	)
+	spaceapp.InitResyncService(
+		basicServices.userSVC.DomainSVC,
+		complexServices.searchSVC.DomainSVC,
+		primaryServices.knowledgeSVC.DomainSVC,
+	)
 
 	return nil
 }

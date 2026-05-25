@@ -32,4 +32,7 @@ const (
 	ErrSpaceReleaseExistsCode     = 112000011
 	ErrSpaceReleaseInvalidVersion = 112000012
 	ErrSpaceRollbackFailedCode    = 112000013
+
+	// ES per-space resync
+	ErrSpaceResyncESCode = 112000020
 )
