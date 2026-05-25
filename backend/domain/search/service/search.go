@@ -40,6 +40,22 @@ func NewDomainService(ctx context.Context, e es.Client) Search {
 
 type searchImpl struct {
 	esClient es.Client
+
+	// Resync deps — only set by SetResyncDeps for the ResyncSpace flow.
+	// Nil for plain search workloads. See resync.go.
+	agentRepo AgentLister
+	appRepo   AppLister
+	kbRepo    KbLister
+}
+
+// SetResyncDeps wires in the per-space resync dependencies. Called by the
+// application layer once during init after the relevant domain repos exist.
+// Must be invoked before ResyncSpace can run; the resync handler returns an
+// error if any of these are nil.
+func (s *searchImpl) SetResyncDeps(agentRepo AgentLister, appRepo AppLister, kbRepo KbLister) {
+	s.agentRepo = agentRepo
+	s.appRepo = appRepo
+	s.kbRepo = kbRepo
 }
 
 type fieldName string

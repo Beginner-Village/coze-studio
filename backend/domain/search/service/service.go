@@ -19,6 +19,7 @@ package service
 import (
 	"context"
 
+	space "github.com/ynet-dev/ynet-studio/backend/api/model/data/space"
 	"github.com/ynet-dev/ynet-studio/backend/domain/search/entity"
 )
 
@@ -33,4 +34,10 @@ type ResourceEventBus interface {
 type Search interface {
 	SearchProjects(ctx context.Context, req *entity.SearchProjectsRequest) (resp *entity.SearchProjectsResponse, err error)
 	SearchResources(ctx context.Context, req *entity.SearchResourcesRequest) (resp *entity.SearchResourcesResponse, err error)
+	// ResyncSpace clears and rebuilds the per-space ES list indices
+	// (project_draft / coze_resource / kb_entries). Knowledge chunk indices
+	// (openynet_<kb_id>) are handled separately by the knowledge domain.
+	// Resync deps must have been wired in via SetResyncDeps; otherwise
+	// returns an error.
+	ResyncSpace(ctx context.Context, spaceID int64) (*space.ResyncESCounts, error)
 }
