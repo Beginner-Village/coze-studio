@@ -43,19 +43,35 @@ type searchImpl struct {
 
 	// Resync deps — only set by SetResyncDeps for the ResyncSpace flow.
 	// Nil for plain search workloads. See resync.go.
-	agentRepo AgentLister
-	appRepo   AppLister
-	kbRepo    KbLister
+	agentRepo    AgentLister
+	appRepo      AppLister
+	kbRepo       KbLister
+	workflowRepo WorkflowLister
+	pluginRepo   PluginLister
+	promptRepo   PromptLister
+	databaseRepo DatabaseLister
 }
 
 // SetResyncDeps wires in the per-space resync dependencies. Called by the
 // application layer once during init after the relevant domain repos exist.
 // Must be invoked before ResyncSpace can run; the resync handler returns an
 // error if any of these are nil.
-func (s *searchImpl) SetResyncDeps(agentRepo AgentLister, appRepo AppLister, kbRepo KbLister) {
+func (s *searchImpl) SetResyncDeps(
+	agentRepo AgentLister,
+	appRepo AppLister,
+	kbRepo KbLister,
+	workflowRepo WorkflowLister,
+	pluginRepo PluginLister,
+	promptRepo PromptLister,
+	databaseRepo DatabaseLister,
+) {
 	s.agentRepo = agentRepo
 	s.appRepo = appRepo
 	s.kbRepo = kbRepo
+	s.workflowRepo = workflowRepo
+	s.pluginRepo = pluginRepo
+	s.promptRepo = promptRepo
+	s.databaseRepo = databaseRepo
 }
 
 type fieldName string

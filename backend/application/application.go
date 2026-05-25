@@ -33,6 +33,7 @@ import (
 	apprepository "github.com/ynet-dev/ynet-studio/backend/domain/app/repository"
 	knowledgerepository "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/repository"
 	knowledgesvc "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/service"
+	searchService "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
 	modelrepository "github.com/ynet-dev/ynet-studio/backend/domain/model/repository"
 	modelservice "github.com/ynet-dev/ynet-studio/backend/domain/model/service"
 
@@ -201,6 +202,14 @@ func Init(ctx context.Context) (err error) {
 		agentResyncRepo,
 		appResyncRepo,
 		knowledgesvc.NewKbInfoLister(kbResyncRepo),
+		// 4 raw-gorm-backed listers for the other coze_resource res_types.
+		// They live in the search/service package because the underlying
+		// PO model packages are internal/dal/model/ (Go internal-import
+		// rule blocks them from being reached via the domain repos here).
+		searchService.NewWorkflowDBLister(infra.DB),
+		searchService.NewPluginDBLister(infra.DB),
+		searchService.NewPromptDBLister(infra.DB),
+		searchService.NewDatabaseDBLister(infra.DB),
 	)
 	spaceapp.InitResyncService(
 		basicServices.userSVC.DomainSVC,

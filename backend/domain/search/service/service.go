@@ -43,5 +43,18 @@ type Search interface {
 	// SetResyncDeps wires in the per-space resync dependencies. Called by
 	// the application layer once during init after the relevant domain
 	// repos exist. Must be invoked before ResyncSpace can run.
-	SetResyncDeps(agentRepo AgentLister, appRepo AppLister, kbRepo KbLister)
+	//
+	// coze_resource (5 res types) sources: workflow (workflow_meta),
+	// plugin (plugin_draft), prompt (prompt_resource), database
+	// (draft_database_info), knowledge (KbInfo via kbRepo — written to
+	// both coze_resource and kb_entries).
+	SetResyncDeps(
+		agentRepo AgentLister,
+		appRepo AppLister,
+		kbRepo KbLister,
+		workflowRepo WorkflowLister,
+		pluginRepo PluginLister,
+		promptRepo PromptLister,
+		databaseRepo DatabaseLister,
+	)
 }

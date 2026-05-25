@@ -73,7 +73,11 @@ func (f *fakeSearchSVC) ResyncSpace(_ context.Context, _ int64) (*spacemodel.Res
 	return f.counts, nil
 }
 
-func (f *fakeSearchSVC) SetResyncDeps(_ searchsvc.AgentLister, _ searchsvc.AppLister, _ searchsvc.KbLister) {
+func (f *fakeSearchSVC) SetResyncDeps(
+	_ searchsvc.AgentLister, _ searchsvc.AppLister, _ searchsvc.KbLister,
+	_ searchsvc.WorkflowLister, _ searchsvc.PluginLister,
+	_ searchsvc.PromptLister, _ searchsvc.DatabaseLister,
+) {
 }
 
 func (f *fakeSearchSVC) SearchProjects(_ context.Context, _ *searchEntity.SearchProjectsRequest) (*searchEntity.SearchProjectsResponse, error) {
@@ -370,7 +374,11 @@ func (f *concurrentSearchSVC) ResyncSpace(ctx context.Context, _ int64) (*spacem
 	return &cp, nil
 }
 
-func (f *concurrentSearchSVC) SetResyncDeps(_ searchsvc.AgentLister, _ searchsvc.AppLister, _ searchsvc.KbLister) {
+func (f *concurrentSearchSVC) SetResyncDeps(
+	_ searchsvc.AgentLister, _ searchsvc.AppLister, _ searchsvc.KbLister,
+	_ searchsvc.WorkflowLister, _ searchsvc.PluginLister,
+	_ searchsvc.PromptLister, _ searchsvc.DatabaseLister,
+) {
 }
 
 func (f *concurrentSearchSVC) SearchProjects(_ context.Context, _ *searchEntity.SearchProjectsRequest) (*searchEntity.SearchProjectsResponse, error) {
