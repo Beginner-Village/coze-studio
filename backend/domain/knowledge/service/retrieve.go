@@ -580,6 +580,26 @@ func (k *knowledgeSVC) reRankNode(ctx context.Context, resultMap map[string]any)
 		}
 	}
 
+	// Defensive guard: skip rerank when there are no documents to rank or
+	// when the query is blank. Upstream rerank services (e.g. vLLM) reject
+	// empty query/documents with 400 "The decoder prompt cannot be empty",
+	// which surfaces as a confusing model-config error to the user.
+	totalDocs := 0
+	nonBlankDocs := 0
+	for _, ch := range retrieveResultArr {
+		totalDocs += len(ch)
+		for _, d := range ch {
+			if d != nil && d.Document != nil && d.Document.Content != "" {
+				nonBlankDocs++
+			}
+		}
+	}
+	if query == "" || nonBlankDocs == 0 {
+		logs.CtxInfof(ctx, "[retrieve-dump] query=%q query_blank=%v total_docs=%d non_blank_docs=%d skip rerank",
+			query, query == "", totalDocs, nonBlankDocs)
+		return []*schema.Document{}, nil
+	}
+
 	resp, err := selectedReranker.Rerank(ctx, &rerank.Request{
 		Query: query,
 		Data:  retrieveResultArr,
