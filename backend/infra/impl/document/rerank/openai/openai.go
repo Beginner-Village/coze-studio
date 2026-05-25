@@ -70,10 +70,32 @@ func (r *reranker) Rerank(ctx context.Context, req *rerank.Request) (*rerank.Res
 		flat = append(flat, channel...)
 	}
 
-	documents := make([]string, 0, len(flat))
-	for _, item := range flat {
-		documents = append(documents, item.Document.Content)
+	// Defensive: upstream vLLM rejects requests with empty query OR empty
+	// documents (after filtering blank content) with 400 "The decoder prompt
+	// cannot be empty". Short-circuit with empty result instead of bubbling up
+	// a confusing error.
+	if req.Query == "" {
+		return &rerank.Response{SortedData: []*rerank.Data{}, TokenUsage: ptr.Of(int64(0))}, nil
 	}
+	if len(flat) == 0 {
+		return &rerank.Response{SortedData: []*rerank.Data{}, TokenUsage: ptr.Of(int64(0))}, nil
+	}
+
+	// Filter out docs whose Content is blank — they would surface to vLLM
+	// as empty decoder prompts even when len(documents)>0.
+	documents := make([]string, 0, len(flat))
+	keptFlat := make([]*rerank.Data, 0, len(flat))
+	for _, item := range flat {
+		if item == nil || item.Document == nil || item.Document.Content == "" {
+			continue
+		}
+		documents = append(documents, item.Document.Content)
+		keptFlat = append(keptFlat, item)
+	}
+	if len(documents) == 0 {
+		return &rerank.Response{SortedData: []*rerank.Data{}, TokenUsage: ptr.Of(int64(0))}, nil
+	}
+	flat = keptFlat
 
 	rReq := &rerankReq{
 		Model:     r.config.Model,
