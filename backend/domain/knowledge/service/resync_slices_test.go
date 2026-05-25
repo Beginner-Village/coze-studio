@@ -20,7 +20,9 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"go.uber.org/mock/gomock"
 
@@ -445,6 +447,169 @@ func TestResyncSpaceSlices_DeleteIndexFails_StillProceedsWithEvents(t *testing.T
 	if len(failingVectorStore.dropped) != 1 || failingVectorStore.dropped[0] != "openynet_600" {
 		t.Errorf("vector store dropped = %v, want [openynet_600]", failingVectorStore.dropped)
 	}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Batch 2: large-batch + load tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+// genSlices builds N synthetic slices for a single KB. We keep them small
+// (no payload, just IDs) so 20K still fits in memory comfortably.
+func genSlices(kbID int64, n int) []*model.KnowledgeDocumentSlice {
+	out := make([]*model.KnowledgeDocumentSlice, n)
+	for i := 0; i < n; i++ {
+		out[i] = &model.KnowledgeDocumentSlice{
+			ID:          int64(i + 1),
+			KnowledgeID: kbID,
+			// Spread across 100 docs so sharding key varies (matches
+			// production sharding behavior).
+			DocumentID: int64((i % 100) + 1),
+		}
+	}
+	return out
+}
+
+// idsOf extracts the slice IDs in order — used to feed BatchSetStatus EXPECT.
+func idsOf(ss []*model.KnowledgeDocumentSlice) []int64 {
+	out := make([]int64, len(ss))
+	for i, s := range ss {
+		out[i] = s.ID
+	}
+	return out
+}
+
+// TestResyncSpaceSlices_LargeBatch_5000Slices verifies the publish loop
+// scales linearly to 5K slices in a single KB without OOM / pathological
+// slowness. Mock producer.Send is instant; total wall time should be well
+// under the 30s bound even on shared CI hardware.
+func TestResyncSpaceSlices_LargeBatch_5000Slices(t *testing.T) {
+	const N = 5000
+	const spaceID int64 = 9_000
+	const kbID int64 = 9_100
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	kbRepo := mockDao.NewMockKnowledgeRepo(ctrl)
+	sliceRepo := mockDao.NewMockKnowledgeDocumentSliceRepo(ctrl)
+	producer := mockEventbus.NewMockProducer(ctrl)
+
+	slices := genSlices(kbID, N)
+	kbRepo.EXPECT().ListBySpaceID(gomock.Any(), spaceID, 0).Return([]*model.Knowledge{
+		{ID: kbID, SpaceID: spaceID},
+	}, nil)
+	sliceRepo.EXPECT().
+		FindSliceByCondition(gomock.Any(), gomock.AssignableToTypeOf(&entity.WhereSliceOpt{})).
+		Return(slices, int64(len(slices)), nil)
+	sliceRepo.EXPECT().
+		BatchSetStatus(gomock.Any(), idsOf(slices), int32(knowledgeModel.SliceStatusInit), "").
+		Return(nil)
+
+	// Atomic counter avoids -race noise across the Times(N) callbacks.
+	var sends int64
+	producer.EXPECT().
+		Send(gomock.Any(), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, _ []byte, _ ...any) error {
+			atomic.AddInt64(&sends, 1)
+			return nil
+		}).Times(N)
+
+	svc := &knowledgeSVC{
+		knowledgeRepo:       kbRepoAsRepo(kbRepo),
+		sliceRepo:           sliceRepoAsRepo(sliceRepo),
+		producer:            producer,
+		searchStoreManagers: nil,
+	}
+
+	const budget = 30 * time.Second
+	start := time.Now()
+	got, err := svc.ResyncSpaceSlices(context.Background(), spaceID)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		t.Fatalf("ResyncSpaceSlices err: %v", err)
+	}
+	if got != N {
+		t.Fatalf("count = %d, want %d", got, N)
+	}
+	if atomic.LoadInt64(&sends) != int64(N) {
+		t.Fatalf("producer.Send calls = %d, want %d", sends, N)
+	}
+	if elapsed > budget {
+		t.Errorf("ResyncSpaceSlices took %v for %d slices (budget %v) — publish loop likely has a per-slice bottleneck",
+			elapsed, N, budget)
+	}
+	t.Logf("ResyncSpaceSlices(5K slices) took %v", elapsed)
+}
+
+// TestResyncSpaceSlices_VeryLargeBatch_20000Slices stresses the upper bound
+// of a single KB at 20K slices. With the current sequential publish loop +
+// instant mock Send, this should still complete in seconds — if it doesn't,
+// the loop is doing something pathological (e.g. allocating in O(n) per
+// iter or holding a lock).
+//
+// Skipped under `-short` because the EXPECT wiring + 20K-call gomock harness
+// adds ~5–10s of overhead on the test runner itself, not the impl.
+func TestResyncSpaceSlices_VeryLargeBatch_20000Slices(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping 20K slice stress test in -short mode")
+	}
+	const N = 20_000
+	const spaceID int64 = 9_001
+	const kbID int64 = 9_200
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	kbRepo := mockDao.NewMockKnowledgeRepo(ctrl)
+	sliceRepo := mockDao.NewMockKnowledgeDocumentSliceRepo(ctrl)
+	producer := mockEventbus.NewMockProducer(ctrl)
+
+	slices := genSlices(kbID, N)
+	kbRepo.EXPECT().ListBySpaceID(gomock.Any(), spaceID, 0).Return([]*model.Knowledge{
+		{ID: kbID, SpaceID: spaceID},
+	}, nil)
+	sliceRepo.EXPECT().
+		FindSliceByCondition(gomock.Any(), gomock.AssignableToTypeOf(&entity.WhereSliceOpt{})).
+		Return(slices, int64(len(slices)), nil)
+	sliceRepo.EXPECT().
+		BatchSetStatus(gomock.Any(), idsOf(slices), int32(knowledgeModel.SliceStatusInit), "").
+		Return(nil)
+
+	var sends int64
+	producer.EXPECT().
+		Send(gomock.Any(), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, _ []byte, _ ...any) error {
+			atomic.AddInt64(&sends, 1)
+			return nil
+		}).Times(N)
+
+	svc := &knowledgeSVC{
+		knowledgeRepo:       kbRepoAsRepo(kbRepo),
+		sliceRepo:           sliceRepoAsRepo(sliceRepo),
+		producer:            producer,
+		searchStoreManagers: nil,
+	}
+
+	// 60s upper bound — generous to absorb gomock EXPECT overhead at 20K.
+	const budget = 60 * time.Second
+	start := time.Now()
+	got, err := svc.ResyncSpaceSlices(context.Background(), spaceID)
+	elapsed := time.Since(start)
+
+	if err != nil {
+		t.Fatalf("ResyncSpaceSlices err: %v", err)
+	}
+	if got != N {
+		t.Fatalf("count = %d, want %d", got, N)
+	}
+	if atomic.LoadInt64(&sends) != int64(N) {
+		t.Fatalf("producer.Send calls = %d, want %d", sends, N)
+	}
+	if elapsed > budget {
+		t.Errorf("ResyncSpaceSlices took %v for %d slices (budget %v)", elapsed, N, budget)
+	}
+	t.Logf("ResyncSpaceSlices(20K slices) took %v", elapsed)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

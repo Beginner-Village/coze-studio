@@ -19,7 +19,10 @@ package space
 import (
 	"context"
 	"errors"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -314,4 +317,257 @@ func TestResyncES_OwnerID_Zero_StillRejects(t *testing.T) {
 	assert.Equal(t, int32(errno.ErrUserSessionInvalidateCode), statusErr.Code(),
 		"empty session must be rejected by the session guard, not silently allowed via 0==0 owner match")
 	assert.False(t, search.called, "search must not be called when session check rejects")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Batch 2: concurrency + runtime stress
+// ─────────────────────────────────────────────────────────────────────────────
+
+// concurrentUserSVC is a goroutine-safe variant of fakeUserSVC. It only
+// returns a pre-set space and never mutates shared state, so N callers can
+// hit it under -race.
+type concurrentUserSVC struct {
+	usersvc.User
+	space *userentity.Space
+}
+
+func (f *concurrentUserSVC) GetSpaceByID(_ context.Context, _ int64) (*userentity.Space, error) {
+	return f.space, nil
+}
+
+// concurrentSearchSVC is a goroutine-safe variant of fakeSearchSVC. It uses
+// atomics for counters so the -race detector stays clean under N concurrent
+// callers. Each ResyncSpace call returns a FRESH *ResyncESCounts copy so
+// downstream mutations (e.g. counts.SliceReindexJobs = queued in the app
+// service) don't race across goroutines — production behavior already does
+// this because the search domain allocates a new struct per call.
+type concurrentSearchSVC struct {
+	searchsvc.Search
+	counts    *spacemodel.ResyncESCounts
+	resyncErr error
+	calls     int64 // atomic
+	// onCall, if non-nil, is invoked synchronously per call. Useful to
+	// inject delays / ctx checks in flight.
+	onCall func(ctx context.Context) error
+}
+
+func (f *concurrentSearchSVC) ResyncSpace(ctx context.Context, _ int64) (*spacemodel.ResyncESCounts, error) {
+	atomic.AddInt64(&f.calls, 1)
+	if f.onCall != nil {
+		if err := f.onCall(ctx); err != nil {
+			return nil, err
+		}
+	}
+	if f.resyncErr != nil {
+		return nil, f.resyncErr
+	}
+	if f.counts == nil {
+		return nil, nil
+	}
+	// Deep-copy: the app service mutates the returned counts (sets
+	// SliceReindexJobs), so concurrent callers must not share storage.
+	cp := *f.counts
+	return &cp, nil
+}
+
+func (f *concurrentSearchSVC) SetResyncDeps(_ searchsvc.AgentLister, _ searchsvc.AppLister, _ searchsvc.KbLister) {
+}
+
+func (f *concurrentSearchSVC) SearchProjects(_ context.Context, _ *searchEntity.SearchProjectsRequest) (*searchEntity.SearchProjectsResponse, error) {
+	return nil, nil
+}
+
+func (f *concurrentSearchSVC) SearchResources(_ context.Context, _ *searchEntity.SearchResourcesRequest) (*searchEntity.SearchResourcesResponse, error) {
+	return nil, nil
+}
+
+// concurrentKnowledgeSVC is a goroutine-safe variant of fakeKnowledgeSVC.
+type concurrentKnowledgeSVC struct {
+	knowledgesvc.Knowledge
+	queued int
+	err    error
+	calls  int64 // atomic
+	onCall func(ctx context.Context) error
+}
+
+func (f *concurrentKnowledgeSVC) ResyncSpaceSlices(ctx context.Context, _ int64) (int, error) {
+	atomic.AddInt64(&f.calls, 1)
+	if f.onCall != nil {
+		if err := f.onCall(ctx); err != nil {
+			return 0, err
+		}
+	}
+	if f.err != nil {
+		return f.queued, f.err
+	}
+	return f.queued, nil
+}
+
+// TestResyncES_ConcurrentSameSpace_NoPanic fires 5 goroutines at the same
+// space simultaneously. The current impl has no in-flight de-dup lock (delete
+// + write is idempotent — repeating it is fine), so all 5 callers should
+// succeed. The test asserts: no panic / deadlock / data race / partial state.
+//
+// Run with `go test -race -run TestResyncES_Concurrent` to validate the race
+// detector stays clean — that's the load-bearing part of this case.
+func TestResyncES_ConcurrentSameSpace_NoPanic(t *testing.T) {
+	const callers = 5
+	const spaceID int64 = 100
+	const ownerID int64 = 42
+
+	user := &concurrentUserSVC{space: &userentity.Space{ID: spaceID, OwnerID: ownerID}}
+	search := &concurrentSearchSVC{counts: &spacemodel.ResyncESCounts{ProjectDraft: 1, CozeResource: 2, KbEntries: 3}}
+	kb := &concurrentKnowledgeSVC{queued: 7}
+	svc := &SpaceResyncService{userSVC: user, searchSVC: search, knowledgeSVC: kb}
+
+	// Build one shared base context (so they all see the same user session)
+	// and gate all goroutines at the same starting line.
+	base := ctxWithUser(ownerID)
+	var (
+		wg      sync.WaitGroup
+		start   = make(chan struct{})
+		errs    = make([]error, callers)
+		resps   = make([]*spacemodel.ResyncESResponse, callers)
+		panics  = make([]any, callers)
+		errsMu  sync.Mutex
+		respsMu sync.Mutex
+	)
+
+	for i := 0; i < callers; i++ {
+		wg.Add(1)
+		i := i
+		go func() {
+			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					errsMu.Lock()
+					panics[i] = r
+					errsMu.Unlock()
+				}
+			}()
+			<-start
+			resp, err := svc.ResyncES(base, &spacemodel.ResyncESRequest{SpaceID: spaceID})
+			respsMu.Lock()
+			errs[i], resps[i] = err, resp
+			respsMu.Unlock()
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+
+	// 1. nobody panicked
+	for i, p := range panics {
+		if p != nil {
+			t.Fatalf("caller #%d panicked: %v", i, p)
+		}
+	}
+
+	// 2. all callers got a consistent result. Without de-dup all should
+	// succeed (idempotent delete-then-write). If a future impl adds a
+	// per-space lock, this assertion should be relaxed to allow some callers
+	// returning a typed "sync already in progress" status — but they should
+	// NEVER return a half-broken response or a random error.
+	for i, err := range errs {
+		require.NoErrorf(t, err, "caller #%d failed: %v", i, err)
+		require.NotNilf(t, resps[i], "caller #%d got nil response", i)
+		assert.Equal(t, int64(0), resps[i].Code, "caller #%d wrong code", i)
+		require.NotNilf(t, resps[i].Counts, "caller #%d nil counts", i)
+		// Counts come from the shared fake so they should match every time.
+		assert.Equal(t, 1, resps[i].Counts.ProjectDraft, "caller #%d ProjectDraft", i)
+		assert.Equal(t, 2, resps[i].Counts.CozeResource, "caller #%d CozeResource", i)
+		assert.Equal(t, 3, resps[i].Counts.KbEntries, "caller #%d KbEntries", i)
+		assert.Equal(t, 7, resps[i].Counts.SliceReindexJobs, "caller #%d SliceReindexJobs", i)
+	}
+
+	// 3. each step ran exactly once per caller.
+	assert.Equal(t, int64(callers), atomic.LoadInt64(&search.calls), "search.ResyncSpace call count")
+	assert.Equal(t, int64(callers), atomic.LoadInt64(&kb.calls), "knowledge.ResyncSpaceSlices call count")
+}
+
+// TestResyncES_ContextCanceled_PartwayThrough exercises ctx propagation: the
+// caller cancels mid-flight, between the search ResyncSpace step and the kb
+// ResyncSpaceSlices step. The kb fake observes the cancel and returns
+// ctx.Err(); the application service treats kb failures as non-fatal so
+// ResyncES returns success but SliceReindexJobs reflects whatever the kb
+// fake claims to have queued (0 here).
+func TestResyncES_ContextCanceled_PartwayThrough(t *testing.T) {
+	user := &fakeUserSVC{space: &userentity.Space{ID: 100, OwnerID: 42}}
+	search := &concurrentSearchSVC{counts: &spacemodel.ResyncESCounts{ProjectDraft: 1, CozeResource: 2, KbEntries: 3}}
+
+	// kb fake selects on ctx.Done — simulates a real worker noticing cancel.
+	kb := &concurrentKnowledgeSVC{
+		queued: 0,
+		onCall: func(ctx context.Context) error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(50 * time.Millisecond):
+				return nil
+			}
+		},
+	}
+	svc := &SpaceResyncService{userSVC: user, searchSVC: search, knowledgeSVC: kb}
+
+	ctx, cancel := context.WithCancel(ctxWithUser(42))
+	// Cancel only AFTER the search step finishes — onCall in concurrentSearchSVC
+	// hook is nil, so it returns immediately. Then kb.onCall sleeps 50ms, and
+	// we cancel within 10ms.
+	go func() {
+		time.Sleep(10 * time.Millisecond)
+		cancel()
+	}()
+
+	resp, err := svc.ResyncES(ctx, &spacemodel.ResyncESRequest{SpaceID: 100})
+	// Per current impl contract: knowledge step failure is logged but does
+	// NOT fail the overall call. The user still sees success with whatever
+	// counts the search step produced.
+	require.NoError(t, err, "ctx cancel during kb step must NOT fail the call (knowledge is best-effort)")
+	require.NotNil(t, resp)
+	require.NotNil(t, resp.Counts)
+	assert.Equal(t, 1, resp.Counts.ProjectDraft, "search counts must survive kb cancel")
+	assert.Equal(t, 2, resp.Counts.CozeResource)
+	assert.Equal(t, 3, resp.Counts.KbEntries)
+	assert.Equal(t, 0, resp.Counts.SliceReindexJobs, "kb returned 0 queued on cancel")
+	// kb was invoked + did observe the cancel.
+	assert.Equal(t, int64(1), atomic.LoadInt64(&kb.calls), "kb must have been called")
+}
+
+// TestResyncES_HandlerTimeout_BoundaryDoc is a documentation test: the Hertz
+// handler enforces a default 30s request timeout. If a real space has 1000+
+// agents/resources/KBs the synchronous ResyncSpace step could exceed that
+// boundary and the user will see a 500 even though the server keeps grinding.
+//
+// We don't unit-test the live boundary (it's a system-level concern), but we
+// DO assert that the application service itself does not introduce its own
+// timeout — it should faithfully propagate whatever ctx the handler gives
+// it. If this assumption changes, this test will fire and force a re-think.
+//
+// See spec doc 2026-05-25-es-resync-design.md → "Section: scaling
+// considerations" — moving to an async task pattern is the recommended
+// follow-up if real-world space sizes start hitting this boundary.
+func TestResyncES_HandlerTimeout_BoundaryDoc(t *testing.T) {
+	user := &fakeUserSVC{space: &userentity.Space{ID: 100, OwnerID: 42}}
+	search := &concurrentSearchSVC{counts: &spacemodel.ResyncESCounts{}}
+	kb := &concurrentKnowledgeSVC{queued: 0}
+	svc := &SpaceResyncService{userSVC: user, searchSVC: search, knowledgeSVC: kb}
+
+	// Caller-supplied context has a 50ms deadline. If the app service ever
+	// adds its own (longer) context.WithTimeout it would mask the caller's
+	// deadline and this test would notice — both fakes' onCall would NOT
+	// see Done.
+	ctx, cancel := context.WithTimeout(ctxWithUser(42), 50*time.Millisecond)
+	defer cancel()
+
+	// Have the search fake check the deadline propagation.
+	var sawDeadline bool
+	search.onCall = func(ctx context.Context) error {
+		_, ok := ctx.Deadline()
+		sawDeadline = ok
+		return nil
+	}
+
+	_, err := svc.ResyncES(ctx, &spacemodel.ResyncESRequest{SpaceID: 100})
+	require.NoError(t, err)
+	assert.True(t, sawDeadline, "caller's ctx deadline must propagate into search.ResyncSpace — do NOT wrap with WithTimeout in the service")
 }

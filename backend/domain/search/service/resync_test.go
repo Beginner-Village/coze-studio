@@ -503,6 +503,138 @@ func TestSearchSvc_ResyncSpace_KbEntriesDelete_Skipped_WhenZeroKbs(t *testing.T)
 	}
 }
 
+// TestSearchSvc_ResyncSpace_IndexAgentFailsForSome_OthersContinue verifies the
+// per-agent resilience contract: if Create on the project_draft index returns
+// an error for one agent in the middle of the loop, the rest still get
+// indexed and the call as a whole returns success. Counts reflect only the
+// successful indexes.
+func TestSearchSvc_ResyncSpace_IndexAgentFailsForSome_OthersContinue(t *testing.T) {
+	spaceID := int64(700)
+
+	agents := []*agententity.SingleAgent{
+		newAgent(11, spaceID, 7, "a1"),
+		newAgent(22, spaceID, 7, "a2"), // this one will fail to index
+		newAgent(33, spaceID, 7, "a3"),
+		newAgent(44, spaceID, 7, "a4"),
+		newAgent(55, spaceID, 7, "a5"),
+	}
+
+	fakeES := &fakeResyncESClient{
+		createErr: map[string]error{"22": errors.New("boom-index-agent-22")},
+	}
+	svc := &searchImpl{
+		esClient:  fakeES,
+		agentRepo: &fakeAgentLister{ret: agents},
+		appRepo:   &fakeAppLister{},
+		kbRepo:    &fakeKbLister{},
+	}
+
+	counts, err := svc.ResyncSpace(context.Background(), spaceID)
+	if err != nil {
+		t.Fatalf("ResyncSpace returned err: %v (per-agent failure must NOT abort)", err)
+	}
+	if counts.ProjectDraft != len(agents)-1 {
+		t.Errorf("ProjectDraft = %d, want %d (skip 1 failed)", counts.ProjectDraft, len(agents)-1)
+	}
+	// All 5 agent creates were attempted (the loop did not short-circuit).
+	creates := 0
+	for _, c := range fakeES.creates {
+		if c.index == projectIndexName {
+			creates++
+		}
+	}
+	if creates != len(agents) {
+		t.Errorf("project_draft Create attempts = %d, want %d", creates, len(agents))
+	}
+}
+
+// TestSearchSvc_ResyncSpace_IndexResourceFailsForSome_OthersContinue verifies
+// the per-app (coze_resource) resilience contract.
+func TestSearchSvc_ResyncSpace_IndexResourceFailsForSome_OthersContinue(t *testing.T) {
+	spaceID := int64(710)
+
+	apps := []*appentity.APP{
+		{ID: 100, SpaceID: spaceID, OwnerID: 8, Name: ptr.Of("app-a")},
+		{ID: 200, SpaceID: spaceID, OwnerID: 8, Name: ptr.Of("app-b")}, // fails
+		{ID: 300, SpaceID: spaceID, OwnerID: 8, Name: ptr.Of("app-c")},
+		{ID: 400, SpaceID: spaceID, OwnerID: 8, Name: ptr.Of("app-d")},
+	}
+
+	fakeES := &fakeResyncESClient{
+		createErr: map[string]error{"200": errors.New("boom-index-app-200")},
+	}
+	svc := &searchImpl{
+		esClient:  fakeES,
+		agentRepo: &fakeAgentLister{},
+		appRepo:   &fakeAppLister{ret: apps},
+		kbRepo:    &fakeKbLister{},
+	}
+
+	counts, err := svc.ResyncSpace(context.Background(), spaceID)
+	if err != nil {
+		t.Fatalf("ResyncSpace returned err: %v (per-app failure must NOT abort)", err)
+	}
+	if counts.CozeResource != len(apps)-1 {
+		t.Errorf("CozeResource = %d, want %d (skip 1 failed)", counts.CozeResource, len(apps)-1)
+	}
+	creates := 0
+	for _, c := range fakeES.creates {
+		if c.index == resourceIndexName {
+			creates++
+		}
+	}
+	if creates != len(apps) {
+		t.Errorf("coze_resource Create attempts = %d, want %d", creates, len(apps))
+	}
+}
+
+// TestSearchSvc_ResyncSpace_IndexKbEntryFailsForSome_OthersContinue verifies
+// the per-KB (kb_entries) resilience contract. This is a slightly different
+// shape than TestSearchSvc_ResyncSpace_PartialCreateFailureContinues — that
+// existing test fails the *middle* KB at index time; this one fails 2 out of
+// 5 to make sure the counter doesn't off-by-one.
+func TestSearchSvc_ResyncSpace_IndexKbEntryFailsForSome_OthersContinue(t *testing.T) {
+	spaceID := int64(720)
+
+	kbs := []*KbInfo{
+		{ID: 1001, SpaceID: spaceID, Name: "k1"},
+		{ID: 1002, SpaceID: spaceID, Name: "k2"}, // fails
+		{ID: 1003, SpaceID: spaceID, Name: "k3"},
+		{ID: 1004, SpaceID: spaceID, Name: "k4"}, // fails
+		{ID: 1005, SpaceID: spaceID, Name: "k5"},
+	}
+
+	fakeES := &fakeResyncESClient{
+		createErr: map[string]error{
+			"1002": errors.New("boom-index-kb-1002"),
+			"1004": errors.New("boom-index-kb-1004"),
+		},
+	}
+	svc := &searchImpl{
+		esClient:  fakeES,
+		agentRepo: &fakeAgentLister{},
+		appRepo:   &fakeAppLister{},
+		kbRepo:    &fakeKbLister{ret: kbs},
+	}
+
+	counts, err := svc.ResyncSpace(context.Background(), spaceID)
+	if err != nil {
+		t.Fatalf("ResyncSpace returned err: %v (per-kb index failure must NOT abort)", err)
+	}
+	if counts.KbEntries != 3 {
+		t.Errorf("KbEntries = %d, want 3 (5 attempted, 2 failed)", counts.KbEntries)
+	}
+	creates := 0
+	for _, c := range fakeES.creates {
+		if c.index == kbEntriesIndex {
+			creates++
+		}
+	}
+	if creates != len(kbs) {
+		t.Errorf("kb_entries Create attempts = %d, want %d", creates, len(kbs))
+	}
+}
+
 // TestSearchSvc_ResyncSpace_EmptySpace_ZeroAgentsResourcesKbs covers the
 // "scratch space" case: no agents, no apps, no KBs. project_draft +
 // coze_resource deletes still fire (they're keyed on space_id, not on result
