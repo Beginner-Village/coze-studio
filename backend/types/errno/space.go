@@ -35,4 +35,7 @@ const (
 
 	// ES per-space resync
 	ErrSpaceResyncESCode = 112000020
+
+	// One-shot per-space model + embedder + rerank reconfig
+	ErrSpaceConfigureModelsCode = 112000021
 )
