@@ -216,6 +216,11 @@ func Init(ctx context.Context) (err error) {
 		complexServices.searchSVC.DomainSVC,
 		primaryServices.knowledgeSVC.DomainSVC,
 	)
+	spaceapp.InitConfigureModelsService(
+		basicServices.userSVC.DomainSVC,
+		infra.DB,
+		infra.CacheCli,
+	)
 
 	return nil
 }

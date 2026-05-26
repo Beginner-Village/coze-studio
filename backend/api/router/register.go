@@ -78,6 +78,7 @@ func GeneratedRegister(r *server.Hertz) {
 	space.RegisterSync(r)
 	space.RegisterRelease(r)
 	space.RegisterResync(r)
+	space.RegisterConfigureModels(r)
 	// space_member.Register(r) // 已经在space模块中包含了
 	template_publish.Register(r)
 	// Manually register import/export routes until IDL is regenerated
