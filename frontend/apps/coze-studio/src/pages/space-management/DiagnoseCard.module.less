@@ -1,0 +1,190 @@
+/*
+ * Copyright 2025 ynet-dev Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.card {
+  padding: 20px;
+  background: var(--coz-bg-secondary, #f7f8fa);
+  border: 1px solid var(--coz-stroke-primary, #eaecf0);
+  border-radius: 8px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.headerText {
+  flex: 1;
+}
+
+.title {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--coz-fg, #1f2329);
+}
+
+.desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--coz-fg-secondary, #707683);
+}
+
+.timestamp {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--coz-fg-tertiary, #99a0ab);
+}
+
+// 4-section grid container — single column on narrow widths, 2-up on wider.
+.sections {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 1100px) {
+  .sections {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.section {
+  padding: 12px;
+  background: var(--coz-bg-primary, #ffffff);
+  border: 1px solid var(--coz-stroke-primary, #eaecf0);
+  border-radius: 6px;
+}
+
+.sectionTitle {
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--coz-fg, #1f2329);
+}
+
+// 3 mini-cards side by side for chat / embedder / rerank.
+.probesGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .probesGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.probeMiniCard {
+  padding: 10px;
+  background: var(--coz-bg-secondary, #f7f8fa);
+  border: 1px solid var(--coz-stroke-primary, #eaecf0);
+  border-radius: 6px;
+}
+
+.probeMiniHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.probeMiniBody {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--coz-fg-secondary, #707683);
+  word-break: break-all;
+}
+
+.probeMiniError {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--coz-fg-color-red, #c93022);
+  word-break: break-word;
+}
+
+// Small green/red dot prefix for probe status.
+.statusDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDotOk {
+  background: #00a870;
+}
+
+.statusDotBad {
+  background: #d93026;
+}
+
+.statusDotMuted {
+  background: #99a0ab;
+}
+
+// Simple 2-column tables (no headers — labels are obvious).
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th,
+.table td {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--coz-stroke-primary, #eaecf0);
+  vertical-align: top;
+}
+
+.table th {
+  font-weight: 600;
+  color: var(--coz-fg-secondary, #707683);
+  background: var(--coz-bg-secondary, #f7f8fa);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.rowZero td {
+  color: var(--coz-fg-color-red, #c93022);
+}
+
+.rowMissing td {
+  color: var(--coz-fg-color-red, #c93022);
+}
+
+.tableInlineError {
+  color: var(--coz-fg-color-red, #c93022);
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.emptyHint {
+  font-size: 12px;
+  color: var(--coz-fg-tertiary, #99a0ab);
+  padding: 6px 0;
+}
