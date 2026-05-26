@@ -90,6 +90,64 @@ export interface ConfigureModelsResponse {
   data: ConfigureModelsCounts | null;
 }
 
+// Read-only per-space health-check / diagnose.
+//
+// Reflects backend/api/model/data/space/diagnose.go — the shape is stable
+// because the UI renders per-section partial results, so an empty array
+// or `error` non-empty inside a section is the expected "this part is
+// degraded" signal, NOT a top-level failure.
+export interface DiagnoseRequest {
+  space_id: string; // string to dodge JS bigint precision loss
+}
+
+export interface DiagnoseModelProbe {
+  configured: boolean;
+  endpoint?: string;
+  model?: string;
+  reachable: boolean;
+  latency_ms: number;
+  http_status: number;
+  error?: string;
+}
+
+export interface DiagnoseMySQLTable {
+  name: string;
+  rows: number;
+  error?: string;
+}
+
+export interface DiagnoseESIndex {
+  name: string;
+  exists: boolean;
+  doc_count: number;
+  error?: string;
+}
+
+export interface DiagnoseMilvusCollection {
+  kb_id: string; // sent as JSON-string from Go for bigint safety
+  kb_name: string;
+  collection_name: string;
+  exists: boolean;
+  error?: string;
+}
+
+export interface DiagnoseData {
+  model_probes: {
+    chat: DiagnoseModelProbe;
+    embedder: DiagnoseModelProbe;
+    rerank: DiagnoseModelProbe;
+  };
+  mysql_tables: DiagnoseMySQLTable[];
+  es_indices: DiagnoseESIndex[];
+  milvus_collections: DiagnoseMilvusCollection[];
+}
+
+export interface DiagnoseResponse {
+  code: number;
+  msg: string;
+  data: DiagnoseData | null;
+}
+
 class SpaceApiService {
   /**
    * Re-sync all ES indices for the given space from MySQL.
@@ -128,6 +186,28 @@ class SpaceApiService {
     config?: BotAPIRequestConfig,
   ): Promise<ConfigureModelsResponse> {
     return await axiosInstance.post('/api/space/configure_models', data, {
+      headers: { 'Agw-Js-Conv': 'str' },
+      ...config,
+    });
+  }
+
+  /**
+   * Read-only per-space health-check.
+   *
+   * Backend probes chat / embedder / rerank endpoints (5s timeout each,
+   * run in parallel server-side), counts rows in 9 fixed MySQL tables,
+   * counts docs in every ES index reachable for the space (including
+   * per-KB openynet_<kb_id>), and checks Milvus collection existence
+   * per KB. All sections return regardless of partial failure — the UI
+   * inspects per-section `error` to render green/red status.
+   *
+   * Owner-only. Read-only: never writes Coze state.
+   */
+  async diagnose(
+    data: DiagnoseRequest,
+    config?: BotAPIRequestConfig,
+  ): Promise<DiagnoseResponse> {
+    return await axiosInstance.post('/api/space/diagnose', data, {
       headers: { 'Agw-Js-Conv': 'str' },
       ...config,
     });

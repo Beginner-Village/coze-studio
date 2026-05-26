@@ -88,6 +88,13 @@ export type {
   ResyncESRequest,
   ResyncESCounts,
   ResyncESResponse,
+  DiagnoseRequest,
+  DiagnoseResponse,
+  DiagnoseData,
+  DiagnoseModelProbe,
+  DiagnoseMySQLTable,
+  DiagnoseESIndex,
+  DiagnoseMilvusCollection,
 } from './coze-space-api';
 export { templateApi } from './template-api';
 export type {
