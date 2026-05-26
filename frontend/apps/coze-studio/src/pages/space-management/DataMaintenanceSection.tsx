@@ -21,6 +21,7 @@ import { Button, Modal, Toast } from '@coze-arch/coze-design';
 import { SpaceApi } from '@coze-arch/bot-api';
 
 import styles from './DataMaintenanceSection.module.less';
+import { DiagnoseCard } from './DiagnoseCard';
 import { ConfigureModelsCard } from './ConfigureModelsCard';
 
 interface Props {
@@ -73,7 +74,8 @@ export const DataMaintenanceSection: FC<Props> = ({ spaceId }) => {
       <h3 className={styles.title}>
         {I18n.t('space_data_maintenance', {}, '数据维护')}
       </h3>
-      <div className={styles.card}>
+      <DiagnoseCard spaceId={spaceId} />
+      <div className={styles.card} style={{ marginTop: 16 }}>
         <div className={styles.cardTitle}>
           {I18n.t('space_resync_es_title', {}, '重新同步 ES 索引')}
         </div>
