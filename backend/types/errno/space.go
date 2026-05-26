@@ -38,4 +38,7 @@ const (
 
 	// One-shot per-space model + embedder + rerank reconfig
 	ErrSpaceConfigureModelsCode = 112000021
+
+	// Read-only per-space health-check / diagnose
+	ErrSpaceDiagnoseCode = 112000022
 )
