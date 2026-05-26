@@ -48,6 +48,48 @@ export interface ResyncESResponse {
   counts: ResyncESCounts | null;
 }
 
+// One-shot per-space model + embedder + rerank reconfig.
+// Body keys are snake_case to match Go thrift tag conventions on the backend.
+export interface ConfigureModelsChat {
+  base_url: string;
+  api_key: string;
+  model: string;
+}
+
+export interface ConfigureModelsEmbedder {
+  base_url: string;
+  api_key: string;
+  model: string;
+  dims: number;
+}
+
+export interface ConfigureModelsRerank {
+  base_url: string;
+  api_key: string;
+  model: string;
+}
+
+export interface ConfigureModelsRequest {
+  space_id: string; // string to dodge JS bigint precision loss
+  chat?: ConfigureModelsChat;
+  embedder?: ConfigureModelsEmbedder;
+  rerank?: ConfigureModelsRerank;
+}
+
+export interface ConfigureModelsCounts {
+  model_meta_updated: number;
+  space_embedding_updated: number;
+  space_rerank_updated: number;
+  redis_keys_deleted: number;
+  warnings: string[];
+}
+
+export interface ConfigureModelsResponse {
+  code: number;
+  msg: string;
+  data: ConfigureModelsCounts | null;
+}
+
 class SpaceApiService {
   /**
    * Re-sync all ES indices for the given space from MySQL.
@@ -63,6 +105,29 @@ class SpaceApiService {
     config?: BotAPIRequestConfig,
   ): Promise<ResyncESResponse> {
     return await axiosInstance.post('/api/space/resync_es', data, {
+      headers: { 'Agw-Js-Conv': 'str' },
+      ...config,
+    });
+  }
+
+  /**
+   * One-shot per-space model reconfig.
+   *
+   * Backend rewrites model_meta.conn_config (global chat LLM),
+   * space_embedding.config, and space_rerank.config in a single
+   * transaction, then DELs every space:<space_id>:model:<entity_id>
+   * Redis key so the new config takes effect on the next request.
+   *
+   * Any of `chat` / `embedder` / `rerank` can be omitted — that
+   * section is then skipped server-side.
+   *
+   * Owner-only.
+   */
+  async configureModels(
+    data: ConfigureModelsRequest,
+    config?: BotAPIRequestConfig,
+  ): Promise<ConfigureModelsResponse> {
+    return await axiosInstance.post('/api/space/configure_models', data, {
       headers: { 'Agw-Js-Conv': 'str' },
       ...config,
     });
