@@ -200,6 +200,9 @@ func InitService(c *ServiceComponents) (*KnowledgeApplicationService, error) {
 	KnowledgeSVC.DomainSVC = knowledgeDomainSVC
 	KnowledgeSVC.eventBus = c.EventBus
 	KnowledgeSVC.storage = c.Storage
+	KnowledgeSVC.RerankCacheInvalidator = rrProvider
+	// EmbeddingCacheInvalidator is set by createManagerFactory via the
+	// package-level embeddingProviderRef captured there.
 	return KnowledgeSVC, nil
 }
 
@@ -222,6 +225,9 @@ func createManagerFactory(ctx context.Context, db *gorm.DB) (searchstore.Manager
 
 	// Create SpaceEmbeddingProvider
 	provider := embeddingProvider.NewSpaceEmbeddingProvider(embSvc, globalEmb)
+	if inv, ok := provider.(interface{ InvalidateCache(uint64) }); ok {
+		KnowledgeSVC.EmbeddingCacheInvalidator = inv
+	}
 
 	switch vsType {
 	case "milvus":

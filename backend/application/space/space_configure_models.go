@@ -35,29 +35,31 @@ import (
 // Wired in initComplexServices alongside ResyncSVC.
 var ConfigureModelsSVC *SpaceConfigureModelsService
 
+// InMemoryCacheInvalidator can flush in-process cached objects for a space.
+// Both SpaceRerankProvider and SpaceEmbeddingProvider satisfy this.
+type InMemoryCacheInvalidator interface {
+	InvalidateCache(spaceID uint64)
+}
+
 // SpaceConfigureModelsService atomically rewrites the chat / embedder / rerank
-// configs for a single space and clears the per-space model cache so the new
-// values take effect on the very next request.
-//
-// Sequencing:
-//   - permission check (owner only, same helper ResyncSVC uses)
-//   - DB writes wrapped in a single transaction so partial failure rolls back
-//     (e.g. embedder write failing after model_meta would leave the space in
-//     an inconsistent state without the txn)
-//   - cache invalidation runs AFTER the txn commits — if it fails we surface a
-//     warning but don't roll back the DB (caller can re-run the API or wait
-//     for the 5-minute TTL).
+// configs for a single space and clears ALL caches (Redis per-space model
+// cache + in-process rerank/embedding provider caches) so the new values
+// take effect on the very next request without a pod restart.
 type SpaceConfigureModelsService struct {
-	userSVC usersvc.User
-	db      *gorm.DB
-	redis   cache.Cmdable
+	userSVC              usersvc.User
+	db                   *gorm.DB
+	redis                cache.Cmdable
+	rerankCacheInvalid   InMemoryCacheInvalidator
+	embeddingCacheInvalid InMemoryCacheInvalidator
 }
 
 // InitConfigureModelsService wires the per-space reconfig service. Must be
 // called after the user application service is up so its DomainSVC is ready.
-func InitConfigureModelsService(userSVC usersvc.User, db *gorm.DB, redis cache.Cmdable) {
+func InitConfigureModelsService(userSVC usersvc.User, db *gorm.DB, redis cache.Cmdable, rerankInv, embeddingInv InMemoryCacheInvalidator) {
 	ConfigureModelsSVC = &SpaceConfigureModelsService{
-		userSVC: userSVC,
+		userSVC:              userSVC,
+		rerankCacheInvalid:   rerankInv,
+		embeddingCacheInvalid: embeddingInv,
 		db:      db,
 		redis:   redis,
 	}
@@ -116,14 +118,22 @@ func (s *SpaceConfigureModelsService) ConfigureModels(ctx context.Context, req *
 		return nil, errorx.WrapByCode(err, errno.ErrSpaceConfigureModelsCode, errorx.KV("msg", err.Error()))
 	}
 
-	// 3. cache invalidation — clear per-space model cache so the next request
-	// re-reads from MySQL. Failure here is non-fatal; we surface a warning
-	// because the new config will eventually take effect once the 5-minute
-	// TTL expires anyway.
+	// 3. cache invalidation — clear ALL caches so the next request re-reads
+	// from MySQL. Three layers: Redis per-space model cache + in-process
+	// rerank provider cache + in-process embedding provider cache.
 	deleted, warning := s.invalidateSpaceModelCache(ctx, req.SpaceID)
 	counts.RedisKeysDeleted = deleted
 	if warning != "" {
 		counts.Warnings = append(counts.Warnings, warning)
+	}
+	spaceIDU := uint64(req.SpaceID)
+	if s.rerankCacheInvalid != nil {
+		s.rerankCacheInvalid.InvalidateCache(spaceIDU)
+		logs.CtxInfof(ctx, "[ConfigureModels] invalidated in-memory rerank cache for space %d", req.SpaceID)
+	}
+	if s.embeddingCacheInvalid != nil {
+		s.embeddingCacheInvalid.InvalidateCache(spaceIDU)
+		logs.CtxInfof(ctx, "[ConfigureModels] invalidated in-memory embedding cache for space %d", req.SpaceID)
 	}
 
 	logs.CtxInfof(ctx, "[ConfigureModels] space=%d model_meta=%d space_embedding=%d space_rerank=%d redis_deleted=%d warnings=%d",

@@ -50,9 +50,11 @@ import (
 )
 
 type KnowledgeApplicationService struct {
-	DomainSVC service.Knowledge
-	eventBus  search.ResourceEventBus
-	storage   storage.Storage
+	DomainSVC             service.Knowledge
+	eventBus              search.ResourceEventBus
+	storage               storage.Storage
+	RerankCacheInvalidator  interface{ InvalidateCache(uint64) }
+	EmbeddingCacheInvalidator interface{ InvalidateCache(uint64) }
 }
 
 var KnowledgeSVC = &KnowledgeApplicationService{}

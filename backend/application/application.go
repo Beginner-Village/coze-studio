@@ -220,6 +220,8 @@ func Init(ctx context.Context) (err error) {
 		basicServices.userSVC.DomainSVC,
 		infra.DB,
 		infra.CacheCli,
+		primaryServices.knowledgeSVC.RerankCacheInvalidator,
+		primaryServices.knowledgeSVC.EmbeddingCacheInvalidator,
 	)
 	spaceapp.InitDiagnoseService(
 		basicServices.userSVC.DomainSVC,
