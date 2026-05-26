@@ -221,6 +221,12 @@ func Init(ctx context.Context) (err error) {
 		infra.DB,
 		infra.CacheCli,
 	)
+	spaceapp.InitDiagnoseService(
+		basicServices.userSVC.DomainSVC,
+		infra.DB,
+		infra.ESClient,
+		infra.SearchStoreManagers,
+	)
 
 	return nil
 }
