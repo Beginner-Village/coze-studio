@@ -562,6 +562,24 @@ func (k *knowledgeSVC) indexSlice(ctx context.Context, event *entity.Event) (err
 	indexingFields := getIndexingFields(fields)
 	collectionName := getCollectionName(slice.KnowledgeID)
 	for _, manager := range managers {
+		// Ensure the collection exists before we try to read/write it.
+		// This makes indexSlice self-healing for the case where the
+		// knowledge metadata (knowledge / knowledge_document_slice)
+		// was imported via SQL dump but the underlying vector store
+		// collection (openynet_<kb_id>) was never created — which is
+		// exactly the situation after the per-space ES resync flow
+		// republishes slice events on a freshly-imported environment.
+		// Mirrors the Create+GetSearchStore pattern in indexDocument.
+		// Create is idempotent: backends short-circuit if the
+		// collection already exists.
+		if err = manager.Create(ctx, &searchstore.CreateRequest{
+			CollectionName: collectionName,
+			Fields:         fields,
+			CollectionMeta: nil,
+		}); err != nil {
+			return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", fmt.Sprintf("create search store failed, err: %v", err)))
+		}
+
 		ss, err := manager.GetSearchStore(ctx, collectionName)
 		if err != nil {
 			return errorx.New(errno.ErrKnowledgeSearchStoreCode, errorx.KV("msg", fmt.Sprintf("get search store failed, err: %v", err)))
