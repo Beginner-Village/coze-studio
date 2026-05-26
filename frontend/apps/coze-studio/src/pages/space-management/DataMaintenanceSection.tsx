@@ -21,6 +21,7 @@ import { Button, Modal, Toast } from '@coze-arch/coze-design';
 import { SpaceApi } from '@coze-arch/bot-api';
 
 import styles from './DataMaintenanceSection.module.less';
+import { ConfigureModelsCard } from './ConfigureModelsCard';
 
 interface Props {
   spaceId: string;
@@ -113,6 +114,8 @@ export const DataMaintenanceSection: FC<Props> = ({ spaceId }) => {
           )}
         </p>
       </Modal>
+
+      <ConfigureModelsCard spaceId={spaceId} />
     </section>
   );
 };
