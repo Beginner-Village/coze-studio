@@ -42,16 +42,16 @@ const Page = () => {
   }
 
   return (
-    <Layout>
-      <Layout.Header className="pb-0">
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '16px 24px 0' }}>
         <Title heading={4}>
           {I18n.t('space_data_maintenance', {}, '数据维护')}
         </Title>
-      </Layout.Header>
-      <Layout.Content style={{ overflowY: 'auto', padding: '0 24px 24px' }}>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px' }}>
         <DataMaintenanceSection spaceId={spaceId} />
-      </Layout.Content>
-    </Layout>
+      </div>
+    </div>
   );
 };
 
