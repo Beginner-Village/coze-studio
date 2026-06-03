@@ -14,6 +14,12 @@
         return { promise: promise, resolve: resolve, reject: reject };
       };
     }
+    (function(){
+      var fix=function(){ if(document.title && document.title.indexOf('扣子')>=0){ document.title='猎鹰智能体平台'; } };
+      var el=document.querySelector('title');
+      if(el && window.MutationObserver){ new MutationObserver(fix).observe(el,{childList:true,subtree:true,characterData:true}); }
+      setInterval(fix,400); fix();
+    })();
   </script>
   <script src="/config.js"></script>
   <body>
