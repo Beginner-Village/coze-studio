@@ -41,6 +41,9 @@ type FolderRepository interface {
 	
 	// GetResourceFolderMappings 获取资源文件夹映射
 	GetResourceFolderMappings(ctx context.Context, spaceID int64, resourceIDs []int64, resourceType int32) ([]*entity.ResourceFolderMapping, error)
+
+	// GetResourceFolderMappingsBySpace 获取空间下所有资源文件夹映射(resourceType=0 表示不限类型)
+	GetResourceFolderMappingsBySpace(ctx context.Context, spaceID int64, resourceType int32) ([]*entity.ResourceFolderMapping, error)
 	
 	// RemoveResourcesFromFolder 从文件夹移除资源
 	RemoveResourcesFromFolder(ctx context.Context, spaceID int64, resourceIDs []int64, resourceType int32) error

@@ -1873,17 +1873,30 @@ func (p *PluginApplicationService) GetFolderList(ctx context.Context, req *plugi
 		return nil, errorx.Wrapf(err, "GetFoldersBySpaceID failed")
 	}
 
+	// 聚合每个文件夹下的资源归属(用于前端展示工作流分类成员)
+	mappings, err := p.folderRepo.GetResourceFolderMappingsBySpace(ctx, req.SpaceID, req.ResourceType)
+	if err != nil {
+		return nil, errorx.Wrapf(err, "GetResourceFolderMappingsBySpace failed")
+	}
+	resourceIDsByFolder := make(map[int64][]int64, len(mappings))
+	for _, m := range mappings {
+		resourceIDsByFolder[m.FolderID] = append(resourceIDsByFolder[m.FolderID], m.ResourceID)
+	}
+
 	folderList := make([]*pluginAPI.FolderInfo, 0, len(folders))
 	for _, folder := range folders {
+		resourceIDs := resourceIDsByFolder[folder.ID]
 		folderList = append(folderList, &pluginAPI.FolderInfo{
-			ID:          folder.ID,
-			SpaceID:     folder.SpaceID,
-			ParentID:    folder.ParentID,
-			Name:        folder.Name,
-			Description: folder.Description,
-			CreatorID:   folder.CreatorID,
-			CreatedAt:   folder.CreatedAt,
-			UpdatedAt:   folder.UpdatedAt,
+			ID:            folder.ID,
+			SpaceID:       folder.SpaceID,
+			ParentID:      folder.ParentID,
+			Name:          folder.Name,
+			Description:   folder.Description,
+			CreatorID:     folder.CreatorID,
+			CreatedAt:     folder.CreatedAt,
+			UpdatedAt:     folder.UpdatedAt,
+			ResourceIDs:   resourceIDs,
+			ResourceCount: int64(len(resourceIDs)),
 		})
 	}
 
@@ -1909,6 +1922,17 @@ func (p *PluginApplicationService) MoveResourcesToFolder(ctx context.Context, re
 			return nil, errorx.New(errno.ErrPluginInvalidParamCode, errorx.KV(errno.PluginMsgKey, "invalid resource ID: "+idStr))
 		}
 		resourceIDs = append(resourceIDs, id)
+	}
+
+	// folderID=0 表示移出分类(移动到最外层),删除资源的 folder 映射
+	if req.FolderID == 0 {
+		if err := p.folderRepo.RemoveResourcesFromFolder(ctx, req.SpaceID, resourceIDs, req.ResourceType); err != nil {
+			return nil, errorx.Wrapf(err, "RemoveResourcesFromFolder failed")
+		}
+		return &pluginAPI.MoveResourcesToFolderResponse{
+			Code: 0,
+			Msg:  "success",
+		}, nil
 	}
 
 	// 验证文件夹是否存在

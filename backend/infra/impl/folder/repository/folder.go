@@ -127,6 +127,19 @@ func (r *folderRepository) GetResourceFolderMappings(ctx context.Context, spaceI
 	return mappings, nil
 }
 
+// GetResourceFolderMappingsBySpace 获取空间下所有资源文件夹映射(resourceType=0 表示不限类型)
+func (r *folderRepository) GetResourceFolderMappingsBySpace(ctx context.Context, spaceID int64, resourceType int32) ([]*entity.ResourceFolderMapping, error) {
+	var mappings []*entity.ResourceFolderMapping
+	query := r.db.WithContext(ctx).Where("space_id = ?", spaceID)
+	if resourceType != 0 {
+		query = query.Where("resource_type = ?", resourceType)
+	}
+	if err := query.Find(&mappings).Error; err != nil {
+		return nil, err
+	}
+	return mappings, nil
+}
+
 // RemoveResourcesFromFolder 从文件夹移除资源
 func (r *folderRepository) RemoveResourcesFromFolder(ctx context.Context, spaceID int64, resourceIDs []int64, resourceType int32) error {
 	return r.db.WithContext(ctx).Where("space_id = ? AND resource_type = ? AND resource_id IN ?", spaceID, resourceType, resourceIDs).

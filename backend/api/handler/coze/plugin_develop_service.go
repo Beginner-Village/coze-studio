@@ -985,7 +985,7 @@ func MoveResourcesToFolder(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if req.FolderID <= 0 {
+	if req.FolderID < 0 {
 		invalidParamRequestResponse(c, "folderID is invalid")
 		return
 	}

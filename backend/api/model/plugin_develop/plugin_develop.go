@@ -34348,6 +34348,8 @@ type FolderInfo struct {
 	CreatorID   int64  `json:"creator_id,string"`
 	CreatedAt   int64  `json:"created_at"`
 	UpdatedAt   int64  `json:"updated_at"`
+	ResourceIDs []int64 `json:"resource_ids,omitempty"`
+	ResourceCount int64 `json:"resource_count"`
 }
 
 type CreateFolderRequest struct {
@@ -34372,9 +34374,10 @@ type CreateFolderResponse struct {
 }
 
 type GetFolderListRequest struct {
-	SpaceID  int64      `form:"space_id" json:"space_id,string"`
-	ParentID *int64     `form:"parent_id" json:"parent_id,string,omitempty"`
-	Base     *base.Base `form:"Base" json:"Base,omitempty" query:"Base"`
+	SpaceID      int64      `form:"space_id" json:"space_id,string"`
+	ParentID     *int64     `form:"parent_id" json:"parent_id,string,omitempty"`
+	ResourceType int32      `form:"resource_type" json:"resource_type"`
+	Base         *base.Base `form:"Base" json:"Base,omitempty" query:"Base"`
 }
 
 func (p *GetFolderListRequest) GetSpaceID() int64 {
