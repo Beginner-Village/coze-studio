@@ -27,10 +27,14 @@ export interface FolderInfo {
   creator_id: string;
   created_at: number;
   updated_at: number;
+  resource_ids?: string[];
+  resource_count?: number;
 }
 
 export interface UseFolderManagementProps {
   spaceId: string;
+  /** Resource type used to scope folder resource statistics (e.g. 2 = workflow) */
+  resourceType?: number;
   onSuccess?: () => void;
 }
 
@@ -48,6 +52,7 @@ export interface UseFolderManagementReturn {
 
 export const useFolderManagement = ({
   spaceId,
+  resourceType,
   onSuccess,
 }: UseFolderManagementProps): UseFolderManagementReturn => {
   const [folders, setFolders] = useState<FolderInfo[]>([]);
@@ -62,6 +67,7 @@ export const useFolderManagement = ({
     try {
       const response = await plugin_api.get_folder_list({
         space_id: spaceId,
+        ...(resourceType !== undefined ? { resource_type: resourceType } : {}),
       });
 
       if (response.code === 0) {
@@ -72,7 +78,7 @@ export const useFolderManagement = ({
     } finally {
       setLoading(false);
     }
-  }, [spaceId]);
+  }, [spaceId, resourceType]);
 
   const createFolder = useCallback(
     async (name: string, description = '') => {
@@ -100,7 +106,11 @@ export const useFolderManagement = ({
   );
 
   const moveResourcesToFolder = useCallback(
-    async (folderId: string, resourceIds: string[], resourceType: number) => {
+    async (
+      folderId: string,
+      resourceIds: string[],
+      moveResourceType: number,
+    ) => {
       if (!spaceId) {
         return;
       }
@@ -110,7 +120,7 @@ export const useFolderManagement = ({
           space_id: spaceId,
           folder_id: folderId,
           resource_ids: resourceIds,
-          resource_type: resourceType,
+          resource_type: moveResourceType,
         });
 
         if (response.code === 0) {

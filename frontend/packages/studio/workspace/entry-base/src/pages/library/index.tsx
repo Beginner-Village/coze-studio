@@ -22,6 +22,8 @@ import {
   useState,
   useRef,
   useCallback,
+  useEffect,
+  useMemo,
 } from 'react';
 
 import classNames from 'classnames';
@@ -51,6 +53,10 @@ import { WorkspaceEmpty } from '@/components/workspace-empty';
 
 import { type ListData, type BaseLibraryPageProps } from './types';
 import { useGetColumns } from './hooks/use-columns';
+import {
+  useFolderManagement,
+  type FolderInfo,
+} from './hooks/use-folder-management';
 import { useCachedQueryParams } from './hooks/use-cached-query-params';
 import {
   eventLibraryType,
@@ -59,8 +65,12 @@ import {
   LIBRARY_PAGE_SIZE,
 } from './consts';
 import { LibraryHeader } from './components/library-header';
+import { FolderCard } from './components/folder-card';
 
 import s from './index.module.less';
+
+// Resource type used by the folder backend to scope workflow statistics
+const FOLDER_WORKFLOW_RESOURCE_TYPE = 2;
 
 export { useDatabaseConfig } from './hooks/use-entity-configs/use-database-config';
 export { usePluginConfig } from './hooks/use-entity-configs/use-plugin-config';
@@ -140,6 +150,70 @@ export const BaseLibraryPage = forwardRef<
       reloadList: listResp.reload,
     }));
 
+    // Workflow tab folder category (display-only grouping, single level)
+    const folderEnabled = resType === ResType.Workflow;
+    const { folders, refreshFolders, createFolder } = useFolderManagement({
+      spaceId,
+      resourceType: FOLDER_WORKFLOW_RESOURCE_TYPE,
+      onSuccess: () => {
+        listResp.reload();
+      },
+    });
+    const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+
+    // Reset drill-in state when switching tabs
+    useEffect(() => {
+      setCurrentFolderId(null);
+    }, [sourceType]);
+
+    // Keep folder resource grouping in sync after any list reload (e.g. after a move)
+    useEffect(() => {
+      if (folderEnabled) {
+        refreshFolders();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally resync on list change
+    }, [folderEnabled, listResp.data]);
+
+    const currentFolder = useMemo(
+      () => folders.find(f => f.id === currentFolderId) ?? null,
+      [folders, currentFolderId],
+    );
+
+    // Map of resource id -> owning folder, used for grouping / filtering
+    const resourceFolderMap = useMemo(() => {
+      const map = new Map<string, FolderInfo>();
+      folders.forEach(folder => {
+        (folder.resource_ids ?? []).forEach(resId => {
+          map.set(resId, folder);
+        });
+      });
+      return map;
+    }, [folders]);
+
+    const rawList = listResp.data?.list ?? [];
+    const visibleList = useMemo(() => {
+      if (!folderEnabled) {
+        return rawList;
+      }
+      if (currentFolderId) {
+        // Second level: only workflows belonging to the current folder
+        return rawList.filter(
+          item =>
+            item.res_id !== undefined &&
+            resourceFolderMap.get(item.res_id)?.id === currentFolderId,
+        );
+      }
+      // First level: only uncategorized workflows (folder cards rendered above)
+      return rawList.filter(
+        item =>
+          item.res_id === undefined || !resourceFolderMap.has(item.res_id),
+      );
+    }, [folderEnabled, currentFolderId, rawList, resourceFolderMap]);
+
+    // Show folder cards only at the first level when the feature is healthy
+    const showFolderCards =
+      folderEnabled && !currentFolderId && folders.length > 0;
+
     const columns = useGetColumns({
       entityConfigs,
       reloadList: listResp.reload,
@@ -204,6 +278,11 @@ export const BaseLibraryPage = forwardRef<
               spaceId={spaceId}
               sourceType={resType}
               onRefresh={listResp.reload}
+              folderEnabled={folderEnabled}
+              folderNames={folders.map(f => f.name)}
+              onCreateFolder={async name => {
+                await createFolder(name);
+              }}
             />
             <div className="flex items-center justify-between">
               <Space>
@@ -354,7 +433,7 @@ export const BaseLibraryPage = forwardRef<
               offsetY={178}
               tableProps={{
                 loading: listResp.loading,
-                dataSource: listResp.data?.list,
+                dataSource: visibleList,
                 columns,
                 onRow: onRowClick,
               }}
@@ -374,6 +453,21 @@ export const BaseLibraryPage = forwardRef<
             onScroll={handleScroll}
             className="flex-1 overflow-y-auto mx-[24px]"
           >
+            {folderEnabled && currentFolder ? (
+              <div
+                data-testid="workspace.library.folder.breadcrumb"
+                className="flex items-center gap-[4px] text-[14px] coz-fg-secondary mb-[12px] mt-[4px]"
+              >
+                <span
+                  className="cursor-pointer hover:coz-fg-primary"
+                  onClick={() => setCurrentFolderId(null)}
+                >
+                  {`← ${I18n.t('workspace_library_folder_all') || '全部'}`}
+                </span>
+                <span>/</span>
+                <span className="coz-fg-primary">{currentFolder.name}</span>
+              </div>
+            ) : null}
             <GridList
               averageItemWidth={defaultGridItemWidth}
               onResize={(width, count) => {
@@ -386,7 +480,20 @@ export const BaseLibraryPage = forwardRef<
                 );
               }}
             >
-              {listResp.data?.list.map(record => (
+              {showFolderCards
+                ? folders.map(folder => (
+                    <GridItem key={`folder-${folder.id}`}>
+                      <div className="grid-item p-[12px]">
+                        <FolderCard
+                          folder={folder}
+                          gridItemWidth={gridItemWidth}
+                          onClick={f => setCurrentFolderId(f.id)}
+                        />
+                      </div>
+                    </GridItem>
+                  ))
+                : null}
+              {visibleList.map(record => (
                 <GridItem key={record.res_id}>
                   <div
                     className="grid-item p-[12px] cursor-pointer"
@@ -407,11 +514,11 @@ export const BaseLibraryPage = forwardRef<
                 <div className="w-full h-[100px] flex items-center justify-center" />
               </Spin>
             ) : null}
-            {!listResp.data?.list.length && (
+            {!visibleList.length && !showFolderCards ? (
               <div className="w-full h-full flex items-center justify-center">
                 <WorkspaceEmpty onClear={resetParams} hasFilter={hasFilter} />
               </div>
-            )}
+            ) : null}
           </div>
         )}
       </Layout>

@@ -19,8 +19,14 @@ import { useUserInfo } from '@coze-foundation/account-adapter';
 import { ResType, WorkflowMode } from '@coze-arch/idl/plugin_develop';
 import { I18n } from '@coze-arch/i18n';
 import { IconCozChat, IconCozWorkflow } from '@coze-arch/coze-design/icons';
-import { Menu, Tag } from '@coze-arch/coze-design';
+import {
+  Menu,
+  Tag,
+  Toast,
+  type TableActionProps,
+} from '@coze-arch/coze-design';
 
+import { useFolderManagement, type FolderInfo } from '../use-folder-management';
 import { BaseLibraryItem } from '../../components/base-library-item';
 import WorkflowDefaultIcon from '../../assets/workflow_default_icon.png';
 import ImageFlowDefaultIcon from '../../assets/image_flow_default_icon.png';
@@ -31,12 +37,113 @@ const defaultIconMap: { [key in ResType]?: string } = {
   [ResType.Imageflow]: ImageFlowDefaultIcon,
 };
 
+// Resource type used by the folder backend to scope workflow statistics
+const FOLDER_WORKFLOW_RESOURCE_TYPE = 2;
+// folder_id '0' means "move out" (back to the top level)
+const FOLDER_ROOT_ID = '0';
+
+type FolderActionList = NonNullable<TableActionProps['actionList']>;
+
+// Builds the "move into folder" / "move out of folder" card menu actions.
+const buildFolderActions = (params: {
+  resId?: string;
+  currentFolderId?: string;
+  folders: FolderInfo[];
+  onMove: (folderId: string, resId?: string) => void;
+}): FolderActionList => {
+  const { resId, currentFolderId, folders, onMove } = params;
+  const actions: FolderActionList = [
+    {
+      customRender: (
+        <Menu.SubMenu
+          key="move-into-folder"
+          mode="menu"
+          data-testid="workspace.library.item.move-into-folder"
+        >
+          <Menu.Title>
+            {I18n.t('workspace_library_folder_move_into') || '移入分类'}
+          </Menu.Title>
+          {folders.length ? (
+            folders.map(folder => (
+              <Menu.Item
+                key={folder.id}
+                disabled={folder.id === currentFolderId}
+                onClick={() => onMove(folder.id, resId)}
+              >
+                {folder.name}
+              </Menu.Item>
+            ))
+          ) : (
+            <Menu.Item disabled>
+              {I18n.t('workspace_library_folder_empty') || '暂无分类'}
+            </Menu.Item>
+          )}
+        </Menu.SubMenu>
+      ),
+    },
+  ];
+  if (currentFolderId) {
+    actions.push({
+      actionKey: 'move-out-folder',
+      actionText: I18n.t('workspace_library_folder_move_out') || '移出分类',
+      handler: () => onMove(FOLDER_ROOT_ID, resId),
+    });
+  }
+  return actions;
+};
+
 export const useWorkflowConfig: UseEntityConfigHook = ({
   spaceId,
   reloadList,
   getCommonActions,
 }) => {
   const userInfo = useUserInfo();
+
+  const { folders, moveResourcesToFolder, refreshFolders } =
+    useFolderManagement({
+      spaceId,
+      resourceType: FOLDER_WORKFLOW_RESOURCE_TYPE,
+    });
+
+  const handleMove = (folderId: string, resId?: string): void => {
+    if (!resId) {
+      return;
+    }
+    void (async () => {
+      try {
+        await moveResourcesToFolder(
+          folderId,
+          [resId],
+          FOLDER_WORKFLOW_RESOURCE_TYPE,
+        );
+        await refreshFolders();
+        reloadList();
+      } catch (error) {
+        Toast.error(
+          I18n.t('workspace_library_folder_move_failed') || '移动失败',
+        );
+      }
+    })();
+  };
+
+  // Inject folder move actions, then chain the externally provided actions.
+  const getWorkflowCommonActions: NonNullable<
+    typeof getCommonActions
+  > = item => {
+    const currentFolderId = folders.find(folder =>
+      (folder.resource_ids ?? []).includes(item.res_id ?? ''),
+    )?.id;
+    return [
+      ...buildFolderActions({
+        resId: item.res_id,
+        currentFolderId,
+        folders,
+        onMove: handleMove,
+      }),
+      ...(getCommonActions?.(item) ?? []),
+    ];
+  };
+
   const {
     workflowResourceModals,
     handleWorkflowResourceClick,
@@ -46,7 +153,7 @@ export const useWorkflowConfig: UseEntityConfigHook = ({
     spaceId,
     userId: userInfo?.user_id_str,
     refreshPage: reloadList,
-    getCommonActions,
+    getCommonActions: getWorkflowCommonActions,
   });
 
   return {

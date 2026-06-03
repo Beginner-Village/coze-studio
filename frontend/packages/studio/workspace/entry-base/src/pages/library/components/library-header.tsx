@@ -15,13 +15,21 @@
  * limitations under the License.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 
 import { useWorkflowImportExport } from '@coze-workflow/components';
 import { I18n } from '@coze-arch/i18n';
 import { ResType } from '@coze-arch/idl/plugin_develop';
 import { IconCozPlus, IconCozImport } from '@coze-arch/coze-design/icons';
-import { Button, Upload, Toast, Menu, MenuItem } from '@coze-arch/coze-design';
+import {
+  Button,
+  Upload,
+  Toast,
+  Menu,
+  MenuItem,
+  Modal,
+  Input,
+} from '@coze-arch/coze-design';
 
 import { type LibraryEntityConfig } from '../types';
 
@@ -154,7 +162,50 @@ export const LibraryHeader: React.FC<{
   spaceId: string;
   sourceType: number;
   onRefresh?: () => void;
-}> = ({ entityConfigs, spaceId, sourceType, onRefresh }) => {
+  folderEnabled?: boolean;
+  folderNames?: string[];
+  onCreateFolder?: (name: string) => Promise<void>;
+}> = ({
+  entityConfigs,
+  spaceId,
+  sourceType,
+  onRefresh,
+  folderEnabled = false,
+  folderNames = [],
+  onCreateFolder,
+}) => {
+  const [folderModalVisible, setFolderModalVisible] = useState(false);
+  const [folderName, setFolderName] = useState('');
+  const [creatingFolder, setCreatingFolder] = useState(false);
+
+  const handleCreateFolder = async () => {
+    const name = folderName.trim();
+    if (!name) {
+      Toast.warning(
+        I18n.t('workspace_library_folder_name_required') || '请输入分类名称',
+      );
+      return;
+    }
+    if (folderNames.includes(name)) {
+      Toast.warning(
+        I18n.t('workspace_library_folder_name_duplicate') || '分类名称已存在',
+      );
+      return;
+    }
+    setCreatingFolder(true);
+    try {
+      await onCreateFolder?.(name);
+      setFolderModalVisible(false);
+      setFolderName('');
+    } catch (error) {
+      Toast.error(
+        I18n.t('workspace_library_folder_create_failed') || '创建分类失败',
+      );
+    } finally {
+      setCreatingFolder(false);
+    }
+  };
+
   const menuConfig = entityConfigs.find(
     item => item.typeFilter?.value === sourceType,
   );
@@ -238,6 +289,20 @@ export const LibraryHeader: React.FC<{
             {I18n.t('import')}
           </Button>
         </Upload>
+        {folderEnabled && sourceType === ResType.Workflow ? (
+          <Button
+            theme="borderless"
+            type="secondary"
+            icon={<IconCozPlus />}
+            data-testid="workspace.library.header.add-folder"
+            onClick={() => {
+              setFolderName('');
+              setFolderModalVisible(true);
+            }}
+          >
+            {I18n.t('workspace_library_folder_add') || '添加分类'}
+          </Button>
+        ) : null}
         {sourceType === ResType.Workflow ? (
           <Menu
             key="create"
@@ -339,6 +404,30 @@ export const LibraryHeader: React.FC<{
           </Button>
         </Menu> */}
       </div>
+      <Modal
+        title={I18n.t('workspace_library_folder_add') || '添加分类'}
+        visible={folderModalVisible}
+        onCancel={() => {
+          setFolderModalVisible(false);
+        }}
+        onOk={handleCreateFolder}
+        confirmLoading={creatingFolder}
+        okText={I18n.t('Confirm') || '确定'}
+        cancelText={I18n.t('Cancel') || '取消'}
+      >
+        <Input
+          autoFocus
+          value={folderName}
+          maxLength={50}
+          placeholder={
+            I18n.t('workspace_library_folder_name_placeholder') ||
+            '请输入分类名称'
+          }
+          onChange={value => setFolderName(value)}
+          onEnterPress={handleCreateFolder}
+          data-testid="workspace.library.folder.name-input"
+        />
+      </Modal>
     </div>
   );
 };
