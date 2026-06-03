@@ -96,6 +96,16 @@ export type {
   DiagnoseESIndex,
   DiagnoseMilvusCollection,
 } from './coze-space-api';
+export { folderApi } from './folder-api';
+export type {
+  FolderInfo,
+  GetFolderListRequest,
+  GetFolderListResponse,
+  CreateFolderRequest,
+  CreateFolderResponse,
+  MoveResourcesToFolderRequest,
+  MoveResourcesToFolderResponse,
+} from './folder-api';
 export { templateApi } from './template-api';
 export type {
   PublishAsTemplateRequest,

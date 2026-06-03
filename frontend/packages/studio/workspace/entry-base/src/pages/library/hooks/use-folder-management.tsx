@@ -16,20 +16,9 @@
 
 import { useState, useCallback, useEffect } from 'react';
 
-import { plugin_api } from '@coze-studio/api-schema';
+import { folderApi, type FolderInfo } from '@coze-arch/bot-api';
 
-export interface FolderInfo {
-  id: string;
-  space_id: string;
-  parent_id?: string;
-  name: string;
-  description: string;
-  creator_id: string;
-  created_at: number;
-  updated_at: number;
-  resource_ids?: string[];
-  resource_count?: number;
-}
+export type { FolderInfo };
 
 export interface UseFolderManagementProps {
   spaceId: string;
@@ -65,7 +54,7 @@ export const useFolderManagement = ({
 
     setLoading(true);
     try {
-      const response = await plugin_api.get_folder_list({
+      const response = await folderApi.getFolderList({
         space_id: spaceId,
         ...(resourceType !== undefined ? { resource_type: resourceType } : {}),
       });
@@ -87,7 +76,7 @@ export const useFolderManagement = ({
       }
 
       try {
-        const response = await plugin_api.create_folder({
+        const response = await folderApi.createFolder({
           space_id: spaceId,
           name,
           description,
@@ -116,7 +105,7 @@ export const useFolderManagement = ({
       }
 
       try {
-        const response = await plugin_api.move_resources_to_folder({
+        const response = await folderApi.moveResourcesToFolder({
           space_id: spaceId,
           folder_id: folderId,
           resource_ids: resourceIds,
