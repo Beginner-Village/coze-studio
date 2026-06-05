@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/* eslint-disable @coze-arch/max-line-per-function -- createSubMenuConfig and WorkspaceSubMenu exceed 150 lines due to many menu items; extracting to sub-files would reduce readability */
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import {
@@ -202,9 +203,34 @@ const createSubMenuConfig = () => {
       path: SpaceSubModuleEnum.OBSERVABILITY,
       dataTestId: 'navigation_workspace_observability',
     },
-    { icon: <IconCozAnalytics />, activeIcon: <IconCozAnalytics />, title: () => '评估集', path: 'observability?tab=evaluation-sets', dataTestId: 'navigation_workspace_observability_evaluation_sets' },
-    { icon: <IconCozAnalytics />, activeIcon: <IconCozAnalytics />, title: () => '评估器', path: 'observability?tab=evaluators', dataTestId: 'navigation_workspace_observability_evaluators' },
-    { icon: <IconCozAnalytics />, activeIcon: <IconCozAnalytics />, title: () => '实验', path: 'observability?tab=experiments', dataTestId: 'navigation_workspace_observability_experiments' },
+    {
+      icon: <IconCozAnalytics />,
+      activeIcon: <IconCozAnalytics />,
+      title: () => '猎鹰批量测试',
+      path: SpaceSubModuleEnum.BATCH_TEST,
+      dataTestId: 'navigation_workspace_batch_test',
+    },
+    {
+      icon: <IconCozAnalytics />,
+      activeIcon: <IconCozAnalytics />,
+      title: () => '评估集',
+      path: 'observability?tab=evaluation-sets',
+      dataTestId: 'navigation_workspace_observability_evaluation_sets',
+    },
+    {
+      icon: <IconCozAnalytics />,
+      activeIcon: <IconCozAnalytics />,
+      title: () => '评估器',
+      path: 'observability?tab=evaluators',
+      dataTestId: 'navigation_workspace_observability_evaluators',
+    },
+    {
+      icon: <IconCozAnalytics />,
+      activeIcon: <IconCozAnalytics />,
+      title: () => '实验',
+      path: 'observability?tab=experiments',
+      dataTestId: 'navigation_workspace_observability_experiments',
+    },
   ];
 
   // 过滤掉 false 值（被 feature flag 隐藏的菜单项）

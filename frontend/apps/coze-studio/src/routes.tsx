@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/* eslint-disable max-lines -- routes file is intentionally long; split only when individual route groups are extracted to separate files */
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { lazy } from 'react';
 
@@ -108,9 +109,7 @@ const ExportImportPage = lazy(() => import('./pages/space-export-import'));
 const SpaceEmbeddingConfig = lazy(
   () => import('./pages/space-embedding-config'),
 );
-const SpaceRerankConfig = lazy(
-  () => import('./pages/space-rerank-config'),
-);
+const SpaceRerankConfig = lazy(() => import('./pages/space-rerank-config'));
 const SpaceDataMaintenance = lazy(
   () => import('./pages/space-data-maintenance'),
 );
@@ -156,6 +155,7 @@ const FalconMcp = lazy(() => import('./pages/falconmcp'));
 const FalconMcpDetail = lazy(() => import('./pages/falconmcpDetail'));
 
 const FalconCard = lazy(() => import('./pages/falconcard'));
+const BatchTestPage = lazy(() => import('./pages/batch-test'));
 
 export const router: ReturnType<typeof createBrowserRouter> =
   createBrowserRouter([
@@ -366,6 +366,13 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   Component: ObservabilityPage,
                   loader: () => ({
                     subMenuKey: SpaceSubModuleEnum.OBSERVABILITY,
+                  }),
+                },
+                {
+                  path: 'batch-test',
+                  Component: BatchTestPage,
+                  loader: () => ({
+                    subMenuKey: SpaceSubModuleEnum.BATCH_TEST,
                   }),
                 },
                 {
