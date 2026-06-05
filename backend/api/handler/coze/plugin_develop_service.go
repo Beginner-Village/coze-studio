@@ -1003,3 +1003,68 @@ func MoveResourcesToFolder(ctx context.Context, c *app.RequestContext) {
 
 	c.JSON(consts.StatusOK, resp)
 }
+
+// UpdateFolder 重命名/更新文件夹
+// @router /api/plugin_api/update_folder [POST]
+func UpdateFolder(ctx context.Context, c *app.RequestContext) {
+	var err error
+	var req plugin_develop.UpdateFolderRequest
+	err = c.BindAndValidate(&req)
+	if err != nil {
+		invalidParamRequestResponse(c, err.Error())
+		return
+	}
+
+	if req.SpaceID <= 0 {
+		invalidParamRequestResponse(c, "spaceID is invalid")
+		return
+	}
+
+	if req.FolderID <= 0 {
+		invalidParamRequestResponse(c, "folderID is invalid")
+		return
+	}
+
+	if req.Name == "" {
+		invalidParamRequestResponse(c, "folder name is required")
+		return
+	}
+
+	resp, err := plugin.PluginApplicationSVC.UpdateFolder(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
+
+	c.JSON(consts.StatusOK, resp)
+}
+
+// DeleteFolder 删除文件夹
+// @router /api/plugin_api/delete_folder [POST]
+func DeleteFolder(ctx context.Context, c *app.RequestContext) {
+	var err error
+	var req plugin_develop.DeleteFolderRequest
+	err = c.BindAndValidate(&req)
+	if err != nil {
+		invalidParamRequestResponse(c, err.Error())
+		return
+	}
+
+	if req.SpaceID <= 0 {
+		invalidParamRequestResponse(c, "spaceID is invalid")
+		return
+	}
+
+	if req.FolderID <= 0 {
+		invalidParamRequestResponse(c, "folderID is invalid")
+		return
+	}
+
+	resp, err := plugin.PluginApplicationSVC.DeleteFolder(ctx, &req)
+	if err != nil {
+		internalServerErrorResponse(ctx, c, err)
+		return
+	}
+
+	c.JSON(consts.StatusOK, resp)
+}

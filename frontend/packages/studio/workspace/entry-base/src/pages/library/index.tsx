@@ -28,13 +28,16 @@ import {
 
 import classNames from 'classnames';
 import { useInfiniteScroll } from 'ahooks';
+import {
+  GridList,
+  GridItem,
+} from '@coze-studio/workspace-adapter/src/pages/falcon/components/gridList';
 import { I18n } from '@coze-arch/i18n';
 import {
   Table,
   Select,
   Search,
   Layout,
-  Cascader,
   Space,
   Spin,
 } from '@coze-arch/coze-design';
@@ -52,11 +55,11 @@ import { highlightFilterStyle } from '@/constants/filter-style';
 import { WorkspaceEmpty } from '@/components/workspace-empty';
 
 import { type ListData, type BaseLibraryPageProps } from './types';
-import { useGetColumns } from './hooks/use-columns';
 import {
   useFolderManagement,
   type FolderInfo,
 } from './hooks/use-folder-management';
+import { useGetColumns } from './hooks/use-columns';
 import { useCachedQueryParams } from './hooks/use-cached-query-params';
 import {
   eventLibraryType,
@@ -80,11 +83,6 @@ export { useKnowledgeConfig } from './hooks/use-entity-configs/use-knowledge-con
 export { type LibraryEntityConfig } from './types';
 export { type UseEntityConfigHook } from './hooks/use-entity-configs/types';
 import { GridLibraryItem } from './components/grid-library-item';
-import {
-  GridList,
-  GridItem,
-} from '../../../../entry-adapter/src/pages/falcon/components/gridList';
-import cls from 'classnames';
 
 export const BaseLibraryPage = forwardRef<
   { reloadList: () => void },
@@ -152,7 +150,13 @@ export const BaseLibraryPage = forwardRef<
 
     // Workflow tab folder category (display-only grouping, single level)
     const folderEnabled = resType === ResType.Workflow;
-    const { folders, refreshFolders, createFolder } = useFolderManagement({
+    const {
+      folders,
+      refreshFolders,
+      createFolder,
+      renameFolder,
+      deleteFolder,
+    } = useFolderManagement({
       spaceId,
       resourceType: FOLDER_WORKFLOW_RESOURCE_TYPE,
       onSuccess: () => {
@@ -266,7 +270,7 @@ export const BaseLibraryPage = forwardRef<
 
     return (
       <Layout
-        className={cls(s['layout-content'], {
+        className={classNames(s['layout-content'], {
           'flex-col': layoutType === 'grid',
         })}
         title={renderHtmlTitle(I18n.t('navigation_workspace_library'))}
@@ -392,7 +396,7 @@ export const BaseLibraryPage = forwardRef<
                   {['list', 'grid'].map(item => (
                     <div
                       key={item}
-                      className={cls(s.filterItem, s[item], {
+                      className={classNames(s.filterItem, s[item], {
                         [s.active]: layoutType === item,
                       })}
                       onClick={() => {
@@ -488,6 +492,8 @@ export const BaseLibraryPage = forwardRef<
                           folder={folder}
                           gridItemWidth={gridItemWidth}
                           onClick={f => setCurrentFolderId(f.id)}
+                          onRename={(f, name) => renameFolder(f.id, name)}
+                          onDelete={f => deleteFolder(f.id)}
                         />
                       </div>
                     </GridItem>

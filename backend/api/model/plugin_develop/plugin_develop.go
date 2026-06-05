@@ -34419,3 +34419,55 @@ type MoveResourcesToFolderResponse struct {
 	Code int32  `json:"code"`
 	Msg  string `json:"msg"`
 }
+
+type UpdateFolderRequest struct {
+	SpaceID     int64      `form:"space_id" json:"space_id,string"`
+	FolderID    int64      `form:"folder_id" json:"folder_id,string"`
+	Name        string     `form:"name" json:"name"`
+	Description string     `form:"description" json:"description"`
+	Base        *base.Base `form:"Base" json:"Base,omitempty" query:"Base"`
+}
+
+func (p *UpdateFolderRequest) GetSpaceID() int64 {
+	if p != nil {
+		return p.SpaceID
+	}
+	return 0
+}
+
+func (p *UpdateFolderRequest) GetFolderID() int64 {
+	if p != nil {
+		return p.FolderID
+	}
+	return 0
+}
+
+type UpdateFolderResponse struct {
+	Code int32  `json:"code"`
+	Msg  string `json:"msg"`
+}
+
+type DeleteFolderRequest struct {
+	SpaceID  int64      `form:"space_id" json:"space_id,string"`
+	FolderID int64      `form:"folder_id" json:"folder_id,string"`
+	Base     *base.Base `form:"Base" json:"Base,omitempty" query:"Base"`
+}
+
+func (p *DeleteFolderRequest) GetSpaceID() int64 {
+	if p != nil {
+		return p.SpaceID
+	}
+	return 0
+}
+
+func (p *DeleteFolderRequest) GetFolderID() int64 {
+	if p != nil {
+		return p.FolderID
+	}
+	return 0
+}
+
+type DeleteFolderResponse struct {
+	Code int32  `json:"code"`
+	Msg  string `json:"msg"`
+}

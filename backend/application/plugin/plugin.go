@@ -1952,3 +1952,73 @@ func (p *PluginApplicationService) MoveResourcesToFolder(ctx context.Context, re
 		Msg:  "success",
 	}, nil
 }
+
+// UpdateFolder 重命名/更新文件夹描述
+func (p *PluginApplicationService) UpdateFolder(ctx context.Context, req *pluginAPI.UpdateFolderRequest) (*pluginAPI.UpdateFolderResponse, error) {
+	userIDPtr := ctxutil.GetUIDFromCtx(ctx)
+	if userIDPtr == nil {
+		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "session is required"))
+	}
+	if req.FolderID <= 0 {
+		return nil, errorx.New(errno.ErrPluginInvalidParamCode, errorx.KV(errno.PluginMsgKey, "folderID is required"))
+	}
+	if req.Name == "" {
+		return nil, errorx.New(errno.ErrPluginInvalidParamCode, errorx.KV(errno.PluginMsgKey, "folder name is required"))
+	}
+
+	folder, err := p.folderRepo.GetFolderByID(ctx, req.FolderID)
+	if err != nil {
+		return nil, errorx.Wrapf(err, "folder not found")
+	}
+	if folder.SpaceID != req.SpaceID {
+		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "folder does not belong to space"))
+	}
+
+	if err := p.folderRepo.UpdateFolder(ctx, req.FolderID, req.Name, req.Description); err != nil {
+		return nil, errorx.Wrapf(err, "UpdateFolder failed")
+	}
+
+	return &pluginAPI.UpdateFolderResponse{Code: 0, Msg: "success"}, nil
+}
+
+// DeleteFolder 删除文件夹（先将其中资源移出到顶层，再软删文件夹）
+func (p *PluginApplicationService) DeleteFolder(ctx context.Context, req *pluginAPI.DeleteFolderRequest) (*pluginAPI.DeleteFolderResponse, error) {
+	userIDPtr := ctxutil.GetUIDFromCtx(ctx)
+	if userIDPtr == nil {
+		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "session is required"))
+	}
+	if req.FolderID <= 0 {
+		return nil, errorx.New(errno.ErrPluginInvalidParamCode, errorx.KV(errno.PluginMsgKey, "folderID is required"))
+	}
+
+	folder, err := p.folderRepo.GetFolderByID(ctx, req.FolderID)
+	if err != nil {
+		return nil, errorx.Wrapf(err, "folder not found")
+	}
+	if folder.SpaceID != req.SpaceID {
+		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "folder does not belong to space"))
+	}
+
+	// 将文件夹内的资源移出到顶层（按资源类型分组移除映射），避免悬空映射
+	mappings, err := p.folderRepo.GetResourceFolderMappingsBySpace(ctx, req.SpaceID, 0)
+	if err != nil {
+		return nil, errorx.Wrapf(err, "GetResourceFolderMappingsBySpace failed")
+	}
+	idsByType := make(map[int32][]int64)
+	for _, m := range mappings {
+		if m.FolderID == req.FolderID {
+			idsByType[m.ResourceType] = append(idsByType[m.ResourceType], m.ResourceID)
+		}
+	}
+	for rtype, ids := range idsByType {
+		if err := p.folderRepo.RemoveResourcesFromFolder(ctx, req.SpaceID, ids, rtype); err != nil {
+			return nil, errorx.Wrapf(err, "RemoveResourcesFromFolder failed")
+		}
+	}
+
+	if err := p.folderRepo.DeleteFolder(ctx, req.FolderID); err != nil {
+		return nil, errorx.Wrapf(err, "DeleteFolder failed")
+	}
+
+	return &pluginAPI.DeleteFolderResponse{Code: 0, Msg: "success"}, nil
+}

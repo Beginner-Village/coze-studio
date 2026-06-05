@@ -65,6 +65,28 @@ export interface MoveResourcesToFolderResponse {
   msg?: string;
 }
 
+export interface UpdateFolderRequest {
+  space_id: string;
+  folder_id: string;
+  name: string;
+  description?: string;
+}
+
+export interface UpdateFolderResponse {
+  code: number;
+  msg?: string;
+}
+
+export interface DeleteFolderRequest {
+  space_id: string;
+  folder_id: string;
+}
+
+export interface DeleteFolderResponse {
+  code: number;
+  msg?: string;
+}
+
 class FolderApiService {
   /**
    * List folders for the given space, optionally scoped by resource type.
@@ -110,6 +132,32 @@ class FolderApiService {
         ...config,
       },
     );
+  }
+
+  /**
+   * Rename a folder / update its description.
+   */
+  async updateFolder(
+    data: UpdateFolderRequest,
+    config?: BotAPIRequestConfig,
+  ): Promise<UpdateFolderResponse> {
+    return await axiosInstance.post('/api/plugin_api/update_folder', data, {
+      headers: { 'Agw-Js-Conv': 'str' },
+      ...config,
+    });
+  }
+
+  /**
+   * Delete a folder. Resources inside are moved back to the top level.
+   */
+  async deleteFolder(
+    data: DeleteFolderRequest,
+    config?: BotAPIRequestConfig,
+  ): Promise<DeleteFolderResponse> {
+    return await axiosInstance.post('/api/plugin_api/delete_folder', data, {
+      headers: { 'Agw-Js-Conv': 'str' },
+      ...config,
+    });
   }
 }
 

@@ -35,7 +35,10 @@ type FolderRepository interface {
 	
 	// DeleteFolder 删除文件夹
 	DeleteFolder(ctx context.Context, folderID int64) error
-	
+
+	// UpdateFolder 更新文件夹名称/描述
+	UpdateFolder(ctx context.Context, folderID int64, name string, description string) error
+
 	// MoveResourcesToFolder 移动资源到文件夹
 	MoveResourcesToFolder(ctx context.Context, spaceID int64, folderID int64, resourceIDs []int64, resourceType int32) error
 	

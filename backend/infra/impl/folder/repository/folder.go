@@ -84,6 +84,17 @@ func (r *folderRepository) DeleteFolder(ctx context.Context, folderID int64) err
 		Update("deleted_at", now).Error
 }
 
+// UpdateFolder 更新文件夹名称/描述
+func (r *folderRepository) UpdateFolder(ctx context.Context, folderID int64, name string, description string) error {
+	return r.db.WithContext(ctx).Model(&entity.Folder{}).
+		Where("id = ?", folderID).
+		Updates(map[string]interface{}{
+			"name":        name,
+			"description": description,
+			"updated_at":  time.Now().UnixMilli(),
+		}).Error
+}
+
 // MoveResourcesToFolder 移动资源到文件夹
 func (r *folderRepository) MoveResourcesToFolder(ctx context.Context, spaceID int64, folderID int64, resourceIDs []int64, resourceType int32) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {

@@ -36,6 +36,12 @@ export interface UseFolderManagementReturn {
     resourceIds: string[],
     resourceType: number,
   ) => Promise<void>;
+  renameFolder: (
+    folderId: string,
+    name: string,
+    description?: string,
+  ) => Promise<void>;
+  deleteFolder: (folderId: string) => Promise<void>;
   refreshFolders: () => Promise<void>;
 }
 
@@ -123,6 +129,56 @@ export const useFolderManagement = ({
     [spaceId, onSuccess],
   );
 
+  const renameFolder = useCallback(
+    async (folderId: string, name: string, description = '') => {
+      if (!spaceId) {
+        return;
+      }
+
+      try {
+        const response = await folderApi.updateFolder({
+          space_id: spaceId,
+          folder_id: folderId,
+          name,
+          description,
+        });
+
+        if (response.code === 0) {
+          await refreshFolders();
+          onSuccess?.();
+        }
+      } catch (error) {
+        console.error('Failed to rename folder:', error);
+        throw error;
+      }
+    },
+    [spaceId, refreshFolders, onSuccess],
+  );
+
+  const deleteFolder = useCallback(
+    async (folderId: string) => {
+      if (!spaceId) {
+        return;
+      }
+
+      try {
+        const response = await folderApi.deleteFolder({
+          space_id: spaceId,
+          folder_id: folderId,
+        });
+
+        if (response.code === 0) {
+          await refreshFolders();
+          onSuccess?.();
+        }
+      } catch (error) {
+        console.error('Failed to delete folder:', error);
+        throw error;
+      }
+    },
+    [spaceId, refreshFolders, onSuccess],
+  );
+
   useEffect(() => {
     refreshFolders();
   }, [refreshFolders]);
@@ -132,6 +188,8 @@ export const useFolderManagement = ({
     loading,
     createFolder,
     moveResourcesToFolder,
+    renameFolder,
+    deleteFolder,
     refreshFolders,
   };
 };

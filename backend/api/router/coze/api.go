@@ -361,6 +361,8 @@ func Register(r *server.Hertz) {
 			_plugin_api.POST("/create_folder", append(_createfolderMw(), coze.CreateFolder)...)
 			_plugin_api.POST("/get_folder_list", append(_getfolderlistMw(), coze.GetFolderList)...)
 			_plugin_api.POST("/move_resources_to_folder", append(_moveresourcestofolderMw(), coze.MoveResourcesToFolder)...)
+			_plugin_api.POST("/update_folder", append(_updatefolderMw(), coze.UpdateFolder)...)
+			_plugin_api.POST("/delete_folder", append(_deletefolderMw(), coze.DeleteFolder)...)
 		}
 		{
 			_user := _api.Group("/user", _userMw()...)

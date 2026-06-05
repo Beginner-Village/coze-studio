@@ -1550,3 +1550,13 @@ func _moveresourcestofolderMw() []app.HandlerFunc {
 	// your code...
 	return nil
 }
+
+func _updatefolderMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
+
+func _deletefolderMw() []app.HandlerFunc {
+	// your code...
+	return nil
+}
