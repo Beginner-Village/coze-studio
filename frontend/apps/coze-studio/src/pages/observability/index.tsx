@@ -34,7 +34,9 @@ import { Button, Modal, Select, Spin, Toast } from '@coze-arch/coze-design';
 import { TraceDetail } from './trace-detail';
 import {
   exportTracesToDataset,
+  getColumnExtractConfig,
   listEvaluationSets,
+  type ColumnExtractConfigItem,
   type EvaluationSet,
 } from './loop-eval-api';
 import ExperimentsPage from './experiments/index';
@@ -111,6 +113,36 @@ function formatStartTime(startedAt: string): string {
 
 function getErrorMessage(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback;
+}
+
+function columnKey(col: ColumnExtractConfigItem): string {
+  return String(col.key || col.field_path || col.name || '');
+}
+
+// Best-effort extraction for a configurable column. The backend column-extract
+// config tells us which field to surface, but no shared IDL pins the value
+// location yet, so we look it up on the span by key/field_path and fall back to
+// matching tags. TODO: align with the IDL once the extract contract is published.
+function extractColumnValue(
+  span: OutputSpan,
+  col: ColumnExtractConfigItem,
+): string {
+  const key = col.key || col.field_path || col.name || '';
+  if (!key) {
+    return '-';
+  }
+  const direct = (span as unknown as Record<string, unknown>)[key];
+  if (direct !== undefined && direct !== null && direct !== '') {
+    return typeof direct === 'string' ? direct : JSON.stringify(direct);
+  }
+  const { tags } = span as unknown as {
+    tags?: { key?: string; value?: { v_str?: string } }[];
+  };
+  const tag = tags?.find(t => t.key === key);
+  if (tag?.value?.v_str) {
+    return tag.value.v_str;
+  }
+  return '-';
 }
 
 // ── 小组件 ──
@@ -233,7 +265,46 @@ const Page: React.FC = () => {
   const [exporting, setExporting] = useState(false);
   const [evalSets, setEvalSets] = useState<EvaluationSet[]>([]);
   const [selectedEvalSetId, setSelectedEvalSetId] = useState('');
+  const [columnConfigVisible, setColumnConfigVisible] = useState(false);
+  const [columnConfigs, setColumnConfigs] = useState<ColumnExtractConfigItem[]>(
+    [],
+  );
+  const [columnConfigLoaded, setColumnConfigLoaded] = useState(false);
+  const [enabledColumnKeys, setEnabledColumnKeys] = useState<string[]>([]);
   const tableRef = useRef<HTMLDivElement>(null);
+
+  const loadColumnConfig = useCallback(async () => {
+    if (!spaceId || columnConfigLoaded) {
+      return;
+    }
+    try {
+      const res = await getColumnExtractConfig({ workspace_id: spaceId });
+      const cols = res.columns || res.column_configs || [];
+      setColumnConfigs(cols);
+      // Default to the columns the backend marks visible.
+      setEnabledColumnKeys(
+        cols
+          .filter(c => c.visible)
+          .map(columnKey)
+          .filter(Boolean),
+      );
+      setColumnConfigLoaded(true);
+    } catch (err) {
+      // Endpoint may be unavailable; the standard columns still render.
+      console.error('[Observability] column extract config unavailable:', err);
+      setColumnConfigLoaded(true);
+    }
+  }, [spaceId, columnConfigLoaded]);
+
+  const openColumnConfig = useCallback(() => {
+    setColumnConfigVisible(true);
+    loadColumnConfig();
+  }, [loadColumnConfig]);
+
+  const activeColumns = useMemo(
+    () => columnConfigs.filter(c => enabledColumnKeys.includes(columnKey(c))),
+    [columnConfigs, enabledColumnKeys],
+  );
 
   const fetchSpans = useCallback(
     async (append = false) => {
@@ -427,6 +498,10 @@ const Page: React.FC = () => {
             {spans.length} 条{hasMore ? '+' : ''}
           </span>
 
+          <Button size="small" onClick={openColumnConfig}>
+            列配置
+          </Button>
+
           <Button
             size="small"
             disabled={displayedTraceIds.length === 0}
@@ -479,6 +554,14 @@ const Page: React.FC = () => {
           <div style={{ width: 140, flexShrink: 0, paddingLeft: 12 }}>
             Start Time
           </div>
+          {activeColumns.map(col => (
+            <div
+              key={columnKey(col)}
+              style={{ width: 140, flexShrink: 0, paddingLeft: 12 }}
+            >
+              {col.name || columnKey(col)}
+            </div>
+          ))}
         </div>
 
         {/* 数据行 */}
@@ -581,6 +664,24 @@ const Page: React.FC = () => {
               >
                 {formatStartTime(span.started_at)}
               </div>
+              {activeColumns.map(col => (
+                <div
+                  key={columnKey(col)}
+                  style={{
+                    width: 140,
+                    flexShrink: 0,
+                    paddingLeft: 12,
+                    fontSize: 13,
+                    color: '#4e5969',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                  title={extractColumnValue(span, col)}
+                >
+                  {extractColumnValue(span, col)}
+                </div>
+              ))}
             </div>
           ))
         )}
@@ -624,6 +725,42 @@ const Page: React.FC = () => {
           onNext={selectedIndex < spans.length - 1 ? handleNext : undefined}
         />
       ) : null}
+
+      <Modal
+        title="列配置"
+        visible={columnConfigVisible}
+        onCancel={() => setColumnConfigVisible(false)}
+        footer={null}
+        style={{ width: 420 }}
+      >
+        <div className="flex flex-col gap-3">
+          <div className="text-sm text-gray-500">
+            选择要在 Trace 列表中展示的可配置列。
+          </div>
+          {columnConfigs.length === 0 ? (
+            <div className="text-center py-8 text-gray-400 text-sm">
+              暂无可配置列
+            </div>
+          ) : (
+            <Select
+              multiple
+              value={enabledColumnKeys}
+              onChange={v =>
+                setEnabledColumnKeys(Array.isArray(v) ? v.map(String) : [])
+              }
+              style={{ width: '100%' }}
+              optionList={columnConfigs.map(col => ({
+                label: col.name || columnKey(col),
+                value: columnKey(col),
+              }))}
+              placeholder="请选择要展示的列"
+            />
+          )}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button onClick={() => setColumnConfigVisible(false)}>关闭</Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         title="导出到评估集"
