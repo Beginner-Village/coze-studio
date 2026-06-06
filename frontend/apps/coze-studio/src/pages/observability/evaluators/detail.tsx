@@ -30,6 +30,7 @@ import {
 } from '@coze-arch/coze-design';
 
 import {
+  batchDebugEvaluators,
   getEvaluator,
   runEvaluator,
   type Evaluator,
@@ -117,17 +118,34 @@ function parseInputData(value: string): EvaluatorInputData {
   return parsed as EvaluatorInputData;
 }
 
+function parseBatchInputData(value: string): EvaluatorInputData[] {
+  const parsed: unknown = JSON.parse(value);
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    throw new Error('请输入非空 JSON 数组，每个元素为一组 input_data');
+  }
+  return parsed.map((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw new Error(`第 ${index + 1} 项必须是 JSON Object`);
+    }
+    return item as EvaluatorInputData;
+  });
+}
+
 const Page: React.FC = () => {
   const { space_id: routeSpaceId } = useParams<{ space_id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const evaluatorId = searchParams.get('id') || '';
   const spaceId = searchParams.get('space_id') || routeSpaceId || '';
   const formApiRef = useRef<FormApi | null>(null);
+  const batchFormApiRef = useRef<FormApi | null>(null);
   const [evaluator, setEvaluator] = useState<Evaluator | null>(null);
   const [loading, setLoading] = useState(false);
   const [runVisible, setRunVisible] = useState(false);
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<unknown>(null);
+  const [batchVisible, setBatchVisible] = useState(false);
+  const [batchRunning, setBatchRunning] = useState(false);
+  const [batchResult, setBatchResult] = useState<unknown>(null);
 
   const fetchDetail = useCallback(async () => {
     if (!spaceId || !evaluatorId) {
@@ -178,6 +196,33 @@ const Page: React.FC = () => {
     }
   };
 
+  const handleBatchRun = async () => {
+    const evaluatorVersionId = evaluator?.current_version?.id;
+    if (!spaceId || !evaluatorVersionId || !batchFormApiRef.current) {
+      Toast.error('缺少评估器版本 ID');
+      return;
+    }
+    try {
+      const values = await batchFormApiRef.current.validate();
+      const inputs = parseBatchInputData(values.input_data);
+      setBatchRunning(true);
+      const res = await batchDebugEvaluators({
+        workspace_id: spaceId,
+        evaluator_version_id: evaluatorVersionId,
+        items: inputs.map((inputData, index) => ({
+          id: String(index),
+          input_data: inputData,
+        })),
+      });
+      setBatchResult(res.results || res.records || res);
+      Toast.success('批量调试完成');
+    } catch (err: unknown) {
+      Toast.error(getErrorMessage(err, '批量调试失败'));
+    } finally {
+      setBatchRunning(false);
+    }
+  };
+
   const version =
     evaluator?.current_version?.version ||
     evaluator?.latest_version ||
@@ -201,6 +246,9 @@ const Page: React.FC = () => {
           <Space>
             <Button disabled={!evaluator} onClick={() => setRunVisible(true)}>
               运行测试
+            </Button>
+            <Button disabled={!evaluator} onClick={() => setBatchVisible(true)}>
+              批量调试
             </Button>
             <Button onClick={backToList}>返回列表</Button>
           </Space>
@@ -270,6 +318,58 @@ const Page: React.FC = () => {
           <Button onClick={() => setRunVisible(false)}>取消</Button>
           <Button type="primary" loading={running} onClick={handleRun}>
             运行
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        title="批量调试"
+        visible={batchVisible}
+        onCancel={() => setBatchVisible(false)}
+        footer={null}
+        style={{ width: 720 }}
+      >
+        <div className="text-xs text-gray-500 mb-2">
+          输入 JSON 数组，每个元素为一组 input_data，将批量调用评估器。
+        </div>
+        <Form
+          layout="vertical"
+          initValues={{
+            input_data: JSON.stringify(
+              [
+                {
+                  input_fields: {},
+                  evaluate_target_output_fields: {},
+                },
+              ],
+              null,
+              2,
+            ),
+          }}
+          getFormApi={(api: FormApi) => {
+            batchFormApiRef.current = api;
+          }}
+        >
+          <Form.TextArea
+            field="input_data"
+            label="Sample Inputs (JSON Array)"
+            rules={[{ required: true, message: '请输入 JSON 数组' }]}
+            autosize={{ minRows: 8, maxRows: 16 }}
+          />
+        </Form>
+        {batchResult ? (
+          <pre className="rounded-[6px] border p-4 overflow-auto text-sm bg-gray-50">
+            {stringify(batchResult)}
+          </pre>
+        ) : null}
+        <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+          <Button onClick={() => setBatchVisible(false)}>取消</Button>
+          <Button
+            type="primary"
+            loading={batchRunning}
+            onClick={handleBatchRun}
+          >
+            批量运行
           </Button>
         </div>
       </Modal>
