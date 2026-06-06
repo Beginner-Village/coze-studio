@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* eslint-disable curly, max-lines, @coze-arch/max-line-per-function */
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Spin, Tag, Tabs } from '@coze-arch/coze-design';
-import { IconCozCopy } from '@coze-arch/coze-design/icons';
-import copy from 'copy-to-clipboard';
 
-import type { OutputSpan } from '@coze-arch/idl/stone_cozeloop_observability_api';
+import copy from 'copy-to-clipboard';
 import {
   TraceTree,
   TraceFlameThread,
@@ -30,9 +28,23 @@ import {
   type TraceFrontendSpan,
   type MessagePanelProps,
 } from '@coze-workflow/test-run-trace/observation-components';
+import type { OutputSpan } from '@coze-arch/idl/stone_cozeloop_observability_api';
+import { IconCozCopy } from '@coze-arch/coze-design/icons';
+import { Spin, Tag, Tabs } from '@coze-arch/coze-design';
 
-import { getTrace } from './api';
+import {
+  getTraceAgentMetadata,
+  type TraceAgentMetadata,
+} from './loop-eval-api';
 import { convertOutputSpans } from './converter';
+import { getTrace } from './api';
+
+// Agent span detection mirrors the SPAN_TYPE filter used in the trace list,
+// where the agent span type is surfaced as "Agent". Span node types can arrive
+// in varying case, so compare loosely.
+function isAgentSpan(type?: string): boolean {
+  return String(type || '').toLowerCase() === 'agent';
+}
 
 const I18N_MAPPING: MessagePanelProps['i18nMapping'] = {
   [ObservationModules.INPUT]: { title: 'Input' },
@@ -155,14 +167,11 @@ export const TraceDetail: React.FC<TraceDetailProps> = ({
     [],
   );
 
-  const handleFlameClick = useCallback(
-    (v: { extra?: { span?: SpanNode } }) => {
-      if (v.extra?.span) {
-        setSelectedSpan(v.extra.span as SpanNode);
-      }
-    },
-    [],
-  );
+  const handleFlameClick = useCallback((v: { extra?: { span?: SpanNode } }) => {
+    if (v.extra?.span) {
+      setSelectedSpan(v.extra.span as SpanNode);
+    }
+  }, []);
 
   const lColor = latencyColor(span.duration);
 
@@ -171,14 +180,19 @@ export const TraceDetail: React.FC<TraceDetailProps> = ({
       {/* ── Header ── */}
       <div style={headerStyle}>
         {/* 左：Trace 信息 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
           <span style={traceNameStyle}>
             {span.span_name || 'Unknown Trace'}
           </span>
-          <Tag
-            color={span.status_code === 0 ? 'green' : 'red'}
-            size="small"
-          >
+          <Tag color={span.status_code === 0 ? 'green' : 'red'} size="small">
             {span.status_code === 0 ? 'Success' : 'Error'}
           </Tag>
           <span style={metricsTagStyle}>
@@ -192,31 +206,61 @@ export const TraceDetail: React.FC<TraceDetailProps> = ({
 
         {/* 右：操作按钮 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconBtn
-            title="Copy Trace ID"
-            onClick={() => copy(span.trace_id)}
-          >
+          <IconBtn title="Copy Trace ID" onClick={() => copy(span.trace_id)}>
             <IconCozCopy style={{ width: 16, height: 16 }} />
           </IconBtn>
 
-          {onPrev && (
+          {onPrev ? (
             <IconBtn title="Previous Trace" onClick={onPrev}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M10 3l-5 5 5 5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+              >
+                <path
+                  d="M10 3l-5 5 5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </IconBtn>
-          )}
-          {onNext && (
+          ) : null}
+          {onNext ? (
             <IconBtn title="Next Trace" onClick={onNext}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+              >
+                <path
+                  d="M6 3l5 5-5 5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </IconBtn>
-          )}
+          ) : null}
 
-          <IconBtn title="Close (Esc)" onClick={onClose} style={{ marginLeft: 8 }}>
+          <IconBtn
+            title="Close (Esc)"
+            onClick={onClose}
+            style={{ marginLeft: 8 }}
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
             </svg>
           </IconBtn>
         </div>
@@ -226,7 +270,12 @@ export const TraceDetail: React.FC<TraceDetailProps> = ({
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         {/* 左侧：Span 树 / 火焰图 */}
         <div style={leftPanelStyle}>
-          <div style={{ flexShrink: 0, borderBottom: '1px solid var(--coz-stroke-default, #e5e6e8)' }}>
+          <div
+            style={{
+              flexShrink: 0,
+              borderBottom: '1px solid var(--coz-stroke-default, #e5e6e8)',
+            }}
+          >
             <Tabs
               activeKey={graphTab}
               onChange={setGraphTab}
@@ -240,7 +289,9 @@ export const TraceDetail: React.FC<TraceDetailProps> = ({
 
           <div style={{ flex: 1, overflow: 'auto', padding: '12px 0 0' }}>
             {loading ? (
-              <div style={emptyCenter}><Spin /></div>
+              <div style={emptyCenter}>
+                <Spin />
+              </div>
             ) : frontendSpans.length === 0 ? (
               <div style={{ ...emptyCenter, color: '#86909c', fontSize: 14 }}>
                 暂无 Span 数据
@@ -269,7 +320,7 @@ export const TraceDetail: React.FC<TraceDetailProps> = ({
         {/* 右侧：Span 详情 */}
         <div style={rightPanelStyle}>
           {selectedSpan ? (
-            <SpanDetailPanel span={selectedSpan} />
+            <SpanDetailPanel span={selectedSpan} spaceId={spaceId} />
           ) : (
             <div style={{ ...emptyCenter, color: '#86909c', fontSize: 14 }}>
               点击左侧 Span 查看详情
@@ -309,22 +360,44 @@ const IconBtn: React.FC<{
 
 // ── Span Detail Panel ──
 
-const SpanDetailPanel: React.FC<{ span: SpanNode }> = ({ span }) => (
+const SpanDetailPanel: React.FC<{ span: SpanNode; spaceId: string }> = ({
+  span,
+  spaceId,
+}) => (
   <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
     {/* Span 标题头 */}
     <div style={spanHeaderStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          flexWrap: 'wrap',
+        }}
+      >
         <span style={{ fontSize: 16, fontWeight: 600, color: '#1d2129' }}>
           {span.alias_name || span.name || '-'}
         </span>
-        {span.type && (
-          <Tag color="primary" size="small">{span.type}</Tag>
-        )}
+        {span.type ? (
+          <Tag color="primary" size="small">
+            {span.type}
+          </Tag>
+        ) : null}
         <Tag
-          color={span.status_code === 0 ? 'green' : span.status_code === 1 ? 'red' : undefined}
+          color={
+            span.status_code === 0
+              ? 'green'
+              : span.status_code === 1
+                ? 'red'
+                : undefined
+          }
           size="small"
         >
-          {span.status_code === 0 ? 'OK' : span.status_code === 1 ? 'Error' : String(span.status_code ?? '-')}
+          {span.status_code === 0
+            ? 'OK'
+            : span.status_code === 1
+              ? 'Error'
+              : String(span.status_code ?? '-')}
         </Tag>
         {span.duration !== undefined && (
           <span style={{ fontSize: 12, color: '#86909c' }}>
@@ -338,7 +411,7 @@ const SpanDetailPanel: React.FC<{ span: SpanNode }> = ({ span }) => (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
       {/* 主内容：Input / Output */}
       <div style={mainContentStyle}>
-        {span.input?.content && (
+        {span.input?.content ? (
           <div style={{ marginBottom: 16 }}>
             <MessagePanel
               content={span.input.content}
@@ -347,8 +420,8 @@ const SpanDetailPanel: React.FC<{ span: SpanNode }> = ({ span }) => (
               jsonViewerProps={{ displayDataTypes: false }}
             />
           </div>
-        )}
-        {span.output?.content && (
+        ) : null}
+        {span.output?.content ? (
           <div style={{ marginBottom: 16 }}>
             <MessagePanel
               content={span.output.content}
@@ -357,30 +430,52 @@ const SpanDetailPanel: React.FC<{ span: SpanNode }> = ({ span }) => (
               jsonViewerProps={{ displayDataTypes: false }}
             />
           </div>
-        )}
+        ) : null}
         {!span.input?.content && !span.output?.content && (
-          <div style={{ color: '#86909c', fontSize: 14, padding: '60px 0', textAlign: 'center' }}>
+          <div
+            style={{
+              color: '#86909c',
+              fontSize: 14,
+              padding: '60px 0',
+              textAlign: 'center',
+            }}
+          >
             无输入/输出数据
           </div>
+        )}
+        {isAgentSpan(span.type) && (
+          <AgentMetadataPanel
+            spaceId={spaceId}
+            traceId={span.trace_id}
+            spanId={span.span_id}
+          />
         )}
       </div>
 
       {/* 右侧字段列表 */}
       <div style={fieldSidebarStyle}>
         <FieldItem label="Status">
-          <span style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 4,
-          }}>
-            <span style={{
-              display: 'inline-block',
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              backgroundColor: span.status_code === 0 ? '#00b365' : '#f53f3f',
-            }} />
-            {span.status_code === 0 ? 'OK' : span.status_code === 1 ? 'Error' : String(span.status_code ?? '-')}
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <span
+              style={{
+                display: 'inline-block',
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                backgroundColor: span.status_code === 0 ? '#00b365' : '#f53f3f',
+              }}
+            />
+            {span.status_code === 0
+              ? 'OK'
+              : span.status_code === 1
+                ? 'Error'
+                : String(span.status_code ?? '-')}
           </span>
         </FieldItem>
         <FieldItem label="Duration">
@@ -390,34 +485,177 @@ const SpanDetailPanel: React.FC<{ span: SpanNode }> = ({ span }) => (
           {formatFullTimestamp(Number(span.start_time) || 0)}
         </FieldItem>
         <FieldItem label="Ended At">
-          {formatFullTimestamp((Number(span.start_time) || 0) + (Number(span.duration) || 0))}
+          {formatFullTimestamp(
+            (Number(span.start_time) || 0) + (Number(span.duration) || 0),
+          )}
         </FieldItem>
         <CopyableField label="Trace ID" value={span.trace_id || '-'} />
         <CopyableField label="Span ID" value={span.span_id || '-'} />
-        {span.parent_id && (
+        {span.parent_id ? (
           <CopyableField label="Parent ID" value={span.parent_id} />
-        )}
+        ) : null}
 
         {/* Custom Tags */}
-        {span.tags && span.tags.length > 0 && (
-          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--coz-stroke-default, #e5e6e8)' }}>
-            <div style={{ color: '#86909c', fontSize: 12, marginBottom: 8, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {span.tags && span.tags.length > 0 ? (
+          <div
+            style={{
+              marginTop: 16,
+              paddingTop: 12,
+              borderTop: '1px solid var(--coz-stroke-default, #e5e6e8)',
+            }}
+          >
+            <div
+              style={{
+                color: '#86909c',
+                fontSize: 12,
+                marginBottom: 8,
+                fontWeight: 500,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
               Tags
             </div>
             {span.tags.map((tag, i) => (
               <div key={i} style={{ marginBottom: 8, fontSize: 13 }}>
-                <div style={{ color: '#86909c', fontSize: 12, marginBottom: 2 }}>{tag.key}</div>
-                <div style={{ color: '#1d2129', wordBreak: 'break-all', lineHeight: '18px' }}>
+                <div
+                  style={{ color: '#86909c', fontSize: 12, marginBottom: 2 }}
+                >
+                  {tag.key}
+                </div>
+                <div
+                  style={{
+                    color: '#1d2129',
+                    wordBreak: 'break-all',
+                    lineHeight: '18px',
+                  }}
+                >
                   {tag.value?.v_str || '-'}
                 </div>
               </div>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   </div>
 );
+
+// ── Agent Metadata Panel ──
+// Read-only panel shown only for agent spans. Calls the coze-loop fusion
+// endpoint getTraceAgentMetadata; failures and empty responses degrade silently
+// so the rest of the span detail keeps rendering.
+
+const AgentMetadataPanel: React.FC<{
+  spaceId: string;
+  traceId?: string;
+  spanId?: string;
+}> = ({ spaceId, traceId, spanId }) => {
+  const [loading, setLoading] = useState(false);
+  const [metadata, setMetadata] = useState<TraceAgentMetadata | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!spaceId || !traceId) {
+      setMetadata(null);
+      return;
+    }
+    setLoading(true);
+    getTraceAgentMetadata({
+      workspace_id: spaceId,
+      trace_id: traceId,
+      span_id: spanId,
+    })
+      .then(res => {
+        if (cancelled) return;
+        setMetadata(res.agent_metadata || res.metadata || null);
+      })
+      .catch(err => {
+        if (cancelled) return;
+        // Endpoint may be unavailable for this trace; degrade silently.
+        console.error('[TraceDetail] agent metadata unavailable:', err);
+        setMetadata(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [spaceId, traceId, spanId]);
+
+  if (loading) {
+    return (
+      <div style={agentPanelStyle}>
+        <div style={agentPanelTitleStyle}>Agent Metadata</div>
+        <Spin size="small" />
+      </div>
+    );
+  }
+
+  if (!metadata) {
+    return null;
+  }
+
+  const toolCalls = metadata.tool_calls || [];
+  const extraEntries = Object.entries(metadata.metadata || {});
+
+  return (
+    <div style={agentPanelStyle}>
+      <div style={agentPanelTitleStyle}>Agent Metadata</div>
+      {metadata.agent_id ? (
+        <FieldItem label="Agent ID">{metadata.agent_id}</FieldItem>
+      ) : null}
+      {metadata.agent_name ? (
+        <FieldItem label="Agent Name">{metadata.agent_name}</FieldItem>
+      ) : null}
+      {metadata.model ? (
+        <FieldItem label="Model">{metadata.model}</FieldItem>
+      ) : null}
+      {toolCalls.length > 0 ? (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ color: '#86909c', fontSize: 12, marginBottom: 6 }}>
+            Tool Calls ({toolCalls.length})
+          </div>
+          {toolCalls.map((call, i) => (
+            <div
+              key={i}
+              style={{
+                marginBottom: 8,
+                padding: '6px 8px',
+                borderRadius: 4,
+                background: 'var(--coz-bg-tag-primary-normal, #f2f3f5)',
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#1d2129' }}>
+                {call.name || call.tool_name || '-'}
+                {call.status !== undefined ? (
+                  <span
+                    style={{ marginLeft: 8, fontSize: 12, color: '#86909c' }}
+                  >
+                    {String(call.status)}
+                  </span>
+                ) : null}
+              </div>
+              {call.arguments ? (
+                <pre style={agentPreStyle}>{call.arguments}</pre>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {extraEntries.length > 0 ? (
+        <div style={{ marginTop: 8 }}>
+          {extraEntries.map(([key, value]) => (
+            <FieldItem key={key} label={key}>
+              {typeof value === 'string' ? value : JSON.stringify(value)}
+            </FieldItem>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+};
 
 // ── FieldItem 组件 ──
 
@@ -426,8 +664,19 @@ const FieldItem: React.FC<{
   children: React.ReactNode;
 }> = ({ label, children }) => (
   <div style={{ marginBottom: 12 }}>
-    <div style={{ color: '#86909c', fontSize: 12, marginBottom: 2, lineHeight: '18px' }}>{label}</div>
-    <div style={{ color: '#1d2129', fontSize: 13, lineHeight: '20px' }}>{children}</div>
+    <div
+      style={{
+        color: '#86909c',
+        fontSize: 12,
+        marginBottom: 2,
+        lineHeight: '18px',
+      }}
+    >
+      {label}
+    </div>
+    <div style={{ color: '#1d2129', fontSize: 13, lineHeight: '20px' }}>
+      {children}
+    </div>
   </div>
 );
 
@@ -438,17 +687,34 @@ const CopyableField: React.FC<{
   value: string;
 }> = ({ label, value }) => (
   <div style={{ marginBottom: 12 }}>
-    <div style={{ color: '#86909c', fontSize: 12, marginBottom: 2, lineHeight: '18px' }}>{label}</div>
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 4,
-      color: '#1d2129',
-      fontSize: 12,
-      fontFamily: 'monospace',
-      lineHeight: '20px',
-    }}>
-      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+    <div
+      style={{
+        color: '#86909c',
+        fontSize: 12,
+        marginBottom: 2,
+        lineHeight: '18px',
+      }}
+    >
+      {label}
+    </div>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+        color: '#1d2129',
+        fontSize: 12,
+        fontFamily: 'monospace',
+        lineHeight: '20px',
+      }}
+    >
+      <span
+        style={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
         {value}
       </span>
       {value !== '-' && (
@@ -570,6 +836,32 @@ const mainContentStyle: React.CSSProperties = {
   overflow: 'auto',
   padding: '16px 20px',
   minWidth: 0,
+};
+
+const agentPanelStyle: React.CSSProperties = {
+  marginTop: 16,
+  padding: '12px 14px',
+  borderRadius: 6,
+  border: '1px solid var(--coz-stroke-default, #e5e6e8)',
+  background: 'var(--coz-bg-body, #fff)',
+};
+
+const agentPanelTitleStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: '#1d2129',
+  marginBottom: 10,
+};
+
+const agentPreStyle: React.CSSProperties = {
+  margin: '4px 0 0',
+  fontSize: 12,
+  fontFamily: 'monospace',
+  color: '#4e5969',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-all',
+  maxHeight: 160,
+  overflow: 'auto',
 };
 
 const fieldSidebarStyle: React.CSSProperties = {
