@@ -18,6 +18,7 @@
 import { useParams, type URLSearchParamsInit } from 'react-router-dom';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { IntelligenceType } from '@coze-arch/idl/intelligence_api';
 import {
   Button,
   Input,
@@ -28,6 +29,7 @@ import {
   Steps,
   Toast,
 } from '@coze-arch/coze-design';
+import { intelligenceApi, workflowApi } from '@coze-arch/bot-api';
 
 import {
   createExperiment,
@@ -56,10 +58,12 @@ const PAGE_SIZE = 50;
 const STEP_TITLES = ['基础信息', '选择评估集', '选择评估器'];
 
 // Eval target types. `a2a_agent` / `custom_agent` are the agent-eval types added
-// by the coze-loop fusion; `prompt` / `bot` / `workflow` predate it. There is no
-// ListTargets endpoint yet, so the user supplies target_id / target_version_id
-// directly — the type selection drives the input hint and (future) backend
-// dispatch. TODO: replace free-text inputs with a picker once ListTargets ships.
+// by the coze-loop fusion; `prompt` / `bot` / `workflow` predate it.
+// For `workflow` / `bot` we list real candidates via the studio APIs
+// (workflowApi.GetWorkFlowList / intelligenceApi.GetDraftIntelligenceList) so the
+// user can pick a target_id from a dropdown. For `prompt` / `a2a_agent` /
+// `custom_agent` there is no dedicated list endpoint yet, so target_id stays
+// free-text. TODO: add a picker for those once a ListTargets endpoint ships.
 type TargetType = 'prompt' | 'bot' | 'a2a_agent' | 'custom_agent' | 'workflow';
 
 const TARGET_TYPE_OPTIONS: { label: string; value: TargetType }[] = [
@@ -109,6 +113,16 @@ function getEvaluatorLabel(record: Evaluator): string {
   return `${record.name || record.evaluator_id || record.id || '-'}${version}`;
 }
 
+interface TargetOption {
+  label: string;
+  value: string;
+}
+
+// Whether the given target type has a list endpoint we can drive a picker with.
+function isPickableTargetType(targetType: TargetType): boolean {
+  return targetType === 'workflow' || targetType === 'bot';
+}
+
 const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
   const { space_id: spaceIdFromParams } = useParams<{ space_id: string }>();
   const effectiveWorkspaceId = workspaceId || spaceIdFromParams || '';
@@ -125,6 +139,57 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
   const [evalSetsLoading, setEvalSetsLoading] = useState(false);
   const [evaluatorsLoading, setEvaluatorsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [targetOptions, setTargetOptions] = useState<TargetOption[]>([]);
+  const [targetOptionsLoading, setTargetOptionsLoading] = useState(false);
+
+  const fetchTargetOptions = useCallback(async () => {
+    if (!effectiveWorkspaceId || !isPickableTargetType(targetType)) {
+      setTargetOptions([]);
+      return;
+    }
+    setTargetOptionsLoading(true);
+    try {
+      if (targetType === 'workflow') {
+        const res = await workflowApi.GetWorkFlowList({
+          space_id: effectiveWorkspaceId,
+          page: 1,
+          size: PAGE_SIZE,
+        });
+        setTargetOptions(
+          (res.data?.workflow_list || [])
+            .map(wf => ({
+              label: wf.name || wf.workflow_id || '-',
+              value: String(wf.workflow_id || ''),
+            }))
+            .filter(option => option.value),
+        );
+      } else {
+        const res = await intelligenceApi.GetDraftIntelligenceList({
+          space_id: effectiveWorkspaceId,
+          types: [IntelligenceType.Bot],
+          size: PAGE_SIZE,
+        });
+        setTargetOptions(
+          (res.data?.intelligences || [])
+            .map(item => ({
+              label: item.basic_info?.name || item.basic_info?.id || '-',
+              value: String(item.basic_info?.id || ''),
+            }))
+            .filter(option => option.value),
+        );
+      }
+    } catch (err: unknown) {
+      // Graceful degradation: keep the free-text input usable if listing fails.
+      setTargetOptions([]);
+      Toast.error(getErrorMessage(err, '加载评测对象列表失败'));
+    } finally {
+      setTargetOptionsLoading(false);
+    }
+  }, [effectiveWorkspaceId, targetType]);
+
+  useEffect(() => {
+    fetchTargetOptions();
+  }, [fetchTargetOptions]);
 
   const fetchEvalSets = useCallback(async () => {
     if (!effectiveWorkspaceId || evalSets.length > 0 || evalSetsLoading) {
@@ -278,17 +343,32 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
                 <FieldLabel label="评测对象类型">
                   <Select
                     value={targetType}
-                    onChange={value => setTargetType(value as TargetType)}
+                    onChange={value => {
+                      setTargetType(value as TargetType);
+                      setTargetId('');
+                    }}
                     optionList={TARGET_TYPE_OPTIONS}
                     style={{ width: '100%' }}
                   />
                 </FieldLabel>
                 <FieldLabel label="评测对象 ID (target_id)">
-                  <Input
-                    value={targetId}
-                    onChange={value => setTargetId(String(value))}
-                    placeholder={targetIdHint(targetType)}
-                  />
+                  {isPickableTargetType(targetType) ? (
+                    <Select
+                      filter
+                      value={targetId || undefined}
+                      onChange={value => setTargetId(String(value ?? ''))}
+                      optionList={targetOptions}
+                      loading={targetOptionsLoading}
+                      placeholder={targetIdHint(targetType)}
+                      style={{ width: '100%' }}
+                    />
+                  ) : (
+                    <Input
+                      value={targetId}
+                      onChange={value => setTargetId(String(value))}
+                      placeholder={targetIdHint(targetType)}
+                    />
+                  )}
                 </FieldLabel>
                 <FieldLabel label="评测对象版本 ID (target_version_id)">
                   <Input
