@@ -31,7 +31,7 @@ import { useInfiniteScroll } from 'ahooks';
 import {
   GridList,
   GridItem,
-} from '@coze-studio/workspace-adapter/src/pages/falcon/components/gridList';
+} from '../../../../entry-adapter/src/pages/falcon/components/gridList';
 import { I18n } from '@coze-arch/i18n';
 import {
   Table,
