@@ -69,6 +69,28 @@ function statusMeta(status?: string | number): { text: string; color: string } {
   return { text: status ? String(status) : '-', color: 'default' };
 }
 
+function formatProgress(
+  p:
+    | number
+    | string
+    | { total?: number; finished?: number; success?: number }
+    | undefined,
+): string {
+  if (p === undefined || p === null || p === '') {
+    return '-';
+  }
+  if (typeof p === 'object') {
+    const { total = 0, finished = 0, success = 0 } = p;
+    return `${finished}/${total} (成功: ${success})`;
+  }
+  return String(p);
+}
+
+function isRunningStatus(status?: string | number): boolean {
+  const normalized = String(status || '').toLowerCase();
+  return ['2', '3', 'pending', 'processing', 'running'].includes(normalized);
+}
+
 function stringify(value: unknown): string {
   if (value === undefined || value === null || value === '') {
     return '-';
@@ -97,8 +119,42 @@ const Page: React.FC = () => {
     TrajectoryConfig[]
   >([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [resultUnavailable, setResultUnavailable] = useState(false);
   const [trajectoryUnavailable, setTrajectoryUnavailable] = useState(false);
+
+  // Lightweight status/progress refresh, reused by the manual refresh button and
+  // the auto-poll loop while the experiment is still running.
+  const refreshStatus = useCallback(async () => {
+    if (!spaceId || !exptId) {
+      return;
+    }
+    setRefreshing(true);
+    try {
+      const detail = await getExperiment({
+        workspace_id: spaceId,
+        experiment_id: exptId,
+      });
+      setExperiment(detail.experiment || null);
+      if (!isRunningStatus(detail.experiment?.status)) {
+        try {
+          const result = await getExperimentAggrResult({
+            workspace_id: spaceId,
+            experiment_id: exptId,
+          });
+          setAggrResult(result);
+          setResultUnavailable(false);
+        } catch (err) {
+          // Aggregate result may not be ready yet; leave previous state.
+          console.error('[ExperimentDetail] aggr result not ready:', err);
+        }
+      }
+    } catch (err) {
+      console.error('[ExperimentDetail] Failed to refresh status:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [spaceId, exptId]);
 
   const fetchDetail = useCallback(async () => {
     if (!spaceId || !exptId) {
@@ -157,6 +213,17 @@ const Page: React.FC = () => {
     fetchDetail();
   }, [fetchDetail]);
 
+  // Auto-poll status/progress while the experiment is still running.
+  useEffect(() => {
+    if (!isRunningStatus(experiment?.status)) {
+      return;
+    }
+    const timer = setInterval(() => {
+      refreshStatus();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [experiment?.status, refreshStatus]);
+
   const trajectoryColumns = useMemo(
     () => [
       {
@@ -196,13 +263,18 @@ const Page: React.FC = () => {
               {experiment?.description || `ID: ${exptId || '-'}`}
             </div>
           </div>
-          <Button
-            onClick={() =>
-              navigate(`/space/${spaceId}/observability?tab=experiments`)
-            }
-          >
-            返回列表
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button loading={refreshing} onClick={refreshStatus}>
+              刷新
+            </Button>
+            <Button
+              onClick={() =>
+                navigate(`/space/${spaceId}/observability?tab=experiments`)
+              }
+            >
+              返回列表
+            </Button>
+          </div>
         </div>
       </Layout.Header>
 
@@ -226,6 +298,10 @@ const Page: React.FC = () => {
                   <div className="text-xs text-gray-500 mb-1">状态</div>
                   <Tag color={meta.color}>{meta.text}</Tag>
                 </div>
+                <Meta
+                  label="进度"
+                  value={formatProgress(experiment?.progress)}
+                />
                 <Meta
                   label="评估器数"
                   value={String(experiment?.evaluator_count ?? 0)}

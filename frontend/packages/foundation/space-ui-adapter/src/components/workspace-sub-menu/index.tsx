@@ -206,13 +206,6 @@ const createSubMenuConfig = () => {
     {
       icon: <IconCozAnalytics />,
       activeIcon: <IconCozAnalytics />,
-      title: () => '猎鹰批量测试',
-      path: SpaceSubModuleEnum.BATCH_TEST,
-      dataTestId: 'navigation_workspace_batch_test',
-    },
-    {
-      icon: <IconCozAnalytics />,
-      activeIcon: <IconCozAnalytics />,
       title: () => '评估集',
       path: 'observability?tab=evaluation-sets',
       dataTestId: 'navigation_workspace_observability_evaluation_sets',

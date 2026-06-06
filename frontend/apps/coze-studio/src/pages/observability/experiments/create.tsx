@@ -55,6 +55,38 @@ const PAGE_SIZE = 50;
 
 const STEP_TITLES = ['基础信息', '选择评估集', '选择评估器'];
 
+// Eval target types. `a2a_agent` / `custom_agent` are the agent-eval types added
+// by the coze-loop fusion; `prompt` / `bot` / `workflow` predate it. There is no
+// ListTargets endpoint yet, so the user supplies target_id / target_version_id
+// directly — the type selection drives the input hint and (future) backend
+// dispatch. TODO: replace free-text inputs with a picker once ListTargets ships.
+type TargetType = 'prompt' | 'bot' | 'a2a_agent' | 'custom_agent' | 'workflow';
+
+const TARGET_TYPE_OPTIONS: { label: string; value: TargetType }[] = [
+  { label: '工作流 (Workflow)', value: 'workflow' },
+  { label: '智能体 (Bot)', value: 'bot' },
+  { label: 'Prompt', value: 'prompt' },
+  { label: 'A2A Agent', value: 'a2a_agent' },
+  { label: 'Custom Agent', value: 'custom_agent' },
+];
+
+function targetIdHint(targetType: TargetType): string {
+  switch (targetType) {
+    case 'workflow':
+      return '工作流 ID（target_id）';
+    case 'bot':
+      return '智能体 ID（target_id）';
+    case 'prompt':
+      return 'Prompt ID（target_id）';
+    case 'a2a_agent':
+      return 'A2A Agent ID（target_id）';
+    case 'custom_agent':
+      return 'Custom Agent ID（target_id）';
+    default:
+      return 'target_id';
+  }
+}
+
 interface PageProps {
   workspaceId?: string;
   setSearchParams?: (nextInit: URLSearchParamsInit) => void;
@@ -83,6 +115,8 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [targetType, setTargetType] = useState<TargetType>('workflow');
+  const [targetId, setTargetId] = useState('');
   const [targetVersionId, setTargetVersionId] = useState('');
   const [evalSetId, setEvalSetId] = useState('');
   const [evaluatorVersionIds, setEvaluatorVersionIds] = useState<string[]>([]);
@@ -188,6 +222,7 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
         description: description.trim() || undefined,
         eval_set_id: evalSetId,
         evaluator_version_ids: evaluatorVersionIds,
+        target_id: targetId.trim() || undefined,
         target_version_id: targetVersionId.trim() || undefined,
       });
       Toast.success('创建成功');
@@ -242,10 +277,17 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
                 </FieldLabel>
                 <FieldLabel label="评测对象类型">
                   <Select
-                    value={1}
-                    disabled
-                    optionList={[{ label: '工作流', value: 1 }]}
+                    value={targetType}
+                    onChange={value => setTargetType(value as TargetType)}
+                    optionList={TARGET_TYPE_OPTIONS}
                     style={{ width: '100%' }}
+                  />
+                </FieldLabel>
+                <FieldLabel label="评测对象 ID (target_id)">
+                  <Input
+                    value={targetId}
+                    onChange={value => setTargetId(String(value))}
+                    placeholder={targetIdHint(targetType)}
                   />
                 </FieldLabel>
                 <FieldLabel label="评测对象版本 ID (target_version_id)">
