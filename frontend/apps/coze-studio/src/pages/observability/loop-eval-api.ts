@@ -455,3 +455,118 @@ export function exportTracesToDataset(
 ): Promise<Record<string, unknown>> {
   return post(`${OBSERVABILITY_BASE}/traces/export_to_dataset`, req);
 }
+
+// ── coze-loop fusion endpoints ──
+// The three routes below were brought in by the coze-loop merge. Request bodies
+// follow the same `workspace_id` + post() convention as the methods above. The
+// response shapes are not yet locked down in a shared IDL, so they use loose
+// types; tighten once the backend contract is published. TODO: align with IDL.
+
+export interface BatchDebugEvaluatorItem {
+  // One evaluation input row for batch debugging a prompt evaluator.
+  input_data?: EvaluatorInputData;
+  // Optional identifier so callers can map a result back to its input row.
+  id?: string;
+}
+
+export interface BatchDebugEvaluatorsReq {
+  workspace_id: string;
+  // Version under debug; mirrors RunEvaluatorReq.evaluator_version_id.
+  evaluator_version_id?: string;
+  // Inline evaluator definition for not-yet-saved prompt evaluators.
+  evaluator?: Evaluator;
+  items: BatchDebugEvaluatorItem[];
+}
+
+export interface BatchDebugEvaluatorResultItem {
+  id?: string;
+  // Mirrors RunEvaluatorResp.record; loose because batch shape is unconfirmed.
+  record?: EvaluatorRecord;
+  status?: string | number;
+  // TODO: confirm error field name once backend contract is published.
+  error?: string;
+}
+
+export interface BatchDebugEvaluatorsResp {
+  results?: BatchDebugEvaluatorResultItem[];
+  // Backends sometimes nest the list under `records`; keep both available.
+  records?: EvaluatorRecord[];
+}
+
+export function batchDebugEvaluators(
+  req: BatchDebugEvaluatorsReq,
+): Promise<BatchDebugEvaluatorsResp> {
+  return post(`${EVALUATION_BASE}/evaluators/batch_debug`, req);
+}
+
+export interface ColumnExtractConfigItem {
+  // A single configurable trace-list column. Field names are best-effort until
+  // the IDL lands; renderers should treat every field as optional.
+  key?: string;
+  name?: string;
+  // JSONPath / span field this column extracts from.
+  field_path?: string;
+  content_type?: string;
+  // Whether the column is shown by default in the trace list.
+  visible?: boolean;
+  default_display_format?: number;
+}
+
+export interface GetColumnExtractConfigReq {
+  workspace_id: string;
+  // Optional scope hint (e.g. which trace view the columns apply to).
+  scene?: string;
+}
+
+export interface GetColumnExtractConfigResp {
+  // Primary list of configurable columns.
+  columns?: ColumnExtractConfigItem[];
+  // Alternate key some backends use; kept for forward-compat.
+  column_configs?: ColumnExtractConfigItem[];
+}
+
+export function getColumnExtractConfig(
+  req: GetColumnExtractConfigReq,
+): Promise<GetColumnExtractConfigResp> {
+  return post(`${OBSERVABILITY_BASE}/column_extract_config`, req);
+}
+
+export interface TraceAgentToolCall {
+  // A single tool/function invocation captured for an agent span.
+  name?: string;
+  tool_name?: string;
+  arguments?: string;
+  input?: unknown;
+  output?: unknown;
+  status?: string | number;
+}
+
+export interface GetTraceAgentMetadataReq {
+  workspace_id: string;
+  trace_id: string;
+  // Optional span scope; agent metadata is usually per-span.
+  span_id?: string;
+  start_time?: string;
+  end_time?: string;
+}
+
+export interface TraceAgentMetadata {
+  agent_id?: string;
+  agent_name?: string;
+  model?: string;
+  tool_calls?: TraceAgentToolCall[];
+  // Free-form additional metadata; shape unconfirmed. TODO: align with IDL.
+  metadata?: Record<string, unknown>;
+}
+
+export interface GetTraceAgentMetadataResp {
+  // Some backends return the object directly, others wrap it; support both.
+  agent_metadata?: TraceAgentMetadata;
+  metadata?: TraceAgentMetadata;
+}
+
+export function getTraceAgentMetadata(
+  req: GetTraceAgentMetadataReq,
+): Promise<GetTraceAgentMetadataResp> {
+  return post(`${OBSERVABILITY_BASE}/trace/agent/metadata`, req);
+}
