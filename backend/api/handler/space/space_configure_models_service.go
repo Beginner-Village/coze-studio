@@ -22,6 +22,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
+	"github.com/ynet-dev/ynet-studio/backend/api/internal/httputil"
 	configmodel "github.com/ynet-dev/ynet-studio/backend/api/model/data/space"
 	spaceApp "github.com/ynet-dev/ynet-studio/backend/application/space"
 )
@@ -60,7 +61,7 @@ func ConfigureModels(ctx context.Context, c *app.RequestContext) {
 
 	resp, err := svc.ConfigureModels(ctx, &req)
 	if err != nil {
-		c.String(consts.StatusInternalServerError, err.Error())
+		httputil.InternalError(ctx, c, err)
 		return
 	}
 

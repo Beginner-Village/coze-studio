@@ -30,6 +30,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	resyncmodel "github.com/ynet-dev/ynet-studio/backend/api/model/data/space"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
 // fakeResyncInvoker is a hand-rolled stub for the application-layer SVC.
@@ -85,7 +87,37 @@ func TestResyncES_Handler_BadRequest(t *testing.T) {
 // TestResyncES_Handler_PropagatesAppError returns a non-nil error from the
 // application SVC and verifies the handler maps it to 500 with the message in
 // the body.
-func TestResyncES_Handler_PropagatesAppError(t *testing.T) {
+// TestResyncES_Handler_PropagatesBusinessError verifies an errorx business
+// error (e.g. permission denied) is returned as HTTP 200 with {code,msg} so the
+// UI can show a clear message — not an opaque 500.
+func TestResyncES_Handler_PropagatesBusinessError(t *testing.T) {
+	fake := &fakeResyncInvoker{
+		err: errorx.New(errno.ErrSpacePermissionCode,
+			errorx.KV("msg", "only the space owner can resync ES")),
+	}
+	restore := installFake(fake)
+	defer restore()
+
+	h := newTestServer()
+
+	body := []byte(`{"space_id":"100"}`)
+	w := ut.PerformRequest(h.Engine, "POST", "/api/space/resync_es",
+		&ut.Body{Body: bytes.NewBuffer(body), Len: len(body)},
+		ut.Header{Key: "Content-Type", Value: "application/json"})
+	res := w.Result()
+
+	assert.Equal(t, http.StatusOK, res.StatusCode())
+	assert.True(t, fake.called, "application SVC must have been invoked")
+	require.NotNil(t, fake.gotReq, "gotReq must not be nil")
+	assert.Equal(t, int64(100), fake.gotReq.SpaceID)
+	bodyStr := string(res.Body())
+	assert.Contains(t, bodyStr, "112000001", "body should carry the business code, got %q", bodyStr)
+	assert.Contains(t, bodyStr, "only the space owner", "body should surface the clear message, got %q", bodyStr)
+}
+
+// TestResyncES_Handler_PlainErrorNotLeaked verifies a non-errorx internal error
+// returns a generic 500 without leaking internal details to the client.
+func TestResyncES_Handler_PlainErrorNotLeaked(t *testing.T) {
 	fake := &fakeResyncInvoker{
 		err: errors.New("es cluster down"),
 	}
@@ -101,11 +133,8 @@ func TestResyncES_Handler_PropagatesAppError(t *testing.T) {
 	res := w.Result()
 
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode())
-	assert.True(t, fake.called, "application SVC must have been invoked")
-	require.NotNil(t, fake.gotReq, "gotReq must not be nil")
-	assert.Equal(t, int64(100), fake.gotReq.SpaceID)
-	assert.True(t, strings.Contains(string(res.Body()), "es cluster down"),
-		"500 body should surface the app-layer error message, got %q", string(res.Body()))
+	assert.False(t, strings.Contains(string(res.Body()), "es cluster down"),
+		"internal error detail must not leak to client, got %q", string(res.Body()))
 }
 
 // TestResyncES_Handler_HappyPath verifies 200 + counts JSON when the app SVC

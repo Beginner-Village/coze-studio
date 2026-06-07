@@ -22,6 +22,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
+	"github.com/ynet-dev/ynet-studio/backend/api/internal/httputil"
 	diagmodel "github.com/ynet-dev/ynet-studio/backend/api/model/data/space"
 	spaceApp "github.com/ynet-dev/ynet-studio/backend/application/space"
 )
@@ -61,7 +62,7 @@ func Diagnose(ctx context.Context, c *app.RequestContext) {
 
 	resp, err := svc.Diagnose(ctx, &req)
 	if err != nil {
-		c.String(consts.StatusInternalServerError, err.Error())
+		httputil.InternalError(ctx, c, err)
 		return
 	}
 
