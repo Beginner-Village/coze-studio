@@ -373,13 +373,18 @@ export function createEvaluator(
   return post(`${EVALUATION_BASE}/evaluators`, req);
 }
 
-export function getEvaluator(req: {
+export async function getEvaluator(req: {
   evaluator_id: string;
   space_id: string;
 }): Promise<GetEvaluatorResp> {
-  return post(`${EVALUATION_BASE}/evaluators/${req.evaluator_id}`, {
-    workspace_id: req.space_id,
-  });
+  const resp = await post<{ evaluators?: Evaluator[] }>(
+    `${EVALUATION_BASE}/evaluators/batch_get`,
+    {
+      workspace_id: req.space_id,
+      evaluator_ids: [req.evaluator_id],
+    },
+  );
+  return { evaluator: resp.evaluators?.[0] };
 }
 
 export function runEvaluator(req: RunEvaluatorReq): Promise<RunEvaluatorResp> {
