@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* eslint-disable max-lines -- single cohesive Loop eval/observability API client */
 
 const EVALUATION_BASE = '/loop/api/evaluation/v1';
 const OBSERVABILITY_BASE = '/loop/api/observability/v1';
@@ -131,11 +132,30 @@ export interface EvaluatorInputData {
   ext?: Record<string, string>;
 }
 
+export interface EvaluatorRunError {
+  code?: number;
+  message?: string;
+}
+
+export interface EvaluatorResult {
+  score?: number;
+  reasoning?: string;
+  correction?: unknown;
+}
+
+export interface EvaluatorOutputData {
+  evaluator_result?: EvaluatorResult;
+  evaluator_run_error?: EvaluatorRunError;
+  evaluator_usage?: Record<string, unknown>;
+  time_consuming_ms?: number;
+  stdout?: string;
+}
+
 export interface EvaluatorRecord {
   id?: string;
   evaluator_version_id?: string;
   status?: string | number;
-  evaluator_output_data?: unknown;
+  evaluator_output_data?: EvaluatorOutputData;
   ext?: Record<string, string>;
 }
 
@@ -299,6 +319,93 @@ export async function mGetUserBasicInfo(
     map[String(u.user_id)] = u;
   }
   return map;
+}
+
+// Loop's evaluator_type is an int enum (Prompt/LLM=1, Code=2, CustomRPC=3,
+// Agent=4). Evaluator objects carry it as a string or number depending on the
+// source endpoint, so normalize to the numeric enum the debug APIs require.
+export function normalizeEvaluatorType(type?: string | number): number {
+  if (typeof type === 'number') {
+    return type;
+  }
+  const normalized = String(type ?? '').toLowerCase();
+  if (normalized === '2' || normalized.includes('code')) {
+    return 2;
+  }
+  if (normalized === '3' || normalized.includes('rpc')) {
+    return 3;
+  }
+  if (normalized === '4' || normalized.includes('agent')) {
+    return 4;
+  }
+  // Default to Prompt/LLM (1) for prompt/llm or unknown types.
+  return 1;
+}
+
+function isContentObject(value: unknown): value is Content {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    'content_type' in (value as Record<string, unknown>)
+  );
+}
+
+// Loop expects every input field value to be a Content object
+// ({content_type:"Text", text:"..."}). Users type plain strings in the debug
+// modals, so wrap raw values here; pass through values already in Content shape.
+function toContent(value: unknown): Content {
+  if (isContentObject(value)) {
+    return value;
+  }
+  const text = typeof value === 'string' ? value : JSON.stringify(value ?? '');
+  return { content_type: 'Text', text };
+}
+
+function toContentMap(
+  fields?: Record<string, unknown>,
+): Record<string, Content> | undefined {
+  if (!fields || typeof fields !== 'object') {
+    return undefined;
+  }
+  const out: Record<string, Content> = {};
+  for (const [key, value] of Object.entries(fields)) {
+    out[key] = toContent(value);
+  }
+  return out;
+}
+
+// Accepts the loosely-typed input_data a user supplies in the debug modals and
+// normalizes every *_fields map into Content objects before it hits Loop.
+export function normalizeInputData(
+  raw: Record<string, unknown>,
+): EvaluatorInputData {
+  const result: EvaluatorInputData = {};
+  const inputFields = toContentMap(
+    raw.input_fields as Record<string, unknown> | undefined,
+  );
+  if (inputFields) {
+    result.input_fields = inputFields;
+  }
+  const datasetFields = toContentMap(
+    raw.evaluate_dataset_fields as Record<string, unknown> | undefined,
+  );
+  if (datasetFields) {
+    result.evaluate_dataset_fields = datasetFields;
+  }
+  const targetFields = toContentMap(
+    raw.evaluate_target_output_fields as Record<string, unknown> | undefined,
+  );
+  if (targetFields) {
+    result.evaluate_target_output_fields = targetFields;
+  }
+  if (Array.isArray(raw.history_messages)) {
+    result.history_messages = raw.history_messages as Message[];
+  }
+  if (raw.ext && typeof raw.ext === 'object') {
+    result.ext = raw.ext as Record<string, string>;
+  }
+  return result;
 }
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
@@ -467,35 +574,21 @@ export function exportTracesToDataset(
 // response shapes are not yet locked down in a shared IDL, so they use loose
 // types; tighten once the backend contract is published. TODO: align with IDL.
 
-export interface BatchDebugEvaluatorItem {
-  // One evaluation input row for batch debugging a prompt evaluator.
-  input_data?: EvaluatorInputData;
-  // Optional identifier so callers can map a result back to its input row.
-  id?: string;
-}
-
+// Loop's BatchDebugEvaluator contract: it debugs an evaluator *definition*
+// (evaluator_content + evaluator_type), not a saved version id, and takes a
+// flat array of input_data rows whose field values are Content objects.
 export interface BatchDebugEvaluatorsReq {
   workspace_id: string;
-  // Version under debug; mirrors RunEvaluatorReq.evaluator_version_id.
-  evaluator_version_id?: string;
-  // Inline evaluator definition for not-yet-saved prompt evaluators.
-  evaluator?: Evaluator;
-  items: BatchDebugEvaluatorItem[];
+  evaluator_content: EvaluatorContent;
+  // EvaluatorType enum (Prompt/LLM=1, Code=2, CustomRPC=3, Agent=4).
+  evaluator_type: number;
+  input_data: EvaluatorInputData[];
 }
 
-export interface BatchDebugEvaluatorResultItem {
-  id?: string;
-  // Mirrors RunEvaluatorResp.record; loose because batch shape is unconfirmed.
-  record?: EvaluatorRecord;
-  status?: string | number;
-  // TODO: confirm error field name once backend contract is published.
-  error?: string;
-}
-
+// Each row maps positionally to the corresponding input_data row. A row carries
+// either an evaluator_result (score/reasoning) or an evaluator_run_error.
 export interface BatchDebugEvaluatorsResp {
-  results?: BatchDebugEvaluatorResultItem[];
-  // Backends sometimes nest the list under `records`; keep both available.
-  records?: EvaluatorRecord[];
+  evaluator_output_data?: EvaluatorOutputData[];
 }
 
 export function batchDebugEvaluators(

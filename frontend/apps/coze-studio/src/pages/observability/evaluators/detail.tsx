@@ -32,9 +32,12 @@ import {
 import {
   batchDebugEvaluators,
   getEvaluator,
+  normalizeEvaluatorType,
+  normalizeInputData,
   runEvaluator,
   type Evaluator,
   type EvaluatorInputData,
+  type EvaluatorOutputData,
   type LoopUser,
 } from '../loop-eval-api';
 
@@ -115,7 +118,8 @@ function parseInputData(value: string): EvaluatorInputData {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('请输入 JSON Object');
   }
-  return parsed as EvaluatorInputData;
+  // Wrap raw string field values into Loop Content objects before sending.
+  return normalizeInputData(parsed as Record<string, unknown>);
 }
 
 function parseBatchInputData(value: string): EvaluatorInputData[] {
@@ -127,8 +131,36 @@ function parseBatchInputData(value: string): EvaluatorInputData[] {
     if (!item || typeof item !== 'object' || Array.isArray(item)) {
       throw new Error(`第 ${index + 1} 项必须是 JSON Object`);
     }
-    return item as EvaluatorInputData;
+    return normalizeInputData(item as Record<string, unknown>);
   });
+}
+
+function formatOutputData(data?: EvaluatorOutputData): string {
+  if (!data) {
+    return '无输出';
+  }
+  if (data.evaluator_run_error) {
+    const { code, message } = data.evaluator_run_error;
+    return `运行错误${code ? ` [${code}]` : ''}: ${message || '未知错误'}`;
+  }
+  const result = data.evaluator_result;
+  if (result) {
+    const parts: string[] = [];
+    if (result.score !== undefined) {
+      parts.push(`得分: ${result.score}`);
+    }
+    if (result.reasoning) {
+      parts.push(`理由: ${result.reasoning}`);
+    }
+    if (parts.length) {
+      return parts.join('\n');
+    }
+  }
+  try {
+    return JSON.stringify(data, null, 2);
+  } catch {
+    return String(data);
+  }
 }
 
 const Page: React.FC = () => {
@@ -145,7 +177,9 @@ const Page: React.FC = () => {
   const [runResult, setRunResult] = useState<unknown>(null);
   const [batchVisible, setBatchVisible] = useState(false);
   const [batchRunning, setBatchRunning] = useState(false);
-  const [batchResult, setBatchResult] = useState<unknown>(null);
+  const [batchResult, setBatchResult] = useState<EvaluatorOutputData[] | null>(
+    null,
+  );
 
   const fetchDetail = useCallback(async () => {
     if (!spaceId || !evaluatorId) {
@@ -187,8 +221,15 @@ const Page: React.FC = () => {
         evaluator_version_id: evaluatorVersionId,
         input_data: parseInputData(values.input_data),
       });
-      setRunResult(res.record || res);
-      Toast.success('运行完成');
+      const outputData = res.record?.evaluator_output_data;
+      setRunResult(
+        outputData ? formatOutputData(outputData) : res.record || res,
+      );
+      if (outputData?.evaluator_run_error) {
+        Toast.warning('运行返回错误');
+      } else {
+        Toast.success('运行完成');
+      }
     } catch (err: unknown) {
       Toast.error(getErrorMessage(err, '运行测试失败'));
     } finally {
@@ -197,9 +238,9 @@ const Page: React.FC = () => {
   };
 
   const handleBatchRun = async () => {
-    const evaluatorVersionId = evaluator?.current_version?.id;
-    if (!spaceId || !evaluatorVersionId || !batchFormApiRef.current) {
-      Toast.error('缺少评估器版本 ID');
+    const evaluatorContent = evaluator?.current_version?.evaluator_content;
+    if (!spaceId || !evaluatorContent || !batchFormApiRef.current) {
+      Toast.error('缺少评估器内容');
       return;
     }
     try {
@@ -208,13 +249,11 @@ const Page: React.FC = () => {
       setBatchRunning(true);
       const res = await batchDebugEvaluators({
         workspace_id: spaceId,
-        evaluator_version_id: evaluatorVersionId,
-        items: inputs.map((inputData, index) => ({
-          id: String(index),
-          input_data: inputData,
-        })),
+        evaluator_content: evaluatorContent,
+        evaluator_type: normalizeEvaluatorType(evaluator?.evaluator_type),
+        input_data: inputs,
       });
-      setBatchResult(res.results || res.records || res);
+      setBatchResult(res.evaluator_output_data || []);
       Toast.success('批量调试完成');
     } catch (err: unknown) {
       Toast.error(getErrorMessage(err, '批量调试失败'));
@@ -222,6 +261,29 @@ const Page: React.FC = () => {
       setBatchRunning(false);
     }
   };
+
+  // Variable names Loop expects under input_fields come from the evaluator's
+  // input_schemas; use them to prefill the debug modals so users fill the
+  // right keys (each value will be wrapped into a Content object on submit).
+  const inputSchemaKeys = (
+    evaluator?.current_version?.evaluator_content?.input_schemas || []
+  )
+    .map(s => s.key)
+    .filter((k): k is string => !!k);
+  const sampleFields: Record<string, string> = {};
+  for (const k of inputSchemaKeys) {
+    sampleFields[k] = '';
+  }
+  const singleInitValue = JSON.stringify(
+    { input_fields: sampleFields, evaluate_target_output_fields: {} },
+    null,
+    2,
+  );
+  const batchInitValue = JSON.stringify(
+    [{ input_fields: sampleFields, evaluate_target_output_fields: {} }],
+    null,
+    2,
+  );
 
   const version =
     evaluator?.current_version?.version ||
@@ -286,29 +348,22 @@ const Page: React.FC = () => {
         footer={null}
         style={{ width: 720 }}
       >
-        <Form
-          layout="vertical"
-          initValues={{
-            input_data: JSON.stringify(
-              {
-                input_fields: {},
-                evaluate_target_output_fields: {},
-              },
-              null,
-              2,
-            ),
-          }}
-          getFormApi={(api: FormApi) => {
-            formApiRef.current = api;
-          }}
-        >
-          <Form.TextArea
-            field="input_data"
-            label="Input Data"
-            rules={[{ required: true, message: '请输入 JSON' }]}
-            autosize={{ minRows: 8, maxRows: 14 }}
-          />
-        </Form>
+        <div key={`single-${inputSchemaKeys.join(',')}`}>
+          <Form
+            layout="vertical"
+            initValues={{ input_data: singleInitValue }}
+            getFormApi={(api: FormApi) => {
+              formApiRef.current = api;
+            }}
+          >
+            <Form.TextArea
+              field="input_data"
+              label="Input Data"
+              rules={[{ required: true, message: '请输入 JSON' }]}
+              autosize={{ minRows: 8, maxRows: 14 }}
+            />
+          </Form>
+        </div>
         {runResult ? (
           <pre className="rounded-[6px] border p-4 overflow-auto text-sm bg-gray-50">
             {stringify(runResult)}
@@ -331,36 +386,52 @@ const Page: React.FC = () => {
       >
         <div className="text-xs text-gray-500 mb-2">
           输入 JSON 数组，每个元素为一组 input_data，将批量调用评估器。
+          {inputSchemaKeys.length
+            ? ` 可用变量: ${inputSchemaKeys.join('、')}。`
+            : ''}
+          input_fields 的值直接填字符串即可，提交时会自动包装为 Content 对象。
         </div>
-        <Form
-          layout="vertical"
-          initValues={{
-            input_data: JSON.stringify(
-              [
-                {
-                  input_fields: {},
-                  evaluate_target_output_fields: {},
-                },
-              ],
-              null,
-              2,
-            ),
-          }}
-          getFormApi={(api: FormApi) => {
-            batchFormApiRef.current = api;
-          }}
-        >
-          <Form.TextArea
-            field="input_data"
-            label="Sample Inputs (JSON Array)"
-            rules={[{ required: true, message: '请输入 JSON 数组' }]}
-            autosize={{ minRows: 8, maxRows: 16 }}
-          />
-        </Form>
+        <div key={`batch-${inputSchemaKeys.join(',')}`}>
+          <Form
+            layout="vertical"
+            initValues={{ input_data: batchInitValue }}
+            getFormApi={(api: FormApi) => {
+              batchFormApiRef.current = api;
+            }}
+          >
+            <Form.TextArea
+              field="input_data"
+              label="Sample Inputs (JSON Array)"
+              rules={[{ required: true, message: '请输入 JSON 数组' }]}
+              autosize={{ minRows: 8, maxRows: 16 }}
+            />
+          </Form>
+        </div>
         {batchResult ? (
-          <pre className="rounded-[6px] border p-4 overflow-auto text-sm bg-gray-50">
-            {stringify(batchResult)}
-          </pre>
+          <div className="flex flex-col gap-2 mt-3">
+            {batchResult.length === 0 ? (
+              <div className="text-sm text-gray-500">无返回结果</div>
+            ) : (
+              batchResult.map((item, index) => {
+                const isError = !!item?.evaluator_run_error;
+                return (
+                  <div
+                    key={index}
+                    className={`rounded-[6px] border p-3 text-sm whitespace-pre-wrap ${
+                      isError
+                        ? 'border-red-300 bg-red-50 text-red-700'
+                        : 'bg-gray-50'
+                    }`}
+                  >
+                    <div className="text-xs text-gray-500 mb-1">
+                      第 {index + 1} 项
+                    </div>
+                    {formatOutputData(item)}
+                  </div>
+                );
+              })
+            )}
+          </div>
         ) : null}
         <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
           <Button onClick={() => setBatchVisible(false)}>取消</Button>
