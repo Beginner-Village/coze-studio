@@ -37,7 +37,7 @@ FROM alpine:3.22.0
 
 WORKDIR /app
 
-RUN apk add --no-cache pax-utils python3 python3-dev bind-tools file deno curl
+RUN apk add --no-cache pax-utils python3 python3-dev bind-tools file deno curl mysql-client
 
 RUN apk add --no-cache --virtual .python-build-deps build-base py3-pip git && \
     python3 -m venv --copies --upgrade-deps /app/.venv && \
@@ -58,6 +58,12 @@ COPY backend/infra/impl/coderunner/script/sandbox.py /app/sandbox.py
 COPY backend/conf /app/resources/conf/
 COPY docker/.env.example /app/.env
 
+# Copy DB self-heal assets (schema reference, model seed data, sync tool, entrypoint)
+COPY docker/volumes/mysql/schema.sql /app/db/schema.sql
+COPY docker/volumes/mysql/model-seed.sql /app/db/model-seed.sql
+COPY docker/schema-sync.py /app/db/schema-sync.py
+COPY docker/db-selfheal.sh /app/db-selfheal.sh
+
 # Copy frontend dist into static directory
 COPY --from=fe-builder /app/frontend/apps/coze-studio/dist /app/resources/static/
 # Copy SDK static assets (WebSDK JS etc.)
@@ -65,9 +71,11 @@ COPY backend/static/static/sdk /app/resources/static/static/sdk/
 
 ENV PATH="/app/.venv/bin:${PATH}"
 
-RUN chmod +x /app/parse_pdf.py /app/parse_docx.py && \
+RUN chmod +x /app/parse_pdf.py /app/parse_docx.py /app/db-selfheal.sh && \
     find /app/.venv/bin -type f -exec chmod +x {} \;
 
 EXPOSE 8888
 
-CMD ["/app/openynet"]
+# Entrypoint self-heals DB schema + model seed data, then exec /app/openynet.
+# Set DB_SELFHEAL=false to bypass and start the app directly.
+ENTRYPOINT ["/app/db-selfheal.sh"]
