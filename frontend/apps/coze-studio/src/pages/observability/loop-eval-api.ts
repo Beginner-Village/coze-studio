@@ -433,6 +433,10 @@ function post<T>(url: string, body: unknown): Promise<T> {
   });
 }
 
+function get<T>(url: string): Promise<T> {
+  return request<T>(url, { method: 'GET' });
+}
+
 export function listEvaluationSets(req: {
   workspace_id: string;
   page_size?: number;
@@ -451,7 +455,9 @@ export function getEvaluationSet(req: {
   workspace_id: string;
   evaluation_set_id: string;
 }): Promise<{ evaluation_set?: EvaluationSet }> {
-  return post(`${EVALUATION_BASE}/evaluation_sets`, req);
+  return get(
+    `${EVALUATION_BASE}/evaluation_sets/${req.evaluation_set_id}?workspace_id=${req.workspace_id}`,
+  );
 }
 
 export function listEvaluationSetItems(req: {

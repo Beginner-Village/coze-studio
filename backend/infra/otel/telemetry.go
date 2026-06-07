@@ -181,11 +181,9 @@ func (d *dynamicWSExporter) Shutdown(ctx context.Context) error {
 }
 
 func (d *dynamicWSExporter) extractWorkspaceID(s sdktrace.ReadOnlySpan) string {
-	// Private deployment: always use the configured Loop workspace ID
-	// to ensure spans are routed to the correct Loop workspace
-	if d.fallbackWS != "" {
-		return d.fallbackWS
-	}
+	// Prefer the real workspace carried on the span: studio sets
+	// cozeloop.workspace_id to the running space_id (agent runs and
+	// workflow/node spans), so routing honors the user's own space.
 	for _, attr := range s.Attributes() {
 		if string(attr.Key) == wsAttrKey {
 			v := attr.Value.AsString()
@@ -194,6 +192,7 @@ func (d *dynamicWSExporter) extractWorkspaceID(s sdktrace.ReadOnlySpan) string {
 			}
 		}
 	}
+	// Only fall back to the configured workspace when the span has none.
 	return d.fallbackWS
 }
 
