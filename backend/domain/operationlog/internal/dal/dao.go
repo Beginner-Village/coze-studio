@@ -90,7 +90,7 @@ func (dao *OperationLogDAO) List(ctx context.Context, f *entity.ListFilter) ([]*
 	}
 	if f.Keyword != nil && *f.Keyword != "" {
 		kw := "%" + *f.Keyword + "%"
-		q = q.Where("description LIKE ? OR resource_name LIKE ?", kw, kw)
+		q = q.Where("(description LIKE ? OR resource_name LIKE ?)", kw, kw)
 	}
 
 	var total int64

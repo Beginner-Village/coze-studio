@@ -101,17 +101,29 @@ func (s *operationLogSvc) runWorker(ctx context.Context) {
 		if len(buf) == 0 {
 			return
 		}
-		if err := s.repo.BatchCreate(ctx, buf); err != nil {
-			logs.CtxErrorf(ctx, "[operationlog] batch create failed: %v", err)
+		fctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if err := s.repo.BatchCreate(fctx, buf); err != nil {
+			logs.CtxErrorf(fctx, "[operationlog] batch create failed (%d records): %v", len(buf), err)
 		}
+		cancel()
 		buf = buf[:0]
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
-			flush()
-			return
+			for {
+				select {
+				case ev := <-s.ch:
+					buf = append(buf, ev)
+					if len(buf) >= s.cfg.BatchSize {
+						flush()
+					}
+				default:
+					flush()
+					return
+				}
+			}
 		case ev := <-s.ch:
 			buf = append(buf, ev)
 			if len(buf) >= s.cfg.BatchSize {
