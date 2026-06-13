@@ -19,6 +19,7 @@ package middleware
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -68,8 +69,12 @@ func OperationLogMW() app.HandlerFunc {
 
 		pathSegs := oplogmw.PathSegs(rule.PathPattern, path)
 
+		// Copy the response body so the audit event is not affected by buffer
+		// reuse after the handler chain returns.
+		respBody := append([]byte(nil), ctx.Response.Body()...)
+
 		ev := buildEvent(rule, method, path, *uidPtr,
-			query, bodyJSON, pathSegs, string(bodyBytes),
+			query, bodyJSON, pathSegs, string(bodyBytes), respBody,
 			ctx.Response.StatusCode(), ctx.ClientIP(),
 			int32(time.Since(start).Milliseconds()), getLogID(c),
 			time.Now().UnixMilli())
@@ -82,7 +87,7 @@ func OperationLogMW() app.HandlerFunc {
 // pure function so the assembly logic can be unit-tested without Hertz.
 func buildEvent(rule *oplogmw.RouteRule, method, path string, uid int64,
 	query map[string]string, bodyJSON map[string]any, pathSegs map[string]string,
-	rawBody string, statusCode int, clientIP string, durationMs int32,
+	rawBody string, respBody []byte, statusCode int, clientIP string, durationMs int32,
 	logID string, nowMs int64) *entity.Event {
 
 	spaceID := oplogmw.ExtractSpaceID(query, nil, bodyJSON)
@@ -93,9 +98,17 @@ func buildEvent(rule *oplogmw.RouteRule, method, path string, uid int64,
 	resourceIDStr := oplogmw.ExtractBySpec(rule.ResourceIDFrom, query, nil, bodyJSON, pathSegs)
 	resourceName := oplogmw.ExtractBySpec(rule.ResourceNameFrom, query, nil, bodyJSON, pathSegs)
 
+	// Determine success/fail. Most APIs return HTTP 200 with a business code in
+	// the response body: a non-zero top-level "code" means failure even though
+	// the HTTP status is 2xx.
 	status := entity.StatusSuccess
+	errorCode := ""
 	if statusCode >= 400 {
 		status = entity.StatusFail
+		errorCode = strconv.Itoa(statusCode)
+	} else if code, ok := extractBizCode(respBody); ok && code != 0 {
+		status = entity.StatusFail
+		errorCode = strconv.FormatInt(code, 10)
 	}
 
 	summary := redactSummary([]byte(rawBody))
@@ -113,11 +126,46 @@ func buildEvent(rule *oplogmw.RouteRule, method, path string, uid int64,
 		Path:           path,
 		RequestSummary: summary,
 		Status:         status,
+		ErrorCode:      errorCode,
 		ClientIP:       clientIP,
 		DurationMs:     durationMs,
 		LogID:          logID,
 		CreatedAt:      nowMs,
 	}
+}
+
+// extractBizCode parses respBody as a JSON object and reads the top-level "code"
+// field as an int64. Business error codes are large (9+ digits), so int64 is
+// required. The value may be a JSON number or a numeric string. Returns ok=false
+// when the body is not a JSON object or has no usable numeric "code" field; the
+// caller treats that as success so audit parsing never affects the main flow.
+func extractBizCode(respBody []byte) (code int64, ok bool) {
+	if len(respBody) == 0 {
+		return 0, false
+	}
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal(respBody, &obj); err != nil {
+		return 0, false
+	}
+	raw, exists := obj["code"]
+	if !exists {
+		return 0, false
+	}
+	// Try JSON number first.
+	var num json.Number
+	if err := json.Unmarshal(raw, &num); err == nil {
+		if i, err := num.Int64(); err == nil {
+			return i, true
+		}
+	}
+	// Try numeric string, e.g. "code":"700012345".
+	var s string
+	if err := json.Unmarshal(raw, &s); err == nil {
+		if i, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64); err == nil {
+			return i, true
+		}
+	}
+	return 0, false
 }
 
 // sensitiveKeySubstrings 是顶层 JSON key 名中若包含(不区分大小写)即需脱敏的子串。

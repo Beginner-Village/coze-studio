@@ -31,7 +31,7 @@ func TestBuildEventFields(t *testing.T) {
 	}
 	ev := buildEvent(rule, "POST", "/api/workflow_api/save", 999,
 		nil, map[string]any{"space_id": "7", "workflow_id": "55", "name": "wf1"}, nil,
-		`{"space_id":"7","workflow_id":"55","name":"wf1"}`, 200, "1.2.3.4", 12, "lg1", 1000)
+		`{"space_id":"7","workflow_id":"55","name":"wf1"}`, []byte(`{"code":0}`), 200, "1.2.3.4", 12, "lg1", 1000)
 
 	if ev.SpaceID != 7 {
 		t.Fatalf("space_id want 7, got %d", ev.SpaceID)
@@ -68,7 +68,7 @@ func TestBuildEventSpaceIDFromPath(t *testing.T) {
 	path := "/api/space/88/hi-agents/22"
 	segs := oplogmw.PathSegs(pattern, path)
 	ev := buildEvent(rule, "DELETE", path, 1,
-		nil, nil, segs, "", 200, "0.0.0.0", 1, "", 1)
+		nil, nil, segs, "", nil, 200, "0.0.0.0", 1, "", 1)
 
 	if ev.SpaceID != 88 {
 		t.Fatalf("space_id from path want 88, got %d", ev.SpaceID)
@@ -81,7 +81,7 @@ func TestBuildEventSpaceIDFromPath(t *testing.T) {
 func TestBuildEventFailStatus(t *testing.T) {
 	rule := &oplogmw.RouteRule{Module: "workflow", ResourceType: 6, Action: "create", DescTemplate: "创建了工作流"}
 	ev := buildEvent(rule, "POST", "/api/workflow_api/create", 5,
-		nil, map[string]any{}, nil, "", 500, "1.1.1.1", 3, "", 2)
+		nil, map[string]any{}, nil, "", nil, 500, "1.1.1.1", 3, "", 2)
 
 	if ev.Status != entity.StatusFail {
 		t.Fatalf("status want fail for 500, got %d", ev.Status)
@@ -91,11 +91,63 @@ func TestBuildEventFailStatus(t *testing.T) {
 	}
 }
 
+func TestBuildEventBizCodeFail(t *testing.T) {
+	rule := &oplogmw.RouteRule{Module: "workflow", ResourceType: 6, Action: "create", DescTemplate: "创建了工作流"}
+	ev := buildEvent(rule, "POST", "/api/workflow_api/create", 5,
+		nil, map[string]any{}, nil, "", []byte(`{"code": 700012345, "msg":"x"}`), 200, "1.1.1.1", 3, "", 2)
+
+	if ev.Status != entity.StatusFail {
+		t.Fatalf("status want fail for biz code != 0, got %d", ev.Status)
+	}
+	if ev.ErrorCode != "700012345" {
+		t.Fatalf("error_code want 700012345, got %q", ev.ErrorCode)
+	}
+}
+
+func TestBuildEventBizCodeSuccess(t *testing.T) {
+	rule := &oplogmw.RouteRule{Module: "workflow", ResourceType: 6, Action: "create", DescTemplate: "创建了工作流"}
+	ev := buildEvent(rule, "POST", "/api/workflow_api/create", 5,
+		nil, map[string]any{}, nil, "", []byte(`{"code":0,"data":{}}`), 200, "1.1.1.1", 3, "", 2)
+
+	if ev.Status != entity.StatusSuccess {
+		t.Fatalf("status want success for biz code 0, got %d", ev.Status)
+	}
+	if ev.ErrorCode != "" {
+		t.Fatalf("error_code want empty, got %q", ev.ErrorCode)
+	}
+}
+
+func TestBuildEventHTTPFail(t *testing.T) {
+	rule := &oplogmw.RouteRule{Module: "workflow", ResourceType: 6, Action: "create", DescTemplate: "创建了工作流"}
+	ev := buildEvent(rule, "POST", "/api/workflow_api/create", 5,
+		nil, map[string]any{}, nil, "", nil, 500, "1.1.1.1", 3, "", 2)
+
+	if ev.Status != entity.StatusFail {
+		t.Fatalf("status want fail for HTTP 500, got %d", ev.Status)
+	}
+	if ev.ErrorCode != "500" {
+		t.Fatalf("error_code want 500, got %q", ev.ErrorCode)
+	}
+}
+
+func TestBuildEventNonJSONBody(t *testing.T) {
+	rule := &oplogmw.RouteRule{Module: "workflow", ResourceType: 6, Action: "create", DescTemplate: "创建了工作流"}
+	ev := buildEvent(rule, "POST", "/api/workflow_api/create", 5,
+		nil, map[string]any{}, nil, "", []byte("not-json"), 200, "1.1.1.1", 3, "", 2)
+
+	if ev.Status != entity.StatusSuccess {
+		t.Fatalf("status want success for non-json body, got %d", ev.Status)
+	}
+	if ev.ErrorCode != "" {
+		t.Fatalf("error_code want empty for non-json body, got %q", ev.ErrorCode)
+	}
+}
+
 func TestBuildEventSummaryTruncated(t *testing.T) {
 	rule := &oplogmw.RouteRule{Module: "workflow", ResourceType: 6, Action: "create", DescTemplate: "创建了工作流"}
 	raw := strings.Repeat("x", 1000)
 	ev := buildEvent(rule, "POST", "/api/workflow_api/create", 5,
-		nil, map[string]any{}, nil, raw, 200, "1.1.1.1", 3, "", 2)
+		nil, map[string]any{}, nil, raw, nil, 200, "1.1.1.1", 3, "", 2)
 
 	if len(ev.RequestSummary) != opLogMaxSummary {
 		t.Fatalf("summary want truncated to %d, got %d", opLogMaxSummary, len(ev.RequestSummary))
