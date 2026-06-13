@@ -90,6 +90,15 @@ func TestListRejectsAnonymous(t *testing.T) {
 	}
 }
 
+func TestListReturnsErrorWhenDisabled(t *testing.T) {
+	// Feature disabled: Init never ran, so DomainSVC and userSVC are nil.
+	svc := &OperationLogApplicationService{}
+	_, _, err := svc.ListOperationLogs(context.Background(), &entity.ListFilter{SpaceID: 1})
+	if err == nil {
+		t.Fatalf("expected error when service is disabled, got nil")
+	}
+}
+
 func TestListResolvesOperatorNames(t *testing.T) {
 	svc := &OperationLogApplicationService{
 		DomainSVC: &fakeDomainSVC{records: []*entity.OperationLog{

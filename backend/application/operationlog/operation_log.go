@@ -72,6 +72,10 @@ type LogItem struct {
 // ListOperationLogs checks that the caller is a space Owner/Admin (canManage),
 // queries the log records, and batch-resolves operator display names.
 func (s *OperationLogApplicationService) ListOperationLogs(ctx context.Context, f *entity.ListFilter) ([]*LogItem, int64, error) {
+	if s == nil || s.DomainSVC == nil || s.userSVC == nil {
+		return nil, 0, errorx.New(errno.ErrOperationLogPermissionCode, errorx.KV("msg", "operation log service is disabled"))
+	}
+
 	uidPtr := ctxutil.GetUIDFromCtx(ctx)
 	if uidPtr == nil {
 		return nil, 0, errorx.New(errno.ErrOperationLogPermissionCode, errorx.KV("msg", "not logged in"))
