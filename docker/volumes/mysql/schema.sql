@@ -2961,3 +2961,29 @@ CREATE TABLE `workflow_version` (
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2025-11-18 10:23:14
+
+-- 空间级操作审计日志
+CREATE TABLE IF NOT EXISTS `operation_log` (
+  `id`              bigint unsigned NOT NULL COMMENT '主键ID',
+  `space_id`        bigint unsigned NOT NULL DEFAULT '0' COMMENT '空间ID,0=无空间',
+  `operator_id`     bigint unsigned NOT NULL DEFAULT '0' COMMENT '操作者用户ID',
+  `module`          varchar(64)  NOT NULL DEFAULT '' COMMENT '模块',
+  `resource_type`   int          NOT NULL DEFAULT '0' COMMENT '资源类型枚举',
+  `resource_id`     bigint unsigned NOT NULL DEFAULT '0' COMMENT '资源ID',
+  `resource_name`   varchar(255) NOT NULL DEFAULT '' COMMENT '资源名称',
+  `action`          varchar(32)  NOT NULL DEFAULT '' COMMENT '动作',
+  `description`     varchar(512) NOT NULL DEFAULT '' COMMENT '中文语义描述',
+  `method`          varchar(8)   NOT NULL DEFAULT '' COMMENT 'HTTP方法',
+  `path`            varchar(255) NOT NULL DEFAULT '' COMMENT '请求路径',
+  `request_summary` varchar(512) NOT NULL DEFAULT '' COMMENT '请求摘要',
+  `status`          tinyint      NOT NULL DEFAULT '1' COMMENT '1=成功 2=失败',
+  `error_code`      varchar(64)  NOT NULL DEFAULT '' COMMENT '业务错误码',
+  `client_ip`       varchar(64)  NOT NULL DEFAULT '' COMMENT '客户端IP',
+  `duration_ms`     int          NOT NULL DEFAULT '0' COMMENT '耗时毫秒',
+  `log_id`          varchar(64)  NOT NULL DEFAULT '' COMMENT '链路logID',
+  `created_at`      bigint       NOT NULL DEFAULT '0' COMMENT '创建时间(毫秒)',
+  PRIMARY KEY (`id`),
+  KEY `idx_space_created` (`space_id`, `created_at`),
+  KEY `idx_space_operator` (`space_id`, `operator_id`),
+  KEY `idx_space_restype` (`space_id`, `resource_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='空间级操作审计日志';
