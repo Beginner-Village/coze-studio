@@ -25,7 +25,7 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
 	"github.com/cloudwego/eino/schema"
-	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/eino-contrib/jsonschema"
 
 	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_common"
 	crossknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
@@ -56,11 +56,11 @@ func newKnowledgeTool(ctx context.Context, conf *knowledgeConfig) (tool.Invokabl
 	}
 
 	customTagsFn := func(name string, t reflect.Type, tag reflect.StructTag,
-		schema *openapi3.Schema,
-	) error {
+		schema *jsonschema.Schema,
+	) {
 		// Process KnowledgeIDs field only
 		if name != "KnowledgeIDs" {
-			return nil
+			return
 		}
 
 		// Build knowledge base description
@@ -69,23 +69,17 @@ func newKnowledgeTool(ctx context.Context, conf *knowledgeConfig) (tool.Invokabl
 			desc += fmt.Sprintf("- %d: %s - %s\n", k.ID, k.Name, k.Description)
 		}
 
-		schema.Type = openapi3.TypeArray
-		schema.Items = &openapi3.SchemaRef{
-			Value: &openapi3.Schema{
-				Type: openapi3.TypeInteger,
-			},
-		}
+		schema.Type = "array"
+		schema.Items = &jsonschema.Schema{Type: "integer"}
 		// Set field descriptions and enumeration values
 		schema.Description = desc
-		schema.Enum = make([]interface{}, 0, len(conf.knowledgeInfos))
+		schema.Enum = make([]any, 0, len(conf.knowledgeInfos))
 		for _, k := range conf.knowledgeInfos {
 			schema.Enum = append(schema.Enum, strconv.FormatInt(k.ID, 10))
 		}
-
-		return nil
 	}
 
-	return utils.InferTool(knowledgeToolName, knowledgeDesc, kl.Retrieve, utils.WithSchemaCustomizer(customTagsFn))
+	return utils.InferTool(knowledgeToolName, knowledgeDesc, kl.Retrieve, utils.WithSchemaModifier(customTagsFn))
 }
 
 type RetrieveRequest struct {

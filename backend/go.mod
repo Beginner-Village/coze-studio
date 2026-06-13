@@ -10,14 +10,14 @@ require (
 	github.com/IBM/sarama v1.45.1
 	github.com/apache/rocketmq-client-go/v2 v2.1.3-0.20250427084711-67ec50b93040
 	github.com/apache/thrift v0.21.0
-	github.com/bytedance/mockey v1.2.14
-	github.com/bytedance/sonic v1.14.0
-	github.com/cloudwego/eino v0.4.7
-	github.com/cloudwego/eino-ext/components/model/ark v0.1.15
-	github.com/cloudwego/eino-ext/components/model/claude v0.1.1
-	github.com/cloudwego/eino-ext/components/model/deepseek v0.0.0-20250715055739-0d0e28441a2f
-	github.com/cloudwego/eino-ext/components/model/openai v0.0.0-20250715055739-0d0e28441a2f
-	github.com/cloudwego/eino-ext/libs/acl/openai v0.0.0-20250918130948-16e3a249e721
+	github.com/bytedance/mockey v1.3.0
+	github.com/bytedance/sonic v1.15.0
+	github.com/cloudwego/eino v0.9.6
+	github.com/cloudwego/eino-ext/components/model/ark v0.1.68
+	github.com/cloudwego/eino-ext/components/model/claude v0.1.20
+	github.com/cloudwego/eino-ext/components/model/deepseek v0.1.6
+	github.com/cloudwego/eino-ext/components/model/openai v0.1.13
+	github.com/cloudwego/eino-ext/libs/acl/openai v0.1.17
 	github.com/cloudwego/hertz v0.10.0
 	github.com/elastic/go-elasticsearch/v8 v8.18.0
 	github.com/getkin/kin-openapi v0.118.0
@@ -55,19 +55,18 @@ require github.com/alicebob/miniredis/v2 v2.34.0
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.84.1
-	github.com/cloudwego/eino-ext/components/embedding/ark v0.1.0
-	github.com/cloudwego/eino-ext/components/embedding/ollama v0.0.0-20250728060543-79ec300857b8
-	github.com/cloudwego/eino-ext/components/embedding/openai v0.0.0-20250522060253-ddb617598b09
-	github.com/cloudwego/eino-ext/components/model/gemini v0.1.2
-	github.com/cloudwego/eino-ext/components/model/ollama v0.1.0
-	github.com/cloudwego/eino-ext/components/model/qwen v0.0.0-20250612061754-5a3deb091dc5
+	github.com/cloudwego/eino-ext/components/embedding/ark v0.1.2
+	github.com/cloudwego/eino-ext/components/embedding/ollama v0.0.0-20260612103359-5b10d0299532
+	github.com/cloudwego/eino-ext/components/embedding/openai v0.0.0-20260612103359-5b10d0299532
+	github.com/cloudwego/eino-ext/components/model/gemini v0.1.32
+	github.com/cloudwego/eino-ext/components/model/ollama v0.1.9
+	github.com/cloudwego/eino-ext/components/model/qwen v0.1.9
 	github.com/dimchansky/utfbom v1.1.1
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/extrame/xls v0.0.1
-	github.com/hertz-contrib/cors v0.1.0
 	github.com/jinzhu/copier v0.4.0
 	github.com/mattn/go-shellwords v1.0.12
-	github.com/meguminnnnnnnnn/go-openai v0.0.0-20250821095446-07791bea23a0
+	github.com/meguminnnnnnnnn/go-openai v0.1.2
 	github.com/nsqio/go-nsq v1.1.0
 	github.com/ollama/ollama v0.9.6
 	github.com/rbretecher/go-postman-collection v0.9.0
@@ -77,13 +76,14 @@ require (
 	github.com/yuin/goldmark v1.4.13
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.26.0
 	golang.org/x/image v0.22.0
-	golang.org/x/oauth2 v0.23.0
-	google.golang.org/genai v1.13.0
+	golang.org/x/oauth2 v0.30.0
+	google.golang.org/genai v1.36.0
 )
 
 require (
 	cloud.google.com/go v0.116.0 // indirect
 	cloud.google.com/go/auth v0.9.3 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
@@ -103,7 +103,8 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/ebitengine/purego v0.10.0 // indirect
-	github.com/eino-contrib/jsonschema v1.0.0 // indirect
+	github.com/eino-contrib/jsonschema v1.0.3 // indirect
+	github.com/eino-contrib/ollama v0.1.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -134,6 +135,7 @@ require (
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
+	google.golang.org/api v0.197.0 // indirect
 )
 
 require (
@@ -143,7 +145,7 @@ require (
 )
 
 require (
-	github.com/anthropics/anthropic-sdk-go v1.4.0 // indirect
+	github.com/anthropics/anthropic-sdk-go v1.26.0 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.6
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.11 // indirect
@@ -161,17 +163,17 @@ require (
 	github.com/aws/smithy-go v1.22.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
-	github.com/bytedance/gopkg v0.1.1
-	github.com/bytedance/sonic/loader v0.3.0 // indirect
+	github.com/bytedance/gopkg v0.1.3
+	github.com/bytedance/sonic/loader v0.5.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cilium/ebpf v0.11.0 // indirect
-	github.com/cloudwego/base64x v0.1.5 // indirect
+	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/cloudwego/netpoll v0.7.0 // indirect
 	github.com/cockroachdb/errors v1.9.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20211118104740-dabe8e521a4f // indirect
 	github.com/cockroachdb/redact v1.1.3 // indirect
-	github.com/cohesion-org/deepseek-go v1.3.2 // indirect
+	github.com/cohesion-org/deepseek-go v1.3.4 // indirect
 	github.com/containerd/cgroups/v3 v3.0.3 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
@@ -281,7 +283,7 @@ require (
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
-	github.com/volcengine/volcengine-go-sdk v1.1.20
+	github.com/volcengine/volcengine-go-sdk v1.2.30
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	github.com/xuri/efp v0.0.0-20240408161823-9ad904a10d6d // indirect

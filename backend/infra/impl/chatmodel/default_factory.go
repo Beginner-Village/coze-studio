@@ -27,7 +27,6 @@ import (
 	"github.com/cloudwego/eino-ext/components/model/ollama"
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino-ext/components/model/qwen"
-	"github.com/ollama/ollama/api"
 	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
 	"google.golang.org/genai"
 
@@ -215,7 +214,7 @@ func ollamaBuilder(ctx context.Context, config *chatmodel.Config) (chatmodel.Too
 		Model:      config.Model,
 		Format:     nil,
 		KeepAlive:  nil,
-		Options: &api.Options{
+		Options: &ollama.Options{
 			TopK:             ptr.From(config.TopK),
 			TopP:             ptr.From(config.TopP),
 			Temperature:      ptr.From(config.Temperature),
@@ -225,7 +224,7 @@ func ollamaBuilder(ctx context.Context, config *chatmodel.Config) (chatmodel.Too
 		},
 	}
 	if config.EnableThinking != nil {
-		cfg.Thinking = config.EnableThinking
+		cfg.Thinking = &ollama.ThinkValue{Value: *config.EnableThinking}
 	}
 	return ollama.NewChatModel(ctx, cfg)
 }
