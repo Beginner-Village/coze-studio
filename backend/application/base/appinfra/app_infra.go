@@ -43,8 +43,10 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/cache/redis"
+	sandboxmgr "github.com/ynet-dev/ynet-studio/backend/domain/sandbox"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/coderunner/direct"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/coderunner/sandbox"
+	sandboxdocker "github.com/ynet-dev/ynet-studio/backend/infra/impl/sandbox/docker"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/ocr/ppocr"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/ocr/veocr"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/parser/builtin"
@@ -86,6 +88,7 @@ type AppDependencies struct {
 	ParserManager         parser.Manager
 	SearchStoreManagers   []searchstore.Manager
 	Embedder              embedding.Embedder
+	SandboxManager        *sandboxmgr.Manager
 }
 
 func Init(ctx context.Context) (*AppDependencies, error) {
@@ -162,7 +165,37 @@ func Init(ctx context.Context) (*AppDependencies, error) {
 		return nil, err
 	}
 
+	deps.SandboxManager = initSandboxManager(ctx, deps)
+
 	return deps, nil
+}
+
+// initSandboxManager 构造会话级沙箱管理器并启动空闲回收器。
+// 后端由 SANDBOX_BACKEND 选择（默认 docker）；注册表用 Redis（多节点可见）；
+// workspace 持久化到对象存储。空闲阈值可经 SANDBOX_IDLE_PAUSE_SEC / SANDBOX_IDLE_KILL_SEC 覆盖。
+func initSandboxManager(ctx context.Context, deps *AppDependencies) *sandboxmgr.Manager {
+	cfg := sandboxmgr.DefaultConfig()
+	if v := os.Getenv("SANDBOX_IDLE_PAUSE_SEC"); v != "" {
+		if n, e := strconv.ParseInt(v, 10, 64); e == nil {
+			cfg.IdlePauseSec = n
+		}
+	}
+	if v := os.Getenv("SANDBOX_IDLE_KILL_SEC"); v != "" {
+		if n, e := strconv.ParseInt(v, 10, 64); e == nil {
+			cfg.IdleKillSec = n
+		}
+	}
+	if v := os.Getenv("SANDBOX_IMAGE"); v != "" {
+		cfg.Image = v
+	}
+
+	// 后端选择（当前仅 docker；CubeSandbox 后端实现同一接口后在此扩展）。
+	runner := sandboxdocker.NewRunner()
+
+	reg := sandboxmgr.NewRedisRegistry(deps.CacheCli)
+	mgr := sandboxmgr.New(runner, reg, deps.TOSClient, cfg)
+	sandboxmgr.NewReaper(mgr, time.Minute).Start(ctx)
+	return mgr
 }
 
 func initSearchStoreManagers(ctx context.Context, es es.Client, emb embedding.Embedder, db *gorm.DB) ([]searchstore.Manager, error) {
