@@ -42,6 +42,7 @@ import (
 	rerankRouter "github.com/ynet-dev/ynet-studio/backend/api/router/rerank"
 	memory_config "github.com/ynet-dev/ynet-studio/backend/api/router/memory_config"
 	modelmgr "github.com/ynet-dev/ynet-studio/backend/api/router/modelmgr"
+	operationlog "github.com/ynet-dev/ynet-studio/backend/api/router/operationlog"
 	skill "github.com/ynet-dev/ynet-studio/backend/api/router/skill"
 	space "github.com/ynet-dev/ynet-studio/backend/api/router/space"
 	statistics "github.com/ynet-dev/ynet-studio/backend/api/router/statistics"
@@ -80,6 +81,7 @@ func GeneratedRegister(r *server.Hertz) {
 	space.RegisterResync(r)
 	space.RegisterConfigureModels(r)
 	space.RegisterDiagnose(r)
+	operationlog.Register(r)
 	// space_member.Register(r) // 已经在space模块中包含了
 	template_publish.Register(r)
 	// Manually register import/export routes until IDL is regenerated

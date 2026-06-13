@@ -152,7 +152,8 @@ func startHttpServer() {
 	s.Use(middleware.AccessLogMW())
 	s.Use(middleware.OpenapiAuthMW())
 	s.Use(middleware.SessionAuthMW())
-	s.Use(middleware.I18nMW()) // must after SessionAuthMW
+	s.Use(middleware.I18nMW())         // must after SessionAuthMW
+	s.Use(middleware.OperationLogMW()) // after SessionAuthMW: needs uid in ctx
 
 	router.GeneratedRegister(s)
 	s.Spin()

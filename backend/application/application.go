@@ -19,6 +19,9 @@ package application
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/ynet-dev/ynet-studio/backend/api/handler/coze"
@@ -33,6 +36,7 @@ import (
 	apprepository "github.com/ynet-dev/ynet-studio/backend/domain/app/repository"
 	knowledgerepository "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/repository"
 	knowledgesvc "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/service"
+	oplogsvc "github.com/ynet-dev/ynet-studio/backend/domain/operationlog/service"
 	searchService "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
 	modelrepository "github.com/ynet-dev/ynet-studio/backend/domain/model/repository"
 	modelservice "github.com/ynet-dev/ynet-studio/backend/domain/model/service"
@@ -46,6 +50,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/application/memory"
 	"github.com/ynet-dev/ynet-studio/backend/application/admin"
 	"github.com/ynet-dev/ynet-studio/backend/application/modelmgr"
+	"github.com/ynet-dev/ynet-studio/backend/application/operationlog"
 	"github.com/ynet-dev/ynet-studio/backend/application/plugin"
 	"github.com/ynet-dev/ynet-studio/backend/application/prompt"
 	"github.com/ynet-dev/ynet-studio/backend/application/search"
@@ -230,7 +235,35 @@ func Init(ctx context.Context) (err error) {
 		infra.SearchStoreManagers,
 	)
 
+	// Wire space-level operation audit log: build the domain service, start its
+	// background batch-writer + retention-cleanup loops, and populate the global
+	// singleton used by OperationLogMW. The OPERATION_LOG_ENABLED=false escape
+	// hatch skips Init entirely; the middleware's Collect is a no-op until then.
+	if !strings.EqualFold(os.Getenv("OPERATION_LOG_ENABLED"), "false") {
+		operationlog.Init(
+			ctx,
+			infra.DB,
+			infra.IDGenSVC,
+			basicServices.userSVC.DomainSVC,
+			oplogsvc.Config{
+				BufferSize:    envInt("OPERATION_LOG_BUFFER_SIZE", 4096),
+				RetentionDays: envInt("OPERATION_LOG_RETENTION_DAYS", 90),
+			},
+		)
+	}
+
 	return nil
+}
+
+// envInt reads an integer environment variable, falling back to def when the
+// variable is unset or not a valid integer.
+func envInt(key string, def int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
+	}
+	return def
 }
 
 func initEventBus(infra *appinfra.AppDependencies) *eventbusImpl {
