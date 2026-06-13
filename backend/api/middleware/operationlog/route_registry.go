@@ -95,13 +95,13 @@ var rules = []RouteRule{
 	{Method: "POST", PathPattern: "/api/memory/variable/delete", Module: "variable", ResourceType: resourceTypeApp, Action: "delete", DescTemplate: "删除了变量"},
 
 	// ---- prompt（/api/playground_api，见 api/router/coze/api.go）----
-	{Method: "POST", PathPattern: "/api/playground_api/upsert_prompt_resource", Module: "prompt", ResourceType: resourceTypePrompt, Action: "update", DescTemplate: "保存了提示词", ResourceIDFrom: "body:id", ResourceNameFrom: "body:name"},
+	{Method: "POST", PathPattern: "/api/playground_api/upsert_prompt_resource", Module: "prompt", ResourceType: resourceTypePrompt, Action: "update", DescTemplate: "保存了提示词", ResourceIDFrom: "body:prompt.id", ResourceNameFrom: "body:prompt.name"},
 	{Method: "POST", PathPattern: "/api/playground_api/delete_prompt_resource", Module: "prompt", ResourceType: resourceTypePrompt, Action: "delete", DescTemplate: "删除了提示词", ResourceIDFrom: "body:prompt_resource_id"},
 
 	// ---- space member（/api/space/:space_id/members，见 api/router/space_member/space_member.go）----
 	{Method: "POST", PathPattern: "/api/space/:space_id/members", Module: "space_member", ResourceType: resourceTypeWorkspace, Action: "invite", DescTemplate: "邀请了空间成员"},
 	{Method: "DELETE", PathPattern: "/api/space/:space_id/members/:user_id", Module: "space_member", ResourceType: resourceTypeWorkspace, Action: "remove", DescTemplate: "移除了空间成员", ResourceIDFrom: "path:user_id"},
-	{Method: "PUT", PathPattern: "/api/space/:space_id/members/:user_id/role", Module: "space_member", ResourceType: resourceTypeWorkspace, Action: "update_role", DescTemplate: "修改了空间成员角色", ResourceIDFrom: "path:user_id"},
+	{Method: "PUT", PathPattern: "/api/space/:space_id/members/:user_id", Module: "space_member", ResourceType: resourceTypeWorkspace, Action: "update_role", DescTemplate: "修改了空间成员角色", ResourceIDFrom: "path:user_id"},
 
 	// ---- space（/api/space，见 api/router/space/space_management.go）----
 	{Method: "POST", PathPattern: "/api/space/create", Module: "space", ResourceType: resourceTypeWorkspace, Action: "create", DescTemplate: "创建了空间", ResourceNameFrom: "body:name"},
@@ -191,11 +191,33 @@ func ExtractBySpec(spec string, query, form map[string]string, bodyJSON map[stri
 	case "path":
 		return pathSegs[key]
 	case "body":
-		if v, ok := bodyJSON[key]; ok {
+		if v, ok := lookupBody(bodyJSON, key); ok {
 			return anyToStr(v)
 		}
 	}
 	return ""
+}
+
+// lookupBody 支持点号嵌套路径，如 "prompt.id"：按 "." 分段在嵌套
+// map[string]any 中逐层下钻，中间层必须是 map[string]any。
+func lookupBody(bodyJSON map[string]any, key string) (any, bool) {
+	if !strings.Contains(key, ".") {
+		v, ok := bodyJSON[key]
+		return v, ok
+	}
+	segs := strings.Split(key, ".")
+	var cur any = bodyJSON
+	for _, seg := range segs {
+		m, ok := cur.(map[string]any)
+		if !ok {
+			return nil, false
+		}
+		cur, ok = m[seg]
+		if !ok {
+			return nil, false
+		}
+	}
+	return cur, true
 }
 
 func splitSpec(spec string) (kind, key string, ok bool) {

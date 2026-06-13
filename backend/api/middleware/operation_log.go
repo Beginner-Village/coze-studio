@@ -98,10 +98,7 @@ func buildEvent(rule *oplogmw.RouteRule, method, path string, uid int64,
 		status = entity.StatusFail
 	}
 
-	summary := rawBody
-	if len(summary) > opLogMaxSummary {
-		summary = summary[:opLogMaxSummary]
-	}
+	summary := redactSummary([]byte(rawBody))
 
 	return &entity.Event{
 		SpaceID:        spaceID,
@@ -121,6 +118,42 @@ func buildEvent(rule *oplogmw.RouteRule, method, path string, uid int64,
 		LogID:          logID,
 		CreatedAt:      nowMs,
 	}
+}
+
+// sensitiveKeySubstrings 是顶层 JSON key 名中若包含(不区分大小写)即需脱敏的子串。
+var sensitiveKeySubstrings = []string{
+	"password", "passwd", "secret", "token", "api_key", "apikey",
+	"access_key", "private_key", "credential", "authorization",
+}
+
+// redactSummary 若 body 是 JSON 对象，则对顶层 key 名含敏感子串(不区分大小写)
+// 的值替换为 "***"，再序列化并截断到 opLogMaxSummary；否则退回原始截断逻辑。
+func redactSummary(bodyBytes []byte) string {
+	var obj map[string]any
+	if err := json.Unmarshal(bodyBytes, &obj); err != nil {
+		return truncate(string(bodyBytes))
+	}
+	for k := range obj {
+		lower := strings.ToLower(k)
+		for _, s := range sensitiveKeySubstrings {
+			if strings.Contains(lower, s) {
+				obj[k] = "***"
+				break
+			}
+		}
+	}
+	redacted, err := json.Marshal(obj)
+	if err != nil {
+		return truncate(string(bodyBytes))
+	}
+	return truncate(string(redacted))
+}
+
+func truncate(s string) string {
+	if len(s) > opLogMaxSummary {
+		return s[:opLogMaxSummary]
+	}
+	return s
 }
 
 func stripQuery(p string) string {

@@ -53,14 +53,26 @@ func TestMatchWildcard(t *testing.T) {
 }
 
 func TestMatchWildcardLength(t *testing.T) {
-	// /api/space/:space_id (PUT) vs /api/space/:space_id/members/:user_id/role (PUT)
-	r := Match("PUT", "/api/space/9/members/77/role")
-	if r == nil || r.Action != "update_role" {
+	// /api/space/:space_id (PUT) vs /api/space/:space_id/members/:user_id (PUT)
+	r := Match("PUT", "/api/space/9/members/77")
+	if r == nil || r.Action != "update_role" || r.Module != "space_member" {
 		t.Fatalf("want member update_role, got %+v", r)
 	}
 	r2 := Match("PUT", "/api/space/9")
 	if r2 == nil || r2.Action != "update" || r2.Module != "space" {
 		t.Fatalf("want space update, got %+v", r2)
+	}
+}
+
+// TestMatchMemberRouteMethodSplit 验证同 path 不同 method 分别命中 update_role / remove。
+func TestMatchMemberRouteMethodSplit(t *testing.T) {
+	put := Match("PUT", "/api/space/9/members/77")
+	if put == nil || put.Action != "update_role" || put.ResourceIDFrom != "path:user_id" {
+		t.Fatalf("PUT should hit update_role with path:user_id, got %+v", put)
+	}
+	del := Match("DELETE", "/api/space/9/members/77")
+	if del == nil || del.Action != "remove" || del.ResourceIDFrom != "path:user_id" {
+		t.Fatalf("DELETE should hit remove with path:user_id, got %+v", del)
 	}
 }
 
@@ -117,6 +129,30 @@ func TestExtractBySpecBody(t *testing.T) {
 	got = ExtractBySpec("body:workflow_id", nil, nil, map[string]any{"workflow_id": "55"}, nil)
 	if got != "55" {
 		t.Fatalf("want 55, got %q", got)
+	}
+}
+
+func TestExtractBySpecNestedBody(t *testing.T) {
+	body := map[string]any{
+		"prompt": map[string]any{"id": "55", "name": "p1"},
+	}
+	if got := ExtractBySpec("body:prompt.id", nil, nil, body, nil); got != "55" {
+		t.Fatalf("nested id want 55, got %q", got)
+	}
+	if got := ExtractBySpec("body:prompt.name", nil, nil, body, nil); got != "p1" {
+		t.Fatalf("nested name want p1, got %q", got)
+	}
+	// 缺失的中间层 / 叶子返回空字符串
+	if got := ExtractBySpec("body:prompt.missing", nil, nil, body, nil); got != "" {
+		t.Fatalf("missing leaf want empty, got %q", got)
+	}
+	if got := ExtractBySpec("body:nope.id", nil, nil, body, nil); got != "" {
+		t.Fatalf("missing branch want empty, got %q", got)
+	}
+	// 中间层不是对象时返回空
+	flat := map[string]any{"prompt": "notobj"}
+	if got := ExtractBySpec("body:prompt.id", nil, nil, flat, nil); got != "" {
+		t.Fatalf("non-object branch want empty, got %q", got)
 	}
 }
 

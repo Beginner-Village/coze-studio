@@ -102,6 +102,45 @@ func TestBuildEventSummaryTruncated(t *testing.T) {
 	}
 }
 
+func TestRedactSummarySensitive(t *testing.T) {
+	body := `{"name":"u1","password":"hunter2","api_key":"abc","Authorization":"Bearer x","keep":"ok"}`
+	got := redactSummary([]byte(body))
+	if strings.Contains(got, "hunter2") {
+		t.Fatalf("password value should be redacted, got %q", got)
+	}
+	if strings.Contains(got, "abc") {
+		t.Fatalf("api_key value should be redacted, got %q", got)
+	}
+	if strings.Contains(got, "Bearer x") {
+		t.Fatalf("authorization value should be redacted, got %q", got)
+	}
+	if !strings.Contains(got, `"***"`) {
+		t.Fatalf("redacted marker missing, got %q", got)
+	}
+	if !strings.Contains(got, `"u1"`) || !strings.Contains(got, `"ok"`) {
+		t.Fatalf("non-sensitive values should remain, got %q", got)
+	}
+}
+
+func TestRedactSummaryNonJSONFallback(t *testing.T) {
+	raw := strings.Repeat("x", 1000)
+	got := redactSummary([]byte(raw))
+	if len(got) != opLogMaxSummary {
+		t.Fatalf("non-json body want truncated to %d, got %d", opLogMaxSummary, len(got))
+	}
+}
+
+func TestRedactSummaryPlainJSONUnchanged(t *testing.T) {
+	body := `{"name":"wf1","workflow_id":"55"}`
+	got := redactSummary([]byte(body))
+	if !strings.Contains(got, `"wf1"`) || !strings.Contains(got, `"55"`) {
+		t.Fatalf("plain body should be preserved, got %q", got)
+	}
+	if strings.Contains(got, "***") {
+		t.Fatalf("plain body should not be redacted, got %q", got)
+	}
+}
+
 func TestStripQuery(t *testing.T) {
 	if got := stripQuery("/api/x?a=1&b=2"); got != "/api/x" {
 		t.Fatalf("want /api/x, got %q", got)
