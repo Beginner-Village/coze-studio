@@ -75,6 +75,7 @@ import (
 	ynet_agent_repo "github.com/ynet-dev/ynet-studio/backend/infra/repository/ynet_agent"
 	crossmodelmgr "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/modelmgr"
 	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
+	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
 	crossskill "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/skill"
 	crossuser "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/user"
 	crossvariables "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/variables"
@@ -319,6 +320,11 @@ func initBasicServices(ctx context.Context, infra *appinfra.AppDependencies, e *
 		DB:    infra.DB,
 	})
 	crossskill.SetDefaultSVC(skillImpl.InitDomainService(skillSVC.DomainSVC))
+
+	// Wire sandbox manager for agent runtime tools (run_bash/read_file/write_file/list_files)
+	if infra.SandboxManager != nil {
+		crosssandbox.SetDefaultSVC(infra.SandboxManager)
+	}
 
 	// Initialize HiAgent repository
 	hiAgentRepo := ynet_agent_repo.NewHiAgentRepository(infra.DB)

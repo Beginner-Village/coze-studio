@@ -1,0 +1,218 @@
+/*
+ * Copyright 2025 ynet-dev Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package agentflow
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/schema"
+
+	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
+)
+
+// sandboxKeyFor 由 connector/agent/user_id 组合出稳定且容器名安全的沙箱 key。
+func sandboxKeyFor(connectorID, agentID int64, userID string) string {
+	raw := fmt.Sprintf("%d_%d_%s", connectorID, agentID, userID)
+	sum := sha256.Sum256([]byte(raw))
+	return "u" + hex.EncodeToString(sum[:])[:24]
+}
+
+// resolvePath 把相对路径归一到 /workspace 下；绝对路径原样保留。
+func resolvePath(p string) string {
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return "/workspace"
+	}
+	if strings.HasPrefix(p, "/") {
+		return p
+	}
+	return "/workspace/" + p
+}
+
+// ---- run_bash ----
+
+type runBashTool struct{ key string }
+
+type runBashRequest struct {
+	Command    string `json:"command" jsonschema:"description=The bash command to run inside the sandbox /workspace directory"`
+	TimeoutSec int    `json:"timeout_sec,omitempty" jsonschema:"description=Optional timeout in seconds (default 60)"`
+}
+
+func (t *runBashTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "run_bash",
+		Desc: "Run a bash command inside the user's persistent sandbox (working directory /workspace). Use this to execute skill scripts (e.g. `python /skills/<name>/scripts/run.py`) or arbitrary shell commands. Returns stdout, stderr and exit code.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"command":     {Type: schema.String, Desc: "The bash command to run", Required: true},
+			"timeout_sec": {Type: schema.Integer, Desc: "Optional timeout in seconds (default 60)", Required: false},
+		}),
+	}, nil
+}
+
+func (t *runBashTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req runBashRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return "", fmt.Errorf("failed to parse arguments: %w", err)
+	}
+	if strings.TrimSpace(req.Command) == "" {
+		return "Error: command is required", nil
+	}
+	res, err := svc.Exec(ctx, t.key, req.Command, req.TimeoutSec)
+	if err != nil {
+		return fmt.Sprintf("Error running command: %v", err), nil
+	}
+	return fmt.Sprintf("exit_code: %d\nstdout:\n%s\nstderr:\n%s", res.ExitCode, res.Stdout, res.Stderr), nil
+}
+
+// ---- read_file ----
+
+type readFileTool struct{ key string }
+
+type readFileRequest struct {
+	Path string `json:"path" jsonschema:"description=File path; relative paths resolve under /workspace"`
+}
+
+func (t *readFileTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "read_file",
+		Desc: "Read the contents of a file in the sandbox. Relative paths resolve under /workspace. Use for files under /skills or /workspace.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"path": {Type: schema.String, Desc: "File path to read", Required: true},
+		}),
+	}, nil
+}
+
+func (t *readFileTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req readFileRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return "", fmt.Errorf("failed to parse arguments: %w", err)
+	}
+	b, err := svc.ReadFile(ctx, t.key, resolvePath(req.Path))
+	if err != nil {
+		return fmt.Sprintf("Error reading file: %v", err), nil
+	}
+	return string(b), nil
+}
+
+// ---- write_file ----
+
+type writeFileTool struct{ key string }
+
+type writeFileRequest struct {
+	Path    string `json:"path" jsonschema:"description=File path; relative paths resolve under /workspace"`
+	Content string `json:"content" jsonschema:"description=Content to write"`
+}
+
+func (t *writeFileTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "write_file",
+		Desc: "Write (create or overwrite) a file in the sandbox. Relative paths resolve under /workspace. Parent directories are created automatically. Files under /workspace persist across sessions for the same user.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"path":    {Type: schema.String, Desc: "File path to write", Required: true},
+			"content": {Type: schema.String, Desc: "Content to write", Required: true},
+		}),
+	}, nil
+}
+
+func (t *writeFileTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req writeFileRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return "", fmt.Errorf("failed to parse arguments: %w", err)
+	}
+	if strings.TrimSpace(req.Path) == "" {
+		return "Error: path is required", nil
+	}
+	if err := svc.WriteFile(ctx, t.key, resolvePath(req.Path), []byte(req.Content)); err != nil {
+		return fmt.Sprintf("Error writing file: %v", err), nil
+	}
+	return fmt.Sprintf("Wrote %d bytes to %s", len(req.Content), resolvePath(req.Path)), nil
+}
+
+// ---- list_files ----
+
+type listFilesTool struct{ key string }
+
+type listFilesRequest struct {
+	Path string `json:"path,omitempty" jsonschema:"description=Directory path; relative paths resolve under /workspace; default /workspace"`
+}
+
+func (t *listFilesTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "list_files",
+		Desc: "List the entries of a directory in the sandbox. Relative paths resolve under /workspace; default is /workspace.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"path": {Type: schema.String, Desc: "Directory path to list", Required: false},
+		}),
+	}, nil
+}
+
+func (t *listFilesTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req listFilesRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return "", fmt.Errorf("failed to parse arguments: %w", err)
+	}
+	files, err := svc.ListFiles(ctx, t.key, resolvePath(req.Path))
+	if err != nil {
+		return fmt.Sprintf("Error listing files: %v", err), nil
+	}
+	return strings.Join(files, "\n"), nil
+}
+
+// sandboxToolsEnabled 决定是否给该 agent 挂载沙箱工具。
+// 规则：环境变量 SANDBOX_TOOLS_ENABLED=true 强制开启；否则当 agent 绑定了技能时开启。
+func sandboxToolsEnabled(skillCount int) bool {
+	if strings.EqualFold(os.Getenv("SANDBOX_TOOLS_ENABLED"), "true") {
+		return true
+	}
+	return skillCount > 0
+}
+
+// newSandboxTools 构造 4 个沙箱工具。沙箱服务未初始化时返回 nil。
+func newSandboxTools(key string) []tool.InvokableTool {
+	if crosssandbox.DefaultSVC() == nil {
+		return nil
+	}
+	return []tool.InvokableTool{
+		&runBashTool{key: key},
+		&readFileTool{key: key},
+		&writeFileTool{key: key},
+		&listFilesTool{key: key},
+	}
+}

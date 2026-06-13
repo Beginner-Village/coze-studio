@@ -225,6 +225,18 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		return a
 	})...)
 
+	// 添加沙箱工具 (run_bash/read_file/write_file/list_files)
+	if sandboxToolsEnabled(len(conf.Agent.SkillInfoList)) {
+		sandboxKey := sandboxKeyFor(conf.Identity.ConnectorID, conf.Agent.AgentID, conf.UserID)
+		sandboxTools := newSandboxTools(sandboxKey)
+		agentTools = append(agentTools, slices.Transform(sandboxTools, func(a tool.InvokableTool) tool.BaseTool {
+			return a
+		})...)
+		if len(sandboxTools) > 0 {
+			logs.CtxInfof(ctx, "[BuildAgent] Mounted %d sandbox tools (key=%s)", len(sandboxTools), sandboxKey)
+		}
+	}
+
 	// 自动绑定技能提示词中引用的工作流
 	existingWorkflowIDs := make(map[int64]struct{}, len(conf.Agent.Workflow))
 	for _, wf := range conf.Agent.Workflow {

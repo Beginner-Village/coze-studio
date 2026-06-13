@@ -1,0 +1,40 @@
+/*
+ * Copyright 2025 ynet-dev Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package sandbox
+
+import (
+	"context"
+
+	sbx "github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
+)
+
+// Manager 是给 agent 运行时用的跨域沙箱接口。
+// domain/sandbox.Manager 直接满足它。
+type Manager interface {
+	Exec(ctx context.Context, key, cmd string, timeoutSec int) (*sbx.ExecResponse, error)
+	ReadFile(ctx context.Context, key, path string) ([]byte, error)
+	WriteFile(ctx context.Context, key, path string, content []byte) error
+	ListFiles(ctx context.Context, key, path string) ([]string, error)
+}
+
+var defaultSVC Manager
+
+// DefaultSVC 返回全局沙箱管理器（未初始化时为 nil）。
+func DefaultSVC() Manager { return defaultSVC }
+
+// SetDefaultSVC 注入全局沙箱管理器。
+func SetDefaultSVC(m Manager) { defaultSVC = m }
