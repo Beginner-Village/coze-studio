@@ -114,6 +114,7 @@ const SpaceDataMaintenance = lazy(
   () => import('./pages/space-data-maintenance'),
 );
 const ObservabilityPage = lazy(() => import('./pages/observability'));
+const SpaceOperationLog = lazy(() => import('./pages/space-operation-log'));
 
 const WorkflowPage = lazy(() =>
   import('@coze-workflow/playground-adapter').then(res => ({
@@ -309,6 +310,13 @@ export const router: ReturnType<typeof createBrowserRouter> =
                   Component: SpaceDataMaintenance,
                   loader: () => ({
                     subMenuKey: SpaceSubModuleEnum.DATA_MAINTENANCE,
+                  }),
+                },
+                {
+                  path: 'operation-log',
+                  Component: SpaceOperationLog,
+                  loader: () => ({
+                    subMenuKey: SpaceSubModuleEnum.OPERATION_LOG,
                   }),
                 },
                 {

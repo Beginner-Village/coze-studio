@@ -95,6 +95,9 @@ export type {
   DiagnoseMySQLTable,
   DiagnoseESIndex,
   DiagnoseMilvusCollection,
+  OperationLogListRequest,
+  OperationLogItem,
+  OperationLogListResponse,
 } from './coze-space-api';
 export { folderApi } from './folder-api';
 export type {

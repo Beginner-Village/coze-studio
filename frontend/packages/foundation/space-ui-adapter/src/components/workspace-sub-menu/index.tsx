@@ -199,6 +199,13 @@ const createSubMenuConfig = () => {
     {
       icon: <IconCozAnalytics />,
       activeIcon: <IconCozAnalytics />,
+      title: () => I18n.t('navigation_workspace_operation_log', {}, '操作日志'),
+      path: SpaceSubModuleEnum.OPERATION_LOG,
+      dataTestId: 'navigation_workspace_operation_log',
+    },
+    {
+      icon: <IconCozAnalytics />,
+      activeIcon: <IconCozAnalytics />,
       title: () => '可观测性',
       path: SpaceSubModuleEnum.OBSERVABILITY,
       dataTestId: 'navigation_workspace_observability',

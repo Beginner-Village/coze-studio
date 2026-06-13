@@ -148,6 +148,45 @@ export interface DiagnoseResponse {
   data: DiagnoseData | null;
 }
 
+// 空间级操作审计日志查询接口（非 IDL 生成，走 /api/operation_log/*）。
+//
+// 后端 backend/api/model/data/operationlog/operation_log.go 的 id 字段
+// 均以 JSON 字符串形式传输（json:"...,string"），避免 JS bigint 精度丢失，
+// 因此这里全部声明为 string。
+export interface OperationLogListRequest {
+  space_id: string; // 数字字符串
+  operator_id?: string;
+  resource_type?: number;
+  action?: string;
+  start_time?: number; // 毫秒
+  end_time?: number; // 毫秒
+  keyword?: string;
+  page: number;
+  page_size: number;
+}
+
+export interface OperationLogItem {
+  id: string;
+  operator_id: string;
+  operator_name: string;
+  module: string;
+  resource_type: number;
+  resource_id: string;
+  resource_name: string;
+  action: string;
+  description: string;
+  status: number; // 1=成功 2=失败
+  client_ip: string;
+  created_at: number; // 毫秒
+}
+
+export interface OperationLogListResponse {
+  code: number;
+  msg: string;
+  logs: OperationLogItem[] | null;
+  total: number;
+}
+
 class SpaceApiService {
   /**
    * Re-sync all ES indices for the given space from MySQL.
@@ -208,6 +247,23 @@ class SpaceApiService {
     config?: BotAPIRequestConfig,
   ): Promise<DiagnoseResponse> {
     return await axiosInstance.post('/api/space/diagnose', data, {
+      headers: { 'Agw-Js-Conv': 'str' },
+      ...config,
+    });
+  }
+
+  /**
+   * Query the space-level operation audit log.
+   *
+   * Owner/Admin only — backend returns a permission business error
+   * (code 112100001) for regular members. Supports filtering by
+   * operator / resource_type / action / time-range / keyword, paged.
+   */
+  async listOperationLog(
+    data: OperationLogListRequest,
+    config?: BotAPIRequestConfig,
+  ): Promise<OperationLogListResponse> {
+    return await axiosInstance.post('/api/operation_log/list', data, {
       headers: { 'Agw-Js-Conv': 'str' },
       ...config,
     });

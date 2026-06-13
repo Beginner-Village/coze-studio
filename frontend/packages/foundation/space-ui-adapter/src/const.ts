@@ -32,4 +32,5 @@ export enum SpaceSubModuleEnum {
   OBSERVABILITY_EXPERIMENTS = 'observability/experiments',
   SKILLS = 'skills',
   BATCH_TEST = 'batch-test',
+  OPERATION_LOG = 'operation-log',
 }
