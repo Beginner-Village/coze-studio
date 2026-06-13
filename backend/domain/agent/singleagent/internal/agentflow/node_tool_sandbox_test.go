@@ -53,6 +53,16 @@ func (m *fakeSandboxMgr) ListFiles(_ context.Context, key, path string) ([]strin
 	m.lastKey, m.lastPath = key, path
 	return []string{"a.txt", "b.py"}, nil
 }
+func (m *fakeSandboxMgr) SyncSkill(_ context.Context, key, name string, files map[string][]byte) error {
+	m.lastKey = key
+	if m.files == nil {
+		m.files = map[string][]byte{}
+	}
+	for rel, c := range files {
+		m.files["/skills/"+name+"/"+rel] = c
+	}
+	return nil
+}
 
 func TestSandboxKeyStableAndSafe(t *testing.T) {
 	k1 := sandboxKeyFor(1, 2, "user@x")

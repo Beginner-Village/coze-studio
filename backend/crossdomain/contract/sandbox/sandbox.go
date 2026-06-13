@@ -29,6 +29,8 @@ type Manager interface {
 	ReadFile(ctx context.Context, key, path string) ([]byte, error)
 	WriteFile(ctx context.Context, key, path string, content []byte) error
 	ListFiles(ctx context.Context, key, path string) ([]string, error)
+	// SyncSkill 把技能的脚本文件注入沙箱 /skills/<name>/，按内容 hash 去重。
+	SyncSkill(ctx context.Context, key, name string, files map[string][]byte) error
 }
 
 var defaultSVC Manager

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/cloudwego/eino/schema"
 
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
+	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
 	crossskill "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/skill"
 	"github.com/ynet-dev/ynet-studio/backend/domain/skill/entity"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
@@ -37,6 +39,7 @@ import (
 // It loads full skill instructions on demand (progressive disclosure pattern).
 type readSkillTool struct {
 	spaceID       int64
+	sandboxKey    string
 	skillInfoList []*singleagent.SkillReference
 	skillCache    map[int64]*entity.Skill
 	mu            sync.Mutex
@@ -46,9 +49,10 @@ type readSkillRequest struct {
 	SkillName string `json:"skill_name" jsonschema:"description=The name of the skill to read detailed instructions for"`
 }
 
-func newReadSkillTool(spaceID int64, skillInfoList []*singleagent.SkillReference) tool.InvokableTool {
+func newReadSkillTool(spaceID int64, sandboxKey string, skillInfoList []*singleagent.SkillReference) tool.InvokableTool {
 	return &readSkillTool{
 		spaceID:       spaceID,
+		sandboxKey:    sandboxKey,
 		skillInfoList: skillInfoList,
 		skillCache:    make(map[int64]*entity.Skill),
 	}
@@ -101,10 +105,51 @@ func (t *readSkillTool) InvokableRun(ctx context.Context, argumentsInJSON string
 		return fmt.Sprintf("Error: skill '%s' has been deleted or is unavailable", req.SkillName), nil
 	}
 
-	// Resolve resource references in the prompt
-	resolvedPrompt := resolveResourceReferences(skill.Prompt)
+	// 解析技能内联脚本文件（<skill-file path="...">...</skill-file>）。
+	cleaned, files := parseSkillFiles(skill.Prompt)
 
-	return fmt.Sprintf("=== Skill: %s ===\n%s", skill.Name, resolvedPrompt), nil
+	// 把脚本注入沙箱 /skills/<name>/，让模型可用 run_bash 执行（L3 可执行脚本）。
+	var injectNote string
+	if len(files) > 0 {
+		if svc := crosssandbox.DefaultSVC(); svc != nil && t.sandboxKey != "" {
+			if err := svc.SyncSkill(ctx, t.sandboxKey, skill.Name, files); err != nil {
+				logs.CtxWarnf(ctx, "[readSkillTool] inject skill files for %s failed: %v", skill.Name, err)
+			} else {
+				paths := make([]string, 0, len(files))
+				for rel := range files {
+					paths = append(paths, "/skills/"+skill.Name+"/"+rel)
+				}
+				sort.Strings(paths)
+				injectNote = fmt.Sprintf("\n\n[Sandbox] The following skill files are available; run them with run_bash:\n- %s", strings.Join(paths, "\n- "))
+			}
+		}
+	}
+
+	// Resolve resource references in the prompt
+	resolvedPrompt := resolveResourceReferences(cleaned)
+
+	return fmt.Sprintf("=== Skill: %s ===\n%s%s", skill.Name, resolvedPrompt, injectNote), nil
+}
+
+// skillFileRegex 匹配技能 Prompt 内联脚本块：<skill-file path="scripts/run.py">...</skill-file>
+var skillFileRegex = regexp.MustCompile(`(?s)<skill-file\s+path="([^"]+)"\s*>\n?(.*?)\n?</skill-file>`)
+
+// parseSkillFiles 从 prompt 抽出内联脚本文件，返回去掉文件块后的正文与 {相对路径: 内容}。
+func parseSkillFiles(prompt string) (string, map[string][]byte) {
+	matches := skillFileRegex.FindAllStringSubmatch(prompt, -1)
+	if len(matches) == 0 {
+		return prompt, nil
+	}
+	files := make(map[string][]byte, len(matches))
+	for _, mt := range matches {
+		path := strings.TrimSpace(mt[1])
+		if path == "" || strings.Contains(path, "..") || strings.HasPrefix(path, "/") {
+			continue
+		}
+		files[path] = []byte(mt[2])
+	}
+	cleaned := strings.TrimSpace(skillFileRegex.ReplaceAllString(prompt, ""))
+	return cleaned, files
 }
 
 func (t *readSkillTool) loadSkill(ctx context.Context, skillID int64) (*entity.Skill, error) {
@@ -181,9 +226,9 @@ func resolveResourceReferences(prompt string) string {
 }
 
 // newSkillTools creates the read_skill tool if skills are configured.
-func newSkillTools(spaceID int64, skillInfoList []*singleagent.SkillReference) []tool.InvokableTool {
+func newSkillTools(spaceID int64, sandboxKey string, skillInfoList []*singleagent.SkillReference) []tool.InvokableTool {
 	if len(skillInfoList) == 0 {
 		return nil
 	}
-	return []tool.InvokableTool{newReadSkillTool(spaceID, skillInfoList)}
+	return []tool.InvokableTool{newReadSkillTool(spaceID, sandboxKey, skillInfoList)}
 }

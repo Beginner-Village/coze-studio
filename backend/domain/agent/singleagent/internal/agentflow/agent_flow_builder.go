@@ -219,15 +219,17 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		return a
 	})...)
 
-	// 添加技能工具 (read_skill)
-	skillTools := newSkillTools(conf.Agent.SpaceID, conf.Agent.SkillInfoList)
+	// 沙箱 key（按 connector/agent/user_id 稳定派生），技能工具与沙箱工具共用。
+	sandboxKey := sandboxKeyFor(conf.Identity.ConnectorID, conf.Agent.AgentID, conf.UserID)
+
+	// 添加技能工具 (read_skill)，并把 sandboxKey 传入以便 L3 脚本注入。
+	skillTools := newSkillTools(conf.Agent.SpaceID, sandboxKey, conf.Agent.SkillInfoList)
 	agentTools = append(agentTools, slices.Transform(skillTools, func(a tool.InvokableTool) tool.BaseTool {
 		return a
 	})...)
 
 	// 添加沙箱工具 (run_bash/read_file/write_file/list_files)
 	if sandboxToolsEnabled(len(conf.Agent.SkillInfoList)) {
-		sandboxKey := sandboxKeyFor(conf.Identity.ConnectorID, conf.Agent.AgentID, conf.UserID)
 		sandboxTools := newSandboxTools(sandboxKey)
 		agentTools = append(agentTools, slices.Transform(sandboxTools, func(a tool.InvokableTool) tool.BaseTool {
 			return a

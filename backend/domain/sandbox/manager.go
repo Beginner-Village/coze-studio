@@ -18,7 +18,10 @@ package sandbox
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"sort"
 	"time"
 
 	"golang.org/x/sync/singleflight"
@@ -233,6 +236,52 @@ func (m *Manager) restore(ctx context.Context, key string) error {
 		return fmt.Errorf("untar workspace exit %d: %s", res.ExitCode, res.Stderr)
 	}
 	return nil
+}
+
+// SyncSkill 把技能脚本注入沙箱 /skills/<name>/，按内容 hash 去重（同版本跳过）。
+func (m *Manager) SyncSkill(ctx context.Context, key, name string, files map[string][]byte) error {
+	if err := m.EnsureSandbox(ctx, key); err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		return nil
+	}
+	base := "/skills/" + name
+	hash := hashFiles(files)
+	hashPath := base + "/.skillhash"
+	// dedup：已是同版本则跳过。
+	if cur, err := m.runner.ReadFile(ctx, &sandbox.ReadFileRequest{SandboxID: key, Path: hashPath}); err == nil {
+		if string(cur) == hash {
+			return nil
+		}
+	}
+	for rel, content := range files {
+		p := base + "/" + rel
+		if err := m.runner.WriteFile(ctx, &sandbox.WriteFileRequest{SandboxID: key, Path: p, Content: content}); err != nil {
+			return fmt.Errorf("inject skill file %s: %w", rel, err)
+		}
+	}
+	if err := m.runner.WriteFile(ctx, &sandbox.WriteFileRequest{SandboxID: key, Path: hashPath, Content: []byte(hash)}); err != nil {
+		return fmt.Errorf("write skill hash: %w", err)
+	}
+	_ = m.reg.Touch(ctx, key, m.now())
+	return nil
+}
+
+func hashFiles(files map[string][]byte) string {
+	names := make([]string, 0, len(files))
+	for n := range files {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	h := sha256.New()
+	for _, n := range names {
+		h.Write([]byte(n))
+		h.Write([]byte{0})
+		h.Write(files[n])
+		h.Write([]byte{0})
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // Pause 挂起沙箱并更新注册表。
