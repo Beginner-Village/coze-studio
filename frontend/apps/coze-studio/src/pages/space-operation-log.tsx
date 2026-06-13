@@ -41,6 +41,7 @@ const STATUS_FAIL = 2;
 // 资源类型枚举 → 中文(与后端 resource_type 对齐)
 const RESOURCE_TYPE_MAP: Record<number, string> = {
   2: '空间',
+  3: '应用/变量',
   4: '智能体',
   5: '插件',
   6: '工作流',
