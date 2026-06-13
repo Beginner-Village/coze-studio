@@ -98,8 +98,8 @@ func TestSandboxToolsInvoke(t *testing.T) {
 
 	ctx := context.Background()
 	tools := newSandboxTools("ukey")
-	if len(tools) != 4 {
-		t.Fatalf("want 4 tools, got %d", len(tools))
+	if len(tools) != 5 {
+		t.Fatalf("want 5 tools, got %d", len(tools))
 	}
 
 	// run_bash
@@ -134,6 +134,29 @@ func TestSandboxToolsInvoke(t *testing.T) {
 	out, err = lf.InvokableRun(ctx, `{"path":""}`)
 	if err != nil || !strings.Contains(out, "a.txt") || !strings.Contains(out, "b.py") {
 		t.Fatalf("list_files out=%q err=%v", out, err)
+	}
+}
+
+func TestUpdatePlanTool(t *testing.T) {
+	fm := &fakeSandboxMgr{}
+	crosssandbox.SetDefaultSVC(fm)
+	defer crosssandbox.SetDefaultSVC(nil)
+
+	up := &updatePlanTool{key: "ukey"}
+	out, err := up.InvokableRun(context.Background(),
+		`{"plan":[{"content":"read input","status":"done"},{"content":"process","status":"in_progress"},{"content":"write output","status":"pending"}]}`)
+	if err != nil {
+		t.Fatalf("update_plan err=%v", err)
+	}
+	if !strings.Contains(out, "1/3 done") {
+		t.Fatalf("progress wrong: %q", out)
+	}
+	if !strings.Contains(out, "[x] read input") || !strings.Contains(out, "[~] process") || !strings.Contains(out, "[ ] write output") {
+		t.Fatalf("render wrong: %q", out)
+	}
+	// persisted to sandbox plan file
+	if _, ok := fm.files[planFilePath]; !ok {
+		t.Fatalf("plan not persisted; files=%v", fm.files)
 	}
 }
 

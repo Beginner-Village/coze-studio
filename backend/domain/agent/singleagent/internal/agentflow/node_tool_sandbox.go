@@ -204,7 +204,79 @@ func sandboxToolsEnabled(skillCount int) bool {
 	return skillCount > 0
 }
 
-// newSandboxTools 构造 4 个沙箱工具。沙箱服务未初始化时返回 nil。
+// ---- update_plan (DeepAgents 风格的显式规划/进度追踪) ----
+
+type updatePlanTool struct{ key string }
+
+type planStep struct {
+	Content string `json:"content" jsonschema:"description=The step description"`
+	Status  string `json:"status" jsonschema:"description=One of: pending, in_progress, done"`
+}
+
+type updatePlanRequest struct {
+	Plan []planStep `json:"plan" jsonschema:"description=The full ordered list of plan steps with their current status"`
+}
+
+const planFilePath = "/workspace/.plan.json"
+
+func (t *updatePlanTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "update_plan",
+		Desc: "Maintain an explicit, ordered plan (todo list) for a complex task and track progress. Call it first to decompose the task into steps, then call it again to update step statuses as you complete them. The plan is persisted across the conversation. Each step has a status: pending, in_progress, or done.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"plan": {
+				Type:     schema.Array,
+				Desc:     "The full ordered list of plan steps (replaces the previous plan)",
+				Required: true,
+				ElemInfo: &schema.ParameterInfo{
+					Type: schema.Object,
+					SubParams: map[string]*schema.ParameterInfo{
+						"content": {Type: schema.String, Desc: "The step description", Required: true},
+						"status":  {Type: schema.String, Desc: "One of: pending, in_progress, done", Required: true},
+					},
+				},
+			},
+		}),
+	}, nil
+}
+
+func (t *updatePlanTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req updatePlanRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return "", fmt.Errorf("failed to parse arguments: %w", err)
+	}
+	if len(req.Plan) == 0 {
+		return "Error: plan must contain at least one step", nil
+	}
+	blob, _ := json.MarshalIndent(req.Plan, "", "  ")
+	if err := svc.WriteFile(ctx, t.key, planFilePath, blob); err != nil {
+		return fmt.Sprintf("Error persisting plan: %v", err), nil
+	}
+	return renderPlan(req.Plan), nil
+}
+
+func renderPlan(steps []planStep) string {
+	var b strings.Builder
+	done := 0
+	for _, s := range steps {
+		mark := "[ ]"
+		switch s.Status {
+		case "done":
+			mark = "[x]"
+			done++
+		case "in_progress":
+			mark = "[~]"
+		}
+		b.WriteString(mark + " " + s.Content + "\n")
+	}
+	return fmt.Sprintf("Plan updated (%d/%d done):\n%s", done, len(steps), b.String())
+}
+
+// newSandboxTools 构造沙箱工具。沙箱服务未初始化时返回 nil。
 func newSandboxTools(key string) []tool.InvokableTool {
 	if crosssandbox.DefaultSVC() == nil {
 		return nil
@@ -214,5 +286,6 @@ func newSandboxTools(key string) []tool.InvokableTool {
 		&readFileTool{key: key},
 		&writeFileTool{key: key},
 		&listFilesTool{key: key},
+		&updatePlanTool{key: key},
 	}
 }
