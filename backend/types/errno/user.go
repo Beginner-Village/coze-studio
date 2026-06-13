@@ -32,6 +32,7 @@ const (
 	ErrUserInvalidParamCode           = 700000006
 	ErrUserPermissionCode             = 700000007
 	ErrNotAllowedRegisterCode         = 700000008
+	ErrUserWeakPasswordCode           = 700000009
 )
 
 func init() {
@@ -80,6 +81,12 @@ func init() {
 	code.Register(
 		ErrUserAuthenticationFailed,
 		"authentication failed: {reason}",
+		code.WithAffectStability(false),
+	)
+
+	code.Register(
+		ErrUserWeakPasswordCode,
+		"password does not meet the security policy: {msg}",
 		code.WithAffectStability(false),
 	)
 }

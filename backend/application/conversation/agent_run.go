@@ -276,11 +276,11 @@ func (c *ConversationApplicationService) checkConversation(ctx context.Context, 
 			Scene:       ptr.From(ar.Scene),
 			ConnectorID: consts.CozeConnectorID,
 		})
-		logs.CtxInfof(ctx, "conversatioin data:%v", conv.DebugJsonToStr(realCurrCon))
 		if err != nil {
 			return nil, err
 		}
 		if realCurrCon != nil {
+			logs.CtxInfof(ctx, "conversation data loaded, id=%d", realCurrCon.ID)
 			conversationData = realCurrCon
 		}
 	}
@@ -296,7 +296,7 @@ func (c *ConversationApplicationService) checkConversation(ctx context.Context, 
 		if err != nil {
 			return nil, err
 		}
-		logs.CtxInfof(ctx, "conversatioin create data:%v", conv.DebugJsonToStr(conData))
+		logs.CtxInfof(ctx, "conversation created, id=%d", conData.ID)
 		conversationData = conData
 
 		ar.ConversationID = conversationData.ID

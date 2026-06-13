@@ -160,7 +160,7 @@ func (s *SpaceImporter) Preview(ctx context.Context, req *PreviewRequest) (*Prev
 	// Clean up expired tokens
 	s.cleanupExpiredTokens()
 
-	logs.CtxInfof(ctx, "Import preview completed, token=%s", token)
+	logs.CtxInfof(ctx, "Import preview completed, token length=%d", len(token))
 
 	return &PreviewResult{
 		ImportToken: token,
@@ -178,7 +178,7 @@ type ConfirmRequest struct {
 
 // Confirm executes the import operation
 func (s *SpaceImporter) Confirm(ctx context.Context, req *ConfirmRequest) (*ImportResult, error) {
-	logs.CtxInfof(ctx, "Starting import confirmation for space_id=%d, token=%s", req.SpaceID, req.ImportToken)
+	logs.CtxInfof(ctx, "Starting import confirmation for space_id=%d", req.SpaceID)
 
 	// Get pending import
 	pending, ok := s.pendingCache[req.ImportToken]

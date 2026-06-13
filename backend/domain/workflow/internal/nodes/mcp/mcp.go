@@ -77,7 +77,7 @@ func (c *McpConfig) Adapt(ctx context.Context, n *vo.Node, opts ...nodes.AdaptOp
 	if len(inputParameters) > 0 {
 		// Log all parameters for debugging
 		for i, param := range inputParameters {
-			fmt.Printf("🔧 MCP Param %d: Name='%s', Type='%v', Content='%v'\n", i, param.Name, param.Input.Type, param.Input.Value.Content)
+			fmt.Printf("🔧 MCP Param %d: Name='%s', Type='%v'\n", i, param.Name, param.Input.Type)
 		}
 
 		// Look for MCP configuration in input parameters (both hidden and visible)
@@ -362,7 +362,7 @@ func (c *McpConfig) callMcpService(ctx context.Context, requestBody map[string]i
 
 	// Log the actual request being made
 	fmt.Printf("🔧 MCP HTTP Request URL: http://10.10.10.208:8500/aop-web/MCP0014.do\n")
-	fmt.Printf("🔧 MCP HTTP Request Body: %s\n", string(jsonData))
+	fmt.Printf("🔧 MCP HTTP Request Body length: %d\n", len(jsonData))
 
 	// Create HTTP request
 	req, err := http.NewRequestWithContext(ctx, "POST", "http://10.10.10.208:8500/aop-web/MCP0014.do", strings.NewReader(string(jsonData)))
@@ -391,7 +391,7 @@ func (c *McpConfig) callMcpService(ctx context.Context, requestBody map[string]i
 	// Log the response
 	fmt.Printf("🔧 MCP HTTP Response Status: %d\n", resp.StatusCode)
 	responseData, _ := json.Marshal(result)
-	fmt.Printf("🔧 MCP HTTP Response Body: %s\n", string(responseData))
+	fmt.Printf("🔧 MCP HTTP Response Body length: %d\n", len(responseData))
 
 	// Check HTTP response status
 	if resp.StatusCode != 200 {

@@ -127,7 +127,7 @@ func (m *minioClient) test() {
 		log.Fatalf("download file failed: %v", err)
 	}
 
-	log.Printf("download file success, content: %s", string(content))
+	log.Printf("download file success, content length: %d", len(content))
 
 	err = m.DeleteObject(ctx, objectName)
 	if err != nil {

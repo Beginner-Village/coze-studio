@@ -29,7 +29,6 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
 	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/entity"
 	convEntity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/entity"
-	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 	"github.com/ynet-dev/ynet-studio/backend/types/consts"
@@ -113,7 +112,6 @@ func (a *OpenapiAgentRunApplication) collectStreamResponse(
 
 	for {
 		chunk, recvErr := streamer.Recv()
-		logs.CtxInfof(ctx, "nostream chunk:%v, err:%v", conv.DebugJsonToStr(chunk), recvErr)
 
 		if recvErr != nil {
 			if errors.Is(recvErr, io.EOF) {

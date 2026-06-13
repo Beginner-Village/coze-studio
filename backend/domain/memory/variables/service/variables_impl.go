@@ -322,11 +322,8 @@ func (v *variablesImpl) GetVariableChannelInstance(ctx context.Context, e *entit
 		return nil, err
 	}
 
-	// 添加调试日志
+	// 添加调试日志(不输出变量内容明文)
 	fmt.Printf("🔥 GetVariableChannelInstance: found %d kvInstances from DB\n", len(kvInstances))
-	for _, v := range kvInstances {
-		fmt.Printf("🔥 GetVariableChannelInstance: kvInstance keyword=%s, content=%s\n", v.Keyword, v.Content)
-	}
 
 	// 🔥 修复：支持动态创建的变量
 	// 将实例分为两类：在Meta中的和不在Meta中的（动态变量）
@@ -372,7 +369,7 @@ func (v *variablesImpl) GetVariableChannelInstance(ctx context.Context, e *entit
 				IsSystem:       meta.IsSystem(),
 				PromptDisabled: meta.PromptDisabled,
 			})
-			fmt.Printf("🔥 GetVariableChannelInstance: Added predefined variable: %s=%s\n", vv.Keyword, vv.Content)
+			fmt.Printf("🔥 GetVariableChannelInstance: Added predefined variable: %s (content len=%d)\n", vv.Keyword, len(vv.Content))
 		} else if vv, ok := dynamicVariableInstances[v]; ok {
 			// 动态创建的变量（不在Meta中定义）
 			resMemory = append(resMemory, &kvmemory.KVItem{
@@ -384,7 +381,7 @@ func (v *variablesImpl) GetVariableChannelInstance(ctx context.Context, e *entit
 				IsSystem:       false, // 动态变量不是系统变量
 				PromptDisabled: false, // 动态变量默认不禁用提示
 			})
-			fmt.Printf("🔥 GetVariableChannelInstance: Added dynamic variable: %s=%s\n", vv.Keyword, vv.Content)
+			fmt.Printf("🔥 GetVariableChannelInstance: Added dynamic variable: %s (content len=%d)\n", vv.Keyword, len(vv.Content))
 		} else if vv, ok := metaKey2Variable[v]; ok { // only in meta
 			now := time.Now()
 			resMemory = append(resMemory, &kvmemory.KVItem{
@@ -406,9 +403,6 @@ func (v *variablesImpl) GetVariableChannelInstance(ctx context.Context, e *entit
 
 	// 添加最终结果日志
 	fmt.Printf("🔥 GetVariableChannelInstance: final result count=%d\n", len(res))
-	for _, item := range res {
-		fmt.Printf("🔥 GetVariableChannelInstance: final result item: %s=%s\n", item.Keyword, item.Value)
-	}
 
 	return res, nil
 }

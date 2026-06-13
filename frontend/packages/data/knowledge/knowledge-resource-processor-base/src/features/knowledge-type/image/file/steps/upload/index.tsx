@@ -80,7 +80,7 @@ export const ImageUpload: FC<ContentProps<ImageFileAddStore>> = props => {
         style={hideUploadFile ? { visibility: 'hidden', height: 0 } : undefined}
         setUnitList={handleUnitListUpdate}
         onFinish={handleUnitListUpdate}
-        maxSizeMB={20}
+        maxSizeMB={10}
         onSizeError={file =>
           Toast.error(
             I18n.t('photo-size-limit', {

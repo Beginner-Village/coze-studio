@@ -159,8 +159,8 @@ func (r *replyChunkCallback) OnStart(ctx context.Context, info *callbacks.RunInf
 		if cbInput, ok := input.(*model.CallbackInput); ok && cbInput != nil {
 			logs.CtxInfof(ctx, "[DEBUG-ChatModel] OnStart name=%s, messages count=%d", info.Name, len(cbInput.Messages))
 			for i, msg := range cbInput.Messages {
-				logs.CtxInfof(ctx, "[DEBUG-ChatModel] Message[%d]: Role=%s, Content(len=%d)=%q, ToolCallID=%s, MultiContent=%v",
-					i, msg.Role, len(msg.Content), truncateContent(msg.Content, 200), msg.ToolCallID, msg.MultiContent)
+				logs.CtxInfof(ctx, "[DEBUG-ChatModel] Message[%d]: Role=%s, Content len=%d, ToolCallID=%s, MultiContent count=%d",
+					i, msg.Role, len(msg.Content), msg.ToolCallID, len(msg.MultiContent))
 			}
 		}
 	case compose.ComponentOfToolsNode:
@@ -485,12 +485,4 @@ func convSuggestionNodeCallbackOutput(output callbacks.CallbackInput) []*schema.
 	}
 
 	return sg
-}
-
-// truncateContent truncates content to maxLen characters for logging
-func truncateContent(content string, maxLen int) string {
-	if len(content) <= maxLen {
-		return content
-	}
-	return content[:maxLen] + "..."
 }

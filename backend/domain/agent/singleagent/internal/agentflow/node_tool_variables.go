@@ -565,7 +565,7 @@ func (a *avTool) SimpleGetMemory(ctx context.Context, req *SimpleGetMemoryReques
 		return `{"data":null}`, nil
 	}
 
-	logs.CtxInfof(ctx, "SimpleGetMemory: returning response: %s", string(jsonBytes))
+	logs.CtxInfof(ctx, "SimpleGetMemory: returning response, length=%d", len(jsonBytes))
 	return string(jsonBytes), nil
 }
 

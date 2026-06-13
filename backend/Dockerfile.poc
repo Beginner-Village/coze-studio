@@ -1,0 +1,59 @@
+# Backend-only Dockerfile for POC (split mode: frontend served by ynet-studio-web nginx).
+# Skips the fe-builder stage from backend/Dockerfile because POC doesn't need
+# the SPA dist embedded in the backend image.
+
+# Stage 1: Build Go backend
+FROM golang:1.25-alpine AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache git gcc libc-dev
+
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+
+COPY backend/ ./
+
+RUN go build -ldflags="-s -w" -o /app/openynet main.go
+
+# Stage 2: Final image
+FROM alpine:3.22.0
+
+WORKDIR /app
+
+RUN apk add --no-cache pax-utils python3 python3-dev bind-tools file deno curl
+
+RUN apk add --no-cache --virtual .python-build-deps build-base py3-pip git && \
+    python3 -m venv --copies --upgrade-deps /app/.venv && \
+    . /app/.venv/bin/activate && \
+    pip install urllib3==1.26.16 && \
+    pip install --no-cache-dir h11==0.16.0 httpx==0.28.1 pillow==11.2.1 pdfplumber==0.11.7 python-docx==1.2.0 numpy==2.3.1 && \
+    apk del .python-build-deps
+
+# Copy Go binary
+COPY --from=builder /app/openynet /app/openynet
+
+# Copy Python scripts
+COPY backend/infra/impl/document/parser/builtin/parse_pdf.py /app/parse_pdf.py
+COPY backend/infra/impl/document/parser/builtin/parse_docx.py /app/parse_docx.py
+COPY backend/infra/impl/coderunner/script/sandbox.py /app/sandbox.py
+
+# Copy conf and default .env
+COPY backend/conf /app/resources/conf/
+COPY docker/.env.example /app/.env
+
+# Empty static dir (split mode: no SPA embedding). Backend handlers that
+# reference /app/resources/static expect the directory to exist.
+RUN mkdir -p /app/resources/static
+
+# Copy SDK static assets (WebSDK JS etc.) — still needed by backend
+COPY backend/static/static/sdk /app/resources/static/static/sdk/
+
+ENV PATH="/app/.venv/bin:${PATH}"
+
+RUN chmod +x /app/parse_pdf.py /app/parse_docx.py && \
+    find /app/.venv/bin -type f -exec chmod +x {} \;
+
+EXPOSE 8888
+
+CMD ["/app/openynet"]

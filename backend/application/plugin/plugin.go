@@ -1824,6 +1824,23 @@ func (p *PluginApplicationService) GetQueriedOAuthPluginList(ctx context.Context
 	return resp, nil
 }
 
+// checkFolderSpaceEditPermission 校验当前用户是否为目标空间成员且具备编辑权限。
+// 用于 folder 写操作(创建/移动/更新/删除)的越权(IDOR)防护：folder ID 为小序号可枚举，
+// 仅校验 folder.SpaceID==req.SpaceID 不足以防止跨空间越权，必须显式校验空间成员权限。
+func (p *PluginApplicationService) checkFolderSpaceEditPermission(ctx context.Context, spaceID, userID int64) error {
+	perm, err := crossuser.DefaultSVC().CheckSpacePermission(ctx, spaceID, userID)
+	if err != nil {
+		return errorx.Wrapf(err, "CheckSpacePermission failed, spaceID=%d, userID=%d", spaceID, userID)
+	}
+	if !perm.IsMember {
+		return errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "not a member of this space"))
+	}
+	if !perm.CanEdit {
+		return errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "no permission to modify folder in this space"))
+	}
+	return nil
+}
+
 // CreateFolder 创建文件夹
 func (p *PluginApplicationService) CreateFolder(ctx context.Context, req *pluginAPI.CreateFolderRequest) (*pluginAPI.CreateFolderResponse, error) {
 	userIDPtr := ctxutil.GetUIDFromCtx(ctx)
@@ -1831,6 +1848,10 @@ func (p *PluginApplicationService) CreateFolder(ctx context.Context, req *plugin
 		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "session is required"))
 	}
 	userID := *userIDPtr
+
+	if err := p.checkFolderSpaceEditPermission(ctx, req.SpaceID, userID); err != nil {
+		return nil, err
+	}
 
 	// 验证文件夹名称
 	if req.Name == "" {
@@ -1914,6 +1935,10 @@ func (p *PluginApplicationService) MoveResourcesToFolder(ctx context.Context, re
 		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "session is required"))
 	}
 
+	if err := p.checkFolderSpaceEditPermission(ctx, req.SpaceID, *userIDPtr); err != nil {
+		return nil, err
+	}
+
 	// 转换字符串数组为int64数组
 	resourceIDs := make([]int64, 0, len(req.ResourceIDStrs))
 	for _, idStr := range req.ResourceIDStrs {
@@ -1936,9 +1961,12 @@ func (p *PluginApplicationService) MoveResourcesToFolder(ctx context.Context, re
 	}
 
 	// 验证文件夹是否存在
-	_, err := p.folderRepo.GetFolderByID(ctx, req.FolderID)
+	folder, err := p.folderRepo.GetFolderByID(ctx, req.FolderID)
 	if err != nil {
 		return nil, errorx.Wrapf(err, "folder not found")
+	}
+	if folder.SpaceID != req.SpaceID {
+		return nil, errorx.New(errno.ErrPluginPermissionCode, errorx.KV(errno.PluginMsgKey, "folder does not belong to space"))
 	}
 
 	// 移动资源到文件夹
@@ -1966,6 +1994,10 @@ func (p *PluginApplicationService) UpdateFolder(ctx context.Context, req *plugin
 		return nil, errorx.New(errno.ErrPluginInvalidParamCode, errorx.KV(errno.PluginMsgKey, "folder name is required"))
 	}
 
+	if err := p.checkFolderSpaceEditPermission(ctx, req.SpaceID, *userIDPtr); err != nil {
+		return nil, err
+	}
+
 	folder, err := p.folderRepo.GetFolderByID(ctx, req.FolderID)
 	if err != nil {
 		return nil, errorx.Wrapf(err, "folder not found")
@@ -1989,6 +2021,10 @@ func (p *PluginApplicationService) DeleteFolder(ctx context.Context, req *plugin
 	}
 	if req.FolderID <= 0 {
 		return nil, errorx.New(errno.ErrPluginInvalidParamCode, errorx.KV(errno.PluginMsgKey, "folderID is required"))
+	}
+
+	if err := p.checkFolderSpaceEditPermission(ctx, req.SpaceID, *userIDPtr); err != nil {
+		return nil, err
 	}
 
 	folder, err := p.folderRepo.GetFolderByID(ctx, req.FolderID)

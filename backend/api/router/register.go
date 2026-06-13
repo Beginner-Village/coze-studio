@@ -155,6 +155,9 @@ func cozeLoopProxyRegister(r *server.Hertz) {
 
 	httpClient := &http.Client{Timeout: 60 * time.Second}
 
+	// 可信来源白名单（逗号分隔），用于 CORS 收敛；为空时仅放行同源请求。
+	loopAllowedOrigins := parseAllowedOrigins(os.Getenv("YNET_LOOP_ALLOWED_ORIGINS"))
+
 	logs.Infof("[cozeLoopProxy] Ynet Loop proxy enabled: /loop/* -> %s", cozeLoopURL)
 
 	// Handle /loop/* - strip /loop prefix and forward to Ynet Loop
@@ -207,7 +210,7 @@ func cozeLoopProxyRegister(r *server.Hertz) {
 		resp, err := httpClient.Do(proxyReq)
 		if err != nil {
 			logs.CtxWarnf(c, "[cozeLoopProxy] request failed: %v", err)
-			ctx.JSON(502, map[string]string{"code": "502", "msg": "upstream error"})
+			writeLoopUnavailable(ctx, err)
 			return
 		}
 		defer resp.Body.Close()
@@ -216,7 +219,7 @@ func cozeLoopProxyRegister(r *server.Hertz) {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			logs.CtxWarnf(c, "[cozeLoopProxy] read response body failed: %v", err)
-			ctx.JSON(502, map[string]string{"code": "502", "msg": "read upstream error"})
+			writeLoopUnavailable(ctx, err)
 			return
 		}
 
@@ -236,15 +239,63 @@ func cozeLoopProxyRegister(r *server.Hertz) {
 			}
 		}
 
-		// Set CORS headers for iframe access
-		ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
+		// Set CORS headers for iframe access, restricted to a trusted origin whitelist
+		// instead of "*" so credentials are not exposed to arbitrary origins.
+		if origin := string(ctx.Request.Header.Peek("Origin")); origin != "" && isAllowedLoopOrigin(origin, loopAllowedOrigins, ctx) {
+			ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
+			ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+			ctx.Response.Header.Add("Vary", "Origin")
+		}
 		ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		ctx.Response.Header.Set("Access-Control-Allow-Headers", "*")
+		ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
 
 		// Set status code and rewritten body
 		ctx.SetStatusCode(resp.StatusCode)
 		ctx.Response.SetBody(body)
 	})
+}
+
+// writeLoopUnavailable 在 Ynet Loop 上游不可用时返回优雅降级响应：
+// 浏览器页面导航返回简洁的中文 HTML 提示页,API/XHR 请求返回 503 JSON。
+// 统一带上 Retry-After 提示客户端稍后重试。
+func writeLoopUnavailable(ctx *app.RequestContext, cause error) {
+	ctx.Response.Header.Set("Retry-After", "10")
+	accept := string(ctx.Request.Header.Peek("Accept"))
+	if strings.Contains(accept, "text/html") {
+		ctx.SetStatusCode(503)
+		ctx.Response.Header.Set("Content-Type", "text/html; charset=utf-8")
+		ctx.Response.SetBody([]byte(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>服务暂时不可用</title></head>` +
+			`<body style="font-family:sans-serif;text-align:center;padding:80px"><h2>可观测性服务暂时不可用</h2>` +
+			`<p>Ynet Loop 上游连接失败,请稍后重试。</p></body></html>`))
+		return
+	}
+	ctx.JSON(503, map[string]string{"code": "503", "msg": "loop upstream unavailable"})
+}
+
+// parseAllowedOrigins 解析逗号分隔的来源白名单为集合。
+func parseAllowedOrigins(raw string) map[string]struct{} {
+	set := make(map[string]struct{})
+	for _, o := range strings.Split(raw, ",") {
+		o = strings.TrimSpace(o)
+		if o != "" {
+			set[o] = struct{}{}
+		}
+	}
+	return set
+}
+
+// isAllowedLoopOrigin 判断请求 Origin 是否可信：在白名单内，或与请求自身同源。
+func isAllowedLoopOrigin(origin string, allowed map[string]struct{}, ctx *app.RequestContext) bool {
+	if _, ok := allowed[origin]; ok {
+		return true
+	}
+	// 同源放行：Origin 的 host 与请求 Host 一致（iframe 同端口嵌入场景）。
+	if u, err := url.Parse(origin); err == nil && u.Host != "" {
+		if u.Host == string(ctx.Host()) {
+			return true
+		}
+	}
+	return false
 }
 
 // rewriteCozeLoopHTML rewrites the Ynet Loop SPA HTML to work under the /loop/ subpath.

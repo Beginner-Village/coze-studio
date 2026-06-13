@@ -29,7 +29,6 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/application/openauth"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/ctxcache"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
-	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
@@ -136,7 +135,7 @@ func OpenapiAuthMW() app.HandlerFunc {
 		}
 
 		apiKeyInfo.ConnectorID = consts.APIConnectorID
-		logs.CtxInfof(ctx, "OpenapiAuthMW: apiKeyInfo=%v", conv.DebugJsonToStr(apiKeyInfo))
+		logs.CtxInfof(ctx, "OpenapiAuthMW: authenticated id=%d, userID=%d, connectorID=%d", apiKeyInfo.ID, apiKeyInfo.UserID, apiKeyInfo.ConnectorID)
 		ctxcache.Store(ctx, consts.OpenapiAuthKeyInCtx, apiKeyInfo)
 		err = openauth.OpenAuthApplication.UpdateLastUsedAt(ctx, apiKeyInfo.ID, apiKeyInfo.UserID)
 		if err != nil {

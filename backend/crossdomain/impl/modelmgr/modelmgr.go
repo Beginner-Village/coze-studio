@@ -186,17 +186,13 @@ func (m *modelManager) getHiAgentModel(ctx context.Context, params *model.LLMPar
 		return nil, nil, fmt.Errorf("failed to get external agent: %w", queryErr)
 	}
 
-	// 调试：打印从数据库读取的实际信息
-	apiKeyPreview := "nil"
+	// 调试：打印从数据库读取的非敏感信息(不输出 API Key 明文)
+	apiKeyLen := 0
 	if agentConfig.AgentKey != nil {
-		if len(*agentConfig.AgentKey) > 10 {
-			apiKeyPreview = (*agentConfig.AgentKey)[:10] + "..."
-		} else {
-			apiKeyPreview = *agentConfig.AgentKey
-		}
+		apiKeyLen = len(*agentConfig.AgentKey)
 	}
-	logs.CtxInfof(ctx, "✅ External Agent loaded from DB - id=%d, agent_id=%v, name=%s, endpoint=%s, platform=%s, api_key_preview=%s",
-		agentConfig.ID, agentConfig.AgentID, agentConfig.Name, agentConfig.AgentURL, agentConfig.Platform, apiKeyPreview)
+	logs.CtxInfof(ctx, "✅ External Agent loaded from DB - id=%d, agent_id=%v, name=%s, endpoint=%s, platform=%s, api_key_len=%d",
+		agentConfig.ID, agentConfig.AgentID, agentConfig.Name, agentConfig.AgentURL, agentConfig.Platform, apiKeyLen)
 
 	// 3. 检查外部智能体状态
 	if agentConfig.Status != 1 {

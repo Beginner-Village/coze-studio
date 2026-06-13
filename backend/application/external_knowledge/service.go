@@ -473,11 +473,13 @@ func (s *Service) Retrieval(ctx context.Context, userID string, req *external_kn
 		ragflowURL = "http://10.10.10.223"
 	}
 
-	// Get RAGFlow API key - in production, this should come from user's binding
+	// Get RAGFlow API key from environment; no hardcoded fallback for security.
 	apiKey := os.Getenv("RAGFLOW_API_KEY")
 	if apiKey == "" {
-		// Use default key for testing
-		apiKey = "Bearer ragflow-JmYzBmN2EwOGViMTExZjA4ODhhNTYxM2"
+		return nil, fmt.Errorf("RAGFLOW_API_KEY is not configured")
+	}
+	if !strings.HasPrefix(apiKey, "Bearer ") {
+		apiKey = "Bearer " + apiKey
 	}
 
 	// TODO: Get these values from bot's external_knowledge configuration

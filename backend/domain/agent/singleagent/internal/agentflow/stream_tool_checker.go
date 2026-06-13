@@ -74,8 +74,9 @@ func qwenCompatibleToolCallChecker(ctx context.Context, sr *schema.StreamReader[
 		if len(msg.Content) > 0 {
 			hasContent = true
 			contentBuilder.WriteString(msg.Content)
-			logs.CtxDebugf(ctx, "[QwenChecker] Chunk %d has content: %s", 
-				chunksChecked, msg.Content)
+			// 不打印模型输出原文，仅记录长度，避免对话内容落日志。
+			logs.CtxDebugf(ctx, "[QwenChecker] Chunk %d has content, len: %d",
+				chunksChecked, len(msg.Content))
 		}
 
 		// 如果已经有足够的内容，检查是否像是最终答案
@@ -99,8 +100,8 @@ func qwenCompatibleToolCallChecker(ctx context.Context, sr *schema.StreamReader[
 			}
 			
 			if hasToolIntent {
-				logs.CtxInfof(ctx, "[QwenChecker] Content suggests tool intent, continue checking. Content: %s", 
-					content)
+				logs.CtxInfof(ctx, "[QwenChecker] Content suggests tool intent, continue checking. content len: %d",
+					len(content))
 				continue // 继续检查更多chunks
 			}
 			
@@ -112,8 +113,8 @@ func qwenCompatibleToolCallChecker(ctx context.Context, sr *schema.StreamReader[
 			
 			for _, keyword := range answerKeywords {
 				if strings.Contains(content, keyword) {
-					logs.CtxInfof(ctx, "[QwenChecker] Content appears to be final answer, no tools needed. Content: %s", 
-						content)
+					logs.CtxInfof(ctx, "[QwenChecker] Content appears to be final answer, no tools needed. content len: %d",
+						len(content))
 					return false, nil
 				}
 			}
@@ -129,8 +130,8 @@ func qwenCompatibleToolCallChecker(ctx context.Context, sr *schema.StreamReader[
 
 	// 有内容但没有工具调用
 	// 对于Qwen模型，如果前10个chunks都没有工具调用，那很可能就是没有
-	logs.CtxInfof(ctx, "[QwenChecker] Checked %d chunks, found content but no tool calls. Content preview: %s", 
-		chunksChecked, contentBuilder.String())
+	logs.CtxInfof(ctx, "[QwenChecker] Checked %d chunks, found content but no tool calls. content len: %d",
+		chunksChecked, contentBuilder.Len())
 	
 	return false, nil
 }
@@ -192,12 +193,8 @@ func adaptiveToolCallChecker(ctx context.Context, sr *schema.StreamReader[*schem
 		return true, nil
 	}
 
-	// 如果没有检测到 tool_calls，打印内容预览用于调试
-	contentPreview := finalContent
-	if len(contentPreview) > 500 {
-		contentPreview = contentPreview[:500] + "..."
-	}
-	logs.CtxInfof(ctx, "[AdaptiveChecker] ❌ No tool calls found. Content preview: %s", contentPreview)
+	// 不打印内容预览（含模型输出原文），仅记录长度，避免对话内容落日志。
+	logs.CtxInfof(ctx, "[AdaptiveChecker] ❌ No tool calls found. content len: %d", len(finalContent))
 
 	return false, nil
 }

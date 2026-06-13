@@ -107,3 +107,22 @@ docs/*.docx
 # E2E test artifacts
 e2e/playwright-report/
 e2e/test-results/
+
+# leaked-secret dump, never commit
+poc-studio-models-dump.b64.json
+*-models-dump.b64.json
+
+# Local artifacts & tool caches (never commit)
+.codegraph/
+.codex-artifacts/
+.codex_tmp/
+artifacts/
+im_outputs/
+screenshots/
+**/__pycache__/
+.claude/launch.json
+canvas-current.json
+backend/*.png
+*.docx
+/node-shapes-loan.txt
+/recall-test-1.txt

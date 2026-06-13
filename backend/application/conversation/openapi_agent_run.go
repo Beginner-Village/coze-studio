@@ -43,7 +43,6 @@ import (
 	cmdEntity "github.com/ynet-dev/ynet-studio/backend/domain/shortcutcmd/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
 	sseImpl "github.com/ynet-dev/ynet-studio/backend/infra/impl/sse"
-	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 	"github.com/ynet-dev/ynet-studio/backend/types/consts"
@@ -342,7 +341,7 @@ func (a *OpenapiAgentRunApplication) buildMultiContent(ctx context.Context, ar *
 						Type: message.InputTypeText,
 						Text: textContent,
 					})
-					logs.CtxInfof(ctx, "Model does not support multimodal, extracted text: %s", textContent)
+					logs.CtxInfof(ctx, "Model does not support multimodal, extracted text length=%d", len(textContent))
 				}
 				continue
 			}
@@ -502,7 +501,6 @@ func (a *OpenapiAgentRunApplication) extractURIFromURL(fileURL string) (string, 
 func (a *OpenapiAgentRunApplication) pullStream(ctx context.Context, sseSender *sseImpl.SSenderImpl, streamer *schema.StreamReader[*entity.AgentRunResponse]) {
 	for {
 		chunk, recvErr := streamer.Recv()
-		logs.CtxInfof(ctx, "chunk :%v, err:%v", conv.DebugJsonToStr(chunk), recvErr)
 		if recvErr != nil {
 			if errors.Is(recvErr, io.EOF) {
 				return
@@ -536,7 +534,7 @@ func (a *OpenapiAgentRunApplication) pullStream(ctx context.Context, sseSender *
 				// 条件2：content以THINKING-开头（chatflow模式）
 				if strings.HasPrefix(chunk.ChunkMessageItem.Content, "THINKING-") {
 					shouldSkip = true
-					logs.CtxInfof(ctx, "跳过THINKING-前缀的delta消息: content=%s", chunk.ChunkMessageItem.Content)
+					logs.CtxInfof(ctx, "跳过THINKING-前缀的delta消息: content length=%d", len(chunk.ChunkMessageItem.Content))
 				}
 
 				// 条件3：content是卡片消息（chatflow模式）

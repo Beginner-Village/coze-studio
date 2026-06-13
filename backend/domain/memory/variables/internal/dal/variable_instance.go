@@ -129,10 +129,6 @@ func (v *VariablesDAO) GetVariableInstances(ctx context.Context, do *entity.User
 	}
 
 	fmt.Printf("DEBUG: GetVariableInstances found %d records\n", len(res))
-	for _, record := range res {
-		fmt.Printf("DEBUG: GetVariableInstances record: ID=%d, BizType=%d, BizID=%s, ConnectorUID=%s, ConnectorID=%s, Keyword=%s, Content=%s\n",
-			record.ID, record.BizType, record.BizID, record.ConnectorUID, record.ConnectorID, record.Keyword, record.Content)
-	}
 
 	dos := make([]*entity.VariableInstance, 0, len(res))
 	for _, vv := range res {
@@ -214,9 +210,9 @@ func (m *VariablesDAO) InsertVariableInstance(ctx context.Context, KVs []*entity
 		p := m.variableInstanceToPO(v)
 		p.ID = ids[i]
 		pos = append(pos, p)
-		// 添加调试日志
-		fmt.Printf("DEBUG: InsertVariableInstance preparing to insert: ID=%d, BizType=%d, BizID=%s, ConnectorUID=%s, ConnectorID=%s, Keyword=%s, Content=%s\n",
-			p.ID, p.BizType, p.BizID, p.ConnectorUID, p.ConnectorID, p.Keyword, p.Content)
+		// 添加调试日志(不输出变量内容明文)
+		fmt.Printf("DEBUG: InsertVariableInstance preparing to insert: ID=%d, BizType=%d, BizID=%s, ConnectorUID=%s, ConnectorID=%s, Keyword=%s, content len=%d\n",
+			p.ID, p.BizType, p.BizID, p.ConnectorUID, p.ConnectorID, p.Keyword, len(p.Content))
 	}
 
 	fmt.Printf("DEBUG: InsertVariableInstance about to call CreateInBatches with %d records\n", len(pos))

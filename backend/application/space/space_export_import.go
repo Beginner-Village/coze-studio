@@ -161,7 +161,7 @@ func (s *SpaceExportImportService) ImportConfirm(ctx context.Context, req *space
 		return nil, err
 	}
 
-	logs.CtxInfof(ctx, "ImportConfirm request: space_id=%d, user_id=%d, token=%s", req.SpaceID, userID, req.ImportToken)
+	logs.CtxInfof(ctx, "ImportConfirm request: space_id=%d, user_id=%d", req.SpaceID, userID)
 
 	// Call importer confirm
 	result, err := s.importer.Confirm(ctx, &spaceimport.ConfirmRequest{

@@ -159,7 +159,7 @@ func (s *SyncService) ImportPreview(ctx context.Context, spaceID, userID int64, 
 	s.cleanupExpiredTokens()
 	s.mu.Unlock()
 
-	logs.CtxInfof(ctx, "Sync import preview completed, token=%s, plan=%+v", token, plan)
+	logs.CtxInfof(ctx, "Sync import preview completed, token length=%d, plan=%+v", len(token), plan)
 
 	return &SyncPreviewResult{
 		ImportToken:     token,
@@ -173,7 +173,7 @@ func (s *SyncService) ImportPreview(ctx context.Context, spaceID, userID int64, 
 }
 
 func (s *SyncService) ImportConfirm(ctx context.Context, spaceID, userID int64, importToken string) (*SyncImportResult, error) {
-	logs.CtxInfof(ctx, "Starting sync import confirm for space_id=%d, token=%s", spaceID, importToken)
+	logs.CtxInfof(ctx, "Starting sync import confirm for space_id=%d", spaceID)
 
 	s.mu.Lock()
 	pending, ok := s.pendingCache[importToken]

@@ -1048,7 +1048,7 @@ func OpenAPIStreamRunFlow(ctx context.Context, c *app.RequestContext) {
 	c.SetContentType("text/event-stream; charset=utf-8")
 	c.Response.Header.Set("Cache-Control", "no-cache")
 	c.Response.Header.Set("Connection", "keep-alive")
-	c.Response.Header.Set("Access-Control-Allow-Origin", "*")
+	setSSECORSHeaders(c)
 
 	sr, err := appworkflow.SVC.OpenAPIStreamRun(ctx, &req)
 	if err != nil {
@@ -1075,7 +1075,7 @@ func OpenAPIStreamResumeFlow(ctx context.Context, c *app.RequestContext) {
 	c.SetContentType("text/event-stream; charset=utf-8")
 	c.Response.Header.Set("Cache-Control", "no-cache")
 	c.Response.Header.Set("Connection", "keep-alive")
-	c.Response.Header.Set("Access-Control-Allow-Origin", "*")
+	setSSECORSHeaders(c)
 
 	sr, err := appworkflow.SVC.OpenAPIStreamResume(ctx, &req)
 	if err != nil {
@@ -1133,7 +1133,7 @@ func OpenAPIChatFlowRun(ctx context.Context, c *app.RequestContext) {
 	c.SetContentType("text/event-stream; charset=utf-8")
 	c.Response.Header.Set("Cache-Control", "no-cache")
 	c.Response.Header.Set("Connection", "keep-alive")
-	c.Response.Header.Set("Access-Control-Allow-Origin", "*")
+	setSSECORSHeaders(c)
 
 	sr, err := appworkflow.SVC.OpenAPIChatFlowRun(ctx, &req)
 	if err != nil {

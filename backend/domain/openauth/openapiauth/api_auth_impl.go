@@ -65,8 +65,8 @@ func (a *apiAuthImpl) Delete(ctx context.Context, req *entity.DeleteApiKey) erro
 func (a *apiAuthImpl) Get(ctx context.Context, req *entity.GetApiKey) (*entity.ApiKey, error) {
 
 	apiKey, err := a.dao.Get(ctx, req.ID)
-	logs.CtxInfof(ctx, "apiKey=%v, err:%v", apiKey, err)
 	if err != nil {
+		logs.CtxInfof(ctx, "Get apiKey id=%d failed, err:%v", req.ID, err)
 		return nil, err
 	}
 	if apiKey == nil {

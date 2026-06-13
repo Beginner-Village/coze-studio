@@ -31,10 +31,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/common/adaptor"
 	"github.com/cloudwego/hertz/pkg/common/config"
-	"github.com/hertz-contrib/cors"
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -114,11 +114,33 @@ func startHttpServer() {
 		logs.Infof("metrics: /metrics endpoint enabled")
 	}
 
-	// cors option
-	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
-	config.AllowHeaders = []string{"*"}
-	corsHandler := cors.New(config)
+	// CORS: 同源请求自动放行,跨域请求按 YNET_LOOP_ALLOWED_ORIGINS 白名单放行并回显 Origin,
+	// 其余跨域请求不回 ACAO 但也不主动返回 403(交由浏览器拦截跨域读取),避免误杀同源业务请求。
+	loopAllowedOrigins := map[string]struct{}{}
+	for _, o := range strings.Split(os.Getenv("YNET_LOOP_ALLOWED_ORIGINS"), ",") {
+		if o = strings.TrimSpace(o); o != "" {
+			loopAllowedOrigins[o] = struct{}{}
+		}
+	}
+	corsHandler := func(c context.Context, ctx *app.RequestContext) {
+		// 仅对显式白名单的跨域 Origin 回显 ACAO(精确匹配 scheme+host+port,无端口/子串绕过)。
+		// 同源请求浏览器本就不校验 CORS,无需放行;非白名单跨域不回 ACAO 但也不主动 403
+		// (交由浏览器拦截跨域读取),避免误杀经反代的同源业务请求。
+		if origin := string(ctx.Request.Header.Peek("Origin")); origin != "" {
+			if _, ok := loopAllowedOrigins[origin]; ok {
+				ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
+				ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
+				ctx.Response.Header.Add("Vary", "Origin")
+				ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+				ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS")
+			}
+		}
+		if string(ctx.Method()) == "OPTIONS" {
+			ctx.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		ctx.Next(c)
+	}
 
 	// Middleware order matters
 	s.Use(observability.HTTPRequestsMiddleware()) // RED metrics, must be early

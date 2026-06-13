@@ -25,6 +25,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -119,6 +120,10 @@ func (u *userImpl) Logout(ctx context.Context, userID int64) (err error) {
 }
 
 func (u *userImpl) ResetPassword(ctx context.Context, email, password string) (err error) {
+	if err = validatePasswordStrength(password); err != nil {
+		return err
+	}
+
 	// Hashing passwords using the Argon2id algorithm
 	hashedPassword, err := hashPassword(password)
 	if err != nil {
@@ -267,6 +272,10 @@ func (u *userImpl) Create(ctx context.Context, req *CreateUserRequest) (user *us
 		if exist {
 			return nil, errorx.New(errno.ErrUserUniqueNameAlreadyExistCode, errorx.KV("name", req.UniqueName))
 		}
+	}
+
+	if err = validatePasswordStrength(req.Password); err != nil {
+		return nil, err
 	}
 
 	// Hashing passwords using the Argon2id algorithm
@@ -575,8 +584,17 @@ type Session struct {
 	ExpiresAt time.Time `json:"expires_at"` // expiration time
 }
 
-// The key used for signing (in practice you should read from the configuration or use environment variables)
-var hmacSecret = []byte("openynet-session-hmac-key")
+// The key used for signing session tokens. Loaded from the SESSION_HMAC_SECRET
+// environment variable; the process refuses to start if it is not configured.
+var hmacSecret = loadHMACSecret()
+
+func loadHMACSecret() []byte {
+	v := os.Getenv("SESSION_HMAC_SECRET")
+	if v == "" {
+		panic("环境变量 SESSION_HMAC_SECRET 未配置或为空：会话签名密钥必须显式配置，请在启动前设置 SESSION_HMAC_SECRET 后重启服务")
+	}
+	return []byte(v)
+}
 
 // Generate a secure session key
 func generateSessionKey(sessionID int64) (string, error) {
