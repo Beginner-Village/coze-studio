@@ -300,6 +300,18 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		logs.CtxInfof(ctx, "[BuildAgent] ForceToolReturn enabled, all tools return to model")
 	}
 
+	// Experimental DeepAgents engine gate (default OFF). When AGENT_ENGINE=deepagents,
+	// log that the experimental engine was requested. The DeepAgents engine is not yet
+	// wired into the streaming/interrupt flow (adk deep agents have no compose.AnyGraph
+	// to inline; see deepagents_engine.go for the blocker + TODO), so we intentionally
+	// fall back to the unchanged ReAct path here. This keeps default behavior identical
+	// and the change minimal/reversible.
+	// TODO(deepagents): once an adk.Runner-based execution path exists, branch to
+	// buildDeepAgent(ctx, conf, chatModel, agentTools) instead of building ReAct.
+	if deepAgentsEnabled() {
+		logs.CtxInfof(ctx, "[BuildAgent] AGENT_ENGINE=deepagents requested; experimental DeepAgents engine not yet wired, falling back to ReAct")
+	}
+
 	var isReActAgent bool
 	if len(agentTools) > 0 {
 		isReActAgent = true
