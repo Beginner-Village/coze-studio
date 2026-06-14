@@ -28,6 +28,7 @@ import (
 	message "github.com/ynet-dev/ynet-studio/backend/domain/conversation/message/service"
 	shortcutRepo "github.com/ynet-dev/ynet-studio/backend/domain/shortcutcmd/repository"
 	"github.com/ynet-dev/ynet-studio/backend/domain/shortcutcmd/service"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
@@ -40,6 +41,7 @@ type ServiceComponents struct {
 	TosClient storage.Storage
 	ImageX    imagex.ImageX
 	ModelMgr  modelmgr.Manager
+	Cache     cache.Cmdable
 
 	SingleAgentDomainSVC singleagent.SingleAgent
 }
@@ -59,6 +61,7 @@ func InitService(s *ServiceComponents) *ConversationApplicationService {
 	arDomainComponents := &agentrun.Components{
 		RunRecordRepo: repository.NewRunRecordRepo(s.DB, s.IDGen),
 		ImagexSVC:     s.ImageX,
+		Cache:         s.Cache,
 	}
 
 	agentRunDomainSVC := agentrun.NewService(arDomainComponents)

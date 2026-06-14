@@ -525,6 +525,7 @@ func (p *primaryServices) toConversationComponents(singleAgentSVC *singleagent.S
 		TosClient:            infra.TOSClient,
 		ImageX:               infra.ImageXClient,
 		ModelMgr:             p.basicServices.modelMgrSVC.Mgr,
+		Cache:                infra.CacheCli,
 		SingleAgentDomainSVC: singleAgentSVC.DomainSVC,
 	}
 }
