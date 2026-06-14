@@ -278,6 +278,9 @@ const agentTracerName = "github.com/ynet-dev/ynet-studio/backend/domain/conversa
 		}
 	}
 
+	// 按 token 预算裁剪历史，防止长会话撑爆上下文/成本失控（最旧优先丢弃）。
+	historySchema = trimHistoryByTokenBudget(historySchema, historyTokenBudget())
+
 	inputSchema := buildSchemaMessage(input)
 	if inputSchema == nil {
 		inputSchema = &schema.Message{
@@ -319,6 +322,59 @@ const agentTracerName = "github.com/ynet-dev/ynet-studio/backend/domain/conversa
 	 wg.Wait()
 
 	return err
+}
+
+// defaultHistoryTokenBudget 历史消息的默认 token 预算（粗估），0 表示不裁剪。
+const defaultHistoryTokenBudget = 12000
+
+// historyTokenBudget 返回历史 token 预算，可经 AGENT_HISTORY_TOKEN_BUDGET 覆盖（设 0 关闭裁剪）。
+func historyTokenBudget() int {
+	if v := os.Getenv("AGENT_HISTORY_TOKEN_BUDGET"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			return n
+		}
+	}
+	return defaultHistoryTokenBudget
+}
+
+// estimateMessageTokens 粗略估算一条 schema.Message 的 token 数（CJK 友好的保守估计：约 3 字节/token）。
+func estimateMessageTokens(m *schema.Message) int {
+	if m == nil {
+		return 0
+	}
+	n := len(m.Content)
+	for _, tc := range m.ToolCalls {
+		n += len(tc.Function.Name) + len(tc.Function.Arguments)
+	}
+	for _, mc := range m.MultiContent {
+		n += len(mc.Text)
+	}
+	return n/3 + 8 // 8: 每条消息的角色/结构开销
+}
+
+// trimHistoryByTokenBudget 按 token 预算从最旧端裁剪历史，并去掉裁剪后开头的孤立 tool 消息
+// （tool 消息必须紧跟在含 tool_calls 的 assistant 消息之后，否则部分模型 API 会报错）。
+// budget<=0 时不裁剪。history 假定为 旧->新 顺序。
+func trimHistoryByTokenBudget(history []*schema.Message, budget int) []*schema.Message {
+	if budget <= 0 || len(history) == 0 {
+		return history
+	}
+	// 从最新往最旧累加，找到能容纳的起点 start。
+	total := 0
+	start := 0
+	for i := len(history) - 1; i >= 0; i-- {
+		total += estimateMessageTokens(history[i])
+		if total > budget {
+			start = i + 1
+			break
+		}
+	}
+	trimmed := history[start:]
+	// 去掉开头孤立的 tool 消息（其对应的 assistant tool_call 可能已被裁掉）。
+	for len(trimmed) > 0 && trimmed[0].Role == schema.Tool {
+		trimmed = trimmed[1:]
+	}
+	return trimmed
 }
 
 // buildHistorySummary 将历史消息构建为可读的摘要字符串，用于 trace span 的 cozeloop.input
