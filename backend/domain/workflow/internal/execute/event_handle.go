@@ -259,7 +259,13 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 				wfID, exeID, event.Err)
 		}
 
-		errMsg := wfe.Msg()[:min(1000, len(wfe.Msg()))]
+		var errMsg string
+		if event.ExeCfg.Mode == workflowModel.ExecuteModeDebug || event.ExeCfg.Mode == workflowModel.ExecuteModeNodeDebug {
+			detail := vo.DetailedCause(event.Err)
+			errMsg = detail[:min(1000, len(detail))]
+		} else {
+			errMsg = wfe.Msg()[:min(1000, len(wfe.Msg()))]
+		}
 		wfExec.ErrorCode = ptr.Of(strconv.Itoa(int(wfe.Code())))
 		wfExec.FailReason = ptr.Of(errMsg)
 
@@ -581,7 +587,11 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 				logs.CtxWarnf(ctx, "node %s for exeID %d end with warning: %v",
 					event.NodeKey, event.NodeExecuteID, event.Err)
 			}
-			nodeExec.ErrorInfo = ptr.Of(wfe.Msg())
+			if event.ExeCfg.Mode == workflowModel.ExecuteModeDebug || event.ExeCfg.Mode == workflowModel.ExecuteModeNodeDebug {
+				nodeExec.ErrorInfo = ptr.Of(vo.DetailedCause(event.Err))
+			} else {
+				nodeExec.ErrorInfo = ptr.Of(wfe.Msg())
+			}
 			nodeExec.ErrorLevel = ptr.Of(string(wfe.Level()))
 		}
 
@@ -791,7 +801,12 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 				event.NodeKey, event.NodeExecuteID, event.Err)
 		}
 
-		errorInfo = wfe.Msg()[:min(1000, len(wfe.Msg()))]
+		if event.ExeCfg.Mode == workflowModel.ExecuteModeDebug || event.ExeCfg.Mode == workflowModel.ExecuteModeNodeDebug {
+			detail := vo.DetailedCause(event.Err)
+			errorInfo = detail[:min(1000, len(detail))]
+		} else {
+			errorInfo = wfe.Msg()[:min(1000, len(wfe.Msg()))]
+		}
 		errorLevel = string(wfe.Level())
 		spanAttrs = append(spanAttrs,
 			attribute.String("node.error_level", errorLevel),
