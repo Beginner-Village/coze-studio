@@ -244,28 +244,59 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	for _, wf := range conf.Agent.Workflow {
 		existingWorkflowIDs[wf.GetWorkflowId()] = struct{}{}
 	}
-	skillWfIDs, skillResErr := resolveSkillResources(ctx, conf.Agent.SkillInfoList, existingWorkflowIDs)
-	if skillResErr == nil && len(skillWfIDs) > 0 {
-		logs.CtxInfof(ctx, "[BuildAgent] Auto-binding %d workflow(s) from skill prompts", len(skillWfIDs))
-		skillWfInfos := make([]*bot_common.WorkflowInfo, 0, len(skillWfIDs))
-		for _, id := range skillWfIDs {
-			skillWfInfos = append(skillWfInfos, &bot_common.WorkflowInfo{
-				WorkflowId: ptr.Of(id),
-			})
+	skillRes, skillResErr := resolveSkillResources(ctx, conf.Agent.SkillInfoList, existingWorkflowIDs)
+	if skillResErr != nil {
+		logs.CtxWarnf(ctx, "[BuildAgent] resolveSkillResources failed: %v", skillResErr)
+	} else if skillRes != nil {
+		// Workflow references: auto-bind as workflow tools.
+		if len(skillRes.WorkflowIDs) > 0 {
+			logs.CtxInfof(ctx, "[BuildAgent] Auto-binding %d workflow(s) from skill prompts", len(skillRes.WorkflowIDs))
+			skillWfInfos := make([]*bot_common.WorkflowInfo, 0, len(skillRes.WorkflowIDs))
+			for _, id := range skillRes.WorkflowIDs {
+				skillWfInfos = append(skillWfInfos, &bot_common.WorkflowInfo{
+					WorkflowId: ptr.Of(id),
+				})
+			}
+			skillWfTools, skillReturnDirectly, wfErr := newWorkflowTools(ctx, &workflowConfig{wfInfos: skillWfInfos})
+			if wfErr == nil {
+				agentTools = append(agentTools, slices.Transform(skillWfTools, func(a workflow.ToolFromWorkflow) tool.BaseTool {
+					return a.(tool.BaseTool)
+				})...)
+				for k, v := range skillReturnDirectly {
+					returnDirectlyTools[k] = v
+				}
+				if len(skillWfTools) > 0 {
+					containWfTool = true
+				}
+			} else {
+				logs.CtxWarnf(ctx, "[BuildAgent] Failed to create workflow tools from skill prompts: %v", wfErr)
+			}
 		}
-		skillWfTools, skillReturnDirectly, wfErr := newWorkflowTools(ctx, &workflowConfig{wfInfos: skillWfInfos})
-		if wfErr == nil {
-			agentTools = append(agentTools, slices.Transform(skillWfTools, func(a workflow.ToolFromWorkflow) tool.BaseTool {
-				return a.(tool.BaseTool)
-			})...)
-			for k, v := range skillReturnDirectly {
-				returnDirectlyTools[k] = v
-			}
-			if len(skillWfTools) > 0 {
-				containWfTool = true
-			}
-		} else {
-			logs.CtxWarnf(ctx, "[BuildAgent] Failed to create workflow tools from skill prompts: %v", wfErr)
+
+		// Plugin references: NOT auto-mounted yet.
+		// A skill {plugin:..|id:..} reference carries a *plugin* id (res_id from
+		// library_resource_list), but every cross-domain plugin tool constructor
+		// (newPluginTools / GetPluginInvokableTools / GetPluginToolsInfo) requires
+		// explicit *tool* ids, and there is no contract method to enumerate a
+		// plugin's tools from just its plugin id. Mounting it safely would require
+		// a new cross-domain API, which is out of scope here.
+		// TODO(skill-resources): add a cross-domain "list tools by plugin id" method,
+		// then build invokable tools for skillRes.PluginIDs and append to agentTools.
+		if len(skillRes.PluginIDs) > 0 {
+			logs.CtxWarnf(ctx, "[BuildAgent] %d plugin reference(s) in skill prompts are not auto-mounted (no contract to list tools by plugin id): %v", len(skillRes.PluginIDs), skillRes.PluginIDs)
+		}
+
+		// Knowledge references: NOT auto-mounted yet.
+		// Knowledge entities are fetchable via MGetKnowledgeByID, but the only
+		// knowledge tool (knowledgeTool) needs a per-request Input message and
+		// chat history (GetHistory) that are only available at run time, not at
+		// agent-build time. The agent's own knowledge is wired as a graph
+		// retriever node (node_retriever.go) for the same reason. Mounting it as a
+		// build-time tool would pass empty query/history and is unsafe.
+		// TODO(skill-resources): expose knowledge as a retriever-style node (or a
+		// tool fed by the runtime request) and mount skillRes.KnowledgeIDs there.
+		if len(skillRes.KnowledgeIDs) > 0 {
+			logs.CtxWarnf(ctx, "[BuildAgent] %d knowledge reference(s) in skill prompts are not auto-mounted (needs runtime query/history): %v", len(skillRes.KnowledgeIDs), skillRes.KnowledgeIDs)
 		}
 	}
 

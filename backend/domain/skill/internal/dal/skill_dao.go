@@ -82,7 +82,10 @@ func (dao *SkillDAO) Create(ctx context.Context, skill *entity.Skill) (int64, er
 
 func (dao *SkillDAO) Get(ctx context.Context, skillID int64) (*entity.Skill, error) {
 	var po skillPO
-	err := dao.db.WithContext(ctx).Where("skill_id = ?", skillID).First(&po).Error
+	// Only load active skills so disabled skills are not used at runtime.
+	err := dao.db.WithContext(ctx).
+		Where("skill_id = ? AND status = ?", skillID, entity.SkillStatusActive).
+		First(&po).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -138,7 +141,9 @@ func (dao *SkillDAO) Delete(ctx context.Context, skillID int64) error {
 }
 
 func (dao *SkillDAO) List(ctx context.Context, req *entity.ListRequest) (*entity.ListResponse, error) {
-	query := dao.db.WithContext(ctx).Model(&skillPO{}).Where("space_id = ?", req.SpaceID)
+	// Only list active skills so disabled skills are hidden.
+	query := dao.db.WithContext(ctx).Model(&skillPO{}).
+		Where("space_id = ? AND status = ?", req.SpaceID, entity.SkillStatusActive)
 
 	if req.Keyword != "" {
 		query = query.Where("name LIKE ?", "%"+req.Keyword+"%")
@@ -181,7 +186,10 @@ func (dao *SkillDAO) MGet(ctx context.Context, skillIDs []int64) ([]*entity.Skil
 	}
 
 	var pos []skillPO
-	err := dao.db.WithContext(ctx).Where("skill_id IN ?", skillIDs).Find(&pos).Error
+	// Only load active skills so disabled skills are not used at runtime.
+	err := dao.db.WithContext(ctx).
+		Where("skill_id IN ? AND status = ?", skillIDs, entity.SkillStatusActive).
+		Find(&pos).Error
 	if err != nil {
 		return nil, errorx.WrapByCode(err, errno.ErrSkillListCode)
 	}

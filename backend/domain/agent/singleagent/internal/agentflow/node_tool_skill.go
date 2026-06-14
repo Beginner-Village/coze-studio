@@ -170,6 +170,15 @@ func (t *readSkillTool) loadSkill(ctx context.Context, skillID int64) (*entity.S
 		return nil, err
 	}
 
+	// Enforce space isolation: a skill bound to this agent must belong to the
+	// agent's space. Treat a cross-space skill as not found to prevent reading
+	// skills from other spaces via a forged/leaked skill id.
+	if skill != nil && skill.SpaceID != t.spaceID {
+		logs.CtxWarnf(ctx, "[readSkillTool] skill %d space mismatch (skill.SpaceID=%d, agent.SpaceID=%d), denying access",
+			skillID, skill.SpaceID, t.spaceID)
+		return nil, nil
+	}
+
 	if skill != nil {
 		t.mu.Lock()
 		t.skillCache[skillID] = skill

@@ -16,6 +16,12 @@
 
 package entity
 
+// Skill status values (maps to the `status tinyint default 1` DB column).
+const (
+	// SkillStatusActive marks a skill that is enabled and loadable.
+	SkillStatusActive int8 = 1
+)
+
 // Skill is the domain entity for skill.
 type Skill struct {
 	SkillID     int64

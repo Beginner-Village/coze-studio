@@ -54,23 +54,33 @@ func parseSkillResourceRefs(prompt string) []skillResourceRef {
 	return refs
 }
 
+// skillResources holds the deduplicated resource IDs referenced by skill prompts,
+// split by resource type so the builder can mount each kind with the right tool
+// constructor.
+type skillResources struct {
+	WorkflowIDs  []int64
+	PluginIDs    []int64
+	KnowledgeIDs []int64
+}
+
 // resolveSkillResources batch-loads skills, parses resource references from their
-// prompts, and returns deduplicated workflow IDs that are not already bound.
+// prompts, and returns the deduplicated workflow / plugin / knowledge IDs that are
+// referenced. Workflow IDs already bound to the agent are skipped.
 // Errors are handled with fail-soft strategy: failures log warnings but do not
 // prevent the agent from starting.
 func resolveSkillResources(
 	ctx context.Context,
 	skillInfoList []*singleagent.SkillReference,
 	existingWorkflowIDs map[int64]struct{},
-) (workflowIDs []int64, err error) {
+) (*skillResources, error) {
 	if len(skillInfoList) == 0 {
-		return nil, nil
+		return &skillResources{}, nil
 	}
 
 	svc := crossskill.DefaultSVC()
 	if svc == nil {
 		logs.CtxWarnf(ctx, "[resolveSkillResources] skill service not initialized, skipping")
-		return nil, nil
+		return &skillResources{}, nil
 	}
 
 	skillIDs := make([]int64, 0, len(skillInfoList))
@@ -84,8 +94,10 @@ func resolveSkillResources(
 		return nil, err
 	}
 
-	seen := make(map[int64]struct{})
-	var result []int64
+	res := &skillResources{}
+	seenWf := make(map[int64]struct{})
+	seenPlugin := make(map[int64]struct{})
+	seenKnowledge := make(map[int64]struct{})
 
 	for _, skill := range skills {
 		if skill == nil || skill.Prompt == "" {
@@ -93,19 +105,31 @@ func resolveSkillResources(
 		}
 		refs := parseSkillResourceRefs(skill.Prompt)
 		for _, ref := range refs {
-			if ref.ResourceType != "workflow" {
-				continue
+			switch ref.ResourceType {
+			case "workflow":
+				if _, exists := existingWorkflowIDs[ref.ID]; exists {
+					continue
+				}
+				if _, dup := seenWf[ref.ID]; dup {
+					continue
+				}
+				seenWf[ref.ID] = struct{}{}
+				res.WorkflowIDs = append(res.WorkflowIDs, ref.ID)
+			case "plugin":
+				if _, dup := seenPlugin[ref.ID]; dup {
+					continue
+				}
+				seenPlugin[ref.ID] = struct{}{}
+				res.PluginIDs = append(res.PluginIDs, ref.ID)
+			case "knowledge":
+				if _, dup := seenKnowledge[ref.ID]; dup {
+					continue
+				}
+				seenKnowledge[ref.ID] = struct{}{}
+				res.KnowledgeIDs = append(res.KnowledgeIDs, ref.ID)
 			}
-			if _, exists := existingWorkflowIDs[ref.ID]; exists {
-				continue
-			}
-			if _, dup := seen[ref.ID]; dup {
-				continue
-			}
-			seen[ref.ID] = struct{}{}
-			result = append(result, ref.ID)
 		}
 	}
 
-	return result, nil
+	return res, nil
 }
