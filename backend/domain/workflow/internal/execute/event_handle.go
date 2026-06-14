@@ -40,6 +40,19 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
+// sanitizedCauseMsg 是 release 模式下用于替代厂商原始报错的脱敏文案，
+// 绝不包含 event.Err 的任何原始文本。
+const sanitizedCauseMsg = "internal error, please check the workflow configuration or contact the administrator"
+
+// causeForMode 按执行模式返回 ErrWorkflowExecuteFail 模板中 {cause} 的取值：
+// debug/node_debug 返回完整详情（含 HTTP 状态码 + 厂商报错），release 返回脱敏文案。
+func causeForMode(mode workflowModel.ExecuteMode, err error) string {
+	if mode == workflowModel.ExecuteModeDebug || mode == workflowModel.ExecuteModeNodeDebug {
+		return vo.DetailedCause(err)
+	}
+	return sanitizedCauseMsg
+}
+
 func setRootWorkflowSuccess(ctx context.Context, event *Event, repo workflow.Repository,
 	sw *schema.StreamWriter[*entity.Message]) (err error) {
 	exeID := event.RootCtx.RootExecuteID
@@ -247,7 +260,7 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 			} else if errors.Is(event.Err, context.Canceled) {
 				wfe = vo.CancelErr
 			} else {
-				wfe = vo.WrapError(errno.ErrWorkflowExecuteFail, event.Err, errorx.KV("cause", vo.UnwrapRootErr(event.Err).Error()))
+				wfe = vo.WrapError(errno.ErrWorkflowExecuteFail, event.Err, errorx.KV("cause", causeForMode(event.ExeCfg.Mode, event.Err)))
 			}
 		}
 
@@ -259,13 +272,7 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 				wfID, exeID, event.Err)
 		}
 
-		var errMsg string
-		if event.ExeCfg.Mode == workflowModel.ExecuteModeDebug || event.ExeCfg.Mode == workflowModel.ExecuteModeNodeDebug {
-			detail := vo.DetailedCause(event.Err)
-			errMsg = detail[:min(1000, len(detail))]
-		} else {
-			errMsg = wfe.Msg()[:min(1000, len(wfe.Msg()))]
-		}
+		errMsg := wfe.Msg()[:min(1000, len(wfe.Msg()))]
 		wfExec.ErrorCode = ptr.Of(strconv.Itoa(int(wfe.Code())))
 		wfExec.FailReason = ptr.Of(errMsg)
 
@@ -587,11 +594,7 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 				logs.CtxWarnf(ctx, "node %s for exeID %d end with warning: %v",
 					event.NodeKey, event.NodeExecuteID, event.Err)
 			}
-			if event.ExeCfg.Mode == workflowModel.ExecuteModeDebug || event.ExeCfg.Mode == workflowModel.ExecuteModeNodeDebug {
-				nodeExec.ErrorInfo = ptr.Of(vo.DetailedCause(event.Err))
-			} else {
-				nodeExec.ErrorInfo = ptr.Of(wfe.Msg())
-			}
+			nodeExec.ErrorInfo = ptr.Of(wfe.Msg()[:min(1000, len(wfe.Msg()))])
 			nodeExec.ErrorLevel = ptr.Of(string(wfe.Level()))
 		}
 
@@ -789,7 +792,7 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 			} else if errors.Is(event.Err, context.Canceled) {
 				wfe = vo.CancelErr
 			} else {
-				wfe = vo.WrapError(errno.ErrWorkflowExecuteFail, event.Err, errorx.KV("cause", vo.UnwrapRootErr(event.Err).Error()))
+				wfe = vo.WrapError(errno.ErrWorkflowExecuteFail, event.Err, errorx.KV("cause", causeForMode(event.ExeCfg.Mode, event.Err)))
 			}
 		}
 
@@ -801,12 +804,7 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 				event.NodeKey, event.NodeExecuteID, event.Err)
 		}
 
-		if event.ExeCfg.Mode == workflowModel.ExecuteModeDebug || event.ExeCfg.Mode == workflowModel.ExecuteModeNodeDebug {
-			detail := vo.DetailedCause(event.Err)
-			errorInfo = detail[:min(1000, len(detail))]
-		} else {
-			errorInfo = wfe.Msg()[:min(1000, len(wfe.Msg()))]
-		}
+		errorInfo = wfe.Msg()[:min(1000, len(wfe.Msg()))]
 		errorLevel = string(wfe.Level())
 		spanAttrs = append(spanAttrs,
 			attribute.String("node.error_level", errorLevel),
