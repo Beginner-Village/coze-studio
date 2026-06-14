@@ -488,13 +488,26 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		return nil, err
 	}
 
-	return &AgentRunner{
+	ar := &AgentRunner{
 		runner:              runner,
 		requireCheckpoint:   requireCheckpoint,
 		modelInfo:           modelInfo,
 		containWfTool:       containWfTool,
 		returnDirectlyTools: returnDirectlyTools,
-	}, nil
+	}
+
+	// 实验性 DeepAgents 引擎（AGENT_ENGINE=deepagents）：构建成功则挂上，StreamExecute 会优先走它；
+	// 失败或未开启则保持 nil → 走默认 ReAct，零影响。
+	if isReActAgent && deepAgentsEnabled() {
+		if da, derr := buildDeepAgent(ctx, conf, chatModel, agentTools); derr != nil {
+			logs.CtxWarnf(ctx, "[BuildAgent] build deep agent failed, fallback to ReAct: %v", derr)
+		} else {
+			ar.deepAgent = da
+			logs.CtxInfof(ctx, "[BuildAgent] DeepAgents engine ENABLED for this agent")
+		}
+	}
+
+	return ar, nil
 }
 
 func extractJinja2Placeholder(persona string) (variableNames []string) {

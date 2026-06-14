@@ -64,11 +64,20 @@ type AgentRunner struct {
 	returnDirectlyTools map[string]struct{}
 	containWfTool       bool
 	modelInfo           *modelmgr.Model
+
+	// deepAgent 非空时（AGENT_ENGINE=deepagents 且构建成功）走实验性 DeepAgents 引擎，
+	// 否则走默认 ReAct compose 图。见 deepagents_bridge.go。
+	deepAgent adkAgent
 }
 
 func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (
 	sr *schema.StreamReader[*entity.AgentEvent], err error,
 ) {
+	// 实验性 DeepAgents 引擎（特性开关，默认关；下游消费的 entity.AgentEvent 类型不变）。
+	if r.deepAgent != nil {
+		return r.streamExecuteDeep(ctx, req)
+	}
+
 	executeID := uuid.New()
 
 	hdl, sr, sw := newReplyCallback(ctx, executeID.String(), r.returnDirectlyTools)
