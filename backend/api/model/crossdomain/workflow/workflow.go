@@ -17,6 +17,7 @@
 package workflow
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/cloudwego/eino/compose"
@@ -31,6 +32,10 @@ func init() {
 	// This is required because ExecuteConfig contains HiAgentConversations map[string]*HiAgentConversationInfo
 	// which needs to be serialized when using Eino's checkpoint feature
 	_ = compose.RegisterSerializableType[HiAgentConversationInfo]("workflow.HiAgentConversationInfo")
+	// HiAgentConvStore is referenced by ExecuteConfig via pointer; register it so it
+	// round-trips through Eino's checkpoint serialization. It implements
+	// json.Marshaler/Unmarshaler to serialize as a plain map[string]*HiAgentConversationInfo.
+	_ = compose.RegisterSerializableType[HiAgentConvStore]("workflow.HiAgentConvStore")
 }
 
 type Locator uint8
@@ -72,9 +77,12 @@ type ExecuteConfig struct {
 	CustomVariables map[string]string
 
 	// HiAgent conversation mapping: map[agentID]HiAgentConversationInfo
-	// Used to maintain HiAgent conversation state across multiple calls in the same ChatFlow session
-	HiAgentConversations   map[string]*HiAgentConversationInfo
-	hiAgentConversationsMu sync.RWMutex
+	// Used to maintain HiAgent conversation state across multiple calls in the same ChatFlow session.
+	//
+	// The mapping (and its lock) live behind a pointer in HiAgentConvStore so that
+	// ExecuteConfig itself contains no lock and stays safe to copy by value
+	// (it is passed by value throughout the workflow execution chain).
+	HiAgentConversations *HiAgentConvStore
 }
 
 type ExecuteMode string
@@ -117,6 +125,110 @@ type HiAgentConversationInfo struct {
 	LastSectionID     int64  `json:"last_section_id"`
 }
 
+// HiAgentConvStore holds the HiAgent conversation mapping together with its lock.
+//
+// It is always used through a pointer (*HiAgentConvStore), so embedding the
+// sync.RWMutex by value here is safe — the value is never copied. Keeping the
+// lock in this dedicated struct keeps ExecuteConfig lock-free and copy-safe.
+type HiAgentConvStore struct {
+	mu   sync.RWMutex
+	data map[string]*HiAgentConversationInfo
+}
+
+// MarshalJSON serializes the store as a plain map so it round-trips through
+// Eino's checkpoint serialization identically to the previous map field.
+func (s *HiAgentConvStore) MarshalJSON() ([]byte, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.data == nil {
+		return []byte("null"), nil
+	}
+	return json.Marshal(s.data)
+}
+
+// UnmarshalJSON restores the store from the plain-map wire format.
+func (s *HiAgentConvStore) UnmarshalJSON(b []byte) error {
+	var data map[string]*HiAgentConversationInfo
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data = data
+	return nil
+}
+
+// Get retrieves the full HiAgent conversation info for a specific agent.
+func (s *HiAgentConvStore) Get(agentID string) *HiAgentConversationInfo {
+	if s == nil {
+		return nil
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.data == nil {
+		return nil
+	}
+	return s.data[agentID]
+}
+
+// Set stores the full HiAgent conversation info for a specific agent.
+func (s *HiAgentConvStore) Set(agentID string, info *HiAgentConversationInfo) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data == nil {
+		s.data = make(map[string]*HiAgentConversationInfo)
+	}
+	s.data[agentID] = info
+}
+
+// Delete removes the HiAgent conversation info for a specific agent.
+func (s *HiAgentConvStore) Delete(agentID string) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data != nil {
+		delete(s.data, agentID)
+	}
+}
+
+// Reset clears all HiAgent conversation mappings.
+func (s *HiAgentConvStore) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data = make(map[string]*HiAgentConversationInfo)
+}
+
+// Snapshot returns a shallow copy of the underlying mapping for read-only use
+// (e.g. logging) without exposing the internal map or lock.
+func (s *HiAgentConvStore) Snapshot() map[string]*HiAgentConversationInfo {
+	if s == nil {
+		return nil
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.data == nil {
+		return nil
+	}
+	out := make(map[string]*HiAgentConversationInfo, len(s.data))
+	for k, v := range s.data {
+		out[k] = v
+	}
+	return out
+}
+
+// hiAgentStore lazily initializes and returns the conversation store.
+// ExecuteConfig is used by pointer wherever these helpers are called, so it is
+// safe to assign the new store back onto the receiver.
+func (c *ExecuteConfig) hiAgentStore() *HiAgentConvStore {
+	if c.HiAgentConversations == nil {
+		c.HiAgentConversations = &HiAgentConvStore{}
+	}
+	return c.HiAgentConversations
+}
+
 // GetHiAgentConversationID retrieves the HiAgent conversation ID for a specific agent (backward compatible)
 func (c *ExecuteConfig) GetHiAgentConversationID(agentID string) string {
 	info := c.GetHiAgentConversationInfo(agentID)
@@ -128,13 +240,7 @@ func (c *ExecuteConfig) GetHiAgentConversationID(agentID string) string {
 
 // GetHiAgentConversationInfo retrieves the full HiAgent conversation info for a specific agent
 func (c *ExecuteConfig) GetHiAgentConversationInfo(agentID string) *HiAgentConversationInfo {
-	c.hiAgentConversationsMu.RLock()
-	defer c.hiAgentConversationsMu.RUnlock()
-
-	if c.HiAgentConversations == nil {
-		return nil
-	}
-	return c.HiAgentConversations[agentID]
+	return c.HiAgentConversations.Get(agentID)
 }
 
 // SetHiAgentConversationID sets the HiAgent conversation ID for a specific agent (backward compatible)
@@ -147,29 +253,15 @@ func (c *ExecuteConfig) SetHiAgentConversationID(agentID, appConvID string) {
 
 // SetHiAgentConversationInfo sets the full HiAgent conversation info for a specific agent
 func (c *ExecuteConfig) SetHiAgentConversationInfo(agentID string, info *HiAgentConversationInfo) {
-	c.hiAgentConversationsMu.Lock()
-	defer c.hiAgentConversationsMu.Unlock()
-
-	if c.HiAgentConversations == nil {
-		c.HiAgentConversations = make(map[string]*HiAgentConversationInfo)
-	}
-	c.HiAgentConversations[agentID] = info
+	c.hiAgentStore().Set(agentID, info)
 }
 
 // ClearHiAgentConversationID clears the HiAgent conversation ID for a specific agent
 func (c *ExecuteConfig) ClearHiAgentConversationID(agentID string) {
-	c.hiAgentConversationsMu.Lock()
-	defer c.hiAgentConversationsMu.Unlock()
-
-	if c.HiAgentConversations != nil {
-		delete(c.HiAgentConversations, agentID)
-	}
+	c.HiAgentConversations.Delete(agentID)
 }
 
 // ClearAllHiAgentConversations clears all HiAgent conversation mappings
 func (c *ExecuteConfig) ClearAllHiAgentConversations() {
-	c.hiAgentConversationsMu.Lock()
-	defer c.hiAgentConversationsMu.Unlock()
-
-	c.HiAgentConversations = make(map[string]*HiAgentConversationInfo)
+	c.hiAgentStore().Reset()
 }

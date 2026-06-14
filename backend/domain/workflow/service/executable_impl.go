@@ -1123,7 +1123,7 @@ func (i *impl) loadHiAgentConversations(ctx context.Context, config *workflowMod
 
 	// 提取hiagent_conversations映射
 	if hiagentConvs, ok := ext["hiagent_conversations"].(map[string]interface{}); ok {
-		config.HiAgentConversations = make(map[string]*workflowModel.HiAgentConversationInfo)
+		config.ClearAllHiAgentConversations()
 		for agentID, convData := range hiagentConvs {
 			// 支持两种格式:
 			// 1. 新格式: {"app_conversation_id": "xxx", "last_section_id": 123}
@@ -1145,19 +1145,20 @@ func (i *impl) loadHiAgentConversations(ctx context.Context, config *workflowMod
 					// 尝试使用类型转换处理其他数字类型
 					logs.CtxWarnf(ctx, "DEBUG: unexpected last_section_id type %T, value=%v for agent=%s", lastSectionIDVal, lastSectionIDVal, agentID)
 				}
-				config.HiAgentConversations[agentID] = info
+				config.SetHiAgentConversationInfo(agentID, info)
 				logs.CtxInfof(ctx, "DEBUG: loaded HiAgentConversationInfo for agent=%s: app_conv_id=%s, last_section_id=%d",
 					agentID, info.AppConversationID, info.LastSectionID)
 			} else if strID, ok := convData.(string); ok {
 				// 旧格式 - 向后兼容
-				config.HiAgentConversations[agentID] = &workflowModel.HiAgentConversationInfo{
+				config.SetHiAgentConversationInfo(agentID, &workflowModel.HiAgentConversationInfo{
 					AppConversationID: strID,
 					LastSectionID:     0,
-				}
+				})
 			}
 		}
+		snapshot := config.HiAgentConversations.Snapshot()
 		logs.CtxInfof(ctx, "loaded %d hiagent conversations from database: %v",
-			len(config.HiAgentConversations), config.HiAgentConversations)
+			len(snapshot), snapshot)
 	}
 
 	return nil

@@ -386,7 +386,7 @@ func (h *HiAgentChatModel) ensureConversation(ctx context.Context) (string, erro
 
 	// 调试：打印ExecuteConfig的地址和内容
 	logs.CtxInfof(ctx, "DEBUG: ExecuteConfig address=%p, conversation_id=%v, section_id=%v, hiagent_map=%v",
-		exeCfg, exeCfg.ConversationID, exeCfg.SectionID, exeCfg.HiAgentConversations)
+		exeCfg, exeCfg.ConversationID, exeCfg.SectionID, exeCfg.HiAgentConversations.Snapshot())
 
 	// 简化锁逻辑：先尝试读取，如果需要创建则释放读锁获取写锁
 	logs.CtxInfof(ctx, "DEBUG: ensureConversation - acquiring RLock to check existing")
