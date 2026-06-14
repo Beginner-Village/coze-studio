@@ -239,6 +239,7 @@ func TestGetByRunIDs(t *testing.T) {
 				UserID:         "1",
 				RunID:          123,
 				Content:        "test content123",
+				Status:         1, // available (GetByRunIDs filters out soft-deleted)
 			},
 			&model.Message{
 				ID:             2,
@@ -246,6 +247,7 @@ func TestGetByRunIDs(t *testing.T) {
 				UserID:         "1",
 				Content:        "test content124",
 				RunID:          124,
+				Status:         1, // available
 			},
 			&model.Message{
 				ID:             3,
@@ -253,6 +255,7 @@ func TestGetByRunIDs(t *testing.T) {
 				UserID:         "1",
 				Content:        "test content124",
 				RunID:          124,
+				Status:         1, // available
 			},
 		)
 	mockDB, err := mockDBGen.DB()
