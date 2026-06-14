@@ -73,7 +73,11 @@ func (f *defaultFactory) CreateChatModel(ctx context.Context, protocol chatmodel
 		return nil, fmt.Errorf("[CreateChatModel] protocol not support, protocol=%s", protocol)
 	}
 
-	return builder(ctx, config)
+	m, err := builder(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	return withErrorEnrichment(m), nil
 }
 
 func (f *defaultFactory) SupportProtocol(protocol chatmodel.Protocol) bool {
