@@ -1,0 +1,5151 @@
+{
+  "info": {
+    "name": "猎鹰 Studio · 全量 API（对外 + 平台管理）",
+    "_postman_id": "ynet-studio-full-2026-06-13",
+    "description": "猎鹰 Studio 全量接口集合，共 179 个接口，覆盖所有功能模块。\\n\\n## 两套认证\\n- **对外 ▸ ***（Bearer PAT）：业务系统用个人访问令牌 {api_key} 调用，folder 级已配 Bearer。\\n- **管理 ▸ ***（Cookie session）：前端管理后台接口，需先「登录(公开)」拿 session_key，填入变量 {session_key}，各请求带 Cookie。\\n\\n## 变量\\nbase_url / api_key(PAT) / session_key / bot_id / workflow_id / dataset_id / conversation_id / space_id / user_id\\n\\n## 拿凭证\\n- PAT：Web「个人设置→API授权」创建，或「管理▸用户与PAT / 创建PAT」接口。\\n- session_key：「登录(公开)/邮箱登录」后从 Set-Cookie 取。\\n\\n## 注意\\nID 类字段 JSON 里是字符串；SSE 接口(/v3/chat、stream_run、/api/conversation/chat 等)返回 text/event-stream。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://10.10.10.220:9888"
+    },
+    {
+      "key": "api_key",
+      "value": ""
+    },
+    {
+      "key": "session_key",
+      "value": ""
+    },
+    {
+      "key": "bot_id",
+      "value": ""
+    },
+    {
+      "key": "workflow_id",
+      "value": ""
+    },
+    {
+      "key": "dataset_id",
+      "value": ""
+    },
+    {
+      "key": "conversation_id",
+      "value": ""
+    },
+    {
+      "key": "space_id",
+      "value": ""
+    },
+    {
+      "key": "user_id",
+      "value": "biz_user_001"
+    }
+  ],
+  "item": [
+    {
+      "name": "对外 ▸ 对话与会话 (6)",
+      "item": [
+        {
+          "name": "POST 与智能体对话 (SSE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v3/chat",
+              "host": ["{{base_url}}"],
+              "path": ["v3", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\",\n  \"user_id\": \"{{user_id}}\",\n  \"stream\": true,\n  \"additional_messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"你好\",\n      \"content_type\": \"text\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "与已发布智能体对话(OpenAI/Coze v3,SSE)。bot_id在body,conversation_id在query。"
+          }
+        },
+        {
+          "name": "POST 创建会话",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/conversation/create",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "conversation", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "请求 bot_id/connector_id/meta_data。响应 data.id 会话ID。"
+          }
+        },
+        {
+          "name": "GET 列出会话",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/conversations",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "conversations"]
+            },
+            "description": "query: bot_id/page_num/page_size/sort_order/sort_field。"
+          }
+        },
+        {
+          "name": "POST 列出会话消息",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/conversation/message/list",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "conversation", "message", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"{{conversation_id}}\",\n  \"limit\": 20,\n  \"order\": \"desc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "请求 conversation_id/limit/order/before_id/after_id。"
+          }
+        },
+        {
+          "name": "POST 清空会话上下文",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/conversations/{{conversation_id}}/clear",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "conversations", "{{conversation_id}}", "clear"]
+            },
+            "description": "路径参数 conversation_id。"
+          }
+        },
+        {
+          "name": "GET 查智能体线上信息",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/bot/get_online_info",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "bot", "get_online_info"]
+            },
+            "description": "query: bot_id/version。响应含 model_info/plugin_info_list/workflow_info_list。"
+          }
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{api_key}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "对外 ▸ 工作流 (6)",
+      "item": [
+        {
+          "name": "POST 运行工作流(同步)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/workflow/run",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "workflow", "run"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\",\n  \"parameters\": \"{\\\"input\\\":\\\"hi\\\"}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "parameters 为入参JSON字符串。响应 data(结果)/token/cost/execute_id。"
+          }
+        },
+        {
+          "name": "POST 流式运行工作流(SSE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/workflow/stream_run",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "workflow", "stream_run"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\",\n  \"parameters\": \"{\\\"input\\\":\\\"hi\\\"}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "SSE: event message/done/error, 含 node_title/content/interrupt_data。"
+          }
+        },
+        {
+          "name": "POST 工作流中断恢复(SSE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/workflow/stream_resume",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "workflow", "stream_resume"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\",\n  \"event_id\": \"e1\",\n  \"interrupt_type\": 2,\n  \"resume_data\": \"补充\",\n  \"ext\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "interrupt_type: 1本地插件/2提问/3要素/5输入/7OAuth。"
+          }
+        },
+        {
+          "name": "GET 工作流执行历史",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/workflow/get_run_history",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "workflow", "get_run_history"]
+            },
+            "description": "query: workflow_id/execute_id。响应 WorkflowExecuteHistory[]。"
+          }
+        },
+        {
+          "name": "POST 与对话流对话(SSE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/workflows/chat",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "workflows", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\",\n  \"additional_messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"你好\",\n      \"content_type\": \"text\"\n    }\n  ],\n  \"ext\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "chatflow 对话运行(SSE)。"
+          }
+        },
+        {
+          "name": "POST 为对话流创建会话",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/workflow/conversation/create",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "workflow", "conversation", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "为 chatflow 创建会话(以实测字段为准)。"
+          }
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{api_key}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "对外 ▸ 文件 (4)",
+      "item": [
+        {
+          "name": "POST 上传文件(base64)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/bot/upload_file",
+              "host": ["{{base_url}}"],
+              "path": ["api", "bot", "upload_file"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"file_head\": {\n    \"file_type\": \"png\",\n    \"biz_type\": 1\n  },\n  \"data\": \"<base64>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "biz_type: 1BOT_ICON/2BOT_DATASET/4PLUGIN_ICON...。响应 upload_url/upload_uri。"
+          }
+        },
+        {
+          "name": "POST 上传文件(原始二进制)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/files/upload",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "files", "upload"]
+            },
+            "description": "Content-Type用文件MIME, body原始二进制(--data-binary)。响应 File{id,uri,url,bytes}。"
+          }
+        },
+        {
+          "name": "POST 取OSS直传凭证",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/playground/upload/auth_token",
+              "host": ["{{base_url}}"],
+              "path": ["api", "playground", "upload", "auth_token"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scene\": \"bot\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "响应 auth{access_key_id,secret_access_key,session_token}。"
+          }
+        },
+        {
+          "name": "POST 申请上传地址(VOD)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/common/upload/apply_upload_action",
+              "host": ["{{base_url}}"],
+              "path": ["api", "common", "upload", "apply_upload_action"]
+            },
+            "description": "VOD风格申请上传。"
+          }
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{api_key}}",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "管理 ▸ 对话(前端) (6)",
+      "item": [
+        {
+          "name": "POST Agent运行(SSE主聊天)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/conversation/chat",
+              "host": ["{{base_url}}"],
+              "path": ["api", "conversation", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\",\n  \"conversation_id\": \"{{conversation_id}}\",\n  \"query\": \"你好\",\n  \"scene\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "AgentRunRequest。SSE RunStreamResponse。"
+          }
+        },
+        {
+          "name": "POST 拉取消息列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/conversation/get_message_list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "conversation", "get_message_list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"{{conversation_id}}\",\n  \"cursor\": \"0\",\n  \"count\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "游标分页。"
+          }
+        },
+        {
+          "name": "POST 清空会话历史",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/conversation/clear_message",
+              "host": ["{{base_url}}"],
+              "path": ["api", "conversation", "clear_message"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"{{conversation_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "建新 section。"
+          }
+        },
+        {
+          "name": "POST 新建 section",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/conversation/create_section",
+              "host": ["{{base_url}}"],
+              "path": ["api", "conversation", "create_section"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"{{conversation_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "清上下文。"
+          }
+        },
+        {
+          "name": "POST 删除消息",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/conversation/delete_message",
+              "host": ["{{base_url}}"],
+              "path": ["api", "conversation", "delete_message"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"{{conversation_id}}\",\n  \"message_id\": \"m1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 打断回复",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/conversation/break_message",
+              "host": ["{{base_url}}"],
+              "path": ["api", "conversation", "break_message"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversation_id\": \"{{conversation_id}}\",\n  \"query_message_id\": \"m1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 工作流编排 (23)",
+      "item": [
+        {
+          "name": "POST 创建工作流",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\",\n  \"name\": \"我的工作流\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 保存草稿canvas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/save",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "save"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 发布工作流",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/publish",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "publish"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 复制工作流",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/copy",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "copy"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除工作流",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "delete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 获取canvas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/canvas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "canvas"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 试运行(编辑器调试)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/test_run",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "test_run"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\",\n  \"input\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 试运行恢复",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/test_resume",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "test_resume"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 单节点调试",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/nodeDebug",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "nodeDebug"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\",\n  \"node_id\": \"n1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 获取运行进度",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/get_process",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "get_process"]
+            }
+          }
+        },
+        {
+          "name": "POST 工作流列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/workflow_list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "workflow_list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\",\n  \"page\": 1,\n  \"size\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 工作流详情",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/workflow_detail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "workflow_detail"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 工作流详情(含schema)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/workflow_detail_info",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "workflow_detail_info"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 已发布工作流列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/list_publish_workflow",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "list_publish_workflow"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 更新元信息",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/update_meta",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "update_meta"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 校验流程树",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/validate_tree",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "validate_tree"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 节点模板列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/node_template_list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "node_template_list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 导出工作流",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/export",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "export"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 导入工作流",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/import",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "import"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 版本历史列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/version_list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "version_list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 回滚草稿到版本",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/revert_draft",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "revert_draft"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\",\n  \"version\": \"v1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 创建chatflow角色",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/chat_flow_role/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "chat_flow_role", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workflow_id\": \"{{workflow_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 创建项目会话定义",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/workflow_api/project_conversation/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "workflow_api", "project_conversation", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"p1\",\n  \"conversation_name\": \"c1\",\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 知识库 (18)",
+      "item": [
+        {
+          "name": "POST 创建知识库",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"我的知识库\",\n  \"description\": \"desc\",\n  \"space_id\": \"{{space_id}}\",\n  \"icon_uri\": \"\",\n  \"format_type\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "format_type: 0文本/1表格/2图片/7QA。"
+          }
+        },
+        {
+          "name": "POST 知识库列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\",\n  \"page\": 1,\n  \"size\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 知识库详情(批量)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/detail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "detail"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataset_ids\": [\n    \"{{dataset_id}}\"\n  ],\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 更新知识库",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "update"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataset_id\": \"{{dataset_id}}\",\n  \"name\": \"新名\",\n  \"icon_uri\": \"\",\n  \"description\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除知识库",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "delete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataset_id\": \"{{dataset_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 创建文档",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/document/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "document", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataset_id\": \"{{dataset_id}}\",\n  \"format_type\": 0,\n  \"document_bases\": [\n    {\n      \"name\": \"doc1\",\n      \"source_info\": {\n        \"document_source\": 0,\n        \"tos_uri\": \"<上传返回的uri>\"\n      }\n    }\n  ],\n  \"chunk_strategy\": {\n    \"separator\": \"\\\\n\",\n    \"max_tokens\": 800,\n    \"remove_extra_spaces\": false,\n    \"remove_urls_emails\": false,\n    \"chunk_type\": 0\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "本地文件用 source_info.tos_uri(先上传);自定义内容用 custom_content;直接传用 file_base64+file_type。"
+          }
+        },
+        {
+          "name": "POST 文档列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/document/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "document", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataset_id\": \"{{dataset_id}}\",\n  \"page\": 1,\n  \"size\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 更新文档",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/document/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "document", "update"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_id\": \"d1\",\n  \"document_name\": \"新名\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除文档",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/document/delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "document", "delete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_ids\": [\n    \"d1\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 重新分段",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/document/resegment",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "document", "resegment"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataset_id\": \"{{dataset_id}}\",\n  \"document_ids\": [\n    \"d1\"\n  ],\n  \"chunk_strategy\": {\n    \"separator\": \"\\\\n\",\n    \"max_tokens\": 800\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 文档处理进度",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/document/progress/get",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "document", "progress", "get"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_ids\": [\n    \"d1\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "响应 progress(0-100)/status。"
+          }
+        },
+        {
+          "name": "POST 新增切片",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/slice/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "slice", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_id\": \"d1\",\n  \"raw_text\": \"内容\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 切片列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/slice/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "slice", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_id\": \"d1\",\n  \"page_size\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 更新切片",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/slice/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "slice", "update"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slice_id\": \"s1\",\n  \"raw_text\": \"新内容\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除切片",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/slice/delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "slice", "delete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slice_ids\": [\n    \"s1\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 召回测试",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/retrieve_test",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "retrieve_test"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataset_ids\": [\n    \"{{dataset_id}}\"\n  ],\n  \"query\": \"测试问题\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "测试知识库召回效果。"
+          }
+        },
+        {
+          "name": "POST 取表格schema",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/table_schema/get",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "table_schema", "get"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_id\": \"d1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 图片列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/knowledge/photo/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "knowledge", "photo", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataset_id\": \"{{dataset_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 外部知识库 (4)",
+      "item": [
+        {
+          "name": "POST 外部知识库检索",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external-knowledge/retrieval",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external-knowledge", "retrieval"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"问题\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 创建绑定",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external-knowledge/binding/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external-knowledge", "binding", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 绑定列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external-knowledge/binding/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external-knowledge", "binding", "list"]
+            }
+          }
+        },
+        {
+          "name": "GET RAGFlow数据集列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/external-knowledge/ragflow/datasets",
+              "host": ["{{base_url}}"],
+              "path": ["api", "external-knowledge", "ragflow", "datasets"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 插件 (18)",
+      "item": [
+        {
+          "name": "POST 创建插件元信息",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/register_plugin_meta",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "register_plugin_meta"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"我的插件\",\n  \"desc\": \"desc\",\n  \"space_id\": \"{{space_id}}\",\n  \"icon\": {},\n  \"auth_type\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 从manifest+openapi注册",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ai_plugin\": \"<manifest JSON>\",\n  \"openapi\": \"<openapi YAML>\",\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST curl/postman/swagger转openapi",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/convert_to_openapi",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "convert_to_openapi"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": \"<curl/swagger>\",\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 更新插件元信息",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/update_plugin_meta",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "update_plugin_meta"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plugin_id\": \"pl1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除插件",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/del_plugin",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "del_plugin"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plugin_id\": \"pl1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 插件详情",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/get_plugin_info",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "get_plugin_info"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plugin_id\": \"pl1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 开发态插件列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/get_dev_plugin_list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "get_dev_plugin_list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\",\n  \"page\": 1,\n  \"size\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 发布插件",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/publish_plugin",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "publish_plugin"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plugin_id\": \"pl1\",\n  \"version_name\": \"v1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 创建工具(API)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/create_api",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "create_api"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plugin_id\": \"pl1\",\n  \"name\": \"tool1\",\n  \"desc\": \"desc\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 更新工具",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/update_api",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "update_api"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plugin_id\": \"pl1\",\n  \"api_id\": \"a1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除工具",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/delete_api",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "delete_api"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plugin_id\": \"pl1\",\n  \"api_id\": \"a1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 工具列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/get_plugin_apis",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "get_plugin_apis"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plugin_id\": \"pl1\",\n  \"page\": 1,\n  \"size\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 调试工具",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/debug_api",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "debug_api"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plugin_id\": \"pl1\",\n  \"api_id\": \"a1\",\n  \"parameters\": \"{}\",\n  \"operation\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "响应 success/resp/raw_req/raw_resp。"
+          }
+        },
+        {
+          "name": "POST 取OAuth状态",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/get_oauth_status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "get_oauth_status"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plugin_id\": \"pl1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 资源库列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/library_resource_list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "library_resource_list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 创建文件夹",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/create_folder",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "create_folder"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\",\n  \"name\": \"分类\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 文件夹列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/get_folder_list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "get_folder_list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 移动资源到文件夹",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/plugin_api/move_resources_to_folder",
+              "host": ["{{base_url}}"],
+              "path": ["api", "plugin_api", "move_resources_to_folder"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 技能 (5)",
+      "item": [
+        {
+          "name": "POST 创建技能",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/skill/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "skill", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\",\n  \"name\": \"技能名\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 技能详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/skill/get",
+              "host": ["{{base_url}}"],
+              "path": ["api", "skill", "get"]
+            }
+          }
+        },
+        {
+          "name": "POST 更新技能",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/skill/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "skill", "update"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skill_id\": \"sk1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除技能",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/skill/delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "skill", "delete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skill_id\": \"sk1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 技能列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/skill/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "skill", "list"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 数据库 (11)",
+      "item": [
+        {
+          "name": "POST 创建数据库表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/database/add",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "database", "add"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"creator_id\": \"{{user_id}}\",\n  \"space_id\": \"{{space_id}}\",\n  \"project_id\": \"p1\",\n  \"icon_uri\": \"\",\n  \"table_name\": \"用户表\",\n  \"table_desc\": \"desc\",\n  \"field_list\": [\n    {\n      \"name\": \"name\",\n      \"desc\": \"姓名\",\n      \"type\": 1,\n      \"must_required\": true\n    }\n  ],\n  \"rw_mode\": 1,\n  \"prompt_disabled\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "type: 1Text/2Number/3Date/4Float/5Boolean。rw_mode:1受限/2只读/3无限。"
+          }
+        },
+        {
+          "name": "POST 数据库列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/database/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "database", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\",\n  \"table_type\": 1,\n  \"offset\": 0,\n  \"limit\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "table_type:1草稿/2线上。"
+          }
+        },
+        {
+          "name": "POST 按ID取数据库",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/database/get_by_id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "database", "get_by_id"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"db1\",\n  \"is_draft\": true,\n  \"need_sys_fields\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 更新数据库",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/database/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "database", "update"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"db1\",\n  \"icon_uri\": \"\",\n  \"table_name\": \"表\",\n  \"table_desc\": \"\",\n  \"field_list\": [],\n  \"rw_mode\": 1,\n  \"prompt_disabled\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除数据库",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/database/delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "database", "delete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"db1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 查询数据行",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/database/list_records",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "database", "list_records"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"database_id\": \"db1\",\n  \"table_type\": 1,\n  \"limit\": 50,\n  \"offset\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "响应 data: 行数据 list<map>。"
+          }
+        },
+        {
+          "name": "POST 增/改/删数据行",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/database/update_records",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "database", "update_records"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"database_id\": \"db1\",\n  \"record_data_add\": [\n    {\n      \"name\": \"张三\"\n    }\n  ],\n  \"table_type\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "record_data_add/alter/delete。"
+          }
+        },
+        {
+          "name": "POST 绑定到Bot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/database/bind_to_bot",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "database", "bind_to_bot"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"database_id\": \"db1\",\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST Bot库表列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/database/table/list_new",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "database", "table", "list_new"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\",\n  \"table_type\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 提交数据导入任务",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/table_file/submit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "table_file", "submit"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 取表schema",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/table_schema/get",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "table_schema", "get"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 变量与记忆 (6)",
+      "item": [
+        {
+          "name": "GET 系统变量配置",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/sys_variable_conf",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "sys_variable_conf"]
+            }
+          }
+        },
+        {
+          "name": "GET 项目变量元列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/project/variable/meta_list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "project", "variable", "meta_list"]
+            }
+          }
+        },
+        {
+          "name": "POST 取KV记忆",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/variable/get",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "variable", "get"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 写入KV记忆",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/variable/upsert",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "variable", "upsert"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除profile记忆",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory/variable/delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory", "variable", "delete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 设置记忆配置",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/memory-config/set",
+              "host": ["{{base_url}}"],
+              "path": ["api", "memory-config", "set"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 智能体/Bot编排 (9)",
+      "item": [
+        {
+          "name": "POST 创建草稿Bot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/draftbot/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "draftbot", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\",\n  \"name\": \"我的智能体\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除草稿Bot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/draftbot/delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "draftbot", "delete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 复制草稿Bot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/draftbot/duplicate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "draftbot", "duplicate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 发布Bot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/draftbot/publish",
+              "host": ["{{base_url}}"],
+              "path": ["api", "draftbot", "publish"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "发布后才能对外 /v3/chat 调用。"
+          }
+        },
+        {
+          "name": "POST 提交前检查",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/draftbot/commit_check",
+              "host": ["{{base_url}}"],
+              "path": ["api", "draftbot", "commit_check"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 草稿历史列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/draftbot/list_draft_history",
+              "host": ["{{base_url}}"],
+              "path": ["api", "draftbot", "list_draft_history"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 发布渠道列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/draftbot/publish/connector/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "draftbot", "publish", "connector", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 取草稿Bot详情",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/playground_api/draftbot/get_draft_bot_info",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "playground_api",
+                "draftbot",
+                "get_draft_bot_info"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 更新草稿Bot详情",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/playground_api/draftbot/update_draft_bot_info",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "playground_api",
+                "draftbot",
+                "update_draft_bot_info"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bot_id\": \"{{bot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ HiAgent接入 (6)",
+      "item": [
+        {
+          "name": "GET HiAgent列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/{{space_id}}/hi-agents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", "{{space_id}}", "hi-agents"]
+            }
+          }
+        },
+        {
+          "name": "POST 创建HiAgent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/{{space_id}}/hi-agents",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", "{{space_id}}", "hi-agents"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"外部智能体\",\n  \"endpoint\": \"https://...\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET HiAgent详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/{{space_id}}/hi-agents/:agent_id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", "{{space_id}}", "hi-agents", ":agent_id"]
+            }
+          }
+        },
+        {
+          "name": "PUT 更新HiAgent",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/{{space_id}}/hi-agents/:agent_id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", "{{space_id}}", "hi-agents", ":agent_id"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE 删除HiAgent",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/{{space_id}}/hi-agents/:agent_id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", "{{space_id}}", "hi-agents", ":agent_id"]
+            }
+          }
+        },
+        {
+          "name": "POST 测试HiAgent连接",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/hi-agents/test-connection",
+              "host": ["{{base_url}}"],
+              "path": ["api", "hi-agents", "test-connection"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endpoint\": \"https://...\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 项目/应用 (7)",
+      "item": [
+        {
+          "name": "POST 创建项目(应用)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/intelligence_api/draft_project/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "intelligence_api", "draft_project", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\",\n  \"name\": \"我的应用\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 复制项目",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/intelligence_api/draft_project/copy",
+              "host": ["{{base_url}}"],
+              "path": ["api", "intelligence_api", "draft_project", "copy"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"p1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 更新项目",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/intelligence_api/draft_project/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "intelligence_api", "draft_project", "update"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"p1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除项目",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/intelligence_api/draft_project/delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "intelligence_api", "draft_project", "delete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"p1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 发布项目",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/intelligence_api/publish/publish_project",
+              "host": ["{{base_url}}"],
+              "path": ["api", "intelligence_api", "publish", "publish_project"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"p1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 草稿智能体列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/intelligence_api/search/get_draft_intelligence_list",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "intelligence_api",
+                "search",
+                "get_draft_intelligence_list"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 最近编辑列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/intelligence_api/search/get_recently_edit_intelligence",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "intelligence_api",
+                "search",
+                "get_recently_edit_intelligence"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 空间 (13)",
+      "item": [
+        {
+          "name": "POST 创建空间",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"我的空间\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 空间列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", "list"]
+            }
+          }
+        },
+        {
+          "name": "GET 空间详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/:space_id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", ":space_id"]
+            }
+          }
+        },
+        {
+          "name": "PUT 更新空间",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/:space_id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", ":space_id"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DELETE 删除空间",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/:space_id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", ":space_id"]
+            }
+          }
+        },
+        {
+          "name": "GET 成员列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/:space_id/members",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", ":space_id", "members"]
+            }
+          }
+        },
+        {
+          "name": "POST 邀请成员",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/:space_id/members",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", ":space_id", "members"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"u1\",\n  \"role\": \"member\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 导出空间",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/:space_id/export",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", ":space_id", "export"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 导入预览",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/:space_id/import/preview",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", ":space_id", "import", "preview"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 创建发布",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/:space_id/release",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", ":space_id", "release"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 发布列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/:space_id/release/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", ":space_id", "release", "list"]
+            }
+          }
+        },
+        {
+          "name": "POST 一键配置空间模型",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/configure_models",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", "configure_models"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 空间健康检查",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/space/diagnose",
+              "host": ["{{base_url}}"],
+              "path": ["api", "space", "diagnose"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 模型 (12)",
+      "item": [
+        {
+          "name": "POST 创建模型",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/model/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "model", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 模型列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/model/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "model", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 模型详情",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/model/detail",
+              "host": ["{{base_url}}"],
+              "path": ["api", "model", "detail"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model_id\": \"m1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 更新模型",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/model/update",
+              "host": ["{{base_url}}"],
+              "path": ["api", "model", "update"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model_id\": \"m1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 删除模型",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/model/delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "model", "delete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model_id\": \"m1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 从模板导入模型",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/model/import",
+              "host": ["{{base_url}}"],
+              "path": ["api", "model", "import"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 模型模板列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/model/templates",
+              "host": ["{{base_url}}"],
+              "path": ["api", "model", "templates"]
+            }
+          }
+        },
+        {
+          "name": "POST 加模型到空间",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/model/space/add",
+              "host": ["{{base_url}}"],
+              "path": ["api", "model", "space", "add"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\",\n  \"model_id\": \"m1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 空间向量模型列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/embedding/space/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "embedding", "space", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 空间rerank模型列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rerank/space/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "rerank", "space", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 公共模型列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/models",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "models"]
+            }
+          }
+        },
+        {
+          "name": "POST 创建公共模型",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/models/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "models", "create"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 提示词与杂项 (5)",
+      "item": [
+        {
+          "name": "POST 新增/更新提示词",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/playground_api/upsert_prompt_resource",
+              "host": ["{{base_url}}"],
+              "path": ["api", "playground_api", "upsert_prompt_resource"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 提示词详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/playground_api/get_prompt_resource_info",
+              "host": ["{{base_url}}"],
+              "path": ["api", "playground_api", "get_prompt_resource_info"]
+            }
+          }
+        },
+        {
+          "name": "POST 官方提示词列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/playground_api/get_official_prompt_list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "playground_api", "get_official_prompt_list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 新增/更新快捷指令",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/playground_api/create_update_shortcut_command",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "playground_api",
+                "create_update_shortcut_command"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 空间列表V2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/playground_api/space/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "playground_api", "space", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 模板与商店 (7)",
+      "item": [
+        {
+          "name": "POST 发布为模板",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/template/publish",
+              "host": ["{{base_url}}"],
+              "path": ["api", "template", "publish"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 我的模板列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/template/my-list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "template", "my-list"]
+            }
+          }
+        },
+        {
+          "name": "DELETE 删除模板",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/template/:template_id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "template", ":template_id"]
+            }
+          }
+        },
+        {
+          "name": "POST 发布到商店",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/template/store/publish",
+              "host": ["{{base_url}}"],
+              "path": ["api", "template", "store", "publish"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 商店模板列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/template/store/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "template", "store", "list"]
+            }
+          }
+        },
+        {
+          "name": "GET 商店产品列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/marketplace/product/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "marketplace", "product", "list"]
+            }
+          }
+        },
+        {
+          "name": "POST 复制商店产品",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/marketplace/product/duplicate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "marketplace", "product", "duplicate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 统计与日志 (5)",
+      "item": [
+        {
+          "name": "POST 活跃用户统计",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/statistics/app/active-users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "statistics", "app", "active-users"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 消息量统计",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/statistics/app/messages",
+              "host": ["{{base_url}}"],
+              "path": ["api", "statistics", "app", "messages"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST Token统计",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/statistics/app/tokens",
+              "host": ["{{base_url}}"],
+              "path": ["api", "statistics", "app", "tokens"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 会话日志列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/statistics/app/list_app_conversation_log",
+              "host": ["{{base_url}}"],
+              "path": ["api", "statistics", "app", "list_app_conversation_log"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"space_id\": \"{{space_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 操作日志列表",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/operation_log/list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "operation_log", "list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "管理 ▸ 用户与PAT (5)",
+      "item": [
+        {
+          "name": "POST 账户信息",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/passport/account/info/v2/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "passport", "account", "info", "v2"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 更新资料",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user/update_profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "user", "update_profile"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST 创建PAT(API Key)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/permission_api/pat/create_personal_access_token_and_permission",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "permission_api",
+                "pat",
+                "create_personal_access_token_and_permission"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"my-token\",\n  \"expire_at\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "创建对外用的 PAT 令牌(就是 api_key)。"
+          }
+        },
+        {
+          "name": "GET 列出PAT",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/permission_api/pat/list_personal_access_tokens",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "permission_api",
+                "pat",
+                "list_personal_access_tokens"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST 删除PAT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "session_key={{session_key}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/permission_api/pat/delete_personal_access_token_and_permission",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "permission_api",
+                "pat",
+                "delete_personal_access_token_and_permission"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"t1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "登录(公开) (3)",
+      "item": [
+        {
+          "name": "POST 邮箱登录",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/passport/web/email/login/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "passport", "web", "email", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@test.com\",\n  \"password\": \"<password>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "登录拿 session_key cookie。"
+          }
+        },
+        {
+          "name": "POST 邮箱注册",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/passport/web/email/register/v2/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "passport", "web", "email", "register", "v2"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@test.com\",\n  \"password\": \"<password>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET 登出",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/passport/web/logout/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "passport", "web", "logout"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

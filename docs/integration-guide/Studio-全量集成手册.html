@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>猎鹰 Studio · 全量 API 集成手册</title>
+<meta name="viewport" content="width=1280" />
+<style>
+:root {
+  --bg: #FAFAF7;
+  --panel: #FFFFFF;
+  --ink: #1F2A37;
+  --ink-soft: #4B5563;
+  --muted: #8A93A1;
+  --rule: #E7E5DE;
+  --rule-soft: #F0EEE7;
+  --brand: #2247A8;
+  --brand-soft: #E9EEF7;
+  --accent: #1E80EB;
+  --accent-soft: #FBEEE5;
+  --warn-bg: #FFF7E8;
+  --warn-rule: #E08A1E;
+  --tip-bg: #EAF2FB;
+  --tip-rule: #2D6BD1;
+  --code-bg: #F4F2EC;
+  --code-ink: #2A2F3A;
+  --serif: "Newsreader", "Source Serif Pro", "PingFang SC", "Noto Serif SC", Georgia, serif;
+  --sans: "Inter", -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.7; }
+body { display: flex; min-height: 100vh; }
+
+/* ---------------- Sidebar ---------------- */
+aside.nav {
+  width: 320px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--rule);
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column;
+}
+aside.nav .brand {
+  padding: 28px 28px 20px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+aside.nav .brand .logo {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--brand);
+  line-height: 1.1;
+}
+aside.nav .brand .logo em { font-style: normal; color: var(--accent); font-weight: 600; }
+aside.nav .brand .sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+
+.tab-bar {
+  display: flex;
+  padding: 14px 20px;
+  gap: 6px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.tab-bar button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink-soft);
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.tab-bar button:hover { background: var(--rule-soft); }
+.tab-bar button.active {
+  background: var(--brand);
+  color: white;
+  font-weight: 500;
+}
+
+nav.toc { flex: 1; overflow-y: auto; padding: 16px 14px 60px; }
+nav.toc .group { display: none; }
+nav.toc .group.active { display: block; }
+nav.toc h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin: 18px 14px 6px;
+  font-weight: 500;
+}
+nav.toc a {
+  display: block;
+  padding: 9px 14px;
+  border-radius: 6px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: 14px;
+  position: relative;
+  margin: 1px 0;
+  transition: background .15s, color .15s;
+}
+nav.toc a:hover { background: var(--rule-soft); color: var(--ink); }
+nav.toc a.current {
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 500;
+}
+nav.toc a .step-num {
+  display: inline-block;
+  width: 22px;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  font-weight: 600;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+nav.toc .endpoint-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  display: block;
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+
+/* ---------------- Main ---------------- */
+main.content {
+  flex: 1;
+  max-width: 980px;
+  padding: 48px 80px 200px;
+  background: var(--bg);
+}
+
+section.page { display: none; }
+section.page.active { display: block; animation: fadeIn .25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.breadcrumb {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.breadcrumb .sep { margin: 0 6px; opacity: 0.5; }
+
+h1.page-title {
+  font-family: var(--serif);
+  font-size: 44px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--brand);
+  margin: 0 0 8px;
+  line-height: 1.1;
+}
+.subtitle {
+  font-size: 17px;
+  color: var(--ink-soft);
+  margin-bottom: 36px;
+  max-width: 720px;
+  line-height: 1.55;
+}
+
+h2 {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 56px 0 14px;
+  padding-top: 10px;
+}
+h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 28px 0 10px;
+}
+
+p { margin: 0 0 14px; max-width: 720px; }
+p.lead { font-size: 17px; color: var(--ink-soft); }
+
+ul, ol { margin: 0 0 18px; padding-left: 22px; max-width: 720px; }
+ul li, ol li { margin: 4px 0; }
+
+/* Concept relationship diagram (page 0) */
+.concept-diagram {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 32px;
+  margin: 30px 0 40px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.concept-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 60px;
+  gap: 20px;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px dashed var(--rule);
+}
+.concept-row:last-child { border-bottom: 0; }
+.concept-row .pill {
+  display: inline-block;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 999px;
+  text-align: center;
+}
+.concept-row .pill.agent { background: var(--brand); color: white; }
+.concept-row .pill.scene { background: var(--accent); color: white; }
+.concept-row .pill.intent { background: var(--brand-soft); color: var(--brand); }
+.concept-row .pill.skill { background: var(--accent-soft); color: var(--accent); }
+.concept-row .desc { color: var(--ink-soft); font-size: 14.5px; line-height: 1.55; }
+.concept-row .arrow { color: var(--muted); font-size: 22px; text-align: center; font-family: var(--mono); }
+
+/* Step header */
+.step-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin: 0 0 8px;
+}
+.step-header .step-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+/* Screenshot frame */
+figure.shot {
+  margin: 24px 0 32px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+}
+figure.shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+figure.shot figcaption {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--muted);
+  background: #FBFBF8;
+  border-top: 1px solid var(--rule);
+  font-style: italic;
+}
+
+/* Tables */
+table {
+  border-collapse: collapse;
+  margin: 16px 0 24px;
+  font-size: 14px;
+  width: 100%;
+  max-width: 760px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  overflow: hidden;
+}
+th { text-align: left; padding: 10px 14px; background: var(--brand-soft); color: var(--brand); font-weight: 600; font-size: 13px; border-bottom: 1px solid var(--rule); }
+td { padding: 10px 14px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; color: var(--ink-soft); }
+td:first-child { color: var(--ink); font-weight: 500; font-family: var(--mono); font-size: 13px; }
+tr:last-child td { border-bottom: 0; }
+
+/* Code blocks */
+pre.code {
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  margin: 12px 0 20px;
+  white-space: pre;
+  max-width: 760px;
+  position: relative;
+}
+pre.code .copy-btn {
+  position: absolute;
+  top: 8px; right: 10px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--sans);
+  opacity: 0;
+  transition: opacity .15s;
+}
+pre.code:hover .copy-btn { opacity: 1; }
+pre.code .copy-btn:hover { color: var(--ink); border-color: var(--ink); background: white; }
+pre.code.method-line {
+  background: var(--brand);
+  color: white;
+  font-weight: 500;
+}
+
+/* Callout boxes */
+.tip, .warn {
+  border-radius: 8px;
+  padding: 14px 18px 14px 18px;
+  margin: 18px 0 22px;
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 760px;
+  border-left: 3px solid;
+}
+.tip { background: var(--tip-bg); border-left-color: var(--tip-rule); color: #1B3D6E; }
+.warn { background: var(--warn-bg); border-left-color: var(--warn-rule); color: #6B4910; }
+.tip strong, .warn strong { display: inline-block; margin-right: 4px; }
+
+/* Endpoint header card (HiAgent API) */
+.endpoint-card {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin: 16px 0 20px;
+}
+.endpoint-card .method-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.endpoint-card .method {
+  background: var(--brand);
+  color: white;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+.endpoint-card .path {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.endpoint-card .what { font-size: 14px; color: var(--ink-soft); margin: 6px 0 0; }
+
+/* Quick-ref card grid for the cheat sheet */
+.checklist {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px 22px;
+  margin: 20px 0;
+  max-width: 760px;
+}
+.checklist .n {
+  font-family: var(--serif);
+  font-size: 28px;
+  color: var(--accent);
+  font-weight: 600;
+  line-height: 1;
+  width: 30px;
+  text-align: right;
+}
+.checklist .step-body { font-size: 15px; color: var(--ink-soft); }
+.checklist .step-body strong { color: var(--ink); font-weight: 600; }
+
+footer.foot {
+  margin-top: 80px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Pager */
+.pager {
+  margin-top: 60px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+}
+.pager a {
+  flex: 1;
+  max-width: 320px;
+  padding: 14px 18px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 14px;
+  background: var(--panel);
+  transition: border-color .15s, background .15s;
+}
+.pager a:hover { border-color: var(--brand); background: var(--brand-soft); }
+.pager a.next { text-align: right; }
+.pager a .label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.pager a .title { font-weight: 500; }
+.pager .spacer { flex: 1; max-width: 320px; }
+</style>
+</head>
+<body>
+<aside class="nav">
+  <div class="brand"><div class="logo">猎鹰<em>Studio</em></div><div class="sub">全量 API · 集成手册</div></div>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="guide">集成教程</button>
+    <button class="tab-btn" data-tab="api">API 接口</button>
+    <button class="tab-btn" data-tab="ops">功能速览</button>
+  </div>
+  <nav class="toc">
+    <div class="group active" data-group="guide">
+      <h4>开始</h4><a href="#concepts" class="current"><span class="step-num">0</span>能做什么</a>
+      <h4>对外集成（5 步）</h4><a href="#step1"><span class="step-num">1</span>创建并发布智能体</a><a href="#step2"><span class="step-num">2</span>创建 PAT 访问令牌</a><a href="#step3"><span class="step-num">3</span>调用 /v3/chat 对话</a><a href="#step4"><span class="step-num">4</span>运行工作流</a><a href="#step5"><span class="step-num">5</span>文件上传与会话管理</a>
+    </div>
+    <div class="group" data-group="api">
+      <h4>通用</h4><a href="#api-base">认证与约定<span class="endpoint-tag">2套</span></a>
+      <h4>对外 API（Bearer PAT）</h4><a href="#m-">对外 ▸ 对话与会话<span class="endpoint-tag">6</span></a><a href="#m-">对外 ▸ 工作流<span class="endpoint-tag">6</span></a><a href="#m-">对外 ▸ 文件<span class="endpoint-tag">4</span></a>
+      <h4>平台管理 API（Cookie）</h4><a href="#m-">管理 ▸ 对话(前端)<span class="endpoint-tag">6</span></a><a href="#m-">管理 ▸ 工作流编排<span class="endpoint-tag">23</span></a><a href="#m-">管理 ▸ 知识库<span class="endpoint-tag">18</span></a><a href="#m-">管理 ▸ 外部知识库<span class="endpoint-tag">4</span></a><a href="#m-">管理 ▸ 插件<span class="endpoint-tag">18</span></a><a href="#m-">管理 ▸ 技能<span class="endpoint-tag">5</span></a><a href="#m-">管理 ▸ 数据库<span class="endpoint-tag">11</span></a><a href="#m-">管理 ▸ 变量与记忆<span class="endpoint-tag">6</span></a><a href="#m-bot">管理 ▸ 智能体/Bot编排<span class="endpoint-tag">9</span></a><a href="#m-hiagent">管理 ▸ HiAgent接入<span class="endpoint-tag">6</span></a><a href="#m-">管理 ▸ 项目/应用<span class="endpoint-tag">7</span></a><a href="#m-">管理 ▸ 空间<span class="endpoint-tag">13</span></a><a href="#m-">管理 ▸ 模型<span class="endpoint-tag">12</span></a><a href="#m-">管理 ▸ 提示词与杂项<span class="endpoint-tag">5</span></a><a href="#m-">管理 ▸ 模板与商店<span class="endpoint-tag">7</span></a><a href="#m-">管理 ▸ 统计与日志<span class="endpoint-tag">5</span></a><a href="#m-pat">管理 ▸ 用户与PAT<span class="endpoint-tag">5</span></a><a href="#m-">登录(公开)<span class="endpoint-tag">3</span></a>
+    </div>
+    <div class="group" data-group="ops"><h4>管理后台</h4><a href="#ops"><span class="step-num">·</span>功能速览</a></div>
+  </nav>
+</aside>
+<main class="content">
+<section class="page active" id="concepts"><div class="breadcrumb">集成教程 <span class="sep">›</span> 开始</div>
+  <h1 class="page-title">猎鹰 Studio<br>对外开放 API 能做什么</h1>
+  <p class="lead">在 Studio 里搭好智能体/工作流并发布后，业务系统用 PAT 令牌通过 API 调用——对话、跑工作流、传文件。本手册「集成教程」讲对外集成 5 步；「API 接口」覆盖全平台 21 个模块 179 个接口（对外 + 平台管理）。</p>
+  <div class="concept-diagram"><div class="concept-row"><div><span class="pill agent">对外开放 API</span></div><div class="desc">猎鹰 Studio 是 AI 智能体开发平台。你在平台里搭好「智能体(Bot)」和「工作流(Workflow)」并发布后，业务系统可用 API 调用它们——对话、跑工作流、传文件。</div><div class="arrow">↓</div></div><div class="concept-row"><div><span class="pill scene">PAT 访问令牌</span></div><div class="desc">业务系统用个人访问令牌（PAT，形如一串密钥）以 Authorization: Bearer 调用，无需登录、无需 cookie。在 Studio Web 个人设置里创建。</div><div class="arrow">↓</div></div><div class="concept-row"><div><span class="pill intent">两个核心能力</span></div><div class="desc">① 与智能体对话 /v3/chat（OpenAI/Coze v3 兼容，SSE 流式）；② 运行工作流 /v1/workflow/run（同步）与 stream_run（流式）。</div><div class="arrow">↓</div></div><div class="concept-row"><div><span class="pill skill">业务参数</span></div><div class="desc">bot_id / workflow_id 从 Studio 编辑页 URL 里取；user_id 由业务方自定义（终端用户唯一标识，用于数据隔离）。</div><div class="arrow">·</div></div></div>
+  <div class="tip"><strong>💡 两套认证：</strong>对外 API 用 <code>Authorization: Bearer &lt;PAT&gt;</code>；平台管理 API（知识库/插件/数据库等）走前端登录态 <code>session_key</code> cookie。详见「API 接口 › 认证与约定」。</div>
+  <div class="pager"><div class="spacer"></div><a href="#step1" class="next"><span class="label">下一步</span><span class="title">第 1 步 →</span></a></div></section><section class="page" id="step1"><div class="breadcrumb">集成教程 <span class="sep">›</span> 跟着做</div>
+      <div class="step-header"><span class="step-tag">STEP 1</span></div><h1 class="page-title">创建并发布智能体</h1><p class="lead">先在 Studio 里搭一个智能体并发布——只有已发布的智能体才能被对外 API 调用。</p><h2>① 在「项目开发」创建/打开智能体</h2><p>左侧「项目开发」进入智能体列表，新建或打开一个智能体。</p><figure class="shot"><img src="screenshots/03-project-list.png" alt="项目开发页：智能体列表"><figcaption>📷 项目开发页：智能体列表</figcaption></figure><h2>② 编排、调试、发布</h2><p>在编排页配置人设/技能/知识，右侧「预览与调试」可即时对话。确认无误后点右上角【发布】。注意浏览器地址栏 URL：/space/.../bot/&lt;bot_id&gt;/arrange，其中的 bot_id 就是调用 /v3/chat 要用的智能体 ID。</p><figure class="shot"><img src="screenshots/05-bot-edit.png" alt="智能体编排页：右上角【发布】、右侧预览调试、URL 含 bot_id"><figcaption>📷 智能体编排页：右上角【发布】、右侧预览调试、URL 含 bot_id</figcaption></figure><div class="warn"><strong>⚠️ 必须发布：</strong>/v3/chat 只能调到已发布的智能体（走线上版），草稿调不通。改动后需重新发布生效。</div>
+      <div class="pager"><a href="#concepts" class="prev"><span class="label">上一步</span><span class="title">← 上一步</span></a><a href="#step2" class="next"><span class="label">下一步</span><span class="title">下一步 →</span></a></div></section><section class="page" id="step2"><div class="breadcrumb">集成教程 <span class="sep">›</span> 跟着做</div>
+      <div class="step-header"><span class="step-tag">STEP 2</span></div><h1 class="page-title">创建 PAT 访问令牌</h1><p class="lead">业务系统用 PAT 作为 API Key 调用。在个人设置里创建，密钥要妥善保存。</p><h2>① 进入「API 授权」</h2><p>点左下角用户头像 → 菜单选「API 授权」，进入个人访问令牌管理页。</p><figure class="shot"><img src="screenshots/01-pat-list.png" alt="API 授权页：个人访问令牌列表"><figcaption>📷 API 授权页：个人访问令牌列表</figcaption></figure><h2>② 添加新令牌</h2><p>点【添加新令牌】，填名称、选过期时间，确定后生成令牌。</p><figure class="shot"><img src="screenshots/02-pat-create.png" alt="添加新的个人访问令牌：填名称 + 过期时间"><figcaption>📷 添加新的个人访问令牌：填名称 + 过期时间</figcaption></figure><div class="warn"><strong>⚠️ 妥善保存：</strong>令牌只在创建时完整显示一次，不要泄露、不要写进前端代码。调用时放 Authorization: Bearer &lt;令牌&gt;。</div>
+      <div class="pager"><a href="#step1" class="prev"><span class="label">上一步</span><span class="title">← 上一步</span></a><a href="#step3" class="next"><span class="label">下一步</span><span class="title">下一步 →</span></a></div></section><section class="page" id="step3"><div class="breadcrumb">集成教程 <span class="sep">›</span> 跟着做</div>
+      <div class="step-header"><span class="step-tag">STEP 3</span></div><h1 class="page-title">调用 /v3/chat 对话</h1><p class="lead">拿到 bot_id + PAT，业务系统即可与智能体对话。默认 SSE 流式返回。</p><h2>① 发起对话</h2><pre class="code"><button class="copy-btn">复制</button>curl -N -X POST "http://&lt;BASE_URL&gt;/v3/chat?conversation_id=" \
+  -H "Authorization: Bearer &lt;PAT&gt;" -H "Content-Type: application/json" \
+  -d '{"bot_id":"7620395637741191168","user_id":"biz_user_001","stream":true,"additional_messages":[{"role":"user","content":"你好","content_type":"text"}]}'</pre><h2>② 处理 SSE 事件流</h2><pre class="code"><button class="copy-btn">复制</button>event: conversation.message.delta
+data: {"role":"assistant","content":"你","content_type":"text",...}
+
+event: conversation.message.completed
+data: {...完整回复...}
+
+event: conversation.chat.completed
+data: {...usage:{token_count,input_count,output_count}}
+
+event: conversation.stream.done</pre><div class="tip"><strong>💡 增量拼接：</strong>delta 事件的 content 是增量文本，按顺序拼接即得完整回复；chat.completed 带 token 用量。conversation_id 不传会自动新建，在事件里返回，下轮带上即可多轮对话。</div>
+      <div class="pager"><a href="#step2" class="prev"><span class="label">上一步</span><span class="title">← 上一步</span></a><a href="#step4" class="next"><span class="label">下一步</span><span class="title">下一步 →</span></a></div></section><section class="page" id="step4"><div class="breadcrumb">集成教程 <span class="sep">›</span> 跟着做</div>
+      <div class="step-header"><span class="step-tag">STEP 4</span></div><h1 class="page-title">运行工作流</h1><p class="lead">工作流(Workflow)适合固定流程/编排任务。发布后用 workflow_id 调用。</p><h2>① 拿 workflow_id</h2><p>「资源库 → 工作流」里打开一个工作流，URL 里即其 ID。</p><figure class="shot"><img src="screenshots/04-workflow-list.png" alt="资源库工作流列表"><figcaption>📷 资源库工作流列表</figcaption></figure><h2>② 同步运行</h2><pre class="code"><button class="copy-btn">复制</button>curl -X POST "http://&lt;BASE_URL&gt;/v1/workflow/run" \
+  -H "Authorization: Bearer &lt;PAT&gt;" -H "Content-Type: application/json" \
+  -d '{"workflow_id":"7400000000000000000","parameters":"{\"input\":\"hello\"}"}'</pre><div class="warn"><strong>⚠️ parameters 是字符串：</strong>工作流入参 parameters 要传「JSON 序列化后的字符串」，不是 JSON 对象。流式运行用 /v1/workflow/stream_run（SSE），中断用 stream_resume 恢复。</div>
+      <div class="pager"><a href="#step3" class="prev"><span class="label">上一步</span><span class="title">← 上一步</span></a><a href="#step5" class="next"><span class="label">下一步</span><span class="title">下一步 →</span></a></div></section><section class="page" id="step5"><div class="breadcrumb">集成教程 <span class="sep">›</span> 跟着做</div>
+      <div class="step-header"><span class="step-tag">STEP 5</span></div><h1 class="page-title">文件上传与会话管理</h1><p class="lead">对话里要带图片/文件，先上传拿到 URI；多轮会话用会话接口管理。</p><h2>① 上传文件</h2><p>两种方式：/api/bot/upload_file（base64）或 /v1/files/upload（原始二进制）。返回文件 URL/URI，可在对话 content 里引用。</p><pre class="code"><button class="copy-btn">复制</button>curl -X POST "http://&lt;BASE_URL&gt;/v1/files/upload" \
+  -H "Authorization: Bearer &lt;PAT&gt;" -H "Content-Type: image/png" \
+  --data-binary "@logo.png"</pre><h2>② 会话管理</h2><p>/v1/conversation/create 建会话、/v1/conversations 列会话、/v1/conversation/message/list 列消息、/v1/conversations/:id/clear 清空上下文。详见「API 接口」。</p><div class="tip"><strong>✅ 到这里链路打通：</strong>发布智能体 → 建 PAT → 调 /v3/chat / workflow → 传文件 / 管会话。完整接口契约见「API 接口」标签，可配合同目录 Postman 集合直接测试。</div>
+      <div class="pager"><a href="#step4" class="prev"><span class="label">上一步</span><span class="title">← 上一步</span></a><a href="#api-base" class="next"><span class="label">下一步</span><span class="title">下一步 →</span></a></div></section><section class="page" id="api-base"><div class="breadcrumb">API 接口 <span class="sep">›</span> 通用</div>
+  <h1 class="page-title">认证与约定</h1>
+  <p class="lead">猎鹰 Studio 共 179 个接口（本手册收录），分两套认证。</p>
+  <table><thead><tr><th>类别</th><th>认证</th><th>说明</th></tr></thead><tbody>
+  <tr><td>对外 API（/v1,/v3）</td><td><code>Authorization: Bearer &lt;PAT&gt;</code></td><td>业务系统集成，PAT 在「个人设置→API授权」创建</td></tr>
+  <tr><td>平台管理 API（/api/*）</td><td>Cookie <code>session_key</code></td><td>前端管理后台（知识库/插件/数据库等），登录后携带</td></tr>
+  </tbody></table>
+  <div class="warn"><strong>⚠️ ID 字段：</strong>所有 i64 ID（bot_id/dataset_id 等）在 JSON 里都是<strong>字符串</strong>。SSE 接口（/v3/chat、stream_run、/api/conversation/chat 等）返回 text/event-stream。</div>
+  <div class="tip"><strong>💡 配合 Postman：</strong>同目录 <code>Studio-全量API.postman_collection.json</code> 含全部 179 个接口（两套 auth 分组），导入即可逐个测试。</div></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 对外</div>
+      <h1 class="page-title">对外 ▸ 对话与会话</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Bearer PAT</span><span class="path">6 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/v3/chat</td><td>与智能体对话 (SSE)</td></tr><tr><td>POST</td><td>/v1/conversation/create</td><td>创建会话</td></tr><tr><td>GET</td><td>/v1/conversations</td><td>列出会话</td></tr><tr><td>POST</td><td>/v1/conversation/message/list</td><td>列出会话消息</td></tr><tr><td>POST</td><td>/v1/conversations/{{conversation_id}}/clear</td><td>清空会话上下文</td></tr><tr><td>GET</td><td>/v1/bot/get_online_info</td><td>查智能体线上信息</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 与智能体对话 (SSE)</h3><p>与已发布智能体对话(OpenAI/Coze v3,SSE)。bot_id在body,conversation_id在query。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "bot_id": "{{bot_id}}",
+  "user_id": "{{user_id}}",
+  "stream": true,
+  "additional_messages": [
+    {
+      "role": "user",
+      "content": "你好",
+      "content_type": "text"
+    }
+  ]
+}</pre><h3>POST 创建会话</h3><p>请求 bot_id/connector_id/meta_data。响应 data.id 会话ID。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "bot_id": "{{bot_id}}"
+}</pre><h3>POST 列出会话消息</h3><p>请求 conversation_id/limit/order/before_id/after_id。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "conversation_id": "{{conversation_id}}",
+  "limit": 20,
+  "order": "desc"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 对外</div>
+      <h1 class="page-title">对外 ▸ 工作流</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Bearer PAT</span><span class="path">6 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/v1/workflow/run</td><td>运行工作流(同步)</td></tr><tr><td>POST</td><td>/v1/workflow/stream_run</td><td>流式运行工作流(SSE)</td></tr><tr><td>POST</td><td>/v1/workflow/stream_resume</td><td>工作流中断恢复(SSE)</td></tr><tr><td>GET</td><td>/v1/workflow/get_run_history</td><td>工作流执行历史</td></tr><tr><td>POST</td><td>/v1/workflows/chat</td><td>与对话流对话(SSE)</td></tr><tr><td>POST</td><td>/v1/workflow/conversation/create</td><td>为对话流创建会话</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 运行工作流(同步)</h3><p>parameters 为入参JSON字符串。响应 data(结果)/token/cost/execute_id。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "workflow_id": "{{workflow_id}}",
+  "parameters": "{\"input\":\"hi\"}"
+}</pre><h3>POST 流式运行工作流(SSE)</h3><p>SSE: event message/done/error, 含 node_title/content/interrupt_data。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "workflow_id": "{{workflow_id}}",
+  "parameters": "{\"input\":\"hi\"}"
+}</pre><h3>POST 工作流中断恢复(SSE)</h3><p>interrupt_type: 1本地插件/2提问/3要素/5输入/7OAuth。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "workflow_id": "{{workflow_id}}",
+  "event_id": "e1",
+  "interrupt_type": 2,
+  "resume_data": "补充",
+  "ext": {}
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 对外</div>
+      <h1 class="page-title">对外 ▸ 文件</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Bearer PAT</span><span class="path">4 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/bot/upload_file</td><td>上传文件(base64)</td></tr><tr><td>POST</td><td>/v1/files/upload</td><td>上传文件(原始二进制)</td></tr><tr><td>POST</td><td>/api/playground/upload/auth_token</td><td>取OSS直传凭证</td></tr><tr><td>POST</td><td>/api/common/upload/apply_upload_action</td><td>申请上传地址(VOD)</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 上传文件(base64)</h3><p>biz_type: 1BOT_ICON/2BOT_DATASET/4PLUGIN_ICON...。响应 upload_url/upload_uri。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "file_head": {
+    "file_type": "png",
+    "biz_type": 1
+  },
+  "data": "&lt;base64&gt;"
+}</pre><h3>POST 取OSS直传凭证</h3><p>响应 auth{access_key_id,secret_access_key,session_token}。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "scene": "bot"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 对话(前端)</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">6 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/conversation/chat</td><td>Agent运行(SSE主聊天)</td></tr><tr><td>POST</td><td>/api/conversation/get_message_list</td><td>拉取消息列表</td></tr><tr><td>POST</td><td>/api/conversation/clear_message</td><td>清空会话历史</td></tr><tr><td>POST</td><td>/api/conversation/create_section</td><td>新建 section</td></tr><tr><td>POST</td><td>/api/conversation/delete_message</td><td>删除消息</td></tr><tr><td>POST</td><td>/api/conversation/break_message</td><td>打断回复</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST Agent运行(SSE主聊天)</h3><p>AgentRunRequest。SSE RunStreamResponse。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "bot_id": "{{bot_id}}",
+  "conversation_id": "{{conversation_id}}",
+  "query": "你好",
+  "scene": 10
+}</pre><h3>POST 拉取消息列表</h3><p>游标分页。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "conversation_id": "{{conversation_id}}",
+  "cursor": "0",
+  "count": 20
+}</pre><h3>POST 清空会话历史</h3><p>建新 section。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "conversation_id": "{{conversation_id}}"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 工作流编排</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">23 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/workflow_api/create</td><td>创建工作流</td></tr><tr><td>POST</td><td>/api/workflow_api/save</td><td>保存草稿canvas</td></tr><tr><td>POST</td><td>/api/workflow_api/publish</td><td>发布工作流</td></tr><tr><td>POST</td><td>/api/workflow_api/copy</td><td>复制工作流</td></tr><tr><td>POST</td><td>/api/workflow_api/delete</td><td>删除工作流</td></tr><tr><td>POST</td><td>/api/workflow_api/canvas</td><td>获取canvas</td></tr><tr><td>POST</td><td>/api/workflow_api/test_run</td><td>试运行(编辑器调试)</td></tr><tr><td>POST</td><td>/api/workflow_api/test_resume</td><td>试运行恢复</td></tr><tr><td>POST</td><td>/api/workflow_api/nodeDebug</td><td>单节点调试</td></tr><tr><td>GET</td><td>/api/workflow_api/get_process</td><td>获取运行进度</td></tr><tr><td>POST</td><td>/api/workflow_api/workflow_list</td><td>工作流列表</td></tr><tr><td>POST</td><td>/api/workflow_api/workflow_detail</td><td>工作流详情</td></tr><tr><td>POST</td><td>/api/workflow_api/workflow_detail_info</td><td>工作流详情(含schema)</td></tr><tr><td>POST</td><td>/api/workflow_api/list_publish_workflow</td><td>已发布工作流列表</td></tr><tr><td>POST</td><td>/api/workflow_api/update_meta</td><td>更新元信息</td></tr><tr><td>POST</td><td>/api/workflow_api/validate_tree</td><td>校验流程树</td></tr><tr><td>POST</td><td>/api/workflow_api/node_template_list</td><td>节点模板列表</td></tr><tr><td>POST</td><td>/api/workflow_api/export</td><td>导出工作流</td></tr><tr><td>POST</td><td>/api/workflow_api/import</td><td>导入工作流</td></tr><tr><td>POST</td><td>/api/workflow_api/version_list</td><td>版本历史列表</td></tr><tr><td>POST</td><td>/api/workflow_api/revert_draft</td><td>回滚草稿到版本</td></tr><tr><td>POST</td><td>/api/workflow_api/chat_flow_role/create</td><td>创建chatflow角色</td></tr><tr><td>POST</td><td>/api/workflow_api/project_conversation/create</td><td>创建项目会话定义</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 创建工作流</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}",
+  "name": "我的工作流"
+}</pre><h3>POST 保存草稿canvas</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "workflow_id": "{{workflow_id}}"
+}</pre><h3>POST 发布工作流</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "workflow_id": "{{workflow_id}}"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 知识库</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">18 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/knowledge/create</td><td>创建知识库</td></tr><tr><td>POST</td><td>/api/knowledge/list</td><td>知识库列表</td></tr><tr><td>POST</td><td>/api/knowledge/detail</td><td>知识库详情(批量)</td></tr><tr><td>POST</td><td>/api/knowledge/update</td><td>更新知识库</td></tr><tr><td>POST</td><td>/api/knowledge/delete</td><td>删除知识库</td></tr><tr><td>POST</td><td>/api/knowledge/document/create</td><td>创建文档</td></tr><tr><td>POST</td><td>/api/knowledge/document/list</td><td>文档列表</td></tr><tr><td>POST</td><td>/api/knowledge/document/update</td><td>更新文档</td></tr><tr><td>POST</td><td>/api/knowledge/document/delete</td><td>删除文档</td></tr><tr><td>POST</td><td>/api/knowledge/document/resegment</td><td>重新分段</td></tr><tr><td>POST</td><td>/api/knowledge/document/progress/get</td><td>文档处理进度</td></tr><tr><td>POST</td><td>/api/knowledge/slice/create</td><td>新增切片</td></tr><tr><td>POST</td><td>/api/knowledge/slice/list</td><td>切片列表</td></tr><tr><td>POST</td><td>/api/knowledge/slice/update</td><td>更新切片</td></tr><tr><td>POST</td><td>/api/knowledge/slice/delete</td><td>删除切片</td></tr><tr><td>POST</td><td>/api/knowledge/retrieve_test</td><td>召回测试</td></tr><tr><td>POST</td><td>/api/knowledge/table_schema/get</td><td>取表格schema</td></tr><tr><td>POST</td><td>/api/knowledge/photo/list</td><td>图片列表</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 创建知识库</h3><p>format_type: 0文本/1表格/2图片/7QA。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "name": "我的知识库",
+  "description": "desc",
+  "space_id": "{{space_id}}",
+  "icon_uri": "",
+  "format_type": 0
+}</pre><h3>POST 知识库列表</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}",
+  "page": 1,
+  "size": 20
+}</pre><h3>POST 知识库详情(批量)</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "dataset_ids": [
+    "{{dataset_id}}"
+  ],
+  "space_id": "{{space_id}}"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 外部知识库</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">4 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/external-knowledge/retrieval</td><td>外部知识库检索</td></tr><tr><td>POST</td><td>/api/external-knowledge/binding/create</td><td>创建绑定</td></tr><tr><td>GET</td><td>/api/external-knowledge/binding/list</td><td>绑定列表</td></tr><tr><td>GET</td><td>/api/external-knowledge/ragflow/datasets</td><td>RAGFlow数据集列表</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 外部知识库检索</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "query": "问题"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 插件</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">18 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/plugin_api/register_plugin_meta</td><td>创建插件元信息</td></tr><tr><td>POST</td><td>/api/plugin_api/register</td><td>从manifest+openapi注册</td></tr><tr><td>POST</td><td>/api/plugin_api/convert_to_openapi</td><td>curl/postman/swagger转openapi</td></tr><tr><td>POST</td><td>/api/plugin_api/update_plugin_meta</td><td>更新插件元信息</td></tr><tr><td>POST</td><td>/api/plugin_api/del_plugin</td><td>删除插件</td></tr><tr><td>POST</td><td>/api/plugin_api/get_plugin_info</td><td>插件详情</td></tr><tr><td>POST</td><td>/api/plugin_api/get_dev_plugin_list</td><td>开发态插件列表</td></tr><tr><td>POST</td><td>/api/plugin_api/publish_plugin</td><td>发布插件</td></tr><tr><td>POST</td><td>/api/plugin_api/create_api</td><td>创建工具(API)</td></tr><tr><td>POST</td><td>/api/plugin_api/update_api</td><td>更新工具</td></tr><tr><td>POST</td><td>/api/plugin_api/delete_api</td><td>删除工具</td></tr><tr><td>POST</td><td>/api/plugin_api/get_plugin_apis</td><td>工具列表</td></tr><tr><td>POST</td><td>/api/plugin_api/debug_api</td><td>调试工具</td></tr><tr><td>POST</td><td>/api/plugin_api/get_oauth_status</td><td>取OAuth状态</td></tr><tr><td>POST</td><td>/api/plugin_api/library_resource_list</td><td>资源库列表</td></tr><tr><td>POST</td><td>/api/plugin_api/create_folder</td><td>创建文件夹</td></tr><tr><td>POST</td><td>/api/plugin_api/get_folder_list</td><td>文件夹列表</td></tr><tr><td>POST</td><td>/api/plugin_api/move_resources_to_folder</td><td>移动资源到文件夹</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 创建插件元信息</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "name": "我的插件",
+  "desc": "desc",
+  "space_id": "{{space_id}}",
+  "icon": {},
+  "auth_type": 0
+}</pre><h3>POST 从manifest+openapi注册</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "ai_plugin": "&lt;manifest JSON&gt;",
+  "openapi": "&lt;openapi YAML&gt;",
+  "space_id": "{{space_id}}"
+}</pre><h3>POST curl/postman/swagger转openapi</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "data": "&lt;curl/swagger&gt;",
+  "space_id": "{{space_id}}"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 技能</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">5 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/skill/create</td><td>创建技能</td></tr><tr><td>GET</td><td>/api/skill/get</td><td>技能详情</td></tr><tr><td>POST</td><td>/api/skill/update</td><td>更新技能</td></tr><tr><td>POST</td><td>/api/skill/delete</td><td>删除技能</td></tr><tr><td>GET</td><td>/api/skill/list</td><td>技能列表</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 创建技能</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}",
+  "name": "技能名"
+}</pre><h3>POST 更新技能</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "skill_id": "sk1"
+}</pre><h3>POST 删除技能</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "skill_id": "sk1"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 数据库</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">11 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/memory/database/add</td><td>创建数据库表</td></tr><tr><td>POST</td><td>/api/memory/database/list</td><td>数据库列表</td></tr><tr><td>POST</td><td>/api/memory/database/get_by_id</td><td>按ID取数据库</td></tr><tr><td>POST</td><td>/api/memory/database/update</td><td>更新数据库</td></tr><tr><td>POST</td><td>/api/memory/database/delete</td><td>删除数据库</td></tr><tr><td>POST</td><td>/api/memory/database/list_records</td><td>查询数据行</td></tr><tr><td>POST</td><td>/api/memory/database/update_records</td><td>增/改/删数据行</td></tr><tr><td>POST</td><td>/api/memory/database/bind_to_bot</td><td>绑定到Bot</td></tr><tr><td>POST</td><td>/api/memory/database/table/list_new</td><td>Bot库表列表</td></tr><tr><td>POST</td><td>/api/memory/table_file/submit</td><td>提交数据导入任务</td></tr><tr><td>POST</td><td>/api/memory/table_schema/get</td><td>取表schema</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 创建数据库表</h3><p>type: 1Text/2Number/3Date/4Float/5Boolean。rw_mode:1受限/2只读/3无限。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "creator_id": "{{user_id}}",
+  "space_id": "{{space_id}}",
+  "project_id": "p1",
+  "icon_uri": "",
+  "table_name": "用户表",
+  "table_desc": "desc",
+  "field_list": [
+    {
+      "name": "name",
+      "desc": "姓名",
+      "type": 1,
+      "must_required": true
+    }
+  ],
+  "rw_mode": 1,
+  "prompt_disabled": false
+}</pre><h3>POST 数据库列表</h3><p>table_type:1草稿/2线上。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}",
+  "table_type": 1,
+  "offset": 0,
+  "limit": 20
+}</pre><h3>POST 按ID取数据库</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "id": "db1",
+  "is_draft": true,
+  "need_sys_fields": true
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 变量与记忆</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">6 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>GET</td><td>/api/memory/sys_variable_conf</td><td>系统变量配置</td></tr><tr><td>GET</td><td>/api/memory/project/variable/meta_list</td><td>项目变量元列表</td></tr><tr><td>POST</td><td>/api/memory/variable/get</td><td>取KV记忆</td></tr><tr><td>POST</td><td>/api/memory/variable/upsert</td><td>写入KV记忆</td></tr><tr><td>POST</td><td>/api/memory/variable/delete</td><td>删除profile记忆</td></tr><tr><td>POST</td><td>/api/memory-config/set</td><td>设置记忆配置</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 取KV记忆</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "bot_id": "{{bot_id}}"
+}</pre><h3>POST 写入KV记忆</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "bot_id": "{{bot_id}}"
+}</pre><h3>POST 删除profile记忆</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "bot_id": "{{bot_id}}"
+}</pre></section><section class="page" id="m-bot"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 智能体/Bot编排</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">9 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/draftbot/create</td><td>创建草稿Bot</td></tr><tr><td>POST</td><td>/api/draftbot/delete</td><td>删除草稿Bot</td></tr><tr><td>POST</td><td>/api/draftbot/duplicate</td><td>复制草稿Bot</td></tr><tr><td>POST</td><td>/api/draftbot/publish</td><td>发布Bot</td></tr><tr><td>POST</td><td>/api/draftbot/commit_check</td><td>提交前检查</td></tr><tr><td>POST</td><td>/api/draftbot/list_draft_history</td><td>草稿历史列表</td></tr><tr><td>POST</td><td>/api/draftbot/publish/connector/list</td><td>发布渠道列表</td></tr><tr><td>POST</td><td>/api/playground_api/draftbot/get_draft_bot_info</td><td>取草稿Bot详情</td></tr><tr><td>POST</td><td>/api/playground_api/draftbot/update_draft_bot_info</td><td>更新草稿Bot详情</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 创建草稿Bot</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}",
+  "name": "我的智能体"
+}</pre><h3>POST 删除草稿Bot</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "bot_id": "{{bot_id}}"
+}</pre><h3>POST 复制草稿Bot</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "bot_id": "{{bot_id}}"
+}</pre></section><section class="page" id="m-hiagent"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ HiAgent接入</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">6 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>GET</td><td>/api/space/{{space_id}}/hi-agents</td><td>HiAgent列表</td></tr><tr><td>POST</td><td>/api/space/{{space_id}}/hi-agents</td><td>创建HiAgent</td></tr><tr><td>GET</td><td>/api/space/{{space_id}}/hi-agents/:agent_id</td><td>HiAgent详情</td></tr><tr><td>PUT</td><td>/api/space/{{space_id}}/hi-agents/:agent_id</td><td>更新HiAgent</td></tr><tr><td>DELETE</td><td>/api/space/{{space_id}}/hi-agents/:agent_id</td><td>删除HiAgent</td></tr><tr><td>POST</td><td>/api/hi-agents/test-connection</td><td>测试HiAgent连接</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 创建HiAgent</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "name": "外部智能体",
+  "endpoint": "https://..."
+}</pre><h3>POST 测试HiAgent连接</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "endpoint": "https://..."
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 项目/应用</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">7 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/intelligence_api/draft_project/create</td><td>创建项目(应用)</td></tr><tr><td>POST</td><td>/api/intelligence_api/draft_project/copy</td><td>复制项目</td></tr><tr><td>POST</td><td>/api/intelligence_api/draft_project/update</td><td>更新项目</td></tr><tr><td>POST</td><td>/api/intelligence_api/draft_project/delete</td><td>删除项目</td></tr><tr><td>POST</td><td>/api/intelligence_api/publish/publish_project</td><td>发布项目</td></tr><tr><td>POST</td><td>/api/intelligence_api/search/get_draft_intelligence_list</td><td>草稿智能体列表</td></tr><tr><td>POST</td><td>/api/intelligence_api/search/get_recently_edit_intelligence</td><td>最近编辑列表</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 创建项目(应用)</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}",
+  "name": "我的应用"
+}</pre><h3>POST 复制项目</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "project_id": "p1"
+}</pre><h3>POST 更新项目</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "project_id": "p1"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 空间</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">13 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/space/create</td><td>创建空间</td></tr><tr><td>GET</td><td>/api/space/list</td><td>空间列表</td></tr><tr><td>GET</td><td>/api/space/:space_id</td><td>空间详情</td></tr><tr><td>PUT</td><td>/api/space/:space_id</td><td>更新空间</td></tr><tr><td>DELETE</td><td>/api/space/:space_id</td><td>删除空间</td></tr><tr><td>GET</td><td>/api/space/:space_id/members</td><td>成员列表</td></tr><tr><td>POST</td><td>/api/space/:space_id/members</td><td>邀请成员</td></tr><tr><td>POST</td><td>/api/space/:space_id/export</td><td>导出空间</td></tr><tr><td>POST</td><td>/api/space/:space_id/import/preview</td><td>导入预览</td></tr><tr><td>POST</td><td>/api/space/:space_id/release</td><td>创建发布</td></tr><tr><td>GET</td><td>/api/space/:space_id/release/list</td><td>发布列表</td></tr><tr><td>POST</td><td>/api/space/configure_models</td><td>一键配置空间模型</td></tr><tr><td>POST</td><td>/api/space/diagnose</td><td>空间健康检查</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 创建空间</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "name": "我的空间"
+}</pre><h3>POST 邀请成员</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "user_id": "u1",
+  "role": "member"
+}</pre><h3>POST 一键配置空间模型</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 模型</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">12 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/model/create</td><td>创建模型</td></tr><tr><td>POST</td><td>/api/model/list</td><td>模型列表</td></tr><tr><td>POST</td><td>/api/model/detail</td><td>模型详情</td></tr><tr><td>POST</td><td>/api/model/update</td><td>更新模型</td></tr><tr><td>POST</td><td>/api/model/delete</td><td>删除模型</td></tr><tr><td>POST</td><td>/api/model/import</td><td>从模板导入模型</td></tr><tr><td>GET</td><td>/api/model/templates</td><td>模型模板列表</td></tr><tr><td>POST</td><td>/api/model/space/add</td><td>加模型到空间</td></tr><tr><td>POST</td><td>/api/embedding/space/list</td><td>空间向量模型列表</td></tr><tr><td>POST</td><td>/api/rerank/space/list</td><td>空间rerank模型列表</td></tr><tr><td>GET</td><td>/api/admin/models</td><td>公共模型列表</td></tr><tr><td>POST</td><td>/api/admin/models/create</td><td>创建公共模型</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 创建模型</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}"
+}</pre><h3>POST 模型列表</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}"
+}</pre><h3>POST 模型详情</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "model_id": "m1"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 提示词与杂项</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">5 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/playground_api/upsert_prompt_resource</td><td>新增/更新提示词</td></tr><tr><td>GET</td><td>/api/playground_api/get_prompt_resource_info</td><td>提示词详情</td></tr><tr><td>POST</td><td>/api/playground_api/get_official_prompt_list</td><td>官方提示词列表</td></tr><tr><td>POST</td><td>/api/playground_api/create_update_shortcut_command</td><td>新增/更新快捷指令</td></tr><tr><td>POST</td><td>/api/playground_api/space/list</td><td>空间列表V2</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 新增/更新提示词</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 模板与商店</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">7 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/template/publish</td><td>发布为模板</td></tr><tr><td>GET</td><td>/api/template/my-list</td><td>我的模板列表</td></tr><tr><td>DELETE</td><td>/api/template/:template_id</td><td>删除模板</td></tr><tr><td>POST</td><td>/api/template/store/publish</td><td>发布到商店</td></tr><tr><td>GET</td><td>/api/template/store/list</td><td>商店模板列表</td></tr><tr><td>GET</td><td>/api/marketplace/product/list</td><td>商店产品列表</td></tr><tr><td>POST</td><td>/api/marketplace/product/duplicate</td><td>复制商店产品</td></tr></tbody></table>
+      </section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 统计与日志</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">5 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/statistics/app/active-users</td><td>活跃用户统计</td></tr><tr><td>POST</td><td>/api/statistics/app/messages</td><td>消息量统计</td></tr><tr><td>POST</td><td>/api/statistics/app/tokens</td><td>Token统计</td></tr><tr><td>POST</td><td>/api/statistics/app/list_app_conversation_log</td><td>会话日志列表</td></tr><tr><td>POST</td><td>/api/operation_log/list</td><td>操作日志列表</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 活跃用户统计</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}"
+}</pre><h3>POST 消息量统计</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}"
+}</pre><h3>POST Token统计</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "space_id": "{{space_id}}"
+}</pre></section><section class="page" id="m-pat"><div class="breadcrumb">API 接口 <span class="sep">›</span> 管理</div>
+      <h1 class="page-title">管理 ▸ 用户与PAT</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">Cookie session</span><span class="path">5 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/passport/account/info/v2/</td><td>账户信息</td></tr><tr><td>POST</td><td>/api/user/update_profile</td><td>更新资料</td></tr><tr><td>POST</td><td>/api/permission_api/pat/create_personal_access_token_and_permission</td><td>创建PAT(API Key)</td></tr><tr><td>GET</td><td>/api/permission_api/pat/list_personal_access_tokens</td><td>列出PAT</td></tr><tr><td>POST</td><td>/api/permission_api/pat/delete_personal_access_token_and_permission</td><td>删除PAT</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 创建PAT(API Key)</h3><p>创建对外用的 PAT 令牌(就是 api_key)。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "name": "my-token",
+  "expire_at": 0
+}</pre><h3>POST 删除PAT</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "id": "t1"
+}</pre></section><section class="page" id="m-"><div class="breadcrumb">API 接口 <span class="sep">›</span> 登录(公开)</div>
+      <h1 class="page-title">登录(公开)</h1>
+      <div class="endpoint-card"><div class="method-row"><span class="method">公开</span><span class="path">3 个接口</span></div></div>
+      <h2>接口清单</h2><table><thead><tr><th>方法</th><th>路径</th><th>用途</th></tr></thead><tbody><tr><td>POST</td><td>/api/passport/web/email/login/</td><td>邮箱登录</td></tr><tr><td>POST</td><td>/api/passport/web/email/register/v2/</td><td>邮箱注册</td></tr><tr><td>GET</td><td>/api/passport/web/logout/</td><td>登出</td></tr></tbody></table>
+      <h2>请求体示例</h2><h3>POST 邮箱登录</h3><p>登录拿 session_key cookie。</p><pre class="code"><button class="copy-btn">复制</button>{
+  "email": "user@test.com",
+  "password": "&lt;password&gt;"
+}</pre><h3>POST 邮箱注册</h3><pre class="code"><button class="copy-btn">复制</button>{
+  "email": "user@test.com",
+  "password": "&lt;password&gt;"
+}</pre></section><section class="page" id="ops"><div class="breadcrumb">功能速览</div><h1 class="page-title">管理后台功能速览</h1><figure class="shot"><img src="screenshots/03-project-list.png" alt="项目开发：智能体列表"><figcaption>📷 项目开发：智能体列表</figcaption></figure><figure class="shot"><img src="screenshots/04-workflow-list.png" alt="资源库：工作流"><figcaption>📷 资源库：工作流</figcaption></figure><figure class="shot"><img src="screenshots/05-bot-edit.png" alt="智能体编排：发布+预览调试(URL含bot_id)"><figcaption>📷 智能体编排：发布+预览调试(URL含bot_id)</figcaption></figure><figure class="shot"><img src="screenshots/11-card-list.png" alt="资源库：卡片"><figcaption>📷 资源库：卡片</figcaption></figure><figure class="shot"><img src="screenshots/10-prompt-list.png" alt="资源库：提示词"><figcaption>📷 资源库：提示词</figcaption></figure><figure class="shot"><img src="screenshots/09-database-list.png" alt="资源库：数据库"><figcaption>📷 资源库：数据库</figcaption></figure><figure class="shot"><img src="screenshots/01-pat-list.png" alt="API授权：个人访问令牌"><figcaption>📷 API授权：个人访问令牌</figcaption></figure></section>
+</main>
+<script>
+document.querySelectorAll('.tab-btn').forEach(btn=>{btn.addEventListener('click',()=>{const tab=btn.dataset.tab;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('nav.toc .group').forEach(g=>g.classList.toggle('active',g.dataset.group===tab));const f=document.querySelector('nav.toc .group.active a');if(f)f.click();});});
+function showSection(id){document.querySelectorAll('section.page').forEach(s=>s.classList.toggle('active',s.id===id));document.querySelectorAll('nav.toc a').forEach(a=>a.classList.toggle('current',a.getAttribute('href')==='#'+id));const al=document.querySelector('nav.toc a[href="#'+id+'"]');if(al){const g=al.closest('.group');if(g){const t=g.dataset.group;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('nav.toc .group').forEach(x=>x.classList.toggle('active',x===g));}}const m=document.querySelector('main.content');if(m)m.scrollTop=0;window.scrollTo(0,0);history.replaceState(null,'','#'+id);}
+document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;const h=a.getAttribute('href');if(h.length<2)return;e.preventDefault();showSection(h.slice(1));});
+const ini=location.hash?location.hash.slice(1):'concepts';if(document.getElementById(ini))showSection(ini);
+window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(id&&document.getElementById(id))showSection(id);});
+document.querySelectorAll('pre.code').forEach(pre=>{const b=pre.querySelector('.copy-btn');if(!b)return;b.addEventListener('click',()=>{const t=pre.innerText.replace(/^复制\n?/,'');navigator.clipboard.writeText(t).then(()=>{const o=b.textContent;b.textContent='已复制';setTimeout(()=>b.textContent=o,1200);});});});
+</script>
+</body>
+</html>

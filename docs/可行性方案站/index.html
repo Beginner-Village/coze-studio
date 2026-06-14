@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>猎鹰智能体 · 真实沙箱 + 技能自主执行 · 可行性方案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#14110d;          /* warm charcoal */
+  --bg-2:#1b1813;
+  --panel:#211d17;
+  --panel-2:#27221b;
+  --line:#3a332a;
+  --line-soft:#2e2920;
+  --ink:#ece4d6;         /* parchment */
+  --ink-soft:#b8ad9b;
+  --ink-dim:#8a8071;
+  --amber:#e0892f;       /* 猎鹰 falcon */
+  --amber-soft:#f0b878;
+  --teal:#5fb3a6;        /* sandbox */
+  --teal-soft:#8fd0c5;
+  --red:#d2603f;
+  --green:#7faf5e;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'IBM Plex Sans','PingFang SC','Microsoft YaHei',system-ui,sans-serif;
+  --serif:'Spectral','Songti SC',Georgia,serif;
+  --maxw:1180px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:78px}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-size:16px;line-height:1.72;
+  -webkit-font-smoothing:antialiased;letter-spacing:.005em;
+  background-image:radial-gradient(ellipse 80% 50% at 50% -10%, rgba(224,137,47,.08), transparent 60%);
+}
+::selection{background:rgba(224,137,47,.3);color:#fff}
+a{color:var(--teal-soft);text-decoration:none}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:600;line-height:1.2;letter-spacing:-.01em}
+code,kbd{font-family:var(--mono);font-size:.86em}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px}
+
+/* ---------- top nav ---------- */
+.nav{position:sticky;top:0;z-index:50;background:rgba(20,17,13,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line-soft)}
+.nav .wrap{display:flex;align-items:center;gap:24px;height:60px}
+.brand{font-family:var(--serif);font-weight:700;font-size:18px;letter-spacing:0;color:var(--ink);display:flex;align-items:center;gap:10px;white-space:nowrap}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 12px var(--amber)}
+.nav nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.nav nav a{color:var(--ink-dim);font-size:13px;padding:6px 11px;border-radius:7px;font-weight:500;transition:.15s;font-family:var(--mono)}
+.nav nav a:hover{color:var(--ink);background:var(--panel)}
+.nav nav a.active{color:var(--amber-soft);background:rgba(224,137,47,.1)}
+@media(max-width:980px){.nav nav{display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding:88px 0 64px;border-bottom:1px solid var(--line-soft);position:relative;overflow:hidden}
+.eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);margin-bottom:20px;display:flex;align-items:center;gap:12px}
+.eyebrow::before{content:"";width:34px;height:1px;background:var(--amber)}
+.hero h1{font-size:clamp(34px,5.4vw,62px);margin:0 0 22px;letter-spacing:-.02em}
+.hero h1 .hl{color:var(--amber-soft);font-style:italic}
+.hero .lede{font-size:clamp(17px,2vw,21px);color:var(--ink-soft);max-width:760px;line-height:1.6}
+.hero .lede b{color:var(--ink);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:34px}
+.chip{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);border:1px solid var(--line);background:var(--panel);padding:7px 13px;border-radius:999px;display:flex;align-items:center;gap:8px}
+.chip b{color:var(--teal-soft);font-weight:600}
+.chip.amber b{color:var(--amber-soft)}
+.meta-row{margin-top:40px;display:flex;gap:28px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--ink-dim)}
+.meta-row span b{color:var(--ink-soft);font-weight:500}
+
+/* ---------- sections ---------- */
+section{padding:74px 0;border-bottom:1px solid var(--line-soft)}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:14px}
+.sec-num{font-family:var(--mono);font-size:13px;color:var(--amber);font-weight:600;letter-spacing:.1em}
+.sec-head h2{font-size:clamp(26px,3.4vw,38px);margin:0}
+.sec-sub{color:var(--ink-soft);font-size:17px;max-width:780px;margin:0 0 38px;line-height:1.6}
+.sec-sub.tight{margin-bottom:26px}
+
+/* ---------- generic ui ---------- */
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:860px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line-soft);border-radius:14px;padding:22px 22px}
+.card h3{font-size:19px;margin:0 0 8px}
+.card h4{font-size:15px;margin:0 0 6px;font-family:var(--sans);font-weight:600;color:var(--ink)}
+.card p{margin:0;color:var(--ink-soft);font-size:14.5px}
+.card .k{font-family:var(--mono);font-size:11.5px;color:var(--amber);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:block}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid var(--line);color:var(--ink-soft);margin:2px 4px 2px 0}
+.tag.ok{color:var(--green);border-color:rgba(127,175,94,.4);background:rgba(127,175,94,.08)}
+.tag.no{color:var(--red);border-color:rgba(210,96,63,.4);background:rgba(210,96,63,.08)}
+.tag.teal{color:var(--teal-soft);border-color:rgba(95,179,166,.4);background:rgba(95,179,166,.08)}
+.lead-quote{font-family:var(--serif);font-size:clamp(20px,2.6vw,27px);line-height:1.45;color:var(--ink);border-left:3px solid var(--amber);padding:6px 0 6px 26px;margin:0}
+.lead-quote .hl{color:var(--amber-soft)}
+
+/* ---------- table ---------- */
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+th{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);font-weight:600}
+td{color:var(--ink-soft)}
+td b,td strong{color:var(--ink);font-weight:600}
+tr:hover td{background:rgba(255,255,255,.012)}
+.tbl-wrap{border:1px solid var(--line-soft);border-radius:14px;overflow:hidden;background:var(--panel)}
+.mono{font-family:var(--mono);font-size:12.5px;color:var(--teal-soft)}
+
+/* ---------- code ---------- */
+.code{background:#0d0b08;border:1px solid var(--line-soft);border-radius:12px;overflow:hidden;margin:0}
+.code .bar{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--line-soft);background:#161310}
+.code .bar .fn{font-family:var(--mono);font-size:12px;color:var(--ink-dim);margin-left:4px}
+.code .bar .badge{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--amber);border:1px solid rgba(224,137,47,.35);padding:2px 7px;border-radius:5px}
+.code pre{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.65;color:#d8cfbf}
+.code pre .c{color:#6f6555;font-style:italic}      /* comment */
+.code pre .k{color:#e0892f}                          /* keyword */
+.code pre .s{color:#7faf5e}                          /* string */
+.code pre .t{color:#5fb3a6}                          /* type */
+.code pre .f{color:#f0b878}                          /* func */
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+.dot.r{background:#d2603f}.dot.y{background:#e0b94a}.dot.g{background:#7faf5e}
+
+/* ---------- diagrams ---------- */
+.diagram{background:var(--panel);border:1px solid var(--line-soft);border-radius:16px;padding:26px;overflow-x:auto}
+svg{display:block;max-width:100%}
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:18px;font-family:var(--mono);font-size:12px;color:var(--ink-dim)}
+.legend span{display:flex;align-items:center;gap:7px}
+.legend i{width:13px;height:13px;border-radius:3px;display:inline-block}
+
+/* progressive disclosure */
+.pd{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:860px){.pd{grid-template-columns:1fr}}
+.pd .lvl{border:1px solid var(--line-soft);border-radius:14px;padding:20px;background:var(--panel);position:relative}
+.pd .lvl .n{font-family:var(--mono);font-size:34px;font-weight:600;color:var(--line);line-height:1;position:absolute;top:16px;right:18px}
+.pd .lvl .tg{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+.pd .lvl h4{font-size:17px;margin:0 0 8px}
+.pd .lvl p{margin:0 0 10px;font-size:14px;color:var(--ink-soft)}
+.pd .lvl .state{font-family:var(--mono);font-size:11.5px;padding-top:10px;border-top:1px dashed var(--line)}
+
+/* roadmap */
+.road{position:relative;padding-left:30px}
+.road::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:linear-gradient(var(--amber),var(--teal),var(--line))}
+.phase{position:relative;margin-bottom:22px}
+.phase::before{content:"";position:absolute;left:-30px;top:5px;width:16px;height:16px;border-radius:50%;background:var(--bg);border:2px solid var(--amber)}
+.phase.done::before{background:var(--amber)}
+.phase .pn{font-family:var(--mono);font-size:12px;color:var(--amber);font-weight:600;letter-spacing:.08em}
+.phase h4{font-size:18px;margin:4px 0 6px}
+.phase p{margin:0;color:var(--ink-soft);font-size:14.5px}
+.phase .out{font-family:var(--mono);font-size:12px;color:var(--teal-soft);margin-top:7px}
+
+/* callout */
+.callout{border:1px solid rgba(224,137,47,.3);background:linear-gradient(180deg,rgba(224,137,47,.08),rgba(224,137,47,.02));border-radius:14px;padding:22px 24px;display:flex;gap:18px;align-items:flex-start}
+.callout .bang{font-family:var(--serif);font-size:30px;color:var(--amber);line-height:1;font-style:italic}
+.callout p{margin:0;color:var(--ink);font-size:15.5px;line-height:1.6}
+.callout p b{color:var(--amber-soft)}
+
+.foot{padding:54px 0 70px;color:var(--ink-dim);font-size:13px}
+.foot .wrap{display:flex;flex-wrap:wrap;gap:30px;justify-content:space-between;align-items:flex-end}
+.foot a{font-family:var(--mono);font-size:12.5px}
+.src{font-family:var(--mono);font-size:12px;line-height:2}
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span>猎鹰 · 沙箱技能方案</div>
+    <nav>
+      <a href="#insight">核心洞察</a>
+      <a href="#skills">技能机制</a>
+      <a href="#status">源码现状</a>
+      <a href="#cube">CubeSandbox</a>
+      <a href="#arch">架构</a>
+      <a href="#lifecycle">生命周期</a>
+      <a href="#flow">执行时序</a>
+      <a href="#eino">Eino 落地</a>
+      <a href="#decide">决策点</a>
+      <a href="#effort">工作量</a>
+      <a href="#road">路线图</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <div class="eyebrow">技术可行性方案 · Engineering Feasibility</div>
+    <h1>给猎鹰智能体一双<span class="hl">真实的手</span><br>沙箱环境 + 技能自主执行</h1>
+    <p class="lede">现有技能系统已经会「<b>说</b>」——能描述、能读指令;但还不会「<b>动</b>」——不能真读写文件、跑 bash、执行脚本。本方案基于 <b>cloudwego/eino</b> 架构,接入 <b>CubeSandbox</b> 真实沙箱,补齐 Agent Skills 的执行层,让智能体能像 LangChain/Claude 那样<b>自主规划、自主执行</b>。</p>
+    <div class="chips">
+      <span class="chip amber">引擎 <b>Eino v0.4.7 → ADK v0.5+</b></span>
+      <span class="chip">沙箱 <b>CubeSandbox · microVM</b></span>
+      <span class="chip">冷启动 <b>&lt; 60ms</b></span>
+      <span class="chip">接口 <b>E2B 兼容</b></span>
+      <span class="chip amber">持久化按 <b>user_id</b></span>
+      <span class="chip">存储 <b>MinIO · Redis</b> 现成</span>
+    </div>
+    <div class="meta-row">
+      <span><b>日期</b> 2026-06-12</span>
+      <span><b>代码库</b> coze-studio (ynet-studio)</span>
+      <span><b>受众</b> 技术决策者</span>
+      <span><b>性质</b> 可行性分析 · 非实现</span>
+    </div>
+  </div>
+</div>
+
+<!-- INSIGHT -->
+<section id="insight">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">01</span><h2>一句话结论</h2></div>
+    <p class="sec-sub">平台<b>已经有技能系统的骨架</b>,但技能目前只是一段 Prompt 文本。要做到「读写文件、跑 bash、自建技能」,关键洞察只有一句:</p>
+    <p class="lead-quote">Agent Skills 这套机制的全部价值——<span class="hl">渐进式披露 + 可执行脚本</span>——本质上要求一个「文件系统 + bash 执行」的环境。所以沙箱不是配角,<span class="hl">它是让「真实技能」成立的地基</span>。</p>
+    <div class="grid g3" style="margin-top:34px">
+      <div class="card"><span class="k">要补的能力 A</span><h3>技能带真实脚本</h3><p>Skill 从「一个 Prompt 字段」升级为「SKILL.md + 脚本文件夹」,DB 存元数据,MinIO 持久化文件 bundle。</p></div>
+      <div class="card"><span class="k">要补的能力 B</span><h3>真实沙箱运行时</h3><p>CubeSandbox 单机 microVM(KVM),E2B 兼容接口。冷启动 / 挂起 / 回收 / 持久化全生命周期。</p></div>
+      <div class="card"><span class="k">要补的能力 C</span><h3>文件 / bash 工具 + 规划</h3><p>给 Eino agent 挂 run_bash / read_file / write_file 工具;规划用现有 ReAct,目标态升级 ADK Plan-Execute。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SKILLS MECHANISM -->
+<section id="skills">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">02</span><h2>技能机制全貌 · Agent Skills</h2></div>
+    <p class="sec-sub">一个 Skill = 一个目录:<code>SKILL.md</code>(YAML frontmatter + 指令正文)+ 可选脚本/参考/资源。它的灵魂是<b>三级渐进式披露</b>——按需加载,而不是把所有技能一股脑塞进上下文。</p>
+
+    <div class="g2 grid" style="align-items:start;margin-bottom:30px">
+      <div class="code">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fn">pdf-form-filler/SKILL.md</span><span class="badge">技能载体</span></div>
+<pre><span class="c">---</span>
+<span class="k">name</span>: pdf-form-filler
+<span class="k">description</span>: <span class="s">当用户要填写/解析 PDF 表单时使用。</span>
+<span class="c"># 仅 name+description 进 system prompt(L1)</span>
+<span class="c">---</span>
+<span class="f"># PDF 表单处理</span>
+... 给模型看的操作指令(L2:read_skill 时载入) ...
+需要时运行 <span class="s">`python scripts/extract.py &lt;file&gt;`</span>
+<span class="c"># L3:脚本在沙箱里跑,结果回模型,脚本本身不入上下文</span></pre>
+      </div>
+      <div class="code">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fn">目录结构</span><span class="badge">filesystem 必需</span></div>
+<pre>my-skill/
+├── <span class="t">SKILL.md</span>        <span class="c"># 必需 · frontmatter + 指令</span>
+├── <span class="t">scripts/</span>        <span class="c"># 可执行代码 (py/sh/js)</span>
+│   ├── run.sh
+│   └── extract.py
+├── <span class="t">references/</span>     <span class="c"># 按需加载的细节文档</span>
+└── <span class="t">assets/</span>         <span class="c"># 模板 / 数据文件</span>
+
+<span class="c">// 实测:三级披露相比全文塞 prompt</span>
+<span class="c">// token ↓ ~40% · 准确率 ↑ ~15-20%</span></pre>
+      </div>
+    </div>
+
+    <div class="pd">
+      <div class="lvl">
+        <span class="n">L1</span>
+        <div class="tg">发现 · Discovery</div>
+        <h4>启动时载入</h4>
+        <p>只把每个技能的 <code>name</code> + <code>description</code> 放进 system prompt,刚好够模型判断「何时该用」,几乎不占上下文。</p>
+        <div class="state"><span class="tag ok">✓ 我们已有</span> node_skills_render.go</div>
+      </div>
+      <div class="lvl">
+        <span class="n">L2</span>
+        <div class="tg">激活 · Activation</div>
+        <h4>匹配时读全文</h4>
+        <p>任务命中某技能 → 模型调 <code>read_skill(name)</code> 把完整 <code>SKILL.md</code> 正文读进上下文。</p>
+        <div class="state"><span class="tag ok">✓ 我们已有</span> 但读的是 DB 的 Prompt 字段</div>
+      </div>
+      <div class="lvl" style="border-color:rgba(210,96,63,.4)">
+        <span class="n" style="color:rgba(210,96,63,.5)">L3</span>
+        <div class="tg" style="color:var(--red)">执行 · Execution</div>
+        <h4>跑脚本 / 读细节</h4>
+        <p>按需读 <code>references/*</code>、<b>用 bash 跑 <code>scripts/*</code></b>;脚本执行结果可不入上下文(确定性高、省 token)。</p>
+        <div class="state"><span class="tag no">✗ 完全缺失</span> 无文件 · 无 bash · 无沙箱</div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:28px">
+      <span class="bang">!</span>
+      <p>我们已经有 L1+L2(技能的「<b>嘴</b>」——会描述、会读指令),但<b>完全没有 L3 和执行环境</b>(技能的「<b>手</b>」——会真的动文件、跑命令)。补齐 L3 = 补沙箱 + 文件/bash 工具 + 技能 bundle,<b>三者缺一不可,且都服务于「技能」这一个目标</b>。</p>
+    </div>
+  </div>
+</section>
+
+<!-- STATUS -->
+<section id="status">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">03</span><h2>源码现状盘点</h2></div>
+    <p class="sec-sub tight">深挖 coze-studio 源码:技能系统的骨架已存在(即「之前那个计划」的产物),引擎是 Go + Eino ReAct。下表是机制要素的<b>精确差距</b>。</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>机制要素</th><th>标准 Agent Skills</th><th>猎鹰现状</th><th>要做的改造</th></tr></thead>
+        <tbody>
+          <tr><td><b>技能载体</b></td><td>目录(SKILL.md + 文件)</td><td>DB 里一个 <span class="mono">Prompt</span> 字符串</td><td>Skill entity 加 <b>bundle(MinIO)+ manifest</b></td></tr>
+          <tr><td><b>L1 发现</b></td><td>name/desc 进 prompt</td><td><span class="tag ok">已有</span> <span class="mono">node_skills_render.go</span></td><td>保留</td></tr>
+          <tr><td><b>L2 激活</b></td><td>读真实 SKILL.md</td><td><span class="tag ok">已有</span> <span class="mono">read_skill</span> 读 Prompt</td><td>Prompt → SKILL.md,从 bundle 读</td></tr>
+          <tr><td><b>L3 参考文件</b></td><td>按需读 references/*</td><td><span class="tag no">无</span></td><td><span class="mono">read_file</span> 工具读沙箱内技能目录</td></tr>
+          <tr><td><b>L3 可执行脚本</b></td><td><b>bash 跑 scripts/*</b></td><td><span class="tag no">无</span></td><td><b>沙箱 + <span class="mono">run_bash</span></b>(核心)</td></tr>
+          <tr><td><b>执行环境</b></td><td>filesystem + code exec</td><td><span class="tag no">无</span></td><td><b>CubeSandbox</b>(地基)</td></tr>
+          <tr><td><b>技能内引用</b></td><td>文件相对路径</td><td><span class="tag teal">独有</span> 引用 workflow/plugin/knowledge</td><td>两种模型<b>共存</b>:平台资源引用 + 真实脚本</td></tr>
+          <tr><td><b>持久化/版本</b></td><td>git 目录</td><td>DB 行</td><td>MinIO 内容寻址 + version</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid g4" style="margin-top:24px">
+      <div class="card"><span class="k">已有 · 引擎</span><h4>Eino ReAct</h4><p><span class="mono">flow/agent/react</span> · <span class="mono">MaxStep:30</span> · 工具串行 · checkpoint/中断已通。</p></div>
+      <div class="card"><span class="k">已有 · 技能域</span><h4>skill domain</h4><p><span class="mono">domain/skill</span> entity/repo/service/dal + 顶级 <span class="mono">space-skill</span> 页 + agent 绑定 UI。</p></div>
+      <div class="card"><span class="k">已有 · 存储</span><h4>MinIO + Redis</h4><p><span class="mono">contract/storage</span> PutObject/GetObject · <span class="mono">impl/cache/redis</span>。直接复用。</p></div>
+      <div class="card"><span class="k">易混淆</span><h4>旧 coderunner</h4><p><span class="mono">infra/coderunner</span> 是 workflow 代码节点用的<b>单次无状态</b>子进程,<b>不是</b>会话沙箱,但分层可借鉴。</p></div>
+    </div>
+
+    <div class="callout" style="margin-top:24px;border-color:rgba(95,179,166,.3);background:linear-gradient(180deg,rgba(95,179,166,.07),transparent)">
+      <span class="bang" style="color:var(--teal)">id</span>
+      <p>对外 API 身份<b>三层</b>(<span class="mono">openapi_agent_run.go</span>):<b>租户</b> <code>apiKeyInfo.UserID</code> / <b>终端用户</b> <code>ChatV3Request.User</code>(JSON <code>user_id</code>,required,注释原文 <i>"data isolation identification"</i>)/ <b>会话</b> <code>ConversationID</code>。<span style="color:var(--teal-soft)">→ 持久化 key = user_id,不是 agent、不是会话。</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- CUBESANDBOX -->
+<section id="cube">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">04</span><h2>CubeSandbox 深度解读</h2></div>
+    <p class="sec-sub">腾讯云开源的「AI 智能体专用沙箱服务」——<b>即时、并发、安全、轻量</b>。用 microVM(独立内核)给每个智能体一个真正隔离的执行环境,却有接近容器的启动速度和远低于容器的内存开销。这是本方案的<b>执行地基</b>。</p>
+
+    <div class="chips" style="margin-bottom:32px">
+      <span class="chip amber">出品 <b>腾讯云 Tencent Cloud</b></span>
+      <span class="chip">协议 <b>Apache 2.0</b></span>
+      <span class="chip">最新 <b>v0.3.1 · 2026-06</b></span>
+      <span class="chip">隔离 <b>RustVMM + KVM microVM</b></span>
+      <span class="chip teal">接口 <b>E2B SDK drop-in</b></span>
+    </div>
+
+    <!-- one-line value -->
+    <p class="lead-quote" style="border-color:var(--teal);margin-bottom:34px">它一次性解决了「<span style="color:var(--teal-soft)">安全隔离</span>」和「<span style="color:var(--teal-soft)">资源效率</span>」这对长期矛盾:<span style="color:var(--teal-soft)">独立 Guest 内核杜绝逃逸,&lt;5MB 内存 + &lt;60ms 冷启动让单机能跑上千个沙箱。</span></p>
+
+    <!-- components -->
+    <h3 style="font-size:21px;margin:0 0 6px">八大组件 · 一次创建沙箱的全链路</h3>
+    <p style="color:var(--ink-soft);font-size:15px;margin:0 0 20px">REST 网关 → 集群调度 → 节点生命周期 → microVM 启动 → 网络策略 → 隔离执行。</p>
+    <div class="diagram" style="margin-bottom:18px">
+      <svg viewBox="0 0 1100 320" role="img" aria-label="CubeSandbox 组件与数据流">
+        <defs><marker id="arc" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#5fb3a6"/></marker></defs>
+        <style>
+          .cb{fill:#211d17;stroke:#5fb3a6;stroke-width:1.4;rx:11}
+          .cbn{font-family:'IBM Plex Mono',monospace;fill:#8fd0c5;font-size:13px;font-weight:600}
+          .cbs{font-family:'IBM Plex Sans',sans-serif;fill:#b8ad9b;font-size:11px}
+          .cbf{stroke:#4a6f68;stroke-width:1.6;fill:none}
+          .step{font-family:'IBM Plex Mono',monospace;fill:#e0892f;font-size:11px;font-weight:600}
+        </style>
+        <!-- row 1: control plane -->
+        <rect class="cb" x="30"  y="40" width="200" height="74"/><text class="step" x="46" y="62">①</text><text class="cbn" x="68" y="64">CubeAPI</text><text class="cbs" x="46" y="86">Rust REST 网关</text><text class="cbs" x="46" y="102">高并发 · E2B 兼容</text>
+        <rect class="cb" x="290" y="40" width="200" height="74"/><text class="step" x="306" y="62">②</text><text class="cbn" x="328" y="64">CubeMaster</text><text class="cbs" x="306" y="86">集群编排 · 调度</text><text class="cbs" x="306" y="102">资源/状态管理</text>
+        <rect class="cb" x="550" y="40" width="200" height="74"/><text class="cbn" x="566" y="64">CubeProxy</text><text class="cbs" x="566" y="86">反向代理</text><text class="cbs" x="566" y="102">E2B 协议路由</text>
+        <rect class="cb" x="810" y="40" width="260" height="74"/><text class="step" x="826" y="62">③</text><text class="cbn" x="848" y="64">Cubelet</text><text class="cbs" x="826" y="86">节点本地调度</text><text class="cbs" x="826" y="102">沙箱实例全生命周期</text>
+        <!-- row 2: data plane -->
+        <rect class="cb" x="290" y="190" width="200" height="74"/><text class="step" x="306" y="212">④</text><text class="cbn" x="328" y="214">CubeHypervisor</text><text class="cbs" x="306" y="236">KVM microVM 管理</text><text class="cbs" x="306" y="252">预置资源池</text>
+        <rect class="cb" x="550" y="190" width="200" height="74"/><text class="cbn" x="566" y="214">CubeShim</text><text class="cbs" x="566" y="236">containerd Shim v2</text><text class="cbs" x="566" y="252">运行时集成</text>
+        <rect class="cb" x="810" y="190" width="120" height="74" style="stroke:#e0892f"/><text class="step" x="826" y="212">⑤</text><text class="cbn" x="846" y="214" style="fill:#f0b878">CubeVS</text><text class="cbs" x="826" y="236">eBPF 虚拟交换</text><text class="cbs" x="826" y="252">网络隔离</text>
+        <rect class="cb" x="950" y="190" width="120" height="74" style="stroke:#e0892f"/><text class="cbn" x="966" y="214" style="fill:#f0b878">CubeCoW</text><text class="cbs" x="966" y="236">CoW 快照</text><text class="cbs" x="966" y="252">秒级克隆</text>
+        <!-- flows -->
+        <path class="cbf" d="M230,77 L290,77" marker-end="url(#arc)"/>
+        <path class="cbf" d="M490,77 L550,77" marker-end="url(#arc)"/>
+        <path class="cbf" d="M750,77 L810,77" marker-end="url(#arc)"/>
+        <path class="cbf" d="M905,114 C905,150 390,150 390,188" marker-end="url(#arc)"/>
+        <path class="cbf" d="M490,227 L550,227" marker-end="url(#arc)"/>
+        <path class="cbf" d="M750,227 L808,227" marker-end="url(#arc)"/>
+        <text class="cbs" x="150" y="172" style="fill:#8a8071">⑥ 独立内核里执行 agent 代码 · ⑦ CubeCoW 快照/回滚</text>
+      </svg>
+    </div>
+
+    <!-- perf table -->
+    <h3 style="font-size:21px;margin:32px 0 6px">为什么快、为什么省 · 三方对标</h3>
+    <p style="color:var(--ink-soft);font-size:15px;margin:0 0 16px">Rust 重写 + 极致裁剪运行时 + CoW 内存复用 + 预置资源池,把「VM 级隔离」做到了「容器级开销」。</p>
+    <div class="tbl-wrap" style="margin-bottom:18px">
+      <table>
+        <thead><tr><th>维度</th><th>Docker 容器</th><th>传统虚拟机</th><th style="color:#8fd0c5">CubeSandbox</th></tr></thead>
+        <tbody>
+          <tr><td><b>隔离强度</b></td><td>低 · 共享内核</td><td>高 · 独立内核</td><td><b style="color:#8fd0c5">极致 · 独立内核 + eBPF</b></td></tr>
+          <tr><td><b>冷启动</b></td><td>~200ms</td><td>数秒</td><td><b style="color:#8fd0c5">&lt;60ms</b>(50 并发 67ms · P99 137ms)</td></tr>
+          <tr><td><b>单实例内存</b></td><td>~200MB</td><td>GB 级</td><td><b style="color:#8fd0c5">&lt;5MB</b>(规格 ≤32GB 均成立)</td></tr>
+          <tr><td><b>单机密度</b></td><td>数百</td><td>数十</td><td><b style="color:#8fd0c5">数千</b></td></tr>
+          <tr><td><b>逃逸风险</b></td><td>有(命名空间)</td><td>无</td><td><b style="color:#8fd0c5">无 · 硬件级</b></td></tr>
+          <tr><td><b>快照粒度</b></td><td>—</td><td>整机/慢</td><td><b style="color:#8fd0c5">事件级 · 毫秒</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- feature cards -->
+    <div class="grid g3" style="margin-bottom:18px">
+      <div class="card"><span class="k" style="color:var(--teal)">持久化 · CubeCoW</span><h4>事件级快照 + 秒级克隆</h4><p>v0.3.0 引入的 CoW 引擎:毫秒粒度快照、回滚到任意检查点、从模板瞬间 fork 出并行环境。<b>正好对应我们的「挂起/恢复 + 持久化」生命周期。</b></p></div>
+      <div class="card"><span class="k" style="color:var(--teal)">网络 · CubeVS</span><h4>eBPF 内核级隔离</h4><p>虚拟交换 + 沙箱间流量过滤 + 严格出站策略。<b>技能脚本能跑任意 bash,安全边界就靠它 + 独立内核兜底。</b></p></div>
+      <div class="card"><span class="k" style="color:var(--teal)">兼容 · E2B</span><h4>换个 URL 就迁移</h4><p>原生兼容 E2B SDK 接口,drop-in 替换,业务逻辑零改动。<b>意味着我们面向 E2B 契约编程,后端可在 Cube / E2B 云 / Docker 间切换,不锁死。</b></p></div>
+    </div>
+
+    <!-- deploy + version -->
+    <div class="g2 grid" style="align-items:start">
+      <div class="card" style="background:var(--panel-2)">
+        <span class="k">部署模式 + 要求</span>
+        <h4 style="margin-bottom:10px">三种部署 · 门槛比想象低</h4>
+        <p style="margin-bottom:10px"><b style="color:var(--teal-soft)">① 普通云主机 PVM(官方推荐)</b><br>无需裸金属、无需嵌套虚拟化复杂配置 —— 这降低了我们的落地门槛。</p>
+        <p style="margin-bottom:10px"><b style="color:var(--ink)">② 裸金属</b> 直接上硬件,性能最优(你们验证机这条最稳)。</p>
+        <p style="margin-bottom:14px"><b style="color:var(--ink)">③ QEMU 开发环境</b> 无 KVM 时仅供开发调试。</p>
+        <p style="font-family:var(--mono);font-size:12px;color:var(--ink-dim);border-top:1px dashed var(--line);padding-top:12px;margin:0">要求:x86_64 Linux + KVM(QEMU 模式除外)· 单机/多机集群(CubeMaster)均支持。</p>
+      </div>
+      <div class="card">
+        <span class="k">版本里程碑</span>
+        <h4 style="margin-bottom:14px">开源半年,迭代活跃</h4>
+        <div class="road" style="padding-left:26px">
+          <div class="phase done" style="margin-bottom:16px"><div class="pn">v0.1.0 · 2026-04-20</div><p style="font-size:13.5px;margin-top:2px">首次开源:毫秒启动 + E2B 兼容</p></div>
+          <div class="phase done" style="margin-bottom:16px"><div class="pn">v0.2.2 · 2026-05-18</div><p style="font-size:13.5px;margin-top:2px">安全加固 · CVE 修复 · E2B 端口对齐</p></div>
+          <div class="phase done" style="margin-bottom:16px"><div class="pn">v0.3.0</div><p style="font-size:13.5px;margin-top:2px">CubeCoW 快照引擎(事件级)</p></div>
+          <div class="phase done" style="margin-bottom:0"><div class="pn">v0.3.1 · 2026-06-04</div><p style="font-size:13.5px;margin-top:2px">最新版 · 持续打磨</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:24px;border-color:rgba(95,179,166,.3);background:linear-gradient(180deg,rgba(95,179,166,.07),transparent)">
+      <span class="bang" style="color:var(--teal)">✓</span>
+      <p>对猎鹰的契合度极高:<b>E2B 兼容</b>让我们不锁死引擎、<b>CubeCoW</b>天然对应挂起/持久化、<b>&lt;5MB + 数千密度</b>撑得起多用户高并发、<b>eBPF 网络隔离 + 独立内核</b>兜住「技能跑任意 bash」的安全底线。它就是为「AI 智能体的真实手」量身打造的。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="arch">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">05</span><h2>目标架构 · 分层</h2></div>
+    <p class="sec-sub">沿用现有 contract/impl 分层惯例。新增三块:<b>沙箱抽象层</b>(可换后端)、<b>沙箱会话管理器</b>(生命周期大脑)、<b>agent 文件/bash 工具</b>。</p>
+    <div class="diagram">
+      <svg viewBox="0 0 1100 560" role="img" aria-label="分层架构图">
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#8a8071"/></marker>
+          <marker id="arA" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#e0892f"/></marker>
+        </defs>
+        <style>
+          .bx{fill:#211d17;stroke:#3a332a;stroke-width:1.2;rx:11}
+          .lbl{font-family:'IBM Plex Sans',sans-serif;fill:#ece4d6;font-size:14px;font-weight:600}
+          .sub{font-family:'IBM Plex Mono',monospace;fill:#8a8071;font-size:11px}
+          .amx{stroke:#e0892f;stroke-width:1.4}
+          .tlx{stroke:#5fb3a6;stroke-width:1.4}
+          .lk{stroke:#5a5346;stroke-width:1.5;fill:none}
+          .lkA{stroke:#e0892f;stroke-width:1.6;fill:none}
+        </style>
+
+        <!-- L0 API -->
+        <rect class="bx" x="40" y="24" width="1020" height="64"/>
+        <text class="lbl" x="64" y="52">对外 OpenAPI · /v3/chat</text>
+        <text class="sub" x="64" y="72">openapi_agent_run.go — 取 user_id / conversation_id / agent 绑定技能列表</text>
+        <rect x="820" y="38" width="216" height="36" rx="8" fill="#1b1813" stroke="#3a332a"/>
+        <text class="sub" x="836" y="61" style="fill:#f0b878">user_id · conv_id · skills[]</text>
+
+        <!-- L1 agent engine -->
+        <rect class="bx amx" x="40" y="116" width="1020" height="92"/>
+        <text class="lbl" x="64" y="146" style="fill:#f0b878">Agent 引擎 (Eino)</text>
+        <text class="sub" x="64" y="166">ReAct(现)  /  ADK Plan-Execute · DeepAgents(目标态)</text>
+        <rect x="64" y="176" width="540" height="20" rx="5" fill="#161310"/>
+        <text class="sub" x="74" y="190">工具: plugin · workflow · db · memory · knowledge · skill</text>
+        <rect x="616" y="176" width="420" height="20" rx="5" fill="#2a1c10" stroke="#e0892f" stroke-opacity=".5"/>
+        <text class="sub" x="626" y="190" style="fill:#f0b878">+ 新增: run_bash · read_file · write_file · list_files</text>
+
+        <!-- L2 session manager -->
+        <rect class="bx amx" x="40" y="236" width="1020" height="120"/>
+        <text class="lbl" x="64" y="266" style="fill:#f0b878">沙箱会话管理器 (新 · application/service)</text>
+        <g>
+          <rect x="64" y="282" width="232" height="56" rx="8" fill="#1b1813" stroke="#3a332a"/>
+          <text class="sub" x="78" y="304" style="fill:#ece4d6">ensureSandbox(user_id)</text>
+          <text class="sub" x="78" y="324">四态生命周期 · single-flight</text>
+          <rect x="308" y="282" width="232" height="56" rx="8" fill="#1b1813" stroke="#3a332a"/>
+          <text class="sub" x="322" y="304" style="fill:#ece4d6">syncSkills(agent)</text>
+          <text class="sub" x="322" y="324">按 hash dedup 注入 bundle</text>
+          <rect x="552" y="282" width="232" height="56" rx="8" fill="#1b1813" stroke="#3a332a"/>
+          <text class="sub" x="566" y="304" style="fill:#ece4d6">exec / read / write</text>
+          <text class="sub" x="566" y="324">转发到沙箱</text>
+          <rect x="796" y="282" width="240" height="56" rx="8" fill="#1b1813" stroke="#3a332a"/>
+          <text class="sub" x="810" y="304" style="fill:#ece4d6">checkpoint → MinIO</text>
+          <text class="sub" x="810" y="324">状态: Redis 注册表</text>
+        </g>
+
+        <!-- L3 infra -->
+        <rect class="bx tlx" x="40" y="384" width="500" height="100"/>
+        <text class="lbl" x="64" y="414" style="fill:#8fd0c5">infra/contract/sandbox</text>
+        <text class="sub" x="64" y="434">Runner 接口 · Create/Exec/Read/Write/Pause/Resume/Kill</text>
+        <rect x="64" y="446" width="210" height="24" rx="6" fill="#13211e" stroke="#5fb3a6" stroke-opacity=".5"/>
+        <text class="sub" x="76" y="462" style="fill:#8fd0c5">impl/cube (E2B REST)</text>
+        <rect x="288" y="446" width="210" height="24" rx="6" fill="#1b1813" stroke="#3a332a"/>
+        <text class="sub" x="300" y="462">impl/docker (降级·可选)</text>
+
+        <rect class="bx tlx" x="560" y="384" width="500" height="100"/>
+        <text class="lbl" x="584" y="414" style="fill:#8fd0c5">infra/contract/storage (MinIO)</text>
+        <text class="sub" x="584" y="434">技能 bundle · 用户 workspace · 内容寻址</text>
+        <rect x="584" y="446" width="452" height="24" rx="6" fill="#13211e" stroke="#5fb3a6" stroke-opacity=".5"/>
+        <text class="sub" x="596" y="462" style="fill:#8fd0c5">skills/{id}/{ver}/...   ·   workspaces/{agent}/{user_id}/...</text>
+
+        <!-- bottom -->
+        <rect class="bx" x="40" y="512" width="1020" height="40" style="stroke:#5fb3a6;stroke-dasharray:4 4"/>
+        <text class="lbl" x="64" y="537" style="fill:#8fd0c5">CubeSandbox 单机 · KVM microVM · 真实物理机</text>
+
+        <!-- links -->
+        <path class="lk" d="M550,88 L550,116" marker-end="url(#ar)"/>
+        <path class="lkA" d="M826,208 L826,236" marker-end="url(#arA)"/>
+        <text class="sub" x="836" y="226" style="fill:#f0b878">工具调用</text>
+        <path class="lk" d="M290,356 L290,384" marker-end="url(#ar)"/>
+        <path class="lk" d="M810,356 L810,384" marker-end="url(#ar)"/>
+        <path class="lk" d="M300,484 L300,512" marker-end="url(#ar)"/>
+      </svg>
+      <div class="legend">
+        <span><i style="background:#e0892f"></i>新增核心(技能执行链)</span>
+        <span><i style="background:#5fb3a6"></i>抽象/基础设施(可换后端)</span>
+        <span><i style="background:#3a332a"></i>现有,复用</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIFECYCLE -->
+<section id="lifecycle">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">06</span><h2>沙箱生命周期 + 高并发</h2></div>
+    <p class="sec-sub tight">活沙箱<b>按 user_id 一个</b>(不是按会话)。同一沙箱内多会话靠子目录隔离 + per-sandbox 锁串行化。<b>活沙箱数 = 活跃用户数</b>,把「每会话一个会爆」压下来。</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 1100 360" role="img" aria-label="生命周期状态机">
+        <defs>
+          <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#b8ad9b"/></marker>
+        </defs>
+        <style>
+          .st{fill:#211d17;stroke-width:2;rx:14}
+          .stl{font-family:'Spectral',serif;fill:#ece4d6;font-size:19px;font-weight:600}
+          .stc{font-family:'IBM Plex Mono',monospace;fill:#8a8071;font-size:11px}
+          .ed{font-family:'IBM Plex Mono',monospace;fill:#b8ad9b;font-size:11.5px}
+          .fl{stroke:#5a5346;stroke-width:1.6;fill:none}
+        </style>
+        <!-- states -->
+        <rect class="st" x="40"  y="140" width="190" height="92" style="stroke:#e0892f"/>
+        <text class="stl" x="70" y="180">冷启动</text>
+        <text class="stc" x="70" y="202">base 快照克隆 &lt;60ms</text>
+        <text class="stc" x="70" y="218">+ MinIO 拉 workspace</text>
+
+        <rect class="st" x="330" y="140" width="190" height="92" style="stroke:#7faf5e"/>
+        <text class="stl" x="360" y="180">活跃</text>
+        <text class="stc" x="360" y="202">热复用:补同步新技能</text>
+        <text class="stc" x="360" y="218">per-sandbox 锁串行</text>
+
+        <rect class="st" x="620" y="140" width="190" height="92" style="stroke:#5fb3a6"/>
+        <text class="stl" x="650" y="180">挂起</text>
+        <text class="stc" x="650" y="202">pause (CoW) 释放内存</text>
+        <text class="stc" x="650" y="218">resume 秒级恢复</text>
+
+        <rect class="st" x="900" y="140" width="190" height="92" style="stroke:#d2603f"/>
+        <text class="stl" x="930" y="180">回收</text>
+        <text class="stc" x="930" y="202">workspace 刷回 MinIO</text>
+        <text class="stc" x="930" y="218">kill</text>
+
+        <!-- flows -->
+        <path class="fl" d="M230,186 L330,186" marker-end="url(#ar2)"/>
+        <text class="ed" x="248" y="178">请求</text>
+        <path class="fl" d="M520,186 L620,186" marker-end="url(#ar2)"/>
+        <text class="ed" x="528" y="178">闲置 5-10min</text>
+        <path class="fl" d="M715,140 C715,90 425,90 425,138" marker-end="url(#ar2)"/>
+        <text class="ed" x="540" y="84">下条消息 · resume</text>
+        <path class="fl" d="M810,186 L900,186" marker-end="url(#ar2)"/>
+        <text class="ed" x="812" y="178">更久/内存压力</text>
+        <!-- reuse self loop -->
+        <path class="fl" d="M425,140 C425,104 470,104 470,140" marker-end="url(#ar2)"/>
+        <text class="ed" x="478" y="116">复用</text>
+        <!-- recycle back to cold -->
+        <path class="fl" d="M995,232 C995,300 135,300 135,234" marker-end="url(#ar2)"/>
+        <text class="ed" x="520" y="294">下次该 user 再来 → 从 MinIO 冷启动恢复</text>
+      </svg>
+    </div>
+
+    <div class="grid g3" style="margin-top:24px">
+      <div class="card"><span class="k">真相源</span><h4>MinIO 为准</h4><p>沙箱本地 FS = 工作副本;节点快照 = 快恢复缓存(不耐重启)。每轮结束/写文件后<b>增量 tar workspace → MinIO</b>,hash 跳过未变。</p></div>
+      <div class="card"><span class="k">并发护栏</span><h4>single-flight + 注册表</h4><p>同 user_id 冷启动加锁(Redis),两条消息不会建两个沙箱。注册表 <span class="mono">user_id→{sandboxID,state}</span> 存 Redis,survive 重启。</p></div>
+      <div class="card"><span class="k">有界池</span><h4>LRU 回收</h4><p>节点按内存预算限活沙箱数;超限先挑冷的 LRU,pause 再 kill。可加 CPU/超时/磁盘配额(CubeSandbox 原生)。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FLOW -->
+<section id="flow">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">07</span><h2>端到端执行时序</h2></div>
+    <p class="sec-sub">一条「终端用户触发脚本型技能」的完整链路。注意脚本执行结果回模型,<b>脚本本身不入上下文</b>(L3 的省 token 关键)。</p>
+    <div class="diagram">
+      <svg viewBox="0 0 1100 470" role="img" aria-label="时序图">
+        <style>
+          .actor{fill:#211d17;stroke:#3a332a;stroke-width:1.2;rx:8}
+          .an{font-family:'IBM Plex Sans',sans-serif;fill:#ece4d6;font-size:12.5px;font-weight:600;text-anchor:middle}
+          .ll{stroke:#2e2920;stroke-width:1.4;stroke-dasharray:3 4}
+          .msg{font-family:'IBM Plex Mono',monospace;fill:#b8ad9b;font-size:11.5px}
+          .ax{stroke:#8a8071;stroke-width:1.4;fill:none}
+          .axA{stroke:#e0892f;stroke-width:1.6;fill:none}
+          .axT{stroke:#5fb3a6;stroke-width:1.6;fill:none}
+        </style>
+        <!-- lifelines -->
+        <g>
+          <rect class="actor" x="40"  y="20" width="150" height="40"/><text class="an" x="115" y="45">终端 (user_id)</text><line class="ll" x1="115" y1="60" x2="115" y2="450"/>
+          <rect class="actor" x="240" y="20" width="150" height="40"/><text class="an" x="315" y="45">Eino Agent</text><line class="ll" x1="315" y1="60" x2="315" y2="450"/>
+          <rect class="actor" x="440" y="20" width="170" height="40"/><text class="an" x="525" y="45">会话管理器</text><line class="ll" x1="525" y1="60" x2="525" y2="450"/>
+          <rect class="actor" x="660" y="20" width="150" height="40"/><text class="an" x="735" y="45">CubeSandbox</text><line class="ll" x1="735" y1="60" x2="735" y2="450"/>
+          <rect class="actor" x="900" y="20" width="160" height="40"/><text class="an" x="980" y="45">MinIO</text><line class="ll" x1="980" y1="60" x2="980" y2="450"/>
+        </g>
+        <!-- messages -->
+        <path class="ax" d="M115,92 L313,92" marker-end="url(#ar)"/><text class="msg" x="128" y="85">chat(user_id, "处理这个PDF")</text>
+        <text class="msg" x="200" y="120" style="fill:#f0b878">L1: system prompt 已含技能名+描述</text>
+        <path class="axA" d="M315,150 C360,150 360,150 315,150"/><path class="axA" d="M315,148 a18,18 0 1,1 -0.1,0" marker-end="url(#arA)"/><text class="msg" x="340" y="146" style="fill:#f0b878">read_skill (L2)</text>
+        <path class="ax" d="M315,186 L523,186" marker-end="url(#ar)"/><text class="msg" x="330" y="179">run_bash("python /skills/pdf/extract.py")</text>
+        <path class="axT" d="M525,216 L733,216" marker-end="url(#arA)"/><text class="msg" x="540" y="209" style="fill:#8fd0c5">ensureSandbox(user_id) · 四态</text>
+        <path class="axT" d="M980,250 L527,250" marker-end="url(#ar)"/><text class="msg" x="620" y="243" style="fill:#8fd0c5">冷启动? 拉 workspace + 技能 bundle (dedup)</text>
+        <path class="ax" d="M525,284 L733,284" marker-end="url(#ar)"/><text class="msg" x="560" y="277">注入 /skills/pdf · exec 脚本</text>
+        <path class="ax" d="M735,318 L527,318" marker-end="url(#ar)"/><text class="msg" x="560" y="311" style="fill:#7faf5e">stdout/exit(脚本本身不入上下文)</text>
+        <path class="ax" d="M525,352 L317,352" marker-end="url(#ar)"/><text class="msg" x="345" y="345">结果 → 模型(L3 省 token)</text>
+        <path class="axT" d="M525,386 L978,386" marker-end="url(#arA)"/><text class="msg" x="560" y="379" style="fill:#8fd0c5">产物写 /workspace → 增量 checkpoint</text>
+        <path class="ax" d="M315,420 L117,420" marker-end="url(#ar)"/><text class="msg" x="150" y="413">SSE 流式回答 + 产物</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- EINO -->
+<section id="eino">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">08</span><h2>Eino 落地方案 · 源码级</h2></div>
+    <p class="sec-sub">新工具就是一个 <code>tool.InvokableTool</code>,和现有 <code>read_skill</code> 同一范式,在 <code>agent_flow_builder.go</code> 同一处 append——<b>对现有 ReAct 流零侵入</b>。</p>
+
+    <div class="callout" style="margin-bottom:26px">
+      <span class="bang">∴</span>
+      <p>读源码确认的<b>关键机制</b>:<code>BuildAgent(ctx, conf)</code> 是<b>按每次请求构建</b>的,<code>conf.UserID</code>(对外 API 的 user_id)在构建期就被<b>烤进每个工具</b>。记忆工具 <code>avTool</code> 已经这么做——注释原文 <i>"🔥 使用外部API的user_id作为BizID实现全局共享"</i>。<b style="color:var(--amber-soft)">所以沙箱工具 = 记忆工具的「文件系统版」:同样的 user_id keying、同样的构建期捕获,平台已有活的同构先例。</b></p>
+    </div>
+
+    <div class="diagram" style="margin-bottom:26px;padding:22px">
+      <svg viewBox="0 0 1080 132" role="img" aria-label="请求到工具的上下文流">
+        <style>
+          .rb{fill:#211d17;stroke:#3a332a;stroke-width:1.2;rx:9}
+          .rn{font-family:'IBM Plex Mono',monospace;fill:#ece4d6;font-size:12.5px;font-weight:600}
+          .rs{font-family:'IBM Plex Mono',monospace;fill:#8a8071;font-size:10.5px}
+          .rf{stroke:#e0892f;stroke-width:1.6;fill:none}
+        </style>
+        <rect class="rb" x="20" y="40" width="210" height="56"/><text class="rn" x="36" y="64">ChatV3Request.User</text><text class="rs" x="36" y="82">对外 API · user_id (required)</text>
+        <rect class="rb" x="290" y="40" width="200" height="56"/><text class="rn" x="306" y="64">AgentRequest.UserID</text><text class="rs" x="306" y="82">+ Identity{AgentID,Connector}</text>
+        <rect class="rb" x="550" y="40" width="210" height="56" style="stroke:#e0892f"/><text class="rn" x="566" y="64">BuildAgent(conf)</text><text class="rs" x="566" y="82">每请求构建 · 烤入 conf.UserID</text>
+        <rect class="rb" x="820" y="40" width="240" height="56" style="stroke:#e0892f"/><text class="rn" x="836" y="64" style="fill:#f0b878">sandboxTool{userID}</text><text class="rs" x="836" y="82">Exec 时定位该 user 的沙箱</text>
+        <path class="rf" d="M230,68 L288,68" marker-end="url(#arA)"/>
+        <path class="rf" d="M490,68 L548,68" marker-end="url(#arA)"/>
+        <path class="rf" d="M760,68 L818,68" marker-end="url(#arA)"/>
+      </svg>
+    </div>
+
+    <div class="g2 grid" style="align-items:start">
+      <div class="code">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fn">agentflow/node_tool_sandbox.go</span><span class="badge">新增</span></div>
+<pre><span class="c">// run_bash:在 user_id 的沙箱里执行 shell</span>
+<span class="k">func</span> (t *<span class="t">sandboxTool</span>) <span class="f">Info</span>(ctx) (*<span class="t">schema.ToolInfo</span>, <span class="t">error</span>) {
+  <span class="k">return</span> &<span class="t">schema.ToolInfo</span>{
+    Name: <span class="s">"run_bash"</span>,
+    Desc: <span class="s">"在沙箱执行 shell 命令,返回 stdout/stderr/exit"</span>,
+    ParamsOneOf: schema.<span class="f">NewParamsOneOfByParams</span>(...),
+  }, <span class="k">nil</span>
+}
+
+<span class="k">func</span> (t *<span class="t">sandboxTool</span>) <span class="f">InvokableRun</span>(
+    ctx, argsJSON <span class="t">string</span>, _ ...tool.Option) (<span class="t">string</span>, <span class="t">error</span>) {
+  <span class="k">var</span> r <span class="t">runBashReq</span>; json.<span class="f">Unmarshal</span>([]<span class="t">byte</span>(argsJSON), &r)
+  <span class="c">// 关键:从 ctx 取 user_id → 定位/拉起沙箱</span>
+  sb, _ := t.mgr.<span class="f">EnsureSandbox</span>(ctx, t.userID, t.agentSkills)
+  out, _ := sb.<span class="f">Exec</span>(ctx, r.Cmd, r.Timeout)
+  <span class="k">return</span> out.<span class="f">Combined</span>(), <span class="k">nil</span>   <span class="c">// 仅结果回模型</span>
+}</pre>
+      </div>
+
+      <div class="code">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fn">agentflow/agent_flow_builder.go</span><span class="badge">已有 · 同处 append</span></div>
+<pre><span class="c">// 现有:技能工具已经这样挂(line ~223)</span>
+skillTools := <span class="f">newSkillTools</span>(conf.Agent.SpaceID,
+                            conf.Agent.SkillInfoList)
+agentTools = <span class="f">append</span>(agentTools, ...)
+
+<span class="c">// 新增:4 个沙箱工具,完全同构</span>
+sbTools := <span class="f">newSandboxTools</span>(mgr, userID, skills)
+agentTools = <span class="f">append</span>(agentTools, sbTools...)
+
+<span class="c">// 喂进同一个 ReAct agent(现状不变)</span>
+reactConfig := &react.<span class="t">AgentConfig</span>{
+  ToolCallingModel: chatModel,
+  ToolsConfig: compose.<span class="t">ToolsNodeConfig</span>{
+    Tools: agentTools,
+    ExecuteSequentially: <span class="k">true</span>,  <span class="c">// 保证 ReAct 顺序</span>
+  },
+  MaxStep: <span class="k">30</span>,
+}
+agent, _ := react.<span class="f">NewAgent</span>(ctx, reactConfig)</pre>
+      </div>
+    </div>
+
+    <div class="g2 grid" style="align-items:start;margin-top:18px">
+      <div class="code">
+        <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="fn">infra/contract/sandbox/sandbox.go</span><span class="badge">新抽象层</span></div>
+<pre><span class="k">type</span> <span class="t">Runner</span> <span class="k">interface</span> {
+  <span class="f">Create</span>(ctx, spec <span class="t">Spec</span>) (<span class="t">Sandbox</span>, <span class="t">error</span>)
+  <span class="f">Connect</span>(ctx, id <span class="t">string</span>) (<span class="t">Sandbox</span>, <span class="t">error</span>)
+}
+<span class="k">type</span> <span class="t">Sandbox</span> <span class="k">interface</span> {
+  <span class="f">Exec</span>(ctx, cmd <span class="t">string</span>, t <span class="t">int</span>) (<span class="t">ExecResult</span>, <span class="t">error</span>)
+  <span class="f">WriteFiles</span>(ctx, []<span class="t">FileWrite</span>) <span class="t">error</span>
+  <span class="f">ReadFile</span>(ctx, path <span class="t">string</span>) ([]<span class="t">byte</span>, <span class="t">error</span>)
+  <span class="f">Pause</span>(ctx) error  <span class="c">// CoW 快照</span>
+  <span class="f">Resume</span>(ctx) error
+  <span class="f">Kill</span>(ctx) error
+}
+<span class="c">// impl/cube:E2B 兼容 REST(换 URL 即可切 E2B 云)</span>
+<span class="c">// impl/docker:降级后端(无 KVM 时)</span></pre>
+      </div>
+      <div class="card" style="background:var(--panel-2)">
+        <span class="k">自主规划:两条路线</span>
+        <h4 style="margin-bottom:12px">MVP=ReAct · 目标=ADK</h4>
+        <p style="margin-bottom:14px"><b style="color:var(--amber-soft)">路线 A · 现有 ReAct(零升级)</b><br>模型在 30 步内自己挑工具/技能循环。现成、流式/中断已通。适合技能不多的 MVP。</p>
+        <p style="margin-bottom:14px"><b style="color:var(--teal-soft)">路线 B · 升级 Eino ADK(v0.5+)</b><br><b>Plan-Execute</b>:Planner 拆步 → Executor 执行 → Replanner 动态重规划。<b>DeepAgents</b>:主 agent 拆 todos,经 TaskTool 委派 SubAgent,<b>上下文隔离</b>。一个技能 ≈ 一个 SubAgent。</p>
+        <p style="font-family:var(--mono);font-size:12px;color:var(--ink-dim);border-top:1px dashed var(--line);padding-top:12px;margin:0">工具层两路线<b style="color:var(--ink-soft)">完全复用</b>,升级平滑。Eino 升级成本单独立项评估。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DECISIONS -->
+<section id="decide">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">09</span><h2>关键决策点</h2></div>
+    <p class="sec-sub tight">需要拍板的 7 个决策,及报告倾向。</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="width:48px">#</th><th>决策</th><th>选项</th><th>报告倾向</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">D1</td><td><b>沙箱引擎</b></td><td>CubeSandbox / E2B 云 / Docker 降级</td><td><span class="tag teal">抽象层 + CubeSandbox</span> 单机验证,保留可换</td></tr>
+          <tr><td class="mono">D2</td><td><b>自主规划引擎</b></td><td>A 现有 ReAct / B ADK / C 沙箱内 agent</td><td><b>MVP=A,目标=B</b></td></tr>
+          <tr><td class="mono">D3</td><td><b>Eino 是否升级</b></td><td>留 v0.4.7 / 升 v0.5.x(ADK)</td><td>升级<b>单独立项评估</b>,不阻塞 MVP</td></tr>
+          <tr><td class="mono">D4</td><td><b>沙箱粒度</b></td><td>user_id 单沙箱 / 会话级</td><td><span class="tag teal">user_id 单沙箱</span> + 子目录隔离</td></tr>
+          <tr><td class="mono">D5</td><td><b>运行时能否自建技能</b></td><td>仅平台预配 / 允许 create_skill</td><td>一期<b>仅平台配</b>;create_skill 二期</td></tr>
+          <tr><td class="mono">D6</td><td><b>挂起/回收阈值</b></td><td>—</td><td>挂起 5-10min · 回收按内存压力 · <b>可配</b></td></tr>
+          <tr><td class="mono">D7</td><td><b>Go 怎么连沙箱</b></td><td>直调 REST / 封 Go SDK</td><td><b>直调 E2B/Cube REST</b>(接口稳定)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- EFFORT / SYSTEM CHANGE -->
+<section id="effort">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">10</span><h2>工作量 + 系统改动评估</h2></div>
+    <p class="sec-sub">好消息:大量地基<b>已经存在</b>(技能域骨架、存储、缓存、ReAct、user_id 流入)。真正的新增集中在<b>沙箱抽象层 + 会话管理器</b>两块。下面是逐模块改动面 + 人天估算。</p>
+
+    <!-- summary cards -->
+    <div class="grid g4" style="margin-bottom:30px">
+      <div class="card" style="border-color:rgba(224,137,47,.4)"><span class="k" style="color:var(--amber)">MVP(P1-P4)</span><h3 style="font-size:28px;font-family:var(--mono);color:var(--amber-soft)">37–56 <span style="font-size:14px;color:var(--ink-dim)">人天</span></h3><p>真实沙箱 + 文件/bash 工具 + 脚本技能跑通(ReAct)。约 <b>2 人 · 4–6 周</b>。</p></div>
+      <div class="card"><span class="k" style="color:var(--teal)">完整(+P5+P6)</span><h3 style="font-size:28px;font-family:var(--mono);color:var(--teal-soft)">62–96 <span style="font-size:14px;color:var(--ink-dim)">人天</span></h3><p>含 ADK 自主规划 + 高并发加固。约 <b>2–3 人 · 8–12 周</b>。</p></div>
+      <div class="card"><span class="k">关键路径</span><h4>会话管理器</h4><p>P2 是技术核心与瓶颈(生命周期+并发+一致性);P5 的 Eino 升级是最大不确定。</p></div>
+      <div class="card"><span class="k">团队建议</span><h4>1 后端 + 0.5 前端</h4><p>+ 1 运维(CubeSandbox 部署/PoC)。前端仅 P4 技能文件编辑器需投入。</p></div>
+    </div>
+
+    <!-- system change map -->
+    <h3 style="font-size:21px;margin:8px 0 6px">系统改动全景 · 逐模块</h3>
+    <p style="color:var(--ink-soft);font-size:15px;margin:0 0 16px"><span class="tag" style="border-color:rgba(224,137,47,.5);color:var(--amber-soft)">新增</span> 全新模块 &nbsp; <span class="tag teal">扩展</span> 在现有上加字段/逻辑 &nbsp; <span class="tag ok">零改动</span> 直接复用</p>
+    <div class="tbl-wrap" style="margin-bottom:30px">
+      <table>
+        <thead><tr><th>模块 / 路径</th><th style="width:90px">改动</th><th>内容</th><th style="width:130px">影响面 / 风险</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">infra/contract/sandbox</td><td><span class="tag" style="border-color:rgba(224,137,47,.5);color:var(--amber-soft)">新增</span></td><td>Runner/Sandbox 接口:Create/Connect/Exec/Read/Write/Pause/Resume/Kill</td><td>独立 · 低</td></tr>
+          <tr><td class="mono">infra/impl/sandbox/cube</td><td><span class="tag" style="border-color:rgba(224,137,47,.5);color:var(--amber-soft)">新增</span></td><td>E2B 兼容 REST 客户端(Go 无官方 SDK,自封薄客户端)</td><td>独立 · <b style="color:var(--red)">高</b>(兼容度待实测)</td></tr>
+          <tr><td class="mono">domain/sandbox(会话管理器)</td><td><span class="tag" style="border-color:rgba(224,137,47,.5);color:var(--amber-soft)">新增</span></td><td>四态生命周期 · single-flight · Redis 注册表 · MinIO 持久化 · 注入 dedup · 空闲回收器</td><td>核心 · <b style="color:#e0b94a">中</b>(并发正确性)</td></tr>
+          <tr><td class="mono">agentflow/node_tool_sandbox.go</td><td><span class="tag" style="border-color:rgba(224,137,47,.5);color:var(--amber-soft)">新增</span></td><td>run_bash/read_file/write_file/list_files(InvokableTool,同 avTool 范式)</td><td>低(有同构先例)</td></tr>
+          <tr><td class="mono">agentflow/agent_flow_builder.go</td><td><span class="tag teal">扩展</span></td><td>append 沙箱工具(~5 行,和 skillTools 同处)</td><td>极小 · 低</td></tr>
+          <tr><td class="mono">domain/skill/entity + dal</td><td><span class="tag teal">扩展</span></td><td>Skill 加 BundleURI/Manifest/Version/EntryPoints/Runtime 字段</td><td>中(需 DB migration)</td></tr>
+          <tr><td class="mono">domain/skill/service</td><td><span class="tag teal">扩展</span></td><td>bundle 打包/上传 MinIO/取 manifest/版本</td><td>中</td></tr>
+          <tr><td class="mono">agentflow/node_tool_skill.go</td><td><span class="tag teal">扩展</span></td><td>read_skill 从 DB Prompt → 读 bundle 的 SKILL.md(向后兼容)</td><td>小</td></tr>
+          <tr><td>DB migration</td><td><span class="tag teal">扩展</span></td><td>skill 表加列 / 新增 manifest 表(自愈式 schema,镜像启动已有先例)</td><td>中</td></tr>
+          <tr><td class="mono">frontend/space-skill</td><td><span class="tag teal">扩展</span></td><td>技能文件编辑器(SKILL.md + 脚本树 + 上传)</td><td>前端主投入 · 中</td></tr>
+          <tr><td class="mono">application/.../openapi_agent_run</td><td><span class="tag ok">几乎零改</span></td><td>user_id 已流入 BuildAgent,绑定技能列表已有</td><td>极小</td></tr>
+          <tr><td class="mono">infra/contract/storage(MinIO)</td><td><span class="tag ok">零改动</span></td><td>PutObject/GetObject 直接复用</td><td>无</td></tr>
+          <tr><td class="mono">infra/impl/cache/redis</td><td><span class="tag ok">零改动</span></td><td>注册表/锁直接复用</td><td>无</td></tr>
+          <tr><td>deploy / 运维</td><td><span class="tag" style="border-color:rgba(224,137,47,.5);color:var(--amber-soft)">新增</span></td><td>CubeSandbox 单机部署 + base 快照预烘焙 + env 配置 + 监控</td><td><b style="color:var(--red)">高</b>(新组件运维)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- effort by phase -->
+    <h3 style="font-size:21px;margin:8px 0 6px">工作量明细 · 按阶段</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="width:64px">阶段</th><th>工作流</th><th>主要任务</th><th style="width:100px">人天</th><th style="width:90px">风险</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">P1</td><td><b>沙箱底座</b></td><td>部署 CubeSandbox · contract/sandbox · impl/cube REST · 连通性 demo</td><td class="mono" style="color:var(--amber-soft)">8–12</td><td><span class="tag no">高</span></td></tr>
+          <tr><td class="mono">P2</td><td><b>会话管理器</b></td><td>四态生命周期 · Redis 注册表 · MinIO 持久化 · single-flight · 回收器</td><td class="mono" style="color:var(--amber-soft)">12–18</td><td><span class="tag" style="border-color:rgba(224,185,74,.5);color:#e0b94a">中</span></td></tr>
+          <tr><td class="mono">P3</td><td><b>工具接入</b></td><td>4 个 InvokableTool · builder append · 端到端跑通(ReAct)</td><td class="mono" style="color:var(--amber-soft)">5–8</td><td><span class="tag ok">低</span></td></tr>
+          <tr><td class="mono">P4</td><td><b>技能 bundle</b></td><td>entity 扩展 + DB migration · service 打包 · 注入 dedup · <b>前端文件编辑器</b></td><td class="mono" style="color:var(--amber-soft)">12–18</td><td><span class="tag" style="border-color:rgba(224,185,74,.5);color:#e0b94a">中</span></td></tr>
+          <tr style="background:rgba(224,137,47,.05)"><td class="mono"></td><td><b>MVP 小计</b></td><td>真实沙箱 + 脚本技能跑通(ReAct 自主执行)</td><td class="mono" style="color:var(--amber);font-weight:600">37–56</td><td></td></tr>
+          <tr><td class="mono">P5</td><td><b>自主规划 ADK</b></td><td>Eino v0.4.7→v0.5.x 迁移评估 + Plan-Execute/DeepAgents 接入 · 技能↔SubAgent</td><td class="mono" style="color:var(--teal-soft)">15–25</td><td><span class="tag no">高</span></td></tr>
+          <tr><td class="mono">P6</td><td><b>加固</b></td><td>配额/超时/磁盘上限 · 并发压测 · 安全审计 · 接 obs-stack</td><td class="mono" style="color:var(--teal-soft)">10–15</td><td><span class="tag" style="border-color:rgba(224,185,74,.5);color:#e0b94a">中</span></td></tr>
+          <tr style="background:rgba(95,179,166,.05)"><td class="mono"></td><td><b>完整合计</b></td><td>含自主规划 + 高并发加固</td><td class="mono" style="color:var(--teal-soft);font-weight:600">62–96</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="color:var(--ink-dim);font-size:12.5px;font-family:var(--mono);margin-top:12px">* 人天为工程估算区间,含开发+自测,不含需求评审/设计变更/线上运维。P1、P5 因外部依赖(CubeSandbox 兼容度、Eino 迁移面)不确定性最高,建议各先做 2-3 人天 spike 收敛估算。</p>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="road">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">11</span><h2>分阶段路线图</h2></div>
+    <p class="sec-sub">每阶段单独可验收。MVP(P1-P4)用 ReAct 跑通真实沙箱执行;P5 再上 ADK 自主规划。</p>
+    <div class="road">
+      <div class="phase done"><div class="pn">P0 · 调研收口</div><h4>本报告 + 决策拍板</h4><p>D1-D7 确定 + Eino 升级成本评估。</p><div class="out">→ 决策确定 ✓ 本文件</div></div>
+      <div class="phase"><div class="pn">P1 · 沙箱底座</div><h4>CubeSandbox 单机 + 抽象层</h4><p>验证机部署;<span class="mono">contract/sandbox</span> + <span class="mono">impl/cube</span>;最小 demo:Go 调 REST 在沙箱跑 echo / 读写文件。</p><div class="out">→ 后端能创建沙箱、跑 bash、读写文件</div></div>
+      <div class="phase"><div class="pn">P2 · 会话管理器</div><h4>生命周期 + 持久化</h4><p>user_id 单沙箱 + 四态 + Redis 注册表 + MinIO workspace 持久化 + single-flight。</p><div class="out">→ 同 user 跨会话 workspace 保留</div></div>
+      <div class="phase"><div class="pn">P3 · 工具接入 (ReAct)</div><h4>4 个沙箱工具上线</h4><p>run_bash/read_file/write_file/list_files 挂进 builder;沙箱里跑通一个真实任务。</p><div class="out">→ 智能体自主读写文件 + 跑命令(路线 A)</div></div>
+      <div class="phase"><div class="pn">P4 · 技能 bundle</div><h4>技能升级成文件夹</h4><p>Skill entity 加 bundle/manifest/version;<span class="mono">space-skill</span> 加文件编辑器;运行时 dedup 注入。</p><div class="out">→ 平台配脚本技能,绑定后沙箱内可执行</div></div>
+      <div class="phase"><div class="pn">P5 · 自主规划 (ADK)</div><h4>升级 Eino → Plan-Execute</h4><p>引入 DeepAgents,技能 ↔ SubAgent/TaskTool 映射。</p><div class="out">→ 复杂任务自主拆解 + 进度追踪(路线 B)</div></div>
+      <div class="phase"><div class="pn">P6 · 加固</div><h4>配额 · 压测 · 安全 · 可观测</h4><p>CPU/超时/磁盘上限 · 并发压测 · 安全审计 · 接 obs-stack。</p><div class="out">→ 高并发达标</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- RISK -->
+<section id="risk">
+  <div class="wrap reveal">
+    <div class="sec-head"><span class="sec-num">12</span><h2>风险与未决</h2></div>
+    <div class="grid g2">
+      <div class="card"><span class="k" style="color:var(--red)">最大不确定</span><h4>Eino 升级成本</h4><p>v0.4.7 → v0.5.x(ADK)API 变动面、对现有 workflow/agent 流的影响,需专门迁移评估(P0)。可先不升,用 ReAct 跑通 P1-P4。</p></div>
+      <div class="card"><span class="k">客户端</span><h4>Go ↔ 沙箱</h4><p>E2B 官方无 Go SDK,需直调 REST 或封薄客户端;CubeSandbox 的 E2B 兼容度(尤其 pause/resume、批量文件、长连 exec)需实测。</p></div>
+      <div class="card"><span class="k">成熟度</span><h4>CubeSandbox 运维</h4><p>KVM 裸金属依赖、单机→多机扩展、快照与 MinIO 真相源的一致性策略,需 PoC 验证。</p></div>
+      <div class="card"><span class="k">一致性</span><h4>持久化冲突</h4><p>沙箱本地 FS / 节点快照 / MinIO 三者一致性;并发写同一 user workspace(多会话)用 per-sandbox 锁串行化。</p></div>
+      <div class="card"><span class="k" style="color:var(--red)">安全</span><h4>任意 bash 边界</h4><p>技能脚本可执行任意命令 → 必须靠沙箱隔离 + 网络策略(CubeVS/eBPF)+ 资源配额;create_skill 若开放需审核。</p></div>
+      <div class="card"><span class="k">体验</span><h4>冷启动延迟</h4><p>1-2s 目标依赖 base 快照预热 + workspace 增量;首次大 workspace 用户可能慢,需 lazy mount / 后台预热。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOT -->
+<div class="foot">
+  <div class="wrap">
+    <div>
+      <div class="brand" style="margin-bottom:14px"><span class="dot"></span>猎鹰智能体 · 沙箱技能可行性方案</div>
+      <div class="src">
+        参考 · CubeSandbox &nbsp;<a href="https://github.com/TencentCloud/CubeSandbox">github.com/TencentCloud/CubeSandbox</a><br>
+        参考 · Eino &nbsp;<a href="https://github.com/cloudwego/eino">github.com/cloudwego/eino</a> &nbsp;·&nbsp; ADK <a href="https://www.cloudwego.io/docs/eino/overview/eino_adk0_1/">overview</a><br>
+        源码 · backend/domain/skill · agent/singleagent/internal/agentflow · infra/{storage,cache,coderunner}<br>
+        完整调研 · docs/2026-06-12-猎鹰智能体-真实沙箱与技能执行-分析报告.md
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-family:var(--mono);font-size:12px;color:var(--ink-soft)">2026-06-12</div>
+      <div style="font-family:var(--mono);font-size:11px;margin-top:4px">技术可行性 · 非实现承诺</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// active nav on scroll
+const links=[...document.querySelectorAll('.nav nav a')];
+const secs=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+const obs=new IntersectionObserver((es)=>{
+  es.forEach(e=>{ if(e.isIntersecting){
+    const id='#'+e.target.id;
+    links.forEach(l=>l.classList.toggle('active',l.getAttribute('href')===id));
+  }});
+},{rootMargin:'-45% 0px -50% 0px'});
+secs.forEach(s=>obs.observe(s));
+// reveal on scroll, with a safety fallback so no section ever stays blank
+const reveals=[...document.querySelectorAll('.reveal')];
+if('IntersectionObserver'in window){
+  const rv=new IntersectionObserver((es)=>{
+    es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); rv.unobserve(e.target);} });
+  },{rootMargin:'0px 0px -8% 0px'});
+  reveals.forEach(el=>rv.observe(el));
+  // fallback: reveal anything still hidden shortly after load (covers anchor jumps / screenshots)
+  window.addEventListener('load',()=>setTimeout(()=>reveals.forEach(el=>el.classList.add('in')),1500));
+}else{
+  reveals.forEach(el=>el.classList.add('in'));
+}
+</script>
+</body>
+</html>
