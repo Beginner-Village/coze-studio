@@ -840,7 +840,23 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 	 var preToolResponseMsg *msgEntity.Message
 	 toolResponseMsgContent := bytes.NewBuffer([]byte{})
 	 for {
-		 chunk, ok := <-mainChan
+		 var chunk *entity.AgentRespEvent
+		 var ok bool
+		 select {
+		 case <-ctx.Done():
+			 // 客户端断连/请求取消：停止消费并落 cancelled，避免空烧 token。
+			 logs.CtxWarnf(ctx, "run.push canceled: %v", ctx.Err())
+			 if rtDependence.runID > 0 {
+				 detached := context.WithoutCancel(ctx)
+				 now := time.Now().UnixMilli()
+				 _ = c.RunRecordRepo.UpdateByID(detached, rtDependence.runID, &entity.UpdateMeta{
+					 Status:    entity.RunStatusCancelled,
+					 UpdatedAt: now,
+				 })
+			 }
+			 return
+		 case chunk, ok = <-mainChan:
+		 }
 		 if !ok || chunk == nil {
 			 return
 		 }
