@@ -39,6 +39,31 @@ func sandboxKeyFor(connectorID, agentID int64, userID string) string {
 	return "u" + hex.EncodeToString(sum[:])[:24]
 }
 
+// defaultMaxToolOutputBytes 是回灌给模型的工具输出上限（约几千 token）。
+const defaultMaxToolOutputBytes = 16000
+
+// maxToolOutputBytes 返回工具输出上限，可经环境变量 AGENT_TOOL_OUTPUT_MAX_BYTES 覆盖。
+func maxToolOutputBytes() int {
+	if v := os.Getenv("AGENT_TOOL_OUTPUT_MAX_BYTES"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return defaultMaxToolOutputBytes
+}
+
+// truncateForModel 仅截断回灌给模型的字符串，不影响沙箱里真实写入/执行的内容。
+// 超长时保留头部 70%、尾部 30%，中间插入 truncated 标记。
+func truncateForModel(s string) string {
+	max := maxToolOutputBytes()
+	if len(s) <= max {
+		return s
+	}
+	head := s[:max*7/10]
+	tail := s[len(s)-max*3/10:]
+	return head + fmt.Sprintf("\n\n...[truncated %d bytes]...\n\n", len(s)-len(head)-len(tail)) + tail
+}
+
 // resolvePath 把相对路径归一到 /workspace 下；绝对路径原样保留。
 func resolvePath(p string) string {
 	p = strings.TrimSpace(p)
@@ -87,7 +112,7 @@ func (t *runBashTool) InvokableRun(ctx context.Context, argumentsInJSON string, 
 	if err != nil {
 		return fmt.Sprintf("Error running command: %v", err), nil
 	}
-	return fmt.Sprintf("exit_code: %d\nstdout:\n%s\nstderr:\n%s", res.ExitCode, res.Stdout, res.Stderr), nil
+	return fmt.Sprintf("exit_code: %d\nstdout:\n%s\nstderr:\n%s", res.ExitCode, truncateForModel(res.Stdout), truncateForModel(res.Stderr)), nil
 }
 
 // ---- read_file ----
@@ -121,7 +146,7 @@ func (t *readFileTool) InvokableRun(ctx context.Context, argumentsInJSON string,
 	if err != nil {
 		return fmt.Sprintf("Error reading file: %v", err), nil
 	}
-	return string(b), nil
+	return truncateForModel(string(b)), nil
 }
 
 // ---- write_file ----

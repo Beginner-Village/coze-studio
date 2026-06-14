@@ -167,6 +167,22 @@ func TestSandboxToolsNilWhenNoSVC(t *testing.T) {
 	}
 }
 
+func TestTruncateForModel(t *testing.T) {
+	short := "hello world"
+	if got := truncateForModel(short); got != short {
+		t.Fatalf("short input should be returned unchanged, got %q", got)
+	}
+
+	long := strings.Repeat("a", defaultMaxToolOutputBytes*2)
+	got := truncateForModel(long)
+	if len(got) >= len(long) {
+		t.Fatalf("long input should be truncated, len(got)=%d len(long)=%d", len(got), len(long))
+	}
+	if !strings.Contains(got, "[truncated") {
+		t.Fatalf("truncated output should contain marker, got prefix %q", got[:64])
+	}
+}
+
 func TestSandboxToolsEnabled(t *testing.T) {
 	t.Setenv("SANDBOX_TOOLS_ENABLED", "")
 	if sandboxToolsEnabled(0) {
