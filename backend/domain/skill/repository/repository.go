@@ -35,6 +35,13 @@ type SkillRepository interface {
 	Delete(ctx context.Context, skillID int64) error
 	List(ctx context.Context, req *entity.ListRequest) (*entity.ListResponse, error)
 	MGet(ctx context.Context, skillIDs []int64) ([]*entity.Skill, error)
+
+	// CreateVersion persists an immutable snapshot of a skill version.
+	CreateVersion(ctx context.Context, v *entity.SkillVersion) error
+	// GetVersion returns the snapshot for a specific skill version, or nil if absent.
+	GetVersion(ctx context.Context, skillID, version int64) (*entity.SkillVersion, error)
+	// GetLatestVersion returns the highest-version snapshot for a skill, or nil if none.
+	GetLatestVersion(ctx context.Context, skillID int64) (*entity.SkillVersion, error)
 }
 
 // NewSkillRepository creates a new SkillRepository.

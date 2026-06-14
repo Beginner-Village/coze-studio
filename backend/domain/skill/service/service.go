@@ -31,4 +31,6 @@ type SkillService interface {
 	DeleteSkill(ctx context.Context, skillID int64) error
 	ListSkills(ctx context.Context, req *entity.ListRequest) (*entity.ListResponse, error)
 	MGetSkills(ctx context.Context, skillIDs []int64) ([]*entity.Skill, error)
+	// GetSkillVersion returns an immutable snapshot of a skill at a given version.
+	GetSkillVersion(ctx context.Context, skillID, version int64) (*entity.SkillVersion, error)
 }

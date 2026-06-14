@@ -42,6 +42,7 @@ type skillPO struct {
 	IconURI     string         `gorm:"column:icon_uri;not null"`
 	CreatorID   int64          `gorm:"column:creator_id;not null"`
 	Status      int8           `gorm:"column:status;not null;default:1"`
+	Version     int64          `gorm:"column:version;not null;default:1"`
 	CreatedAt   int64          `gorm:"column:created_at;not null"`
 	UpdatedAt   int64          `gorm:"column:updated_at;not null"`
 	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at"`
@@ -71,6 +72,7 @@ func (dao *SkillDAO) Create(ctx context.Context, skill *entity.Skill) (int64, er
 	now := time.Now().UnixMilli()
 	po := dao.do2po(skill)
 	po.SkillID = id
+	po.Version = 1
 	po.CreatedAt = now
 	po.UpdatedAt = now
 
@@ -111,6 +113,8 @@ func (dao *SkillDAO) Update(ctx context.Context, skill *entity.Skill) error {
 	now := time.Now().UnixMilli()
 	updates := map[string]interface{}{
 		"updated_at": now,
+		// Bump the content version on every update so each change is snapshotted.
+		"version": gorm.Expr("version + 1"),
 	}
 	if skill.Name != "" {
 		updates["name"] = skill.Name
@@ -127,6 +131,19 @@ func (dao *SkillDAO) Update(ctx context.Context, skill *entity.Skill) error {
 
 	err := dao.db.WithContext(ctx).Model(&skillPO{}).Where("skill_id = ?", skill.SkillID).Updates(updates).Error
 	if err != nil {
+		return errorx.WrapByCode(err, errno.ErrSkillUpdateCode)
+	}
+
+	// Read back the now-current row (without status filter, version may have
+	// just incremented) and persist an immutable snapshot of it.
+	var po skillPO
+	if err := dao.db.WithContext(ctx).Where("skill_id = ?", skill.SkillID).First(&po).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return errorx.WrapByCode(err, errno.ErrSkillUpdateCode)
+	}
+	if err := dao.createVersionFromSkill(ctx, &po, now); err != nil {
 		return errorx.WrapByCode(err, errno.ErrSkillUpdateCode)
 	}
 	return nil
@@ -209,6 +226,7 @@ func (dao *SkillDAO) do2po(do *entity.Skill) *skillPO {
 		IconURI:   do.IconURI,
 		CreatorID: do.CreatorID,
 		Status:    do.Status,
+		Version:   do.Version,
 		CreatedAt: do.CreatedAt,
 		UpdatedAt: do.UpdatedAt,
 	}
@@ -229,6 +247,7 @@ func (dao *SkillDAO) po2do(po *skillPO) *entity.Skill {
 		IconURI:   po.IconURI,
 		CreatorID: po.CreatorID,
 		Status:    po.Status,
+		Version:   po.Version,
 		CreatedAt: po.CreatedAt,
 		UpdatedAt: po.UpdatedAt,
 	}

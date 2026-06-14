@@ -32,8 +32,27 @@ type Skill struct {
 	IconURI     string
 	CreatorID   int64
 	Status      int8
+	// Version is the current content version of the skill. It starts at 1 on
+	// create and is incremented on every successful update. Each value maps to
+	// an immutable SkillVersion snapshot.
+	Version   int64
+	CreatedAt int64
+	UpdatedAt int64
+}
+
+// SkillVersion is an immutable snapshot of a skill's content at a given version.
+// It lets callers read a pinned version instead of always reading the latest
+// prompt, which is required for stable agent behavior after publish.
+type SkillVersion struct {
+	SkillID     int64
+	Version     int64
+	Name        string
+	Description string
+	Prompt      string
+	IconURI     string
+	// ContentHash is the sha256 hex digest of Prompt, used to detect changes.
+	ContentHash string
 	CreatedAt   int64
-	UpdatedAt   int64
 }
 
 // SkillReference is a lightweight reference for Bot binding.
@@ -41,6 +60,9 @@ type SkillReference struct {
 	SkillID          int64
 	SkillName        string
 	SkillDescription string
+	// Version optionally pins the bound skill to a specific snapshot version.
+	// Zero means "use latest". Reserved for future use; not yet enforced.
+	Version int64
 }
 
 // ListRequest is the request for listing skills.

@@ -89,3 +89,7 @@ func (s *skillServiceImpl) ListSkills(ctx context.Context, req *entity.ListReque
 func (s *skillServiceImpl) MGetSkills(ctx context.Context, skillIDs []int64) ([]*entity.Skill, error) {
 	return s.repo.MGet(ctx, skillIDs)
 }
+
+func (s *skillServiceImpl) GetSkillVersion(ctx context.Context, skillID, version int64) (*entity.SkillVersion, error) {
+	return s.repo.GetVersion(ctx, skillID, version)
+}
