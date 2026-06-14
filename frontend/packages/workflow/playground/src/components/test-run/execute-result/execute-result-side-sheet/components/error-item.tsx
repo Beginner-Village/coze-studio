@@ -108,7 +108,7 @@ export const ErrorItem = ({
 
           <div className="flex items-center">
             <Text
-              ellipsis={{ showTooltip: true }}
+              ellipsis={{ showTooltip: true, rows: 3 }}
               className="font-normal"
               style={{ color }}
             >
