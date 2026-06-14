@@ -16,7 +16,22 @@
 
 package vo
 
-import "github.com/ynet-dev/ynet-studio/backend/infra/contract/chatmodel"
+import (
+	workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/chatmodel"
+)
+
+// SanitizedCauseMsg release 态对外的脱敏占位（绝不含原始错误文本）。
+const SanitizedCauseMsg = "internal error, please check the workflow configuration or contact the administrator"
+
+// CauseForMode 按执行模式返回错误 cause 文案：
+// debug/node_debug 返回详细根因（含 HTTP 状态+厂商报错），release 返回脱敏文案。
+func CauseForMode(mode workflowModel.ExecuteMode, err error) string {
+	if mode == workflowModel.ExecuteModeDebug || mode == workflowModel.ExecuteModeNodeDebug {
+		return DetailedCause(err)
+	}
+	return SanitizedCauseMsg
+}
 
 // DetailedCause 返回用于调试展示的详细根因文本：
 // 错误链中若存在 ModelCallError，优先用其富化文本（含 HTTP 状态码 + 厂商报错）；

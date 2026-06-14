@@ -18,8 +18,10 @@ package vo
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
+	workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/chatmodel"
 )
 
@@ -35,5 +37,44 @@ func TestDetailedCauseFallsBackToRoot(t *testing.T) {
 	err := errors.New("plain root error")
 	if DetailedCause(err) != "plain root error" {
 		t.Fatalf("unexpected: %q", DetailedCause(err))
+	}
+}
+
+func TestCauseForMode_ReleaseRedactsProviderError(t *testing.T) {
+	err := &chatmodel.ModelCallError{
+		HTTPStatus:      400,
+		ProviderMessage: "Incorrect API key sk-secret",
+		Raw:             errors.New("raw"),
+	}
+
+	cause := CauseForMode(workflowModel.ExecuteModeRelease, err)
+	if cause != SanitizedCauseMsg {
+		t.Errorf("expected release cause to equal SanitizedCauseMsg %q, got %q", SanitizedCauseMsg, cause)
+	}
+	for _, leak := range []string{"Incorrect API key", "400", "sk-secret"} {
+		if strings.Contains(cause, leak) {
+			t.Errorf("release cause must not contain %q, got %q", leak, cause)
+		}
+	}
+}
+
+func TestCauseForMode_DebugExposesProviderError(t *testing.T) {
+	err := &chatmodel.ModelCallError{
+		HTTPStatus:      400,
+		ProviderMessage: "Incorrect API key sk-secret",
+		Raw:             errors.New("raw"),
+	}
+
+	for _, mode := range []workflowModel.ExecuteMode{
+		workflowModel.ExecuteModeDebug,
+		workflowModel.ExecuteModeNodeDebug,
+	} {
+		cause := CauseForMode(mode, err)
+		if !strings.Contains(cause, "400") {
+			t.Errorf("mode %v: expected cause to contain HTTP status %q, got %q", mode, "400", cause)
+		}
+		if !strings.Contains(cause, "Incorrect API key") {
+			t.Errorf("mode %v: expected cause to contain provider message, got %q", mode, cause)
+		}
 	}
 }

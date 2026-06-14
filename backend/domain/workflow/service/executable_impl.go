@@ -131,7 +131,7 @@ func (i *impl) SyncExecute(ctx context.Context, config workflowModel.ExecuteConf
 			if errors.As(err, &wfe) {
 				return nil, "", wfe.AppendDebug(executeID, wfEntity.SpaceID, wfEntity.ID)
 			} else {
-				return nil, "", vo.WrapWithDebug(errno.ErrWorkflowExecuteFail, err, executeID, wfEntity.SpaceID, wfEntity.ID, errorx.KV("cause", err.Error()))
+				return nil, "", vo.WrapWithDebug(errno.ErrWorkflowExecuteFail, err, executeID, wfEntity.SpaceID, wfEntity.ID, errorx.KV("cause", vo.CauseForMode(config.Mode, err)))
 			}
 		}
 	}
@@ -164,7 +164,7 @@ func (i *impl) SyncExecute(ctx context.Context, config workflowModel.ExecuteConf
 
 	var failReason *string
 	if lastEvent.Err != nil {
-		failReason = ptr.Of(lastEvent.Err.Error())
+		failReason = ptr.Of(vo.CauseForMode(config.Mode, lastEvent.Err))
 	}
 
 	return &entity.WorkflowExecution{

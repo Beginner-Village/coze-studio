@@ -40,19 +40,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
-// sanitizedCauseMsg 是 release 模式下用于替代厂商原始报错的脱敏文案，
-// 绝不包含 event.Err 的任何原始文本。
-const sanitizedCauseMsg = "internal error, please check the workflow configuration or contact the administrator"
-
-// causeForMode 按执行模式返回 ErrWorkflowExecuteFail 模板中 {cause} 的取值：
-// debug/node_debug 返回完整详情（含 HTTP 状态码 + 厂商报错），release 返回脱敏文案。
-func causeForMode(mode workflowModel.ExecuteMode, err error) string {
-	if mode == workflowModel.ExecuteModeDebug || mode == workflowModel.ExecuteModeNodeDebug {
-		return vo.DetailedCause(err)
-	}
-	return sanitizedCauseMsg
-}
-
 func setRootWorkflowSuccess(ctx context.Context, event *Event, repo workflow.Repository,
 	sw *schema.StreamWriter[*entity.Message]) (err error) {
 	exeID := event.RootCtx.RootExecuteID
@@ -260,7 +247,7 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 			} else if errors.Is(event.Err, context.Canceled) {
 				wfe = vo.CancelErr
 			} else {
-				wfe = vo.WrapError(errno.ErrWorkflowExecuteFail, event.Err, errorx.KV("cause", causeForMode(event.ExeCfg.Mode, event.Err)))
+				wfe = vo.WrapError(errno.ErrWorkflowExecuteFail, event.Err, errorx.KV("cause", vo.CauseForMode(event.ExeCfg.Mode, event.Err)))
 			}
 		}
 
@@ -792,7 +779,7 @@ func handleEvent(ctx context.Context, event *Event, repo workflow.Repository,
 			} else if errors.Is(event.Err, context.Canceled) {
 				wfe = vo.CancelErr
 			} else {
-				wfe = vo.WrapError(errno.ErrWorkflowExecuteFail, event.Err, errorx.KV("cause", causeForMode(event.ExeCfg.Mode, event.Err)))
+				wfe = vo.WrapError(errno.ErrWorkflowExecuteFail, event.Err, errorx.KV("cause", vo.CauseForMode(event.ExeCfg.Mode, event.Err)))
 			}
 		}
 
