@@ -19,11 +19,8 @@ package internal
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/cloudwego/eino/schema"
@@ -37,11 +34,9 @@ import (
 	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
 	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/entity"
 	msgEntity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/message/entity"
-	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
-	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
@@ -103,19 +98,13 @@ func (e *Event) SendStreamDoneEvent(sw *schema.StreamWriter[*entity.AgentRunResp
 type MessageEventHandler struct {
 	messageEvent *Event
 	sw           *schema.StreamWriter[*entity.AgentRunResponse]
+	// isDebug 标识当前会话是否为搭建者调试态（draft 会话）。
+	// 调试态回显详细模型错误（含 HTTP 状态 + 厂商报错），非调试态脱敏。
+	isDebug bool
 }
 
 func (mh *MessageEventHandler) handlerErr(_ context.Context, err error) {
-
-	errMsg := errorx.ErrorWithoutStack(err)
-	if strings.ToLower(os.Getenv(consts.RunMode)) != "debug" {
-		var statusErr errorx.StatusError
-		if errors.As(err, &statusErr) {
-			errMsg = statusErr.Msg()
-		} else {
-			errMsg = "Internal Server Error"
-		}
-	}
+	errMsg := entity.CauseForDebug(mh.isDebug, err)
 	mh.messageEvent.SendErrEvent(entity.RunEventError, mh.sw, &entity.RunError{
 		Code: errno.ErrAgentRun,
 		Msg:  errMsg,

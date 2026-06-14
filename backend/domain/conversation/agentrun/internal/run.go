@@ -140,7 +140,7 @@ func (art *AgentRuntime) Run(ctx context.Context) (err error) {
 		if err != nil {
 			srRecord.Error = &entity.RunError{
 				Code: errno.ErrConversationAgentRunError,
-				Msg:  err.Error(),
+				Msg:  entity.CauseForDebug(art.GetRunMeta().IsDraft, err),
 			}
 			art.RunProcess.StepToFailed(ctx, srRecord, art.SW)
 			return
@@ -150,6 +150,7 @@ func (art *AgentRuntime) Run(ctx context.Context) (err error) {
 	mh := &MessageEventHandler{
 		messageEvent: art.MessageEvent,
 		sw:           art.SW,
+		isDebug:      art.GetRunMeta().IsDraft,
 	}
 	input, err := mh.HandlerInput(ctx, art)
 	if err != nil {

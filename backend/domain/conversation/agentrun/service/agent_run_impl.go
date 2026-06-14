@@ -53,7 +53,6 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/safego"
-	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
@@ -204,7 +203,7 @@ func (c *runImpl) run(ctx context.Context, sw *schema.StreamWriter[*entity.Agent
 
 	// 幂等：同一会话同一时刻只允许一个活跃 run，避免重复提交产生重复 run/message。
 	if release, dup := c.acquireRunLock(ctx, rtDependence.runMeta.ConversationID); dup {
-		c.handlerErr(ctx, errors.New("当前会话已有正在进行的请求，请等待上一条完成后再试"), sw)
+		c.handlerErr(ctx, rtDependence.runMeta.IsDraft, errors.New("当前会话已有正在进行的请求，请等待上一条完成后再试"), sw)
 		return nil
 	} else if release != nil {
 		defer release()
@@ -235,7 +234,7 @@ func (c *runImpl) run(ctx context.Context, sw *schema.StreamWriter[*entity.Agent
 		if err != nil {
 			srRecord.Error = &entity.RunError{
 				Code: errno.ErrConversationAgentRunError,
-				Msg:  err.Error(),
+				Msg:  entity.CauseForDebug(rtDependence.runMeta.IsDraft, err),
 			}
 			c.runProcess.StepToFailed(ctx, srRecord, sw)
 			return
@@ -865,7 +864,7 @@ func (c *runImpl) push(ctx context.Context, mainChan chan *entity.AgentRespEvent
 	defer func() {
 		if err != nil {
 			logs.CtxErrorf(ctx, "run.push error: %v", err)
-			c.handlerErr(ctx, err, sw)
+			c.handlerErr(ctx, rtDependence.runMeta.IsDraft, err, sw)
 		}
 	}()
 
@@ -915,7 +914,7 @@ func (c *runImpl) push(ctx context.Context, mainChan chan *entity.AgentRespEvent
 				}
 				return
 			}
-			c.handlerErr(ctx, chunk.Err, sw)
+			c.handlerErr(ctx, rtDependence.runMeta.IsDraft, chunk.Err, sw)
 			return
 		}
 
@@ -1387,17 +1386,8 @@ func (c *runImpl) handlerUsage(meta *schema.ResponseMeta) *msgEntity.UsageExt {
 	}
 }
 
-func (c *runImpl) handlerErr(_ context.Context, err error, sw *schema.StreamWriter[*entity.AgentRunResponse]) {
-
-	errMsg := errorx.ErrorWithoutStack(err)
-	if strings.ToLower(os.Getenv(consts.RunMode)) != "debug" {
-		var statusErr errorx.StatusError
-		if errors.As(err, &statusErr) {
-			errMsg = statusErr.Msg()
-		} else {
-			errMsg = "Internal Server Error"
-		}
-	}
+func (c *runImpl) handlerErr(_ context.Context, isDebug bool, err error, sw *schema.StreamWriter[*entity.AgentRunResponse]) {
+	errMsg := entity.CauseForDebug(isDebug, err)
 	c.runEvent.SendErrEvent(entity.RunEventError, sw, &entity.RunError{
 		Code: errno.ErrAgentRun,
 		Msg:  errMsg,

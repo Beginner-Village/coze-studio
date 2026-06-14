@@ -44,6 +44,7 @@ func (art *AgentRuntime) ChatflowRun(ctx context.Context, imagex imagex.ImageX) 
 	mh := &MessageEventHandler{
 		sw:           art.SW,
 		messageEvent: art.MessageEvent,
+		isDebug:      art.GetRunMeta().IsDraft,
 	}
 	resumeInfo := parseResumeInfo(ctx, art.GetHistory())
 	

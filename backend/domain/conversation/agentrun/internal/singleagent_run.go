@@ -82,6 +82,7 @@ func (art *AgentRuntime) push(ctx context.Context, mainChan chan *entity.AgentRe
 	mh := &MessageEventHandler{
 		sw:           art.SW,
 		messageEvent: art.MessageEvent,
+		isDebug:      art.GetRunMeta().IsDraft,
 	}
 
 	var err error
