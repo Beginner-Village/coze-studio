@@ -29,18 +29,18 @@ import (
 
 	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_common"
 	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
-	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 	userApp "github.com/ynet-dev/ynet-studio/backend/application/user"
+	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 type externalKnowledgeConfig struct {
-	spaceID             int64
-	userID              string
-	agentIdentity       *entity.AgentIdentity
-	botID               string
-	externalKnowledge   *bot_common.ExternalKnowledge
-	sessionCookie       string  // 用户的session cookie（废弃，改为从数据库获取）
+	spaceID           int64
+	userID            string
+	agentIdentity     *entity.AgentIdentity
+	botID             string
+	externalKnowledge *bot_common.ExternalKnowledge
+	sessionCookie     string // 用户的session cookie（废弃，改为从数据库获取）
 }
 
 // newExternalKnowledgeTools creates external knowledge tools if dataset_ids is not empty
@@ -67,7 +67,7 @@ type externalKnowledgeInvokableTool struct {
 	botID             string
 	agentIdentity     *entity.AgentIdentity
 	externalKnowledge *bot_common.ExternalKnowledge
-	sessionCookie     string  // 废弃，改为从数据库获取
+	sessionCookie     string // 废弃，改为从数据库获取
 }
 
 // Info returns the tool information for the external knowledge base
@@ -175,14 +175,14 @@ func (e *externalKnowledgeInvokableTool) callRAGFlowAPI(ctx context.Context, que
 
 	// Build retrieval request body matching the curl command format
 	requestBody := map[string]interface{}{
-		"similarity_threshold":       similarityThreshold,
-		"vector_similarity_weight":   vectorSimilarityWeight,
-		"top_k":                     topK,
-		"use_kg":                    false,
-		"question":                  question,
-		"kb_id":                     kbID,
-		"page":                      1,
-		"size":                      pageSize,
+		"similarity_threshold":     similarityThreshold,
+		"vector_similarity_weight": vectorSimilarityWeight,
+		"top_k":                    topK,
+		"use_kg":                   false,
+		"question":                 question,
+		"kb_id":                    kbID,
+		"page":                     1,
+		"size":                     pageSize,
 	}
 
 	jsonBody, err := json.Marshal(requestBody)

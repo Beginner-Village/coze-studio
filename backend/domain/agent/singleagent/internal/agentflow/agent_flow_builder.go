@@ -49,14 +49,14 @@ func min(a, b int) int {
 }
 
 type Config struct {
-	Agent                   *entity.SingleAgent
-	UserID                  string
-	Identity                *entity.AgentIdentity
-	ModelMgr                modelmgr.Manager
-	ModelFactory            chatmodel.Factory
-	CPStore                 compose.CheckPointStore
-	Embedder                embedding.Embedder
-	SessionCookie           string  // 用户的session cookie，用于调用RAGFlow API
+	Agent         *entity.SingleAgent
+	UserID        string
+	Identity      *entity.AgentIdentity
+	ModelMgr      modelmgr.Manager
+	ModelFactory  chatmodel.Factory
+	CPStore       compose.CheckPointStore
+	Embedder      embedding.Embedder
+	SessionCookie string // 用户的session cookie，用于调用RAGFlow API
 }
 
 const (
@@ -164,21 +164,15 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	memoryToolEnabled := true // 默认启用，保持向后兼容
 	if conf.Agent.MemoryToolConfig != nil {
 		memoryToolEnabled = conf.Agent.MemoryToolConfig.Mode == nil || *conf.Agent.MemoryToolConfig.Mode == 1
-		logs.Infof("🔥 MemoryToolConfig found: Mode=%v, Enabled=%v", conf.Agent.MemoryToolConfig.Mode, memoryToolEnabled)
-	} else {
-		logs.Infof("🔥 MemoryToolConfig is nil, using default (enabled)")
 	}
 
 	if memoryToolEnabled {
-		logs.Infof("🔥 Adding memory tools (setKeywordMemory, getKeywordMemory, searchMemory, deleteKeywordMemory)")
 		avTools, err = newAgentVariableTools(ctx, avConf)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		logs.Infof("🔥 Memory tools DISABLED by config")
 	}
-	
+
 	// 添加外部知识库工具（如果配置了dataset_ids）
 	var externalKnowledgeTools []tool.InvokableTool
 	if conf.Agent.ExternalKnowledge != nil && len(conf.Agent.ExternalKnowledge.DatasetIds) > 0 {
@@ -195,7 +189,7 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 			return nil, err
 		}
 	}
-	
+
 	containWfTool := false
 
 	if len(wfTools) > 0 {
@@ -213,7 +207,7 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	agentTools = append(agentTools, slices.Transform(avTools, func(a tool.InvokableTool) tool.BaseTool {
 		return a
 	})...)
-	
+
 	// 添加外部知识库工具
 	agentTools = append(agentTools, slices.Transform(externalKnowledgeTools, func(a tool.InvokableTool) tool.BaseTool {
 		return a
@@ -331,22 +325,22 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 			ToolReturnDirectly: returnDirectlyTools,
 			ModelNodeName:      keyOfReActAgentChatModel,
 			ToolsNodeName:      keyOfReActAgentToolsNode,
-			// 增加最大步数限制，默认是12，增加到30以支持更复杂的工具调用场景
-			MaxStep: 30,
+			// 最大步数：默认 30(约15轮工具往返)，可经 AGENT_MAX_STEP 环境变量按需放宽以支持更复杂任务
+			MaxStep: agentMaxStep(),
 		}
-		
+
 		// 根据模型类型自适应选择StreamToolCallChecker
 		// 某些模型（如Qwen、Claude）会先输出文本再输出工具调用
 		// 需要使用兼容的checker
 		needsCompatibleChecker := false
-		
+
 		// 首先检查是否通过环境变量强制使用兼容模式
 		if shouldUseCompatibleChecker() {
 			needsCompatibleChecker = true
 			logs.CtxInfof(ctx, "[AgentBuilder] Force using compatible tool call checker (env: FORCE_COMPATIBLE_TOOL_CHECKER=true)")
 		} else if modelInfo != nil && modelInfo.Name != "" {
 			modelName := strings.ToLower(modelInfo.Name)
-			
+
 			// Qwen系列模型
 			if strings.Contains(modelName, "qwen") {
 				needsCompatibleChecker = true
@@ -368,7 +362,7 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 				logs.CtxInfof(ctx, "[AgentBuilder] Detected Gemini model '%s', using compatible tool call checker", modelInfo.Name)
 			}
 		}
-		
+
 		// 如果需要兼容的checker，使用自定义实现
 		if needsCompatibleChecker {
 			reactConfig.StreamToolCallChecker = adaptiveToolCallChecker
@@ -376,7 +370,7 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		} else {
 			logs.CtxInfof(ctx, "[AgentBuilder] Using default tool call checker")
 		}
-		
+
 		agent, err := react.NewAgent(ctx, reactConfig)
 		if err != nil {
 			return nil, err

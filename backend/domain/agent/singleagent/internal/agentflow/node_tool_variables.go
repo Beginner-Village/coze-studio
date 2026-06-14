@@ -37,12 +37,11 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
-
 type variableConf struct {
-	Agent                 *entity.SingleAgent
-	UserID                string
-	ConnectorID           int64
-	Embedder              embedding.Embedder
+	Agent       *entity.SingleAgent
+	UserID      string
+	ConnectorID int64
+	Embedder    embedding.Embedder
 }
 
 func loadAgentVariables(ctx context.Context, vc *variableConf) (map[string]string, error) {
@@ -71,11 +70,11 @@ func newAgentVariableTools(ctx context.Context, v *variableConf) ([]tool.Invokab
 	tools := make([]tool.InvokableTool, 0, 3) // 增加工具数量
 
 	a := &avTool{
-		Agent:                 v.Agent,
-		UserID:                v.UserID,
-		ConnectorID:           v.ConnectorID,
-		avs:                   make(map[string]string), // 初始化缓存
-		embedder:              v.Embedder,
+		Agent:       v.Agent,
+		UserID:      v.UserID,
+		ConnectorID: v.ConnectorID,
+		avs:         make(map[string]string), // 初始化缓存
+		embedder:    v.Embedder,
 	}
 
 	// 🔥 获取用户的全部已存储记忆（全局+局部）
@@ -237,7 +236,6 @@ func newAgentVariableTools(ctx context.Context, v *variableConf) ([]tool.Invokab
 	}
 	tools = append(tools, searchTool)
 
-
 	// deleteKeywordMemory 工具 - 删除记忆
 	deleteDesc := `
 ## 🗑️ Memory Delete Tool
@@ -274,11 +272,11 @@ func newAgentVariableTools(ctx context.Context, v *variableConf) ([]tool.Invokab
 }
 
 type avTool struct {
-	Agent                 *entity.SingleAgent
-	UserID                string
-	ConnectorID           int64
-	avs                   map[string]string      // 变量缓存
-	embedder              embedding.Embedder
+	Agent       *entity.SingleAgent
+	UserID      string
+	ConnectorID int64
+	avs         map[string]string // 变量缓存
+	embedder    embedding.Embedder
 }
 
 type KVMeta struct {
@@ -289,7 +287,6 @@ type KVMemoryVariable struct {
 	Data []*KVMeta `json:"data"`
 }
 
-
 func (a *avTool) Invoke(ctx context.Context, v *KVMemoryVariable) (string, error) {
 	logs.CtxInfof(ctx, "SetMemory: called with data=%+v", v)
 
@@ -298,7 +295,7 @@ func (a *avTool) Invoke(ctx context.Context, v *KVMemoryVariable) (string, error
 	globalMeta := &variables.UserVariableMeta{
 		BizType:      project_memory.VariableConnector_Bot,
 		BizID:        a.UserID, // 🔥 使用外部API的user_id作为BizID实现全局共享
-		Version:      "",        // 全局记忆不需要版本隔离
+		Version:      "",       // 全局记忆不需要版本隔离
 		ConnectorUID: a.UserID,
 		ConnectorID:  a.ConnectorID,
 	}
@@ -381,7 +378,6 @@ type SimpleGetMemoryRequest struct {
 func (a *avTool) SimpleGetMemory(ctx context.Context, req *SimpleGetMemoryRequest) (string, error) {
 	// 强制调试日志
 	fmt.Printf("🔥 SimpleGetMemory: METHOD CALLED! req=%+v\n", req)
-	logs.CtxInfof(ctx, "🔥 SimpleGetMemory: METHOD CALLED! req=%+v", req)
 
 	// 🔥 关键修复：每次检索都重新获取最新数据，不依赖缓存
 	// 这样可以确保获取到最新的记忆数据，解决缓存不同步问题
@@ -390,7 +386,7 @@ func (a *avTool) SimpleGetMemory(ctx context.Context, req *SimpleGetMemoryReques
 	globalMeta := &variables.UserVariableMeta{
 		BizType:      project_memory.VariableConnector_Bot,
 		BizID:        a.UserID, // 使用外部API的user_id
-		Version:      "",        // 全局记忆不需要版本隔离
+		Version:      "",       // 全局记忆不需要版本隔离
 		ConnectorUID: a.UserID,
 		ConnectorID:  a.ConnectorID,
 	}
@@ -604,8 +600,8 @@ type SearchMemoryRequest struct {
 
 // SearchMemoryResponse 搜索记忆的响应结构
 type SearchMemoryResponse struct {
-	Data []*KVMeta `json:"data" jsonschema:"description=memories found matching the semantic query"`
-	MatchedCategories []string `json:"matched_categories,omitempty" jsonschema:"description=categories that matched the query"`
+	Data              []*KVMeta `json:"data" jsonschema:"description=memories found matching the semantic query"`
+	MatchedCategories []string  `json:"matched_categories,omitempty" jsonschema:"description=categories that matched the query"`
 }
 
 // DeleteKeywordMemoryRequest 删除记忆请求
@@ -626,13 +622,12 @@ type DeleteKeywordMemoryResponse struct {
 func (a *avTool) GetMemory(ctx context.Context, req *GetMemoryRequest) (*GetMemoryResponse, error) {
 	// 强制调试日志
 	fmt.Printf("🔥 GetMemory: METHOD CALLED! req=%+v\n", req)
-	logs.CtxInfof(ctx, "🔥 GetMemory: METHOD CALLED! req=%+v", req)
 
 	// 🔥 智能两层检索：同时检索全局记忆和局部记忆
 	globalMeta := &variables.UserVariableMeta{
 		BizType:      project_memory.VariableConnector_Bot,
 		BizID:        a.UserID, // 使用外部API的user_id
-		Version:      "",        // 全局记忆不需要版本隔离
+		Version:      "",       // 全局记忆不需要版本隔离
 		ConnectorUID: a.UserID,
 		ConnectorID:  a.ConnectorID,
 	}
@@ -731,7 +726,7 @@ func (a *avTool) SearchMemory(ctx context.Context, req *SearchMemoryRequest) (*S
 	globalMeta := &variables.UserVariableMeta{
 		BizType:      project_memory.VariableConnector_Bot,
 		BizID:        a.UserID, // 使用外部API的user_id
-		Version:      "",        // 全局记忆不需要版本隔离
+		Version:      "",       // 全局记忆不需要版本隔离
 		ConnectorUID: a.UserID,
 		ConnectorID:  a.ConnectorID,
 	}
@@ -810,8 +805,8 @@ func (a *avTool) SearchMemory(ctx context.Context, req *SearchMemoryRequest) (*S
 
 			// 检查查询是否与分类相关
 			if strings.Contains(query, categoryLower) ||
-			   strings.Contains(categoryLower, query) ||
-			   a.isSemanticMatch(query, category) {
+				strings.Contains(categoryLower, query) ||
+				a.isSemanticMatch(query, category) {
 
 				// 检查该变量是否属于这个分类
 				for _, stdKeyword := range keywords {
@@ -825,11 +820,15 @@ func (a *avTool) SearchMemory(ctx context.Context, req *SearchMemoryRequest) (*S
 						break
 					}
 				}
-				if categoryMatched { break }
+				if categoryMatched {
+					break
+				}
 			}
 		}
 
-		if categoryMatched { continue }
+		if categoryMatched {
+			continue
+		}
 
 		// 3. 关键词语义匹配
 		for category, keywords := range standardCategories {
@@ -855,7 +854,7 @@ func (a *avTool) SearchMemory(ctx context.Context, req *SearchMemoryRequest) (*S
 	logs.CtxInfof(ctx, "SearchMemory: query=%s, found %d items in categories: %v", req.Query, len(matchedItems), categories)
 
 	return &SearchMemoryResponse{
-		Data: matchedItems,
+		Data:              matchedItems,
 		MatchedCategories: categories,
 	}, nil
 }
@@ -938,12 +937,12 @@ func (a *avTool) isSemanticMatch(query, category string) bool {
 func (a *avTool) isKeywordSemanticMatch(query, keyword string) bool {
 	// 关键词语义映射
 	keywordMappings := map[string][]string{
-		"favorite_color": {"color", "颜色", "喜欢的颜色", "最爱颜色"},
-		"favorite_food": {"food", "eat", "meal", "食物", "吃", "美食", "饮食", "fruit", "水果", "favorite_fruit"},
-		"user_name": {"name", "姓名", "名字", "叫"},
-		"location": {"where", "place", "city", "address", "位置", "地方", "城市", "住址"},
-		"job_title": {"job", "work", "position", "职位", "工作", "职业"},
-		"hobbies": {"hobby", "interest", "爱好", "兴趣"},
+		"favorite_color":    {"color", "颜色", "喜欢的颜色", "最爱颜色"},
+		"favorite_food":     {"food", "eat", "meal", "食物", "吃", "美食", "饮食", "fruit", "水果", "favorite_fruit"},
+		"user_name":         {"name", "姓名", "名字", "叫"},
+		"location":          {"where", "place", "city", "address", "位置", "地方", "城市", "住址"},
+		"job_title":         {"job", "work", "position", "职位", "工作", "职业"},
+		"hobbies":           {"hobby", "interest", "爱好", "兴趣"},
 		"favorite_activity": {"activity", "do", "活动", "做什么", "爱好"},
 		// 可以继续扩展...
 	}
@@ -977,31 +976,31 @@ func (a *avTool) expandSimilarKeywords(inputKeyword string) []string {
 		"like_color":      {"favorite_color", "preferred_color", "loved_color"},
 
 		// 活动相关
-		"favorite_activity": {"hobby", "preferred_activity", "loved_activity", "favorite_hobby"},
+		"favorite_activity":  {"hobby", "preferred_activity", "loved_activity", "favorite_hobby"},
 		"preferred_activity": {"favorite_activity", "hobby", "loved_activity", "favorite_hobby"},
 		"loved_activity":     {"favorite_activity", "hobby", "preferred_activity", "favorite_hobby"},
 		"favorite_hobby":     {"favorite_activity", "hobby", "preferred_activity", "loved_activity"},
 		"hobby":              {"favorite_activity", "preferred_activity", "loved_activity", "favorite_hobby"},
 
 		// 名字相关
-		"user_name":  {"name", "full_name", "real_name"},
-		"name":       {"user_name", "full_name", "real_name"},
-		"full_name":  {"user_name", "name", "real_name"},
-		"real_name":  {"user_name", "name", "full_name"},
+		"user_name": {"name", "full_name", "real_name"},
+		"name":      {"user_name", "full_name", "real_name"},
+		"full_name": {"user_name", "name", "real_name"},
+		"real_name": {"user_name", "name", "full_name"},
 
 		// 位置相关
-		"location":    {"address", "city", "place", "where_live"},
-		"address":     {"location", "city", "place", "where_live"},
-		"city":        {"location", "address", "place", "where_live"},
-		"place":       {"location", "address", "city", "where_live"},
-		"where_live":  {"location", "address", "city", "place"},
+		"location":   {"address", "city", "place", "where_live"},
+		"address":    {"location", "city", "place", "where_live"},
+		"city":       {"location", "address", "place", "where_live"},
+		"place":      {"location", "address", "city", "where_live"},
+		"where_live": {"location", "address", "city", "place"},
 
 		// 工作相关
-		"job_title":   {"work", "occupation", "position", "career"},
-		"work":        {"job_title", "occupation", "position", "career"},
-		"occupation":  {"job_title", "work", "position", "career"},
-		"position":    {"job_title", "work", "occupation", "career"},
-		"career":      {"job_title", "work", "occupation", "position"},
+		"job_title":  {"work", "occupation", "position", "career"},
+		"work":       {"job_title", "occupation", "position", "career"},
+		"occupation": {"job_title", "work", "position", "career"},
+		"position":   {"job_title", "work", "occupation", "career"},
+		"career":     {"job_title", "work", "occupation", "position"},
 	}
 
 	// 构建结果列表：原关键词 + 所有同义词

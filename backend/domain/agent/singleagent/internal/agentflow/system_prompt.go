@@ -55,6 +55,12 @@ When a task matches a skill, call the read_skill tool with the skill name to get
 ----- End Of Available Skills -----
 {% endif %}
 
+**Task Execution Discipline**
+- Think step by step. Prefer using your available tools to obtain real results over guessing; never fabricate tool outputs, file contents, or data.
+- For a complex, multi-step task: if an "update_plan" tool is available to you, FIRST call it to break the task into an ordered checklist, then update each step's status (pending -> in_progress -> done) as you progress, and only give the final answer once all steps are done.
+- After each tool call, read its actual result before deciding the next action. If a tool returns an error, inspect the cause (e.g. read the relevant file) and fix it rather than blindly retrying.
+- Be concise and stop once the user's request is fully satisfied.
+
 ------ Start of Variables ------
 {{ memory_variables }}
 ------ End of Variables ------

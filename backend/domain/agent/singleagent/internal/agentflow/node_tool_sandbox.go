@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/cloudwego/eino/components/tool"
@@ -193,6 +194,19 @@ func (t *listFilesTool) InvokableRun(ctx context.Context, argumentsInJSON string
 		return fmt.Sprintf("Error listing files: %v", err), nil
 	}
 	return strings.Join(files, "\n"), nil
+}
+
+// defaultAgentMaxStep 是 ReAct 的默认最大步数（约 15 轮工具往返）。
+const defaultAgentMaxStep = 30
+
+// agentMaxStep 返回 ReAct 最大步数，可经环境变量 AGENT_MAX_STEP 覆盖（用于复杂任务放宽）。
+func agentMaxStep() int {
+	if v := os.Getenv("AGENT_MAX_STEP"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return defaultAgentMaxStep
 }
 
 // sandboxToolsEnabled 决定是否给该 agent 挂载沙箱工具。
