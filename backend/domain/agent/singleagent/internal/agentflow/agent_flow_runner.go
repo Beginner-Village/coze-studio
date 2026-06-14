@@ -68,6 +68,8 @@ type AgentRunner struct {
 	// deepAgent 非空时（AGENT_ENGINE=deepagents 且构建成功）走实验性 DeepAgents 引擎，
 	// 否则走默认 ReAct compose 图。见 deepagents_bridge.go。
 	deepAgent adkAgent
+	// cpStore 复用现有 checkpoint store（Redis），供 DeepAgents 引擎做中断/恢复。
+	cpStore compose.CheckPointStore
 }
 
 func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (

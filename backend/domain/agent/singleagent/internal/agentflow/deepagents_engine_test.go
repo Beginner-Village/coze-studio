@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/components/tool/utils"
@@ -85,4 +86,22 @@ func TestBuildDeepAgent_DoesNotPanic(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, agent)
 	assert.NotEmpty(t, agent.Name(ctx))
+}
+
+func TestTranslateDeepInterrupt(t *testing.T) {
+	info := &adk.InterruptInfo{
+		InterruptContexts: []*adk.InterruptCtx{{ID: "ctx-1"}},
+	}
+	out := translateDeepInterrupt(info, "cp-123")
+	if out == nil || out.InterruptID != "cp-123" {
+		t.Fatalf("InterruptID should carry checkpoint id, got %+v", out)
+	}
+	if out.ToolCallID != "ctx-1" {
+		t.Fatalf("ToolCallID should come from first interrupt ctx, got %q", out.ToolCallID)
+	}
+	// nil info still yields a resumable interrupt carrying the checkpoint id.
+	out2 := translateDeepInterrupt(nil, "cp-x")
+	if out2 == nil || out2.InterruptID != "cp-x" {
+		t.Fatalf("nil info must still carry checkpoint id, got %+v", out2)
+	}
 }

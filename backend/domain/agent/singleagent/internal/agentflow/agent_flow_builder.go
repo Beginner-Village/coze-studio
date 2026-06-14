@@ -503,6 +503,7 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 			logs.CtxWarnf(ctx, "[BuildAgent] build deep agent failed, fallback to ReAct: %v", derr)
 		} else {
 			ar.deepAgent = da
+			ar.cpStore = conf.CPStore
 			logs.CtxInfof(ctx, "[BuildAgent] DeepAgents engine ENABLED for this agent")
 		}
 	}

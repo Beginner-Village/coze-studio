@@ -35,6 +35,7 @@ import (
 
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/schema"
+	"github.com/google/uuid"
 
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
 	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
@@ -63,11 +64,31 @@ func (r *AgentRunner) streamExecuteDeep(ctx context.Context, req *AgentRequest) 
 	runner := adk.NewRunner(ctx, adk.RunnerConfig{
 		Agent:           r.deepAgent,
 		EnableStreaming: true,
+		CheckPointStore: r.cpStore, // 复用现有 Redis checkpoint，支持中断/恢复
 	})
+
+	// checkpoint id：恢复时沿用中断时的 id；新会话生成一个新 id。
+	checkpointID := uuid.New().String()
+	resuming := false
+	if req.ResumeInfo != nil && req.ResumeInfo.InterruptID != "" {
+		checkpointID = req.ResumeInfo.InterruptID
+		resuming = true
+	}
 
 	safego.Go(ctx, func() {
 		defer sw.Close()
-		iter := runner.Run(ctx, msgs)
+		var iter *adk.AsyncIterator[*adk.AgentEvent]
+		if resuming {
+			it, err := runner.Resume(ctx, checkpointID)
+			if err != nil {
+				logs.CtxErrorf(ctx, "[deepagents] resume failed: %v", err)
+				sw.Send(nil, err)
+				return
+			}
+			iter = it
+		} else {
+			iter = runner.Run(ctx, msgs, adk.WithCheckPointID(checkpointID))
+		}
 		for {
 			ev, ok := iter.Next()
 			if !ok {
@@ -84,16 +105,32 @@ func (r *AgentRunner) streamExecuteDeep(ctx context.Context, req *AgentRequest) 
 				sw.Send(nil, ev.Err)
 				return
 			}
-			// Step 1: interrupts not yet bridged — log and skip (see TODO step 2).
+			// 中断：翻译成项目 InterruptInfo，带上 checkpointID 供前端恢复时回传。
 			if ev.Action != nil && ev.Action.Interrupted != nil {
-				logs.CtxWarnf(ctx, "[deepagents] interrupt not supported in happy-path engine yet; skipping")
-				continue
+				sw.Send(&entity.AgentEvent{
+					EventType: singleagent.EventTypeOfInterrupt,
+					Interrupt: translateDeepInterrupt(ev.Action.Interrupted, checkpointID),
+				}, nil)
+				return
 			}
 			translateDeepEvent(ev, sw)
 		}
 	})
 
 	return sr, nil
+}
+
+// translateDeepInterrupt 把 adk 的中断信息翻译成项目的 InterruptInfo。
+// InterruptID = checkpointID：前端恢复时回传它，streamExecuteDeep 据此 runner.Resume。
+func translateDeepInterrupt(info *adk.InterruptInfo, checkpointID string) *singleagent.InterruptInfo {
+	out := &singleagent.InterruptInfo{
+		InterruptID:   checkpointID,
+		InterruptType: singleagent.InterruptEventType_Question, // 通用"需用户介入后恢复"语义
+	}
+	if info != nil && len(info.InterruptContexts) > 0 && info.InterruptContexts[0] != nil {
+		out.ToolCallID = info.InterruptContexts[0].ID
+	}
+	return out
 }
 
 // translateDeepEvent maps a single adk AgentEvent to the project's AgentEvent(s).
