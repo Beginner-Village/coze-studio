@@ -62,7 +62,7 @@ func (dao *MessageDAO) Create(ctx context.Context, msg *entity.Message) (*entity
 		return nil, err
 	}
 
-	do := dao.query.Message.WithContext(ctx).Debug()
+	do := dao.query.Message.WithContext(ctx)
 	cErr := do.Save(poData)
 	if cErr != nil {
 		return nil, cErr
@@ -73,7 +73,7 @@ func (dao *MessageDAO) Create(ctx context.Context, msg *entity.Message) (*entity
 
 func (dao *MessageDAO) List(ctx context.Context, listMeta *entity.ListMeta) ([]*entity.Message, bool, error) {
 	m := dao.query.Message
-	do := m.WithContext(ctx).Debug().Where(m.ConversationID.Eq(listMeta.ConversationID)).Where(m.Status.Eq(int32(entity.MessageStatusAvailable)))
+	do := m.WithContext(ctx).Where(m.ConversationID.Eq(listMeta.ConversationID)).Where(m.Status.Eq(int32(entity.MessageStatusAvailable)))
 
 	if len(listMeta.MessageType) > 0 {
 		do = do.Where(m.MessageType.In(slices.Transform(listMeta.MessageType, func(t *message.MessageType) string {
@@ -127,7 +127,7 @@ func (dao *MessageDAO) List(ctx context.Context, listMeta *entity.ListMeta) ([]*
 
 func (dao *MessageDAO) GetByRunIDs(ctx context.Context, runIDs []int64, orderBy string) ([]*entity.Message, error) {
 	m := dao.query.Message
-	do := m.WithContext(ctx).Debug().Where(m.RunID.In(runIDs...)).Where(m.Status.Eq(int32(entity.MessageStatusAvailable)))
+	do := m.WithContext(ctx).Where(m.RunID.In(runIDs...)).Where(m.Status.Eq(int32(entity.MessageStatusAvailable)))
 	if orderBy == "DESC" {
 		do = do.Order(m.CreatedAt.Desc())
 	} else {

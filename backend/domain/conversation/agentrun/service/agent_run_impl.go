@@ -716,14 +716,14 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 
  func (c *runImpl) pull(ctx context.Context, mainChan chan *entity.AgentRespEvent, events *schema.StreamReader[*crossagent.AgentEvent]) {
 	 defer func() {
-		 logs.CtxInfof(ctx, "[PULL-DEBUG] closing mainChan")
+		 logs.CtxDebugf(ctx, "[PULL-DEBUG] closing mainChan")
 		 close(mainChan)
 	 }()
 
 	 for {
-		 logs.CtxInfof(ctx, "[PULL-DEBUG] waiting for events.Recv()...")
+		 logs.CtxDebugf(ctx, "[PULL-DEBUG] waiting for events.Recv()...")
 		 rm, re := events.Recv()
-		 logs.CtxInfof(ctx, "[PULL-DEBUG] events.Recv() returned, eventType=%v, err=%v", func() string {
+		 logs.CtxDebugf(ctx, "[PULL-DEBUG] events.Recv() returned, eventType=%v, err=%v", func() string {
 			 if rm != nil {
 				 return string(rm.EventType)
 			 }
@@ -760,9 +760,9 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 			 ToolAsAnswer:  rm.ToolAsChatModelAnswer,
 		 }
 
-		 logs.CtxInfof(ctx, "[PULL-DEBUG] sending event to mainChan, type=%v", eventType)
+		 logs.CtxDebugf(ctx, "[PULL-DEBUG] sending event to mainChan, type=%v", eventType)
 		 mainChan <- respChunk
-		 logs.CtxInfof(ctx, "[PULL-DEBUG] sent event to mainChan, type=%v", eventType)
+		 logs.CtxDebugf(ctx, "[PULL-DEBUG] sent event to mainChan, type=%v", eventType)
 	 }
  }
 
@@ -788,7 +788,7 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 		 if !ok || chunk == nil {
 			 return
 		 }
-		 logs.CtxInfof(ctx, "[PUSH-DEBUG] received event from mainChan, event_type=%v, has_stream=%v", chunk.EventType, chunk.ModelAnswer != nil || chunk.ToolAsAnswer != nil || chunk.ToolMidAnswer != nil)
+		 logs.CtxDebugf(ctx, "[PUSH-DEBUG] received event from mainChan, event_type=%v, has_stream=%v", chunk.EventType, chunk.ModelAnswer != nil || chunk.ToolAsAnswer != nil || chunk.ToolMidAnswer != nil)
 		 if chunk.Err != nil {
 			 if errors.Is(chunk.Err, io.EOF) {
 				 if !isSendFinishAnswer {
@@ -992,7 +992,7 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 			 }
 
 		 case message.MessageTypeAnswer:
-			 logs.CtxInfof(ctx, "[PUSH-DEBUG] START processing MessageTypeAnswer, will block until stream EOF")
+			 logs.CtxDebugf(ctx, "[PUSH-DEBUG] START processing MessageTypeAnswer, will block until stream EOF")
 			 fullContent := bytes.NewBuffer([]byte{})
 			 var usage *msgEntity.UsageExt
 			 var isToolCalls = false
@@ -1006,13 +1006,13 @@ func transformEventMap(eventType singleagent.EventType) (message.MessageType, er
 
 			 for {
 				 streamMsg, receErr := chunk.ModelAnswer.Recv()
-				 logs.CtxInfof(ctx, "[PUSH-DEBUG] ModelAnswer.Recv() returned, hasMsg=%v, err=%v, isToolCalls=%v", streamMsg != nil, receErr, streamMsg != nil && len(streamMsg.ToolCalls) > 0)
+				 logs.CtxDebugf(ctx, "[PUSH-DEBUG] ModelAnswer.Recv() returned, hasMsg=%v, err=%v, isToolCalls=%v", streamMsg != nil, receErr, streamMsg != nil && len(streamMsg.ToolCalls) > 0)
 				 if receErr != nil {
 					 if errors.Is(receErr, io.EOF) {
-						 logs.CtxInfof(ctx, "[PUSH-DEBUG] MessageTypeAnswer stream EOF, isToolCalls=%v, modelAnswerMsg=%v", isToolCalls, modelAnswerMsg != nil)
+						 logs.CtxDebugf(ctx, "[PUSH-DEBUG] MessageTypeAnswer stream EOF, isToolCalls=%v, modelAnswerMsg=%v", isToolCalls, modelAnswerMsg != nil)
 
 						 if isToolCalls {
-							 logs.CtxInfof(ctx, "[PUSH-DEBUG] END MessageTypeAnswer (tool_calls, skipping answer)")
+							 logs.CtxDebugf(ctx, "[PUSH-DEBUG] END MessageTypeAnswer (tool_calls, skipping answer)")
 							 break
 						 }
 						 if modelAnswerMsg == nil {

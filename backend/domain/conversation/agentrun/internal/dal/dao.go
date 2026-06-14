@@ -111,7 +111,7 @@ func (dao *RunRecordDAO) Delete(ctx context.Context, id []int64) error {
 func (dao *RunRecordDAO) List(ctx context.Context, meta *entity.ListRunRecordMeta) ([]*entity.RunRecordMeta, error) {
 	logs.CtxInfof(ctx, "list run record req:%v, sectionID:%v, limit:%v", meta.ConversationID, meta.SectionID, meta.Limit)
 	m := dao.query.RunRecord
-	do := m.WithContext(ctx).Where(m.ConversationID.Eq(meta.ConversationID)).Debug().Where(m.Status.NotIn(string(entity.RunStatusDeleted)))
+	do := m.WithContext(ctx).Where(m.ConversationID.Eq(meta.ConversationID)).Where(m.Status.NotIn(string(entity.RunStatusDeleted)))
 	if meta.BeforeID > 0 {
 		runRecord, err := m.Where(m.ID.Eq(meta.BeforeID)).First()
 		if err != nil {

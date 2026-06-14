@@ -65,7 +65,7 @@ func (dao *ConversationDAO) Create(ctx context.Context, msg *entity.Conversation
 
 func (dao *ConversationDAO) GetByID(ctx context.Context, id int64) (*entity.Conversation, error) {
 	// 添加 Status 过滤条件，避免查询到已删除的会话
-	poData, err := dao.query.Conversation.WithContext(ctx).Debug().
+	poData, err := dao.query.Conversation.WithContext(ctx).
 		Where(dao.query.Conversation.ID.Eq(id)).
 		Where(dao.query.Conversation.Status.Eq(int32(conversation.ConversationStatusNormal))).
 		First()
@@ -123,7 +123,7 @@ func (dao *ConversationDAO) Delete(ctx context.Context, id int64) (int64, error)
 }
 
 func (dao *ConversationDAO) Get(ctx context.Context, userID int64, agentID int64, scene int32, connectorID int64) (*entity.Conversation, error) {
-	po, err := dao.query.Conversation.WithContext(ctx).Debug().
+	po, err := dao.query.Conversation.WithContext(ctx).
 		Where(dao.query.Conversation.CreatorID.Eq(userID)).
 		Where(dao.query.Conversation.AgentID.Eq(agentID)).
 		Where(dao.query.Conversation.Scene.Eq(scene)).
@@ -144,7 +144,7 @@ func (dao *ConversationDAO) Get(ctx context.Context, userID int64, agentID int64
 func (dao *ConversationDAO) List(ctx context.Context, userID int64, agentID int64, connectorID int64, scene int32, limit int, page int) ([]*entity.Conversation, bool, error) {
 	var hasMore bool
 
-	do := dao.query.Conversation.WithContext(ctx).Debug()
+	do := dao.query.Conversation.WithContext(ctx)
 	do = do.Where(dao.query.Conversation.CreatorID.Eq(userID)).
 		Where(dao.query.Conversation.AgentID.Eq(agentID)).
 		Where(dao.query.Conversation.Scene.Eq(scene)).
