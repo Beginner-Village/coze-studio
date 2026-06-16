@@ -18,11 +18,12 @@ package agentflow
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
 	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
-	sbx "github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
+	sbx "github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 type fakeSandboxMgr struct {
@@ -52,6 +53,28 @@ func (m *fakeSandboxMgr) WriteFile(_ context.Context, key, path string, content 
 func (m *fakeSandboxMgr) ListFiles(_ context.Context, key, path string) ([]string, error) {
 	m.lastKey, m.lastPath = key, path
 	return []string{"a.txt", "b.py"}, nil
+}
+func (m *fakeSandboxMgr) EditFile(_ context.Context, key, path, oldStr, newStr string, replaceAll bool) (int, error) {
+	m.lastKey, m.lastPath = key, path
+	cur := string(m.files[path])
+	n := strings.Count(cur, oldStr)
+	if n == 0 {
+		return 0, fmt.Errorf("old_string not found")
+	}
+	if replaceAll {
+		m.files[path] = []byte(strings.ReplaceAll(cur, oldStr, newStr))
+		return n, nil
+	}
+	m.files[path] = []byte(strings.Replace(cur, oldStr, newStr, 1))
+	return 1, nil
+}
+func (m *fakeSandboxMgr) Grep(_ context.Context, key, pattern, path string) (string, error) {
+	m.lastKey = key
+	return "(no matches)", nil
+}
+func (m *fakeSandboxMgr) Glob(_ context.Context, key, pattern string) (string, error) {
+	m.lastKey = key
+	return "(no files matched)", nil
 }
 func (m *fakeSandboxMgr) SyncSkill(_ context.Context, key, name string, files map[string][]byte) error {
 	m.lastKey = key
@@ -98,8 +121,8 @@ func TestSandboxToolsInvoke(t *testing.T) {
 
 	ctx := context.Background()
 	tools := newSandboxTools("ukey")
-	if len(tools) != 5 {
-		t.Fatalf("want 5 tools, got %d", len(tools))
+	if len(tools) != 8 {
+		t.Fatalf("want 8 tools, got %d", len(tools))
 	}
 
 	// run_bash

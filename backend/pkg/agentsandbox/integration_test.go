@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package sandbox
+package agentsandbox
 
 import (
 	"context"
 	"os/exec"
 	"testing"
 
-	dockerimpl "github.com/ynet-dev/ynet-studio/backend/infra/impl/sandbox/docker"
+	dockerimpl "github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/docker"
 )
 
 func dockerAvailable() bool { return exec.Command("docker", "version").Run() == nil }

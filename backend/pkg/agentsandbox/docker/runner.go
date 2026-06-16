@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 type Runner struct {

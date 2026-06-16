@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package sandbox
+package agentsandbox
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sync"
 
-	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
-	sbx "github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
+	sbx "github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 // Entry 是注册表里一个活沙箱的元数据。
@@ -112,21 +112,20 @@ func (r *memRegistry) SetState(_ context.Context, id string, st sbx.State) error
 const redisRegistryKey = "ynet:sandbox:registry"
 
 type redisRegistry struct {
-	cli cache.Cmdable
+	cli Cache
 	mu  sync.Mutex
 }
 
-// NewRedisRegistry 返回 Redis 注册表（survive 重启、多节点可见）。
-func NewRedisRegistry(cli cache.Cmdable) Registry { return &redisRegistry{cli: cli} }
+// NewRedisRegistry 返回基于 Cache 的注册表（survive 重启、多节点可见）。
+func NewRedisRegistry(cli Cache) Registry { return &redisRegistry{cli: cli} }
 
 func (r *redisRegistry) load(ctx context.Context) (map[string]*Entry, error) {
-	b, err := r.cli.Get(ctx, redisRegistryKey).Bytes()
+	b, err := r.cli.Get(ctx, redisRegistryKey)
 	if err != nil {
-		if cache.Nil != nil && err == cache.Nil {
+		if errors.Is(err, ErrCacheMiss) {
 			return map[string]*Entry{}, nil
 		}
-		// key 不存在的其它表现统一当空表处理。
-		return map[string]*Entry{}, nil
+		return nil, err
 	}
 	if len(b) == 0 {
 		return map[string]*Entry{}, nil
@@ -143,7 +142,7 @@ func (r *redisRegistry) save(ctx context.Context, m map[string]*Entry) error {
 	if err != nil {
 		return err
 	}
-	return r.cli.Set(ctx, redisRegistryKey, b, 0).Err()
+	return r.cli.Set(ctx, redisRegistryKey, b, 0)
 }
 
 func (r *redisRegistry) Put(ctx context.Context, e *Entry) error {

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package sandbox
+package agentsandbox
 
 import (
 	"context"
 	"time"
 
-	"github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 

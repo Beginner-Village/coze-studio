@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package sandbox
+package agentsandbox
 
 import (
 	"context"
 	"testing"
 
-	dockerimpl "github.com/ynet-dev/ynet-studio/backend/infra/impl/sandbox/docker"
+	dockerimpl "github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/docker"
 )
 
 // TestSyncSkillInjectAndRun 用真实 docker 验证：注入技能脚本→run_bash 跑通；同版本去重跳过。

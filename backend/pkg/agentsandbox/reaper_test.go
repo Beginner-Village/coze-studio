@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package sandbox
+package agentsandbox
 
 import (
 	"context"
 	"testing"
 
-	"github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 func TestReaperPausesIdle(t *testing.T) {

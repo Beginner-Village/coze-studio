@@ -19,7 +19,7 @@ package sandbox
 import (
 	"context"
 
-	sbx "github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
+	sbx "github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 // Manager 是给 agent 运行时用的跨域沙箱接口。

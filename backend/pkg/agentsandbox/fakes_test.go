@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package sandbox
+package agentsandbox
 
 import (
 	"context"
 	"sync"
 
-	"github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
-	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	sandbox "github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 // fakeRunner 是内存版 sandbox.Runner，用于单测生命周期逻辑。
@@ -128,7 +127,7 @@ type fakeStorage struct {
 
 func newFakeStorage() *fakeStorage { return &fakeStorage{objs: map[string][]byte{}} }
 
-func (s *fakeStorage) PutObject(_ context.Context, key string, content []byte, _ ...storage.PutOptFn) error {
+func (s *fakeStorage) PutObject(_ context.Context, key string, content []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	cp := make([]byte, len(content))
@@ -143,15 +142,4 @@ func (s *fakeStorage) GetObject(_ context.Context, key string) ([]byte, error) {
 	return s.objs[key], nil
 }
 
-func (s *fakeStorage) DeleteObject(_ context.Context, key string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.objs, key)
-	return nil
-}
-
-func (s *fakeStorage) GetObjectUrl(_ context.Context, key string, _ ...storage.GetOptFn) (string, error) {
-	return "memory://" + key, nil
-}
-
-var _ storage.Storage = (*fakeStorage)(nil)
+var _ Blob = (*fakeStorage)(nil)

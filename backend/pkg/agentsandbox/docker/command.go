@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 const (

@@ -43,10 +43,10 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/cache/redis"
-	sandboxmgr "github.com/ynet-dev/ynet-studio/backend/domain/sandbox"
+	sandboxmgr "github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/coderunner/direct"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/coderunner/sandbox"
-	sandboxdocker "github.com/ynet-dev/ynet-studio/backend/infra/impl/sandbox/docker"
+	sandboxdocker "github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/docker"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/ocr/ppocr"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/ocr/veocr"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/document/parser/builtin"
@@ -192,10 +192,46 @@ func initSandboxManager(ctx context.Context, deps *AppDependencies) *sandboxmgr.
 	// 后端选择（当前仅 docker；CubeSandbox 后端实现同一接口后在此扩展）。
 	runner := sandboxdocker.NewRunner()
 
-	reg := sandboxmgr.NewRedisRegistry(deps.CacheCli)
-	mgr := sandboxmgr.New(runner, reg, deps.TOSClient, cfg)
+	var reg sandboxmgr.Registry
+	if deps.CacheCli != nil {
+		reg = sandboxmgr.NewRedisRegistry(sbCacheAdapter{cli: deps.CacheCli})
+	} else {
+		reg = sandboxmgr.NewMemRegistry()
+	}
+	var blob sandboxmgr.Blob
+	if deps.TOSClient != nil {
+		blob = sbBlobAdapter{s: deps.TOSClient}
+	}
+	mgr := sandboxmgr.New(runner, reg, blob, cfg)
 	sandboxmgr.NewReaper(mgr, time.Minute).Start(ctx)
 	return mgr
+}
+
+// sbCacheAdapter 把 infra cache.Cmdable 适配成 agentsandbox.Cache（注入依赖，保持模块可独立抽出）。
+type sbCacheAdapter struct{ cli cache.Cmdable }
+
+func (c sbCacheAdapter) Get(ctx context.Context, key string) ([]byte, error) {
+	b, err := c.cli.Get(ctx, key).Bytes()
+	if err != nil {
+		// 与原实现一致：任何读取失败（含 key 不存在）当作缓存未命中。
+		return nil, sandboxmgr.ErrCacheMiss
+	}
+	return b, nil
+}
+
+func (c sbCacheAdapter) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
+	return c.cli.Set(ctx, key, value, ttl).Err()
+}
+
+// sbBlobAdapter 把 infra storage.Storage 适配成 agentsandbox.Blob。
+type sbBlobAdapter struct{ s storage.Storage }
+
+func (b sbBlobAdapter) PutObject(ctx context.Context, key string, content []byte) error {
+	return b.s.PutObject(ctx, key, content)
+}
+
+func (b sbBlobAdapter) GetObject(ctx context.Context, key string) ([]byte, error) {
+	return b.s.GetObject(ctx, key)
 }
 
 func initSearchStoreManagers(ctx context.Context, es es.Client, emb embedding.Embedder, db *gorm.DB) ([]searchstore.Manager, error) {

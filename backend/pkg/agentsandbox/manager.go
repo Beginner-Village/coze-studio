@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package sandbox
+package agentsandbox
 
 import (
 	"context"
@@ -27,8 +27,7 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	"github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
-	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
+	sandbox "github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 // Config 是会话管理器配置。
@@ -61,14 +60,14 @@ func DefaultConfig() Config {
 type Manager struct {
 	runner sandbox.Runner
 	reg    Registry
-	store  storage.Storage
+	store  Blob
 	cfg    Config
 	sf     singleflight.Group
 	now    func() int64
 }
 
 // New 构造一个会话管理器。store 可为 nil（禁用持久化）。
-func New(runner sandbox.Runner, reg Registry, store storage.Storage, cfg Config) *Manager {
+func New(runner sandbox.Runner, reg Registry, store Blob, cfg Config) *Manager {
 	return &Manager{
 		runner: runner,
 		reg:    reg,

@@ -21,7 +21,7 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 func dockerAvailable() bool {
