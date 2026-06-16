@@ -108,11 +108,16 @@ func (t *runBashTool) InvokableRun(ctx context.Context, argumentsInJSON string, 
 	if strings.TrimSpace(req.Command) == "" {
 		return "Error: command is required", nil
 	}
+	if isMutatingCommand(req.Command) {
+		if ok, reason := checkMutationAllowed("running a command that writes or deletes files"); !ok {
+			return reason, nil
+		}
+	}
 	res, err := svc.Exec(ctx, t.key, req.Command, req.TimeoutSec)
 	if err != nil {
 		return fmt.Sprintf("Error running command: %v", err), nil
 	}
-	return fmt.Sprintf("exit_code: %d\nstdout:\n%s\nstderr:\n%s", res.ExitCode, truncateForModel(res.Stdout), truncateForModel(res.Stderr)), nil
+	return fmt.Sprintf("exit_code: %d\nstdout:\n%s\nstderr:\n%s", res.ExitCode, offloadOrTruncate(ctx, svc, t.key, res.Stdout), truncateForModel(res.Stderr)), nil
 }
 
 // ---- read_file ----
@@ -180,6 +185,9 @@ func (t *writeFileTool) InvokableRun(ctx context.Context, argumentsInJSON string
 	}
 	if strings.TrimSpace(req.Path) == "" {
 		return "Error: path is required", nil
+	}
+	if ok, reason := checkMutationAllowed("write_file"); !ok {
+		return reason, nil
 	}
 	if err := svc.WriteFile(ctx, t.key, resolvePath(req.Path), []byte(req.Content)); err != nil {
 		return fmt.Sprintf("Error writing file: %v", err), nil
@@ -351,6 +359,9 @@ func (t *editFileTool) InvokableRun(ctx context.Context, argumentsInJSON string,
 	if strings.TrimSpace(req.Path) == "" {
 		return "Error: path is required", nil
 	}
+	if ok, reason := checkMutationAllowed("edit_file"); !ok {
+		return reason, nil
+	}
 	n, err := svc.EditFile(ctx, t.key, resolvePath(req.Path), req.OldString, req.NewString, req.ReplaceAll)
 	if err != nil {
 		return fmt.Sprintf("Error editing file: %v", err), nil
@@ -395,7 +406,7 @@ func (t *grepTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ .
 	if err != nil {
 		return fmt.Sprintf("Error running grep: %v", err), nil
 	}
-	return truncateForModel(out), nil
+	return offloadOrTruncate(ctx, svc, t.key, out), nil
 }
 
 // ---- glob ----
@@ -429,7 +440,7 @@ func (t *globTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ .
 	if err != nil {
 		return fmt.Sprintf("Error running glob: %v", err), nil
 	}
-	return truncateForModel(out), nil
+	return offloadOrTruncate(ctx, svc, t.key, out), nil
 }
 
 // newSandboxTools 构造沙箱工具。沙箱服务未初始化时返回 nil。
