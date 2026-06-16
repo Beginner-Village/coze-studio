@@ -315,6 +315,123 @@ func renderPlan(steps []planStep) string {
 	return fmt.Sprintf("Plan updated (%d/%d done):\n%s", done, len(steps), b.String())
 }
 
+// ---- edit_file ----
+
+type editFileTool struct{ key string }
+
+type editFileRequest struct {
+	Path       string `json:"path" jsonschema:"description=File path; relative paths resolve under /workspace"`
+	OldString  string `json:"old_string" jsonschema:"description=The exact text to replace (must match verbatim, including indentation)"`
+	NewString  string `json:"new_string" jsonschema:"description=The replacement text"`
+	ReplaceAll bool   `json:"replace_all,omitempty" jsonschema:"description=Replace every occurrence; default false (old_string must be unique)"`
+}
+
+func (t *editFileTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "edit_file",
+		Desc: "Edit a file in the sandbox by exact string replacement (search-replace). Read the file first. old_string must match verbatim and be unique unless replace_all=true. Prefer this over write_file for modifying existing files.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"path":        {Type: schema.String, Desc: "File path to edit", Required: true},
+			"old_string":  {Type: schema.String, Desc: "Exact text to replace", Required: true},
+			"new_string":  {Type: schema.String, Desc: "Replacement text", Required: true},
+			"replace_all": {Type: schema.Boolean, Desc: "Replace all occurrences (default false)", Required: false},
+		}),
+	}, nil
+}
+
+func (t *editFileTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req editFileRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return "", fmt.Errorf("failed to parse arguments: %w", err)
+	}
+	if strings.TrimSpace(req.Path) == "" {
+		return "Error: path is required", nil
+	}
+	n, err := svc.EditFile(ctx, t.key, resolvePath(req.Path), req.OldString, req.NewString, req.ReplaceAll)
+	if err != nil {
+		return fmt.Sprintf("Error editing file: %v", err), nil
+	}
+	return fmt.Sprintf("Edited %s (%d replacement(s))", resolvePath(req.Path), n), nil
+}
+
+// ---- grep ----
+
+type grepTool struct{ key string }
+
+type grepRequest struct {
+	Pattern string `json:"pattern" jsonschema:"description=Regex pattern to search for"`
+	Path    string `json:"path,omitempty" jsonschema:"description=Directory or file to search; default /workspace"`
+}
+
+func (t *grepTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "grep",
+		Desc: "Search file contents in the sandbox by regex (ripgrep, falls back to grep). Returns matching lines with file:line. Relative paths resolve under /workspace.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"pattern": {Type: schema.String, Desc: "Regex to search for", Required: true},
+			"path":    {Type: schema.String, Desc: "Directory or file to search (default /workspace)", Required: false},
+		}),
+	}, nil
+}
+
+func (t *grepTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req grepRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return "", fmt.Errorf("failed to parse arguments: %w", err)
+	}
+	path := ""
+	if strings.TrimSpace(req.Path) != "" {
+		path = resolvePath(req.Path)
+	}
+	out, err := svc.Grep(ctx, t.key, req.Pattern, path)
+	if err != nil {
+		return fmt.Sprintf("Error running grep: %v", err), nil
+	}
+	return truncateForModel(out), nil
+}
+
+// ---- glob ----
+
+type globTool struct{ key string }
+
+type globRequest struct {
+	Pattern string `json:"pattern" jsonschema:"description=Filename glob pattern, e.g. *.go"`
+}
+
+func (t *globTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "glob",
+		Desc: "Find files in the sandbox /workspace by filename pattern (e.g. *.go). Returns matching file paths.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"pattern": {Type: schema.String, Desc: "Filename glob pattern", Required: true},
+		}),
+	}, nil
+}
+
+func (t *globTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req globRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return "", fmt.Errorf("failed to parse arguments: %w", err)
+	}
+	out, err := svc.Glob(ctx, t.key, req.Pattern)
+	if err != nil {
+		return fmt.Sprintf("Error running glob: %v", err), nil
+	}
+	return truncateForModel(out), nil
+}
+
 // newSandboxTools 构造沙箱工具。沙箱服务未初始化时返回 nil。
 func newSandboxTools(key string) []tool.InvokableTool {
 	if crosssandbox.DefaultSVC() == nil {
@@ -324,7 +441,10 @@ func newSandboxTools(key string) []tool.InvokableTool {
 		&runBashTool{key: key},
 		&readFileTool{key: key},
 		&writeFileTool{key: key},
+		&editFileTool{key: key},
 		&listFilesTool{key: key},
+		&grepTool{key: key},
+		&globTool{key: key},
 		&updatePlanTool{key: key},
 	}
 }

@@ -29,6 +29,12 @@ type Manager interface {
 	ReadFile(ctx context.Context, key, path string) ([]byte, error)
 	WriteFile(ctx context.Context, key, path string, content []byte) error
 	ListFiles(ctx context.Context, key, path string) ([]string, error)
+	// EditFile 精确字符串替换（Claude Code 式 search-replace），返回替换次数。
+	EditFile(ctx context.Context, key, path, oldStr, newStr string, replaceAll bool) (int, error)
+	// Grep 按正则搜索文件内容（优先 ripgrep，回退 grep）。
+	Grep(ctx context.Context, key, pattern, path string) (string, error)
+	// Glob 按文件名模式查找文件（如 "*.go"）。
+	Glob(ctx context.Context, key, pattern string) (string, error)
 	// SyncSkill 把技能的脚本文件注入沙箱 /skills/<name>/，按内容 hash 去重。
 	SyncSkill(ctx context.Context, key, name string, files map[string][]byte) error
 }

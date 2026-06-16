@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"golang.org/x/sync/singleflight"
@@ -170,6 +171,86 @@ func (m *Manager) ReadFile(ctx context.Context, key, path string) ([]byte, error
 	}
 	_ = m.reg.Touch(ctx, key, m.now())
 	return b, nil
+}
+
+// EditFile 在文件内做精确字符串替换（Claude Code 式 search-replace），返回替换次数。
+// replaceAll=false 时：oldStr 出现 0 次报 "not found"、出现多次要求改用 replace_all，确保改动唯一。
+// replaceAll=true 时：替换全部出现。
+func (m *Manager) EditFile(ctx context.Context, key, path, oldStr, newStr string, replaceAll bool) (int, error) {
+	if path == "" {
+		return 0, fmt.Errorf("path must not be empty")
+	}
+	if oldStr == "" {
+		return 0, fmt.Errorf("old_string must not be empty")
+	}
+	if oldStr == newStr {
+		return 0, fmt.Errorf("old_string and new_string are identical, nothing to do")
+	}
+	data, err := m.ReadFile(ctx, key, path)
+	if err != nil {
+		return 0, err
+	}
+	content := string(data)
+	n := strings.Count(content, oldStr)
+	if n == 0 {
+		return 0, fmt.Errorf("old_string not found in %s", path)
+	}
+	if n > 1 && !replaceAll {
+		return 0, fmt.Errorf("old_string found %d times in %s; pass replace_all=true or include more surrounding context to make it unique", n, path)
+	}
+	var out string
+	if replaceAll {
+		out = strings.ReplaceAll(content, oldStr, newStr)
+	} else {
+		out = strings.Replace(content, oldStr, newStr, 1)
+		n = 1
+	}
+	if err := m.WriteFile(ctx, key, path, []byte(out)); err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
+// Grep 在沙箱里按正则搜索文件内容（优先 ripgrep，回退 grep -rn）。path 为空时搜 /workspace。
+func (m *Manager) Grep(ctx context.Context, key, pattern, path string) (string, error) {
+	if pattern == "" {
+		return "", fmt.Errorf("pattern must not be empty")
+	}
+	if path == "" {
+		path = "."
+	}
+	q := shSingleQuote(pattern)
+	p := shSingleQuote(path)
+	cmd := fmt.Sprintf(`if command -v rg >/dev/null 2>&1; then rg -n --no-heading -- %s %s; else grep -rn -- %s %s; fi`, q, p, q, p)
+	res, err := m.Exec(ctx, key, cmd, 0)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(res.Stdout) == "" {
+		return "(no matches)", nil
+	}
+	return res.Stdout, nil
+}
+
+// Glob 在沙箱里按文件名模式查找文件（如 "*.go"）。pattern 是基于文件名的 glob。
+func (m *Manager) Glob(ctx context.Context, key, pattern string) (string, error) {
+	if pattern == "" {
+		return "", fmt.Errorf("pattern must not be empty")
+	}
+	cmd := fmt.Sprintf(`find . -type f -name %s 2>/dev/null | head -200`, shSingleQuote(pattern))
+	res, err := m.Exec(ctx, key, cmd, 0)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(res.Stdout) == "" {
+		return "(no files matched)", nil
+	}
+	return res.Stdout, nil
+}
+
+// shSingleQuote 把字符串安全地包成单引号 shell 参数。
+func shSingleQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // ListFiles 列目录（先 ensure）。
