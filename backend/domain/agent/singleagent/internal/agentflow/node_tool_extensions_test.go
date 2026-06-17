@@ -64,7 +64,7 @@ func TestWebFetchTool(t *testing.T) {
 	if err != nil || !strings.Contains(out, "hello") {
 		t.Fatalf("web_fetch out=%q err=%v", out, err)
 	}
-	if !strings.Contains(fm.lastCmd, "curl") || !strings.Contains(fm.lastCmd, "http://example.com") {
-		t.Fatalf("web_fetch did not run curl in sandbox: %q", fm.lastCmd)
+	if !strings.Contains(fm.lastCmd, "python3") || !strings.Contains(fm.lastCmd, "http://example.com") {
+		t.Fatalf("web_fetch did not run python fetch in sandbox: %q", fm.lastCmd)
 	}
 }

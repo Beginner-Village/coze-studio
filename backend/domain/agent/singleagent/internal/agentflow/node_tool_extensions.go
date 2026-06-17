@@ -98,7 +98,11 @@ func (t *webFetchTool) InvokableRun(ctx context.Context, argumentsInJSON string,
 	if !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
 		return "Error: url must start with http:// or https://", nil
 	}
-	cmd := fmt.Sprintf("curl -sL --max-time 20 -- %s", shQuote(u))
+	// 用沙箱内一定存在的 python3 urllib 拉取（slim 镜像默认无 curl/wget）。
+	const fetchPy = "import sys,urllib.request\n" +
+		"req=urllib.request.Request(sys.argv[1],headers={'User-Agent':'ynet-agent'})\n" +
+		"sys.stdout.write(urllib.request.urlopen(req,timeout=20).read().decode('utf-8','replace'))"
+	cmd := fmt.Sprintf("python3 -c %s %s", shQuote(fetchPy), shQuote(u))
 	res, err := svc.Exec(ctx, t.key, cmd, 30)
 	if err != nil {
 		return fmt.Sprintf("Error fetching url: %v", err), nil
