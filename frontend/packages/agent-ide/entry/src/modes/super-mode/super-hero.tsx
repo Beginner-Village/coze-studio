@@ -14,21 +14,32 @@
  * limitations under the License.
  */
 
+import {
+  IcPlan,
+  IcSandbox,
+  IcTools,
+  IcMemory,
+  IcLightning,
+  IcSettings,
+} from './icons';
+
 const CAPABILITIES = [
-  { icon: '🧠', label: '自主规划', desc: '拆解任务·多步执行' },
-  { icon: '📦', label: '独立沙箱', desc: '隔离的文件与运行环境' },
-  { icon: '🔧', label: '技能 & MCP', desc: '可插拔工具与技能' },
-  { icon: '💾', label: '长期记忆', desc: '跨会话记住偏好' },
+  { Icon: IcPlan, label: '自主规划', desc: '拆解任务·多步执行' },
+  { Icon: IcSandbox, label: '独立沙箱', desc: '隔离的文件与运行环境' },
+  { Icon: IcTools, label: '技能 & MCP', desc: '可插拔工具与技能' },
+  { Icon: IcMemory, label: '长期记忆', desc: '跨会话记住偏好' },
 ];
 
 /**
  * 超级智能体能力条:纤细、浅色、与系统配色一致。
- * 不再重复展示头像/名称(顶部系统 header 已有),只陈列核心能力。
+ * 右侧「⚙ 设置」打开人设/技能/MCP 弹框 —— 主页面留给「左工作区 + 右聊天」。
  */
-export const SuperAgentHero: React.FC = () => (
+export const SuperAgentHero: React.FC<{ onOpenSettings?: () => void }> = ({
+  onOpenSettings,
+}) => (
   <div className="flex items-center gap-[16px] px-[20px] h-[52px] coz-bg-plus border-b coz-stroke-primary shrink-0">
-    <div className="flex items-center gap-[8px] shrink-0">
-      <span className="text-[15px] leading-none">⚡</span>
+    <div className="flex items-center gap-[7px] shrink-0 coz-fg-hglt">
+      <IcLightning size={15} />
       <span className="text-[14px] font-semibold coz-fg-plus">
         超级智能体能力
       </span>
@@ -40,7 +51,7 @@ export const SuperAgentHero: React.FC = () => (
           key={c.label}
           className="flex items-center gap-[8px] px-[12px] py-[6px] rounded-[10px] coz-mg-secondary shrink-0"
         >
-          <span className="text-[15px] leading-none">{c.icon}</span>
+          <c.Icon size={16} className="coz-fg-secondary" />
           <div className="leading-tight">
             <div className="text-[12px] font-medium coz-fg-primary">
               {c.label}
@@ -49,6 +60,13 @@ export const SuperAgentHero: React.FC = () => (
           </div>
         </div>
       ))}
+    </div>
+    <div
+      onClick={onOpenSettings}
+      className="flex items-center gap-[6px] shrink-0 cursor-pointer px-[12px] py-[6px] rounded-[10px] coz-mg-hglt coz-fg-hglt hover:opacity-80 transition-opacity"
+    >
+      <IcSettings size={15} />
+      <span className="text-[13px] font-medium">人设 · 技能 · MCP</span>
     </div>
   </div>
 );

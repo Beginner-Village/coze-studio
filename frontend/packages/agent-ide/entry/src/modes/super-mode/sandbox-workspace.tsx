@@ -14,11 +14,24 @@
  * limitations under the License.
  */
 
+/* eslint-disable @coze-arch/max-line-per-function */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useBotInfoStore } from '@coze-studio/bot-detail-store/bot-info';
+import { LazyCozeMdBox } from '@coze-common/chat-uikit';
 import { DeveloperApi } from '@coze-arch/bot-api';
-import { Button, Spin, Toast, Modal, Typography } from '@coze-arch/coze-design';
+import { Button, Spin, Toast, Typography } from '@coze-arch/coze-design';
+
+import {
+  iconForFile,
+  IcUpload,
+  IcRefresh,
+  IcDownload,
+  IcTrash,
+  IcChevronRight,
+  IcChevronDown,
+  IcFile,
+} from './icons';
 
 interface SandboxFile {
   name: string;
@@ -28,10 +41,15 @@ interface SandboxFile {
 }
 
 const ROOTS = [
-  { key: '/workspace', label: '工作区', icon: '🗂️' },
-  { key: '/outputs', label: '产出物', icon: '📤' },
-  { key: '/uploads', label: '上传区', icon: '📥' },
+  { key: '/workspace', label: '工作区' },
+  { key: '/outputs', label: '产出物' },
+  { key: '/uploads', label: '上传区' },
 ];
+
+const IMG_EXT = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'];
+const OFFICE_EXT = ['xlsx', 'xls', 'docx', 'doc', 'pptx', 'ppt'];
+
+const extOf = (name: string) => name.split('.').pop()?.toLowerCase() ?? '';
 
 const formatSize = (n: number): string => {
   if (n < 1024) {
@@ -43,33 +61,266 @@ const formatSize = (n: number): string => {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 };
 
-const fileIcon = (f: SandboxFile): string => {
-  if (f.is_dir) {
-    return '📁';
+const base64ToBlobUrl = (b64: string, mime: string): string => {
+  const bytes = atob(b64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    arr[i] = bytes.charCodeAt(i);
   }
-  const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
-  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) {
-    return '🖼️';
+  return URL.createObjectURL(new Blob([arr], { type: mime }));
+};
+
+const downloadFile = (name: string, content: string, isBinary: boolean) => {
+  const url = isBinary
+    ? base64ToBlobUrl(content, 'application/octet-stream')
+    : URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+interface PreviewState {
+  name: string;
+  path: string;
+  content: string;
+  isBinary: boolean;
+}
+
+// ---- 文件查看器(按类型内联渲染) ----
+const FileViewer: React.FC<{ preview: PreviewState }> = ({ preview }) => {
+  const { name, content, isBinary } = preview;
+  const ext = extOf(name);
+
+  if (isBinary && IMG_EXT.includes(ext)) {
+    const mime = ext === 'svg' ? 'svg+xml' : ext === 'jpg' ? 'jpeg' : ext;
+    return (
+      <div className="flex justify-center p-[16px]">
+        <img
+          src={`data:image/${mime};base64,${content}`}
+          alt={name}
+          className="max-w-full object-contain rounded-[6px]"
+        />
+      </div>
+    );
   }
-  if (['py', 'js', 'ts', 'go', 'java', 'c', 'cpp', 'rs', 'sh'].includes(ext)) {
-    return '📜';
-  }
-  if (['json', 'yaml', 'yml', 'toml', 'xml'].includes(ext)) {
-    return '⚙️';
-  }
-  if (['md', 'txt', 'log'].includes(ext)) {
-    return '📝';
-  }
-  if (['zip', 'tar', 'gz', 'rar', '7z'].includes(ext)) {
-    return '🗜️';
-  }
-  if (['csv', 'xlsx', 'xls'].includes(ext)) {
-    return '📊';
+  if (!isBinary && ext === 'svg') {
+    const svgUrl = `data:image/svg+xml;base64,${btoa(
+      unescape(encodeURIComponent(content)),
+    )}`;
+    return (
+      <div className="flex justify-center p-[16px]">
+        <img src={svgUrl} alt={name} className="max-w-full object-contain" />
+      </div>
+    );
   }
   if (ext === 'pdf') {
-    return '📕';
+    const url = isBinary ? base64ToBlobUrl(content, 'application/pdf') : '';
+    return <iframe title={name} src={url} className="w-full h-full border-0" />;
   }
-  return '📄';
+  if (ext === 'md' || ext === 'markdown') {
+    return (
+      <div className="px-[16px] py-[12px]">
+        <LazyCozeMdBox
+          markDown={content}
+          autoFixSyntax={{ autoFixEnding: false }}
+        />
+      </div>
+    );
+  }
+  if (ext === 'html' || ext === 'htm') {
+    return (
+      <iframe
+        title={name}
+        srcDoc={content}
+        sandbox="allow-scripts"
+        className="w-full h-full border-0"
+      />
+    );
+  }
+  if (ext === 'csv') {
+    const rows = content
+      .split('\n')
+      .filter(l => l.trim())
+      .slice(0, 300)
+      .map(l => l.split(','));
+    return (
+      <div className="p-[12px] overflow-auto">
+        <table className="text-[12px] border-collapse">
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i} className={i === 0 ? 'coz-mg-secondary font-medium' : ''}>
+                {r.map((c, j) => (
+                  <td
+                    key={j}
+                    className="border coz-stroke-primary px-[8px] py-[4px] whitespace-nowrap"
+                  >
+                    {c}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+  if (OFFICE_EXT.includes(ext)) {
+    const Icon = iconForFile(name, false);
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-[12px] coz-fg-secondary">
+        <Icon size={48} className="opacity-50" />
+        <div className="text-[13px]">{name}</div>
+        <div className="coz-fg-dim text-[12px]">
+          Office 文档在线预览即将支持,可先下载用本地软件打开
+        </div>
+        <Button
+          color="primary"
+          onClick={() => downloadFile(name, content, isBinary)}
+        >
+          下载文件
+        </Button>
+      </div>
+    );
+  }
+  if (ext === 'json') {
+    let pretty = content;
+    try {
+      pretty = JSON.stringify(JSON.parse(content), null, 2);
+    } catch {
+      /* keep raw */
+    }
+    return (
+      <pre className="text-[12px] font-mono leading-[1.65] coz-fg-primary whitespace-pre-wrap break-all p-[14px]">
+        {pretty}
+      </pre>
+    );
+  }
+  if (isBinary) {
+    return (
+      <div className="flex items-center justify-center h-full coz-fg-secondary text-[13px]">
+        二进制文件,暂不支持预览（{formatSize(content.length)}）
+      </div>
+    );
+  }
+  return (
+    <pre className="text-[12px] font-mono leading-[1.65] coz-fg-primary whitespace-pre-wrap break-all p-[14px]">
+      {content}
+    </pre>
+  );
+};
+
+// ---- 文件树节点(懒加载子目录) ----
+const TreeNode: React.FC<{
+  file: SandboxFile;
+  depth: number;
+  activePath?: string;
+  listDir: (path: string) => Promise<SandboxFile[]>;
+  onOpen: (f: SandboxFile) => void;
+  onDelete: (f: SandboxFile) => void;
+  onDownload: (f: SandboxFile) => void;
+}> = ({ file, depth, activePath, listDir, onOpen, onDelete, onDownload }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [children, setChildren] = useState<SandboxFile[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const Icon = iconForFile(file.name, file.is_dir, expanded);
+  const active = activePath === file.path;
+
+  const toggle = async () => {
+    if (!file.is_dir) {
+      onOpen(file);
+      return;
+    }
+    const next = !expanded;
+    setExpanded(next);
+    if (next && children === null) {
+      setLoading(true);
+      setChildren(await listDir(file.path));
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <div
+        className={`group flex items-center gap-[6px] py-[4px] pr-[6px] rounded-[6px] cursor-pointer text-[13px] ${
+          active ? 'coz-mg-hglt' : 'hover:coz-mg-secondary'
+        }`}
+        style={{ paddingLeft: depth * 14 + 6 }}
+        onClick={toggle}
+      >
+        <span className="w-[12px] coz-fg-dim shrink-0 flex items-center">
+          {file.is_dir ? (
+            expanded ? (
+              <IcChevronDown size={12} />
+            ) : (
+              <IcChevronRight size={12} />
+            )
+          ) : null}
+        </span>
+        <Icon
+          size={15}
+          className={file.is_dir ? 'coz-fg-hglt' : 'coz-fg-secondary'}
+        />
+        <Typography.Text
+          ellipsis={{ showTooltip: true }}
+          className={`flex-1 !text-[13px] ${active ? 'coz-fg-hglt' : 'coz-fg-primary'}`}
+        >
+          {file.name}
+        </Typography.Text>
+        {!file.is_dir ? (
+          <span className="text-[11px] coz-fg-dim shrink-0">
+            {formatSize(file.size)}
+          </span>
+        ) : null}
+        {!file.is_dir ? (
+          <span
+            className="opacity-0 group-hover:opacity-100 shrink-0 coz-fg-dim hover:coz-fg-primary"
+            title="下载"
+            onClick={e => {
+              e.stopPropagation();
+              onDownload(file);
+            }}
+          >
+            <IcDownload size={14} />
+          </span>
+        ) : null}
+        <span
+          className="opacity-0 group-hover:opacity-100 shrink-0 coz-fg-dim hover:coz-fg-hglt-red"
+          title="删除"
+          onClick={e => {
+            e.stopPropagation();
+            onDelete(file);
+          }}
+        >
+          <IcTrash size={14} />
+        </span>
+      </div>
+      {file.is_dir && expanded ? (
+        loading ? (
+          <div style={{ paddingLeft: (depth + 1) * 14 + 6 }} className="py-[4px]">
+            <Spin size="small" />
+          </div>
+        ) : (
+          (children ?? []).map(c => (
+            <TreeNode
+              key={c.path}
+              file={c}
+              depth={depth + 1}
+              activePath={activePath}
+              listDir={listDir}
+              onOpen={onOpen}
+              onDelete={onDelete}
+              onDownload={onDownload}
+            />
+          ))
+        )
+      ) : null}
+    </div>
+  );
 };
 
 export const SandboxWorkspace: React.FC = () => {
@@ -79,39 +330,48 @@ export const SandboxWorkspace: React.FC = () => {
   const [files, setFiles] = useState<SandboxFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [preview, setPreview] = useState<{
-    path: string;
-    content: string;
-    isBinary: boolean;
-  } | null>(null);
+  const [preview, setPreview] = useState<PreviewState | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const load = useCallback(
-    async (path: string) => {
+  const listDir = useCallback(
+    async (path: string): Promise<SandboxFile[]> => {
       if (!botId) {
-        return;
+        return [];
       }
-      setLoading(true);
       try {
         const resp = await DeveloperApi.ListSandboxFiles({
           space_id: spaceId,
           bot_id: botId,
           path,
         });
-        setFiles((resp?.data?.files as SandboxFile[]) ?? []);
+        const list = (resp?.data?.files as SandboxFile[]) ?? [];
+        return list.sort((a, b) =>
+          a.is_dir === b.is_dir
+            ? a.name.localeCompare(b.name)
+            : a.is_dir
+              ? -1
+              : 1,
+        );
       } catch (e) {
-        setFiles([]);
         Toast.error('读取沙箱目录失败');
-      } finally {
-        setLoading(false);
+        return [];
       }
     },
     [botId, spaceId],
   );
 
+  const loadRoot = useCallback(
+    async (path: string) => {
+      setLoading(true);
+      setFiles(await listDir(path));
+      setLoading(false);
+    },
+    [listDir],
+  );
+
   useEffect(() => {
-    load(root);
-  }, [root, load]);
+    loadRoot(root);
+  }, [root, loadRoot]);
 
   const openFile = async (f: SandboxFile) => {
     if (f.is_dir) {
@@ -124,6 +384,7 @@ export const SandboxWorkspace: React.FC = () => {
         path: f.path,
       });
       setPreview({
+        name: f.name,
         path: f.path,
         content: resp?.data?.content ?? '',
         isBinary: Boolean(resp?.data?.is_binary),
@@ -148,7 +409,7 @@ export const SandboxWorkspace: React.FC = () => {
         });
         Toast.success(`已上传 ${file.name}`);
         setRoot('/uploads');
-        load('/uploads');
+        loadRoot('/uploads');
       } catch (e) {
         Toast.error('上传失败');
       }
@@ -164,155 +425,157 @@ export const SandboxWorkspace: React.FC = () => {
         path: f.path,
       });
       Toast.success('已删除');
-      load(root);
+      if (preview?.path === f.path) {
+        setPreview(null);
+      }
+      loadRoot(root);
     } catch (e) {
       Toast.error('删除失败');
     }
   };
 
-  const totalSize = files.reduce((acc, f) => acc + (f.is_dir ? 0 : f.size), 0);
+  const onDownload = async (f: SandboxFile) => {
+    try {
+      const resp = await DeveloperApi.ReadSandboxFile({
+        space_id: spaceId,
+        bot_id: botId,
+        path: f.path,
+      });
+      downloadFile(
+        f.name,
+        resp?.data?.content ?? '',
+        Boolean(resp?.data?.is_binary),
+      );
+    } catch (e) {
+      Toast.error('下载失败');
+    }
+  };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* 目录分段切换 */}
-      <div className="flex items-center gap-[6px] px-[10px] pt-[2px] pb-[10px]">
-        <div className="flex items-center gap-[2px] p-[3px] rounded-[10px] coz-mg-secondary">
-          {ROOTS.map(r => (
-            <div
-              key={r.key}
-              onClick={() => setRoot(r.key)}
-              className={`flex items-center gap-[5px] cursor-pointer px-[12px] py-[5px] rounded-[8px] text-[13px] font-medium transition-all ${
-                root === r.key
-                  ? 'coz-bg-max coz-fg-plus shadow-sm'
-                  : 'coz-fg-secondary hover:coz-fg-primary'
-              }`}
-            >
-              <span className="text-[13px]">{r.icon}</span>
-              {r.label}
-            </div>
-          ))}
-        </div>
-        <div className="flex-1" />
-        <Button size="small" color="primary" onClick={() => fileInputRef.current?.click()}>
-          上传
-        </Button>
-        <Button size="small" color="secondary" onClick={() => load(root)}>
-          刷新
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          onChange={e => {
-            const f = e.target.files?.[0];
-            if (f) {
-              uploadOne(f);
-            }
-            e.target.value = '';
-          }}
-        />
-      </div>
-
-      {/* 路径 + 统计 */}
-      <div className="flex items-center justify-between px-[14px] pb-[8px] text-[12px] coz-fg-dim">
-        <span className="font-mono">{root}</span>
-        <span>
-          {files.length} 项 · {formatSize(totalSize)}
-        </span>
-      </div>
-
-      {/* 文件列表 / 拖拽上传区 */}
-      <div
-        className={`flex-1 overflow-auto mx-[8px] mb-[8px] rounded-[12px] border border-dashed transition-colors ${
-          dragOver ? 'coz-stroke-hglt coz-mg-hglt' : 'coz-stroke-primary'
-        }`}
-        onDragOver={e => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={e => {
-          e.preventDefault();
-          setDragOver(false);
-          const f = e.dataTransfer.files?.[0];
-          if (f) {
-            uploadOne(f);
-          }
-        }}
-      >
-        {loading ? (
-          <div className="flex justify-center py-[48px]">
-            <Spin />
-          </div>
-        ) : files.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full py-[48px] text-center select-none">
-            <div className="text-[40px] mb-[8px] opacity-70">📭</div>
-            <div className="text-[14px] coz-fg-secondary font-medium">
-              空目录
-            </div>
-            <div className="text-[12px] coz-fg-dim mt-[4px] max-w-[200px]">
-              智能体运行产生的文件会出现在这里,也可拖拽文件到此上传
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-[2px] p-[6px]">
-            {files.map(f => (
+    <div className="flex h-full">
+      {/* 左:文件树 */}
+      <div className="w-[270px] shrink-0 flex flex-col border-r coz-stroke-primary">
+        <div className="flex items-center gap-[4px] px-[8px] py-[8px]">
+          <div className="flex items-center gap-[2px] p-[2px] rounded-[8px] coz-mg-secondary flex-1">
+            {ROOTS.map(r => (
               <div
-                key={f.path}
-                className="group flex items-center gap-[10px] px-[10px] py-[8px] rounded-[8px] hover:coz-mg-secondary cursor-pointer transition-colors"
-                onClick={() => openFile(f)}
+                key={r.key}
+                onClick={() => setRoot(r.key)}
+                className={`flex-1 text-center cursor-pointer px-[6px] py-[4px] rounded-[6px] text-[12px] font-medium transition-all ${
+                  root === r.key
+                    ? 'coz-bg-max coz-fg-plus shadow-sm'
+                    : 'coz-fg-secondary hover:coz-fg-primary'
+                }`}
               >
-                <span className="text-[18px] leading-none shrink-0">
-                  {fileIcon(f)}
-                </span>
-                <Typography.Text
-                  ellipsis={{ showTooltip: true }}
-                  className="flex-1 !text-[13px] coz-fg-primary"
-                >
-                  {f.name}
-                </Typography.Text>
-                {!f.is_dir ? (
-                  <span className="text-[11px] coz-fg-dim shrink-0">
-                    {formatSize(f.size)}
-                  </span>
-                ) : (
-                  <span className="text-[11px] coz-fg-dim shrink-0">目录</span>
-                )}
-                <Button
-                  size="mini"
-                  color="secondary"
-                  className="opacity-0 group-hover:opacity-100 shrink-0"
-                  onClick={e => {
-                    e.stopPropagation();
-                    onDelete(f);
-                  }}
-                >
-                  删除
-                </Button>
+                {r.label}
               </div>
             ))}
           </div>
-        )}
+          <span
+            className="shrink-0 coz-fg-secondary hover:coz-fg-primary cursor-pointer p-[4px]"
+            title="上传"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <IcUpload size={16} />
+          </span>
+          <span
+            className="shrink-0 coz-fg-secondary hover:coz-fg-primary cursor-pointer p-[4px]"
+            title="刷新"
+            onClick={() => loadRoot(root)}
+          >
+            <IcRefresh size={16} />
+          </span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={e => {
+              const f = e.target.files?.[0];
+              if (f) {
+                uploadOne(f);
+              }
+              e.target.value = '';
+            }}
+          />
+        </div>
+        <div
+          className={`flex-1 overflow-auto px-[6px] pb-[8px] ${
+            dragOver ? 'coz-mg-hglt' : ''
+          }`}
+          onDragOver={e => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => {
+            e.preventDefault();
+            setDragOver(false);
+            const f = e.dataTransfer.files?.[0];
+            if (f) {
+              uploadOne(f);
+            }
+          }}
+        >
+          {loading ? (
+            <div className="flex justify-center py-[40px]">
+              <Spin />
+            </div>
+          ) : files.length === 0 ? (
+            <div className="text-center py-[40px] coz-fg-dim text-[12px] select-none">
+              空目录
+              <br />
+              产物会出现在这里
+            </div>
+          ) : (
+            files.map(f => (
+              <TreeNode
+                key={f.path}
+                file={f}
+                depth={0}
+                activePath={preview?.path}
+                listDir={listDir}
+                onOpen={openFile}
+                onDelete={onDelete}
+                onDownload={onDownload}
+              />
+            ))
+          )}
+        </div>
       </div>
 
-      {/* 文件预览 */}
-      <Modal
-        visible={Boolean(preview)}
-        title={preview?.path}
-        onCancel={() => setPreview(null)}
-        footer={null}
-        width={680}
-      >
-        {preview?.isBinary ? (
-          <div className="coz-fg-secondary py-[20px] text-center">
-            二进制文件,无法预览(大小 {formatSize(preview.content.length)})
-          </div>
+      {/* 右:内联预览区 */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {preview ? (
+          <>
+            <div className="flex items-center gap-[10px] px-[14px] py-[8px] border-b coz-stroke-primary shrink-0">
+              <span className="font-mono text-[12px] coz-fg-secondary flex-1 truncate">
+                {preview.path}
+              </span>
+              <Button
+                size="small"
+                color="primary"
+                icon={<IcDownload size={14} />}
+                onClick={() =>
+                  downloadFile(preview.name, preview.content, preview.isBinary)
+                }
+              >
+                下载
+              </Button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto">
+              <FileViewer preview={preview} />
+            </div>
+          </>
         ) : (
-          <pre className="text-[12px] coz-fg-primary whitespace-pre-wrap break-all max-h-[60vh] overflow-auto coz-bg-secondary p-[12px] rounded-[8px]">
-            {preview?.content}
-          </pre>
+          <div className="flex-1 flex flex-col items-center justify-center coz-fg-dim gap-[10px] select-none">
+            <IcFile size={40} className="opacity-40" />
+            <div className="text-[13px]">选择左侧文件查看</div>
+            <div className="text-[12px]">
+              支持图片 / PDF / Markdown / 代码 / CSV 等在线预览
+            </div>
+          </div>
         )}
-      </Modal>
+      </div>
     </div>
   );
 };

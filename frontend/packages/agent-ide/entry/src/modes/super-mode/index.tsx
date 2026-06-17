@@ -22,6 +22,7 @@ import { usePageRuntimeStore } from '@coze-studio/bot-detail-store/page-runtime'
 import { useBotDetailIsReadonly } from '@coze-studio/bot-detail-store';
 import { BotPageFromEnum } from '@coze-arch/bot-typings/common';
 import { BotMode, TabStatus } from '@coze-arch/bot-api/developer_api';
+import { Modal } from '@coze-arch/coze-design';
 import { AbilityAreaContainer } from '@coze-agent-ide/tool';
 import { useBotPageStore } from '@coze-agent-ide/space-bot/store';
 import {
@@ -66,6 +67,7 @@ export const SuperMode: React.FC<SuperModeProps> = ({
   const modeSwitching = useBotPageStore(state => state.bot.modeSwitching);
   const isReadonly = useBotDetailIsReadonly();
   const [isAllToolHidden, setIsAllToolHidden] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <div
@@ -76,67 +78,80 @@ export const SuperMode: React.FC<SuperModeProps> = ({
       )}
       style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
     >
-      <SuperAgentHero />
+      <SuperAgentHero onOpenSettings={() => setSettingsOpen(true)} />
       <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
-      <AbilityAreaContainer
-        enableToolHiddenMode
-        eventCallbacks={{
-          onAllToolHiddenStatusChange: (v: boolean) => setIsAllToolHidden(v),
-        }}
-        isReadonly={isReadonly}
-        mode={BotMode.SingleMode}
-        modeSwitching={modeSwitching}
-        isInit={isInit}
-      >
-        <ContentView
+        <AbilityAreaContainer
+          enableToolHiddenMode
+          eventCallbacks={{
+            onAllToolHiddenStatusChange: (v: boolean) => setIsAllToolHidden(v),
+          }}
+          isReadonly={isReadonly}
           mode={BotMode.SingleMode}
-          style={{ gridTemplateColumns: '17fr 22fr 25fr' }}
+          modeSwitching={modeSwitching}
+          isInit={isInit}
         >
-          {/* 左:人设(上,紧凑)+ 技能/MCP 设置(下),上下排 */}
-          <SuperConfigArea
-            isAllToolHidden={isAllToolHidden}
-            {...agentConfigAreaProps}
-          />
-
-          {/* 中:沙箱空间(大块,超级体独有) */}
-          <SingleSheet
-            title="沙箱空间"
-            headerClassName={classNames([
-              'coz-bg-plus',
-              'coz-fg-secondary',
-              '!h-12',
-              '!px-4',
-              '!py-0',
-            ])}
-            titleClassName="!text-[16px]"
-            titleNode={
-              <div className="flex items-center gap-[8px] h-full px-[4px]">
-                <span className="text-[16px] font-medium coz-fg-plus">
-                  沙箱空间
-                </span>
-                <span className="text-[11px] px-[6px] py-[1px] rounded-[4px] coz-mg-hglt coz-fg-hglt">
-                  隔离环境
-                </span>
-              </div>
-            }
+          {/* 两栏:左工作区(IDE)| 右聊天。人设/技能收进右上角设置弹框。 */}
+          <ContentView
+            mode={BotMode.SingleMode}
+            style={{ gridTemplateColumns: '2fr 1fr' }}
           >
-            <div className="h-full coz-bg-plus pt-[12px]">
-              <SandboxWorkspace />
+            {/* 左:工作区(IDE 文件树 + 查看器) */}
+            <SingleSheet
+              title="工作区"
+              headerClassName={classNames([
+                'coz-bg-plus',
+                'coz-fg-secondary',
+                '!h-12',
+                '!px-4',
+                '!py-0',
+              ])}
+              titleClassName="!text-[16px]"
+              titleNode={
+                <div className="flex items-center gap-[8px] h-full px-[4px]">
+                  <span className="text-[16px] font-medium coz-fg-plus">
+                    工作区
+                  </span>
+                  <span className="text-[11px] px-[6px] py-[1px] rounded-[4px] coz-mg-hglt coz-fg-hglt">
+                    沙箱 · 隔离环境
+                  </span>
+                </div>
+              }
+            >
+              <div className="h-full coz-bg-plus pt-[12px]">
+                <SandboxWorkspace />
+              </div>
+            </SingleSheet>
+
+            {/* 右:预览与调试(原生聊天) */}
+            <AgentChatArea
+              renderChatTitleNode={renderChatTitleNode}
+              chatSlot={chatSlot}
+              chatHeaderClassName={chatHeaderClassName}
+              chatAreaReadOnly={chatAreaReadOnly}
+            />
+          </ContentView>
+
+          {/* 人设 · 技能 · MCP 设置弹框(渲染在 AbilityAreaContainer 内,保证技能区 context 正常) */}
+          <Modal
+            visible={settingsOpen}
+            onCancel={() => setSettingsOpen(false)}
+            title="人设 · 技能 · MCP 设置"
+            footer={null}
+            width={760}
+            height={620}
+            bodyStyle={{ padding: 0, height: 560, overflow: 'hidden' }}
+          >
+            <div className="h-full">
+              <SuperConfigArea
+                isAllToolHidden={isAllToolHidden}
+                {...agentConfigAreaProps}
+              />
             </div>
-          </SingleSheet>
+          </Modal>
 
-          {/* 右:预览与调试(原生聊天,工具调用 UI 已增强) */}
-          <AgentChatArea
-            renderChatTitleNode={renderChatTitleNode}
-            chatSlot={chatSlot}
-            chatHeaderClassName={chatHeaderClassName}
-            chatAreaReadOnly={chatAreaReadOnly}
-          />
-        </ContentView>
-
-        <BotDebugPanel />
-        {rightSheetSlot}
-      </AbilityAreaContainer>
+          <BotDebugPanel />
+          {rightSheetSlot}
+        </AbilityAreaContainer>
       </div>
     </div>
   );
