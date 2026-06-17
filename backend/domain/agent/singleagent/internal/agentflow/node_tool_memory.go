@@ -49,7 +49,8 @@ func init() {
 func loadMemories(ctx context.Context, svc crosssandbox.Manager, key string) ([]string, error) {
 	b, err := svc.ReadFile(ctx, key, memoryFilePath)
 	if err != nil {
-		return nil, err
+		// 真实沙箱里文件不存在时 ReadFile(cat) 会报错——首次保存前属正常，当空记忆处理。
+		return []string{}, nil
 	}
 	if len(b) == 0 {
 		return []string{}, nil
