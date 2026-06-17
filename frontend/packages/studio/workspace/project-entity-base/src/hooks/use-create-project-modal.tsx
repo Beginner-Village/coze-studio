@@ -96,6 +96,17 @@ export const useCreateProjectModalBase = ({
     bizCreateFrom,
   });
 
+  // 超级智能体走独立创建流(agent_type=super),与普通智能体完全分开
+  const { modal: superModal, startEdit: startSuperEdit } = useCreateAgent({
+    showSpace: selectSpace,
+    onBefore: onBeforeCreateBot,
+    onError: onCreateBotError,
+    onSuccess: onCreateBotSuccess,
+    spaceId: initialSpaceId,
+    bizCreateFrom,
+    agentType: 'super',
+  });
+
   const onGuideChange = (guideType: CreateType) => {
     setGuideModalVisible(false);
 
@@ -110,6 +121,10 @@ export const useCreateProjectModalBase = ({
     }
     if (guideType === 'agent') {
       startEdit();
+      return;
+    }
+    if (guideType === 'superAgent') {
+      startSuperEdit();
       return;
     }
   };
@@ -184,6 +199,7 @@ export const useCreateProjectModalBase = ({
     modalContextHolder: (
       <>
         {modal}
+        {superModal}
         <ProjectTemplateModal
           maskClosable={false}
           onCreateProject={onCreateEmptyProject}

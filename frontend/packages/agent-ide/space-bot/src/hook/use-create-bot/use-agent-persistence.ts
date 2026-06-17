@@ -62,6 +62,8 @@ export interface UseAgentPersistenceProps {
   setErrMsg: (message: string) => void;
   bizCreateFrom?: 'navi' | 'space';
   showSpace?: boolean;
+  /** 固定智能体类型(由创建入口决定,如超级智能体传 'super'),优先于表单值 */
+  agentType?: string;
 }
 
 // eslint-disable-next-line max-lines-per-function, @coze-arch/max-line-per-function
@@ -79,6 +81,7 @@ export const useAgentPersistence = ({
   setErrMsg,
   bizCreateFrom,
   showSpace,
+  agentType,
 }: UseAgentPersistenceProps) => {
   const [loading, setLoading] = useState(false);
 
@@ -218,7 +221,7 @@ export const useAgentPersistence = ({
           monetization_conf: { is_enable: values?.enableMonetize },
         }),
         create_from: bizCreateFrom,
-        agent_type: values?.agentType,
+        agent_type: agentType ?? values?.agentType,
       });
       if (resp.data.check_not_pass) {
         setCheckErr(true);

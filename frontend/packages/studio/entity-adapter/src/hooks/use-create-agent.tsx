@@ -30,6 +30,7 @@ export const useCreateAgent = ({
   onBefore,
   onError,
   bizCreateFrom,
+  agentType,
 }: Omit<CreateAgentEntityProps, 'mode' | 'botInfoRef'>) => {
   const botInfoRef = useRef<DraftBot>({ visibility: 0 });
   return useCreateOrUpdateAgent({
@@ -41,5 +42,6 @@ export const useCreateAgent = ({
     mode: 'add',
     showSpace,
     bizCreateFrom,
+    agentType,
   });
 };

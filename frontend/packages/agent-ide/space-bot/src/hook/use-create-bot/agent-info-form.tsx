@@ -117,20 +117,6 @@ export const AgentInfoForm = forwardRef<
           botInputLengthService.getValueLength(reactText)
         }
       />
-      {mode === 'add' ? (
-        <Form.RadioGroup
-          field="agentType"
-          label="智能体类型"
-          initValue="normal"
-          options={[
-            { label: '普通智能体', value: 'normal' },
-            {
-              label: '超级智能体（自主规划·技能·MCP 工具）',
-              value: 'super',
-            },
-          ]}
-        />
-      ) : null}
       {IS_OVERSEA && mode === 'add' ? (
         <FormSwitch
           field="enableMonetize"
