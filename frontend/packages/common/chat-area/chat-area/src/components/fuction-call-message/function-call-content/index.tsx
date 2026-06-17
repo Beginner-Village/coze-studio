@@ -173,9 +173,14 @@ export const FunctionCallMessagesCollapse: React.FC<
 
   const showBackground = useShowBackGround();
 
+  const toolCount = messageUnits.filter(
+    u => u.role === MessageUnitRole.TOOL,
+  ).length;
+
   return (
     <CollapsePanelWithHeader
       messageUnit={latestUnit}
+      toolCount={toolCount}
       isTopLevelOfTheNestedPanel
       isPanelOpen={isTopLevelOpen}
       isLatestFunctionCallOfRelatedChat={false}

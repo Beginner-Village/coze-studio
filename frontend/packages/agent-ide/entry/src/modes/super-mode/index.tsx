@@ -31,14 +31,12 @@ import {
 } from '@coze-agent-ide/space-bot/component';
 
 import s from '../../index.module.less';
-import {
-  AgentConfigArea,
-  type AgentConfigAreaProps,
-} from '../single-mode/section-area/agent-config-area/index';
+import { type AgentConfigAreaProps } from '../single-mode/section-area/agent-config-area/index';
 import {
   AgentChatArea,
   type AgentChatAreaProps,
 } from '../single-mode/section-area/agent-chat-area';
+import { SuperConfigArea } from './super-config-area';
 import { SandboxWorkspace } from './sandbox-workspace';
 import { SuperAgentHero } from './super-hero';
 
@@ -92,15 +90,15 @@ export const SuperMode: React.FC<SuperModeProps> = ({
       >
         <ContentView
           mode={BotMode.SingleMode}
-          style={{ gridTemplateColumns: '28fr 16fr 17fr' }}
+          style={{ gridTemplateColumns: '17fr 22fr 25fr' }}
         >
-          {/* 左:角色人设 + 技能/MCP（精简) */}
-          <AgentConfigArea
+          {/* 左:人设(上,紧凑)+ 技能/MCP 设置(下),上下排 */}
+          <SuperConfigArea
             isAllToolHidden={isAllToolHidden}
             {...agentConfigAreaProps}
           />
 
-          {/* 中:沙箱空间 —— 超级智能体独有，做成独立主角列 */}
+          {/* 中:沙箱空间(大块,超级体独有) */}
           <SingleSheet
             title="沙箱空间"
             headerClassName={classNames([
@@ -127,7 +125,7 @@ export const SuperMode: React.FC<SuperModeProps> = ({
             </div>
           </SingleSheet>
 
-          {/* 右:预览与调试 */}
+          {/* 右:预览与调试(原生聊天,工具调用 UI 已增强) */}
           <AgentChatArea
             renderChatTitleNode={renderChatTitleNode}
             chatSlot={chatSlot}

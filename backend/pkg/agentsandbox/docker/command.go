@@ -18,23 +18,34 @@ package docker
 
 import (
 	"fmt"
+	"os"
 	"sort"
+	"strings"
 
 	"github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 const (
-	defaultImage   = "python:3.11-slim"
+	// 富沙箱镜像:自带 python/node/npm/curl/wget/git/jq,且 apt/pip/npm 均为国内源。
+	defaultImage   = "ynet-sandbox:rich"
 	defaultWorkDir = "/workspace"
 )
 
 func containerName(prefix, sandboxID string) string { return prefix + sandboxID }
 
-func buildCreateArgs(req *sandbox.CreateRequest, prefix string) []string {
-	image := req.Image
-	if image == "" {
-		image = defaultImage
+// resolveImage：优先 req.Image，其次环境变量 SANDBOX_IMAGE，最后内置默认富镜像。
+func resolveImage(reqImage string) string {
+	if reqImage != "" {
+		return reqImage
 	}
+	if env := strings.TrimSpace(os.Getenv("SANDBOX_IMAGE")); env != "" {
+		return env
+	}
+	return defaultImage
+}
+
+func buildCreateArgs(req *sandbox.CreateRequest, prefix string) []string {
+	image := resolveImage(req.Image)
 	args := []string{"run", "-d", "--name", containerName(prefix, req.SandboxID)}
 	if req.MemoryMB > 0 {
 		args = append(args, "--memory", fmt.Sprintf("%dm", req.MemoryMB))

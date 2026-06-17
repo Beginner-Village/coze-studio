@@ -396,6 +396,7 @@ const CollapsePanelWithHeaderImpl = forwardRef(
           >
             <CollapsePanelHeader
               messageUnit={messageUnit}
+              toolCount={props.toolCount}
               isTopLevelOfTheNestedPanel={isTopLevelOfTheNestedPanel}
               isPanelOpen={isOpenHandled}
               isLatestFunctionCallOfRelatedChat={
