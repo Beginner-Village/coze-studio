@@ -76,7 +76,8 @@ export const FunctionCallMessagesCollapse: React.FC<
     isRelatedChatComplete,
     isFakeInterruptAnswer,
   } = props;
-  const [isTopLevelOpen, setOpen] = useState(false);
+  // 默认展开工具调用轨迹:预览里把 agent 每一步「用了什么工具/结果」实时铺开(Codex 式)。
+  const [isTopLevelOpen, setOpen] = useState(true);
   const latestUnit = messageUnits.at(-1);
   const controlledItemRef = useRef<CollapsePanelWithHeaderRef>(null);
   const { configs } = useChatAreaContext();
