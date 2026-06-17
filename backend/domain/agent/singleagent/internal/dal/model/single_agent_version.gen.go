@@ -60,6 +60,7 @@ type SingleAgentVersion struct {
 	BoundCards              []*bot_common.BoundCardInfo       `gorm:"column:bound_cards;comment:Bound Cards for Prompt Injection;serializer:json" json:"bound_cards"`                 // Bound Cards for Prompt Injection
 	SkillInfoList           []*SkillReference                 `gorm:"column:skill_info_list;comment:Skill references bound to this agent;serializer:json" json:"skill_info_list"`     // Skill references bound to this agent
 	ForceToolReturn         *bool                             `gorm:"column:force_tool_return;comment:Force all tool results to return to model" json:"force_tool_return"` // Force all tool results to return to model
+	AgentType               *string                           `gorm:"column:agent_type;comment:Agent Type for Runtime Routing" json:"agent_type"`
 }
 
 // TableName SingleAgentVersion's table name

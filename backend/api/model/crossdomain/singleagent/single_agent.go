@@ -84,6 +84,7 @@ type SingleAgent struct {
 	BoundCards              []*bot_common.BoundCardInfo
 	SkillInfoList           []*SkillReference
 	ForceToolReturn         *bool
+	AgentType               string // agent_type：""/normal=普通；super=超级智能体（运行时路由）
 }
 
 // SkillReference is a lightweight reference for Bot binding.

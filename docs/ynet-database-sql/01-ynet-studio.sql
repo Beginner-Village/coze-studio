@@ -1564,6 +1564,7 @@ CREATE TABLE IF NOT EXISTS `single_agent_draft` (
   `bound_cards` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Bound Cards for Prompt Injection',
   `skill_info_list` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Skill references bound to this agent',
   `force_tool_return` tinyint(1) DEFAULT NULL COMMENT 'Force all tool results to return to model',
+  `agent_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Agent Type for Runtime Routing',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_agent_id` (`agent_id`),
   KEY `idx_creator_id` (`creator_id`)
@@ -1620,6 +1621,7 @@ CREATE TABLE IF NOT EXISTS `single_agent_version` (
   `bound_cards` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Bound Cards for Prompt Injection',
   `skill_info_list` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Skill references bound to this agent',
   `force_tool_return` tinyint(1) DEFAULT NULL COMMENT 'Force all tool results to return to model',
+  `agent_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Agent Type for Runtime Routing',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_agent_id_and_version_connector_id` (`agent_id`,`version`,`connector_id`),
   KEY `idx_creator_id` (`creator_id`)

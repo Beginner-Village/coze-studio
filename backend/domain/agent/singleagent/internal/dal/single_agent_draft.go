@@ -31,6 +31,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
@@ -179,6 +180,7 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftPo2Do(po *model.SingleAgentDraft)
 			BoundCards:              po.BoundCards,
 			SkillInfoList:           skillPOsToSkillDOs(po.SkillInfoList),
 			ForceToolReturn:         po.ForceToolReturn,
+			AgentType:               ptr.From(po.AgentType),
 		},
 	}
 }
@@ -213,6 +215,7 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftDo2Po(do *entity.SingleAgent) *mo
 		BoundCards:              do.BoundCards,
 		SkillInfoList:           skillDOsToPOs(do.SkillInfoList),
 		ForceToolReturn:         do.ForceToolReturn,
+		AgentType:               ptr.Of(do.AgentType),
 	}
 }
 
