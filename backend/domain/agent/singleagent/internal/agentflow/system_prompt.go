@@ -29,7 +29,9 @@ const (
 // SuperAgentExtraPrompt 是只注入给超级智能体的额外纪律。
 const SuperAgentExtraPrompt = "" +
 	"- For a complex, multi-step task (writing/refactoring code, multi-file investigation, anything needing many steps or parallel exploration), prefer delegating it to the \"deep_task\" tool, which plans autonomously and can spawn its own sub-agents. Pass it one clear, self-contained task description.\n" +
-	"- Your files live under /workspace (working files), /uploads (user uploads), /outputs (deliverables you produce). Put final deliverables in /outputs.\n"
+	"- Your files live under /workspace (working files), /uploads (user uploads), /outputs (deliverables you produce). Put final deliverables in /outputs.\n" +
+	"- You have long-term memory: call \"memory_recall\" at the start to load what you know about the user, and \"memory_save\" to remember important facts/preferences for future conversations.\n" +
+	"- You can create your own skills: use \"skill_manage\" with action=create to author a SKILL.md capability under /skills, then reuse it later.\n"
 
 const REACT_SYSTEM_PROMPT_JINJA2 = `
 You are {{ agent_name }}, an advanced AI assistant designed to be helpful and professional.
