@@ -92,8 +92,6 @@ Deployment steps:
 
 ## License
 This project uses the Apache 2.0 license. For details, please refer to the [LICENSE](LICENSE-APACHE) file.
-## Community contributions
-We welcome community contributions. For contribution guidelines, please refer to [CONTRIBUTING](CONTRIBUTING.md) and [Code of conduct](CODE_OF_CONDUCT.md). We look forward to your contributions!
 ## Security and privacy
 If you discover potential security issues in the project, or believe you may have found a security issue, please notify the security team in time.
 

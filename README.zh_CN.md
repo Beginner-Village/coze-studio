@@ -93,8 +93,6 @@ Ynet Studio 的后端采用 Golang 开发，前端使用 React + TypeScript，�
 
 ## License
 本项目采用 Apache 2.0 许可证。详情请参阅 [LICENSE](LICENSE-APACHE) 文件。
-## 社区贡献
-我们欢迎社区贡献，贡献指南参见 [CONTRIBUTING](CONTRIBUTING.md) 和 [Code of conduct](CODE_OF_CONDUCT.md)，期待您的贡献！
 ## 安全与隐私
 如果你在该项目中发现潜在的安全问题，或你认为可能发现了安全问题，请及时通知安全团队。
 
