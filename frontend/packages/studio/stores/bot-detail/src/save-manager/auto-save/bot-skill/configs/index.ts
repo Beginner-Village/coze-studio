@@ -32,6 +32,7 @@ import { knowledgeConfig } from './knowledge';
 import { forceToolReturnConfig } from './force-tool-return';
 import { chatBackgroundConfig } from './chat-background';
 import { boundCardsConfig } from './bound-cards';
+import { agentSkillsConfig } from './agent-skills';
 
 export const registers: HostedObserverConfig<
   BotSkillStore,
@@ -51,4 +52,5 @@ export const registers: HostedObserverConfig<
   memoryToolConfig,
   boundCardsConfig,
   forceToolReturnConfig,
+  agentSkillsConfig,
 ];

@@ -28,6 +28,9 @@ import {
   Button,
   Empty,
   Typography,
+  Input,
+  TextArea,
+  Toast,
 } from '@coze-arch/coze-design';
 import { useSpaceStore } from '@coze-arch/bot-studio-store';
 import {
@@ -129,6 +132,7 @@ const SkillSelectModal: React.FC<{
   onSearchChange: (val: string) => void;
   onAdd: (item: SkillInfo) => void;
   onRemove: (id: string) => void;
+  onCreateClick: () => void;
 }> = ({
   visible,
   loading,
@@ -139,6 +143,7 @@ const SkillSelectModal: React.FC<{
   onSearchChange,
   onAdd,
   onRemove,
+  onCreateClick,
 }) => (
   <Modal
     title="添加技能"
@@ -170,6 +175,14 @@ const SkillSelectModal: React.FC<{
         <div className="text-[12px] coz-fg-tertiary">
           从空间技能库中选择技能添加到当前智能体
         </div>
+        <div className="flex-1" />
+        <Button
+          color="primary"
+          className="w-full mt-[12px]"
+          onClick={onCreateClick}
+        >
+          + 新建技能
+        </Button>
       </div>
       <div className="flex-1 overflow-y-auto">
         {loading ? (
@@ -202,6 +215,166 @@ const SkillSelectModal: React.FC<{
   </Modal>
 );
 
+interface ScriptFile {
+  path: string;
+  content: string;
+}
+
+/** 新建技能弹窗:写 SKILL.md + 可选脚本,存进空间技能库 */
+const CreateSkillModal: React.FC<{
+  visible: boolean;
+  spaceId: string;
+  onClose: () => void;
+  onCreated: () => void;
+}> = ({ visible, spaceId, onClose, onCreated }) => {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [skillMd, setSkillMd] = useState('');
+  const [scripts, setScripts] = useState<ScriptFile[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  const reset = () => {
+    setName('');
+    setDescription('');
+    setSkillMd('');
+    setScripts([]);
+  };
+
+  const handleSubmit = async () => {
+    if (!name.trim()) {
+      Toast.warning('请填写技能名称');
+      return;
+    }
+    // 把脚本拼成 <skill-file> 块,落盘时会还原为 /skills/<name>/<path>
+    const scriptBlocks = scripts
+      .filter(s => s.path.trim() && s.content.trim())
+      .map(s => `<skill-file path="${s.path.trim()}">\n${s.content}\n</skill-file>`)
+      .join('\n\n');
+    const prompt = scriptBlocks ? `${skillMd}\n\n${scriptBlocks}` : skillMd;
+    setSubmitting(true);
+    try {
+      const resp = await skill.CreateSkill({
+        space_id: spaceId,
+        name: name.trim(),
+        description: description.trim(),
+        prompt,
+        icon_uri: '',
+      });
+      if (resp.code === 0) {
+        Toast.success('技能已创建');
+        reset();
+        onCreated();
+        onClose();
+      } else {
+        Toast.error(resp.msg || '创建失败');
+      }
+    } catch (e) {
+      Toast.error('创建失败(技能名可能已存在)');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal
+      title="新建技能"
+      visible={visible}
+      onCancel={onClose}
+      onOk={handleSubmit}
+      okText="创建"
+      cancelText="取消"
+      okButtonProps={{ loading: submitting }}
+      width={640}
+    >
+      <div className="flex flex-col gap-[12px] max-h-[60vh] overflow-y-auto pr-[4px]">
+        <div>
+          <div className="text-[13px] coz-fg-secondary mb-[4px]">
+            技能名称 *(英文/数字,作为 /skills/&lt;名&gt;/ 目录名)
+          </div>
+          <Input
+            value={name}
+            onChange={setName}
+            placeholder="例如 pdf-extract"
+          />
+        </div>
+        <div>
+          <div className="text-[13px] coz-fg-secondary mb-[4px]">一句话描述</div>
+          <Input
+            value={description}
+            onChange={setDescription}
+            placeholder="这个技能干什么用的"
+          />
+        </div>
+        <div>
+          <div className="text-[13px] coz-fg-secondary mb-[4px]">
+            SKILL.md(技能说明:用途、工作流、脚本用法)
+          </div>
+          <TextArea
+            value={skillMd}
+            onChange={setSkillMd}
+            autosize={{ minRows: 6, maxRows: 14 }}
+            placeholder={
+              '# 技能名\n\n用途说明...\n\n## 工作流\n1. ...\n2. 运行 run_bash: python /skills/<名>/run.py ...'
+            }
+          />
+        </div>
+        <div>
+          <div className="flex items-center justify-between mb-[4px]">
+            <span className="text-[13px] coz-fg-secondary">
+              脚本文件(可选,落进技能文件夹供 agent 执行)
+            </span>
+            <Button
+              size="mini"
+              color="primary"
+              onClick={() =>
+                setScripts([...scripts, { path: '', content: '' }])
+              }
+            >
+              + 添加脚本
+            </Button>
+          </div>
+          {scripts.map((s, i) => (
+            <div
+              key={i}
+              className="border coz-stroke-primary rounded-[8px] p-[8px] mb-[8px]"
+            >
+              <div className="flex items-center gap-[8px] mb-[6px]">
+                <Input
+                  size="small"
+                  value={s.path}
+                  onChange={v =>
+                    setScripts(
+                      scripts.map((x, j) => (j === i ? { ...x, path: v } : x)),
+                    )
+                  }
+                  placeholder="文件名,如 run.py"
+                />
+                <Button
+                  size="mini"
+                  color="secondary"
+                  onClick={() => setScripts(scripts.filter((_, j) => j !== i))}
+                >
+                  删除
+                </Button>
+              </div>
+              <TextArea
+                value={s.content}
+                onChange={v =>
+                  setScripts(
+                    scripts.map((x, j) => (j === i ? { ...x, content: v } : x)),
+                  )
+                }
+                autosize={{ minRows: 3, maxRows: 10 }}
+                placeholder="脚本内容(Python/Shell 等)"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 // eslint-disable-next-line @coze-arch/max-line-per-function -- skill area includes modal and card list rendering
 export const AgentSkillArea: React.FC<AgentSkillAreaProps> = ({
   title = '技能',
@@ -214,6 +387,7 @@ export const AgentSkillArea: React.FC<AgentSkillAreaProps> = ({
   );
 
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isCreateVisible, setIsCreateVisible] = useState(false);
   const [skillList, setSkillList] = useState<SkillInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -350,6 +524,14 @@ export const AgentSkillArea: React.FC<AgentSkillAreaProps> = ({
         onSearchChange={setSearch}
         onAdd={handleAddSkill}
         onRemove={handleRemoveSkill}
+        onCreateClick={() => setIsCreateVisible(true)}
+      />
+
+      <CreateSkillModal
+        visible={isCreateVisible}
+        spaceId={spaceId}
+        onClose={() => setIsCreateVisible(false)}
+        onCreated={loadSkillList}
       />
     </>
   );
