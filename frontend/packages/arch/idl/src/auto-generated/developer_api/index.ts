@@ -1774,6 +1774,7 @@ export default class DeveloperApiService<T> {
       app_id: _req['app_id'],
       business_type: _req['business_type'],
       folder_id: _req['folder_id'],
+      agent_type: _req['agent_type'],
     };
     return this.request({ url, method, data }, options);
   }
