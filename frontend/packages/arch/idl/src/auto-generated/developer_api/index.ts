@@ -1779,6 +1779,76 @@ export default class DeveloperApiService<T> {
     return this.request({ url, method, data }, options);
   }
 
+  /** POST /api/draftbot/sandbox/list 超级智能体沙箱:列目录 */
+  ListSandboxFiles(
+    req: developer_api.ListSandboxFilesRequest,
+    options?: T,
+  ): Promise<developer_api.ListSandboxFilesResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/draftbot/sandbox/list');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/draftbot/sandbox/read 超级智能体沙箱:读文件 */
+  ReadSandboxFile(
+    req: developer_api.ReadSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.ReadSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/draftbot/sandbox/read');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/draftbot/sandbox/upload 超级智能体沙箱:上传/写文件 */
+  UploadSandboxFile(
+    req: developer_api.UploadSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.UploadSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/draftbot/sandbox/upload');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      content: _req['content'],
+      is_base64: _req['is_base64'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/draftbot/sandbox/delete 超级智能体沙箱:删除文件 */
+  DeleteSandboxFile(
+    req: developer_api.DeleteSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.DeleteSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/draftbot/sandbox/delete');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
   /** POST /api/draftbot/get_bot_info */
   GetDraftBotInfo(
     req: developer_api.GetDraftBotInfoRequest,

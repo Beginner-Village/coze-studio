@@ -18,7 +18,9 @@ export { useInitToast } from './hooks/use-init-toast';
 export {
   SingleMode,
   WorkflowMode,
+  SuperMode,
   type SingleModeProps,
   type WorkflowModeProps,
+  type SuperModeProps,
 } from './modes';
 export { SkillsModal } from './components/shortcut-skills-modal';

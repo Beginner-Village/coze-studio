@@ -2731,6 +2731,67 @@ export interface DraftBotCreateRequest {
   agent_type?: string;
 }
 
+/** 超级智能体沙箱空间管理 */
+export interface SandboxFileInfo {
+  name: string;
+  path: string;
+  is_dir: boolean;
+  size: number;
+}
+
+export interface ListSandboxFilesRequest {
+  space_id?: string;
+  bot_id?: string;
+  path?: string;
+  connector_id?: string;
+}
+
+export interface ListSandboxFilesResponse {
+  code?: Int64;
+  msg?: string;
+  data?: { path?: string; files?: Array<SandboxFileInfo> };
+}
+
+export interface ReadSandboxFileRequest {
+  space_id?: string;
+  bot_id?: string;
+  path?: string;
+  connector_id?: string;
+}
+
+export interface ReadSandboxFileResponse {
+  code?: Int64;
+  msg?: string;
+  data?: { path?: string; content?: string; is_binary?: boolean; size?: number };
+}
+
+export interface UploadSandboxFileRequest {
+  space_id?: string;
+  bot_id?: string;
+  path?: string;
+  content?: string;
+  is_base64?: boolean;
+  connector_id?: string;
+}
+
+export interface UploadSandboxFileResponse {
+  code?: Int64;
+  msg?: string;
+  data?: { path?: string };
+}
+
+export interface DeleteSandboxFileRequest {
+  space_id?: string;
+  bot_id?: string;
+  path?: string;
+  connector_id?: string;
+}
+
+export interface DeleteSandboxFileResponse {
+  code?: Int64;
+  msg?: string;
+}
+
 export interface DraftBotCreateResponse {
   code?: Int64;
   msg?: string;

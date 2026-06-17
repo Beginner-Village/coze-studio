@@ -74,6 +74,11 @@ func Register(r *server.Hertz) {
 			_draftbot.POST("/list_draft_history", append(_listdraftbothistoryMw(), coze.ListDraftBotHistory)...)
 			_draftbot.POST("/publish", append(_publishdraftbotMw(), coze.PublishDraftBot)...)
 			_draftbot.POST("/update_display_info", append(_updatedraftbotdisplayinfoMw(), coze.UpdateDraftBotDisplayInfo)...)
+			// 超级智能体沙箱空间管理(沿用 draftbot 组的鉴权中间件)
+			_draftbot.POST("/sandbox/list", coze.ListSandboxFiles)
+			_draftbot.POST("/sandbox/read", coze.ReadSandboxFile)
+			_draftbot.POST("/sandbox/upload", coze.UploadSandboxFile)
+			_draftbot.POST("/sandbox/delete", coze.DeleteSandboxFile)
 			{
 				_publish := _draftbot.Group("/publish", _publishMw()...)
 				{

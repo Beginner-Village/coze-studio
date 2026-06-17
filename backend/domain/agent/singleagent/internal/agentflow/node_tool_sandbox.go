@@ -18,8 +18,6 @@ package agentflow
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -30,13 +28,13 @@ import (
 	"github.com/cloudwego/eino/schema"
 
 	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox"
 )
 
 // sandboxKeyFor 由 connector/agent/user_id 组合出稳定且容器名安全的沙箱 key。
+// 委托到 agentsandbox.SandboxKeyFor,与沙箱空间管理 API 共用同一算法。
 func sandboxKeyFor(connectorID, agentID int64, userID string) string {
-	raw := fmt.Sprintf("%d_%d_%s", connectorID, agentID, userID)
-	sum := sha256.Sum256([]byte(raw))
-	return "u" + hex.EncodeToString(sum[:])[:24]
+	return agentsandbox.SandboxKeyFor(connectorID, agentID, userID)
 }
 
 // defaultMaxToolOutputBytes 是回灌给模型的工具输出上限（约几千 token）。
