@@ -312,6 +312,15 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		logs.CtxInfof(ctx, "[BuildAgent] AGENT_ENGINE=deepagents requested; experimental DeepAgents engine not yet wired, falling back to ReAct")
 	}
 
+	if isSuperAgent(conf) || deepTaskEnabled() {
+		if dt, derr := newDeepTaskTool(ctx, chatModel, agentTools); derr != nil {
+			logs.CtxWarnf(ctx, "[BuildAgent] build deep_task tool failed: %v", derr)
+		} else if dt != nil {
+			agentTools = append(agentTools, dt)
+			logs.CtxInfof(ctx, "[BuildAgent] mounted deep_task tool (super=%v)", isSuperAgent(conf))
+		}
+	}
+
 	var isReActAgent bool
 	if len(agentTools) > 0 {
 		isReActAgent = true
