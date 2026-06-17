@@ -18,15 +18,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useBotInfoStore } from '@coze-studio/bot-detail-store/bot-info';
 import { DeveloperApi } from '@coze-arch/bot-api';
-import {
-  Button,
-  Spin,
-  Empty,
-  Toast,
-  Modal,
-  Typography,
-  Tooltip,
-} from '@coze-arch/coze-design';
+import { Button, Spin, Toast, Modal, Typography } from '@coze-arch/coze-design';
 
 interface SandboxFile {
   name: string;
@@ -36,9 +28,9 @@ interface SandboxFile {
 }
 
 const ROOTS = [
-  { key: '/workspace', label: '工作区', desc: '智能体的主工作目录' },
-  { key: '/outputs', label: '产出物', desc: '任务生成的文件' },
-  { key: '/uploads', label: '上传区', desc: '你提供给智能体的素材' },
+  { key: '/workspace', label: '工作区', icon: '🗂️' },
+  { key: '/outputs', label: '产出物', icon: '📤' },
+  { key: '/uploads', label: '上传区', icon: '📥' },
 ];
 
 const formatSize = (n: number): string => {
@@ -51,12 +43,42 @@ const formatSize = (n: number): string => {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 };
 
+const fileIcon = (f: SandboxFile): string => {
+  if (f.is_dir) {
+    return '📁';
+  }
+  const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) {
+    return '🖼️';
+  }
+  if (['py', 'js', 'ts', 'go', 'java', 'c', 'cpp', 'rs', 'sh'].includes(ext)) {
+    return '📜';
+  }
+  if (['json', 'yaml', 'yml', 'toml', 'xml'].includes(ext)) {
+    return '⚙️';
+  }
+  if (['md', 'txt', 'log'].includes(ext)) {
+    return '📝';
+  }
+  if (['zip', 'tar', 'gz', 'rar', '7z'].includes(ext)) {
+    return '🗜️';
+  }
+  if (['csv', 'xlsx', 'xls'].includes(ext)) {
+    return '📊';
+  }
+  if (ext === 'pdf') {
+    return '📕';
+  }
+  return '📄';
+};
+
 export const SandboxWorkspace: React.FC = () => {
   const botId = useBotInfoStore(state => state.botId);
   const spaceId = useBotInfoStore(state => state.space_id);
   const [root, setRoot] = useState('/workspace');
   const [files, setFiles] = useState<SandboxFile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [preview, setPreview] = useState<{
     path: string;
     content: string;
@@ -111,7 +133,7 @@ export const SandboxWorkspace: React.FC = () => {
     }
   };
 
-  const onUpload = async (file: File) => {
+  const uploadOne = (file: File) => {
     const reader = new FileReader();
     reader.onload = async () => {
       const result = String(reader.result || '');
@@ -148,31 +170,31 @@ export const SandboxWorkspace: React.FC = () => {
     }
   };
 
+  const totalSize = files.reduce((acc, f) => acc + (f.is_dir ? 0 : f.size), 0);
+
   return (
     <div className="flex flex-col h-full">
-      {/* 顶部:目录切换 + 操作 */}
-      <div className="flex items-center gap-[8px] px-[8px] pb-[10px] flex-wrap">
-        {ROOTS.map(r => (
-          <Tooltip key={r.key} content={r.desc}>
+      {/* 目录分段切换 */}
+      <div className="flex items-center gap-[6px] px-[10px] pt-[2px] pb-[10px]">
+        <div className="flex items-center gap-[2px] p-[3px] rounded-[10px] coz-mg-secondary">
+          {ROOTS.map(r => (
             <div
+              key={r.key}
               onClick={() => setRoot(r.key)}
-              className={`cursor-pointer px-[12px] py-[5px] rounded-[8px] text-[13px] font-medium transition-colors ${
+              className={`flex items-center gap-[5px] cursor-pointer px-[12px] py-[5px] rounded-[8px] text-[13px] font-medium transition-all ${
                 root === r.key
-                  ? 'coz-mg-hglt coz-fg-hglt'
-                  : 'coz-fg-secondary hover:coz-mg-secondary'
+                  ? 'coz-bg-max coz-fg-plus shadow-sm'
+                  : 'coz-fg-secondary hover:coz-fg-primary'
               }`}
             >
+              <span className="text-[13px]">{r.icon}</span>
               {r.label}
             </div>
-          </Tooltip>
-        ))}
+          ))}
+        </div>
         <div className="flex-1" />
-        <Button
-          size="small"
-          color="primary"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          上传文件
+        <Button size="small" color="primary" onClick={() => fileInputRef.current?.click()}>
+          上传
         </Button>
         <Button size="small" color="secondary" onClick={() => load(root)}>
           刷新
@@ -184,49 +206,82 @@ export const SandboxWorkspace: React.FC = () => {
           onChange={e => {
             const f = e.target.files?.[0];
             if (f) {
-              onUpload(f);
+              uploadOne(f);
             }
             e.target.value = '';
           }}
         />
       </div>
 
-      {/* 文件列表 */}
-      <div className="flex-1 overflow-auto px-[4px]">
+      {/* 路径 + 统计 */}
+      <div className="flex items-center justify-between px-[14px] pb-[8px] text-[12px] coz-fg-dim">
+        <span className="font-mono">{root}</span>
+        <span>
+          {files.length} 项 · {formatSize(totalSize)}
+        </span>
+      </div>
+
+      {/* 文件列表 / 拖拽上传区 */}
+      <div
+        className={`flex-1 overflow-auto mx-[8px] mb-[8px] rounded-[12px] border border-dashed transition-colors ${
+          dragOver ? 'coz-stroke-hglt coz-mg-hglt' : 'coz-stroke-primary'
+        }`}
+        onDragOver={e => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => {
+          e.preventDefault();
+          setDragOver(false);
+          const f = e.dataTransfer.files?.[0];
+          if (f) {
+            uploadOne(f);
+          }
+        }}
+      >
         {loading ? (
-          <div className="flex justify-center py-[40px]">
+          <div className="flex justify-center py-[48px]">
             <Spin />
           </div>
         ) : files.length === 0 ? (
-          <Empty
-            title="空目录"
-            description="智能体运行后产生的文件会出现在这里"
-            className="py-[40px]"
-          />
+          <div className="flex flex-col items-center justify-center h-full py-[48px] text-center select-none">
+            <div className="text-[40px] mb-[8px] opacity-70">📭</div>
+            <div className="text-[14px] coz-fg-secondary font-medium">
+              空目录
+            </div>
+            <div className="text-[12px] coz-fg-dim mt-[4px] max-w-[200px]">
+              智能体运行产生的文件会出现在这里,也可拖拽文件到此上传
+            </div>
+          </div>
         ) : (
-          <div className="flex flex-col gap-[4px]">
+          <div className="flex flex-col gap-[2px] p-[6px]">
             {files.map(f => (
               <div
                 key={f.path}
-                className="group flex items-center gap-[10px] px-[12px] py-[9px] rounded-[8px] coz-bg-primary hover:coz-mg-secondary cursor-pointer"
+                className="group flex items-center gap-[10px] px-[10px] py-[8px] rounded-[8px] hover:coz-mg-secondary cursor-pointer transition-colors"
                 onClick={() => openFile(f)}
               >
-                <span className="text-[16px]">{f.is_dir ? '📁' : '📄'}</span>
+                <span className="text-[18px] leading-none shrink-0">
+                  {fileIcon(f)}
+                </span>
                 <Typography.Text
                   ellipsis={{ showTooltip: true }}
-                  className="flex-1 !text-[13px]"
+                  className="flex-1 !text-[13px] coz-fg-primary"
                 >
                   {f.name}
                 </Typography.Text>
                 {!f.is_dir ? (
-                  <span className="text-[12px] coz-fg-dim">
+                  <span className="text-[11px] coz-fg-dim shrink-0">
                     {formatSize(f.size)}
                   </span>
-                ) : null}
+                ) : (
+                  <span className="text-[11px] coz-fg-dim shrink-0">目录</span>
+                )}
                 <Button
                   size="mini"
                   color="secondary"
-                  className="opacity-0 group-hover:opacity-100"
+                  className="opacity-0 group-hover:opacity-100 shrink-0"
                   onClick={e => {
                     e.stopPropagation();
                     onDelete(f);

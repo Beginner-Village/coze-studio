@@ -40,6 +40,7 @@ import {
   type AgentChatAreaProps,
 } from '../single-mode/section-area/agent-chat-area';
 import { SandboxWorkspace } from './sandbox-workspace';
+import { SuperAgentHero } from './super-hero';
 
 export interface SuperModeProps
   extends Omit<AgentConfigAreaProps, 'isAllToolHidden'>,
@@ -75,7 +76,10 @@ export const SuperMode: React.FC<SuperModeProps> = ({
         historyVisible && s['playground-neat'],
         pageFrom === BotPageFromEnum.Store && s.store,
       )}
+      style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
     >
+      <SuperAgentHero />
+      <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
       <AbilityAreaContainer
         enableToolHiddenMode
         eventCallbacks={{
@@ -135,6 +139,7 @@ export const SuperMode: React.FC<SuperModeProps> = ({
         <BotDebugPanel />
         {rightSheetSlot}
       </AbilityAreaContainer>
+      </div>
     </div>
   );
 };
