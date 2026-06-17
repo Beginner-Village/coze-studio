@@ -29,9 +29,13 @@ type Skill struct {
 	Name        string
 	Description string
 	Prompt      string
-	IconURI     string
-	CreatorID   int64
-	Status      int8
+	// Files 是技能文件夹的完整内容树:相对路径 -> 文件内容(含 SKILL.md、scripts/*、references/*、assets/*)。
+	// 「真·文件夹技能」(对齐 Anthropic / LangChain Agent Skills)的存储,运行时整棵同步到沙箱
+	// /skills/<name>/,agent 用 read_file/run_bash 自行渐进式读取。
+	Files     map[string]string
+	IconURI   string
+	CreatorID int64
+	Status    int8
 	// Version is the current content version of the skill. It starts at 1 on
 	// create and is incremented on every successful update. Each value maps to
 	// an immutable SkillVersion snapshot.

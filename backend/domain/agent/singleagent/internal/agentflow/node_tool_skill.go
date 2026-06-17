@@ -253,12 +253,26 @@ func syncBoundSkillsToSandbox(ctx context.Context, sandboxKey string, spaceID in
 		if skill.SpaceID != spaceID {
 			continue
 		}
-		cleaned, files := parseSkillFiles(skill.Prompt)
-		if files == nil {
-			files = make(map[string][]byte, 1)
+
+		var files map[string][]byte
+		if len(skill.Files) > 0 {
+			// 真·文件夹技能:整棵文件树(SKILL.md + scripts/ + references/ + assets/)原样落盘,保留子目录。
+			files = make(map[string][]byte, len(skill.Files))
+			for rel, content := range skill.Files {
+				files[rel] = []byte(content)
+			}
+			if _, ok := files["SKILL.md"]; !ok {
+				files["SKILL.md"] = []byte(resolveResourceReferences(skill.Prompt))
+			}
+		} else {
+			// 兼容旧技能:从 prompt 里抽 <skill-file> 内联脚本 + SKILL.md 正文。
+			cleaned, inlineFiles := parseSkillFiles(skill.Prompt)
+			files = inlineFiles
+			if files == nil {
+				files = make(map[string][]byte, 1)
+			}
+			files["SKILL.md"] = []byte(resolveResourceReferences(cleaned))
 		}
-		// SKILL.md = 去掉脚本块后的技能正文(含用途、工作流、脚本用法说明)。
-		files["SKILL.md"] = []byte(resolveResourceReferences(cleaned))
 		if err := svc.SyncSkill(ctx, sandboxKey, skill.Name, files); err != nil {
 			logs.CtxWarnf(ctx, "[syncBoundSkillsToSandbox] sync skill %s failed: %v", skill.Name, err)
 		}

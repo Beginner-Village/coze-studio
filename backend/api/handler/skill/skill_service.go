@@ -30,11 +30,12 @@ import (
 )
 
 type createSkillRequest struct {
-	SpaceID     int64  `json:"space_id,string"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Prompt      string `json:"prompt"`
-	IconURI     string `json:"icon_uri"`
+	SpaceID     int64             `json:"space_id,string"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Prompt      string            `json:"prompt"`
+	IconURI     string            `json:"icon_uri"`
+	Files       map[string]string `json:"files"`
 }
 
 type getSkillRequest struct {
@@ -110,7 +111,7 @@ func CreateSkill(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	skill, err := skillApp.SkillApplicationSVC.CreateSkill(ctx, req.SpaceID, req.Name, req.Description, req.Prompt, req.IconURI)
+	skill, err := skillApp.SkillApplicationSVC.CreateSkill(ctx, req.SpaceID, req.Name, req.Description, req.Prompt, req.IconURI, req.Files)
 	if err != nil {
 		httputil.InternalError(ctx, c, err)
 		return

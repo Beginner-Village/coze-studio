@@ -18,6 +18,7 @@ package dal
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -39,6 +40,7 @@ type skillPO struct {
 	Name        string         `gorm:"column:name;not null"`
 	Description *string        `gorm:"column:description"`
 	Prompt      *string        `gorm:"column:prompt"`
+	Files       *string        `gorm:"column:files"`
 	IconURI     string         `gorm:"column:icon_uri;not null"`
 	CreatorID   int64          `gorm:"column:creator_id;not null"`
 	Status      int8           `gorm:"column:status;not null;default:1"`
@@ -236,6 +238,12 @@ func (dao *SkillDAO) do2po(do *entity.Skill) *skillPO {
 	if do.Prompt != "" {
 		po.Prompt = &do.Prompt
 	}
+	if len(do.Files) > 0 {
+		if b, err := json.Marshal(do.Files); err == nil {
+			s := string(b)
+			po.Files = &s
+		}
+	}
 	return po
 }
 
@@ -256,6 +264,12 @@ func (dao *SkillDAO) po2do(po *skillPO) *entity.Skill {
 	}
 	if po.Prompt != nil {
 		do.Prompt = *po.Prompt
+	}
+	if po.Files != nil && *po.Files != "" {
+		m := map[string]string{}
+		if err := json.Unmarshal([]byte(*po.Files), &m); err == nil {
+			do.Files = m
+		}
 	}
 	return do
 }

@@ -58,10 +58,26 @@ func InitService(c *ServiceComponents) *SkillApplicationService {
 }
 
 // CreateSkill creates a new skill.
-func (s *SkillApplicationService) CreateSkill(ctx context.Context, spaceID int64, name, description, prompt, iconURI string) (*entity.Skill, error) {
+func (s *SkillApplicationService) CreateSkill(ctx context.Context, spaceID int64, name, description, prompt, iconURI string, files map[string]string) (*entity.Skill, error) {
 	if spaceID <= 0 {
 		return nil, errorx.New(errno.ErrSkillInvalidParamCode, errorx.KV("msg", "space_id is required"))
 	}
+
+	// 真·文件夹技能:若提供了 files 且含 SKILL.md,以 SKILL.md frontmatter 为单一事实源,
+	// 解析出 name/description,prompt 取其正文。未显式传入时用解析值。
+	if md, ok := files["SKILL.md"]; ok && md != "" {
+		fmName, fmDesc, body := parseSkillFrontmatter(md)
+		if name == "" {
+			name = fmName
+		}
+		if description == "" {
+			description = fmDesc
+		}
+		if prompt == "" {
+			prompt = body
+		}
+	}
+
 	if name == "" {
 		return nil, errorx.New(errno.ErrSkillInvalidParamCode, errorx.KV("msg", "name is required"))
 	}
@@ -73,6 +89,7 @@ func (s *SkillApplicationService) CreateSkill(ctx context.Context, spaceID int64
 		Name:        name,
 		Description: description,
 		Prompt:      prompt,
+		Files:       files,
 		IconURI:     iconURI,
 		CreatorID:   userID,
 	}
