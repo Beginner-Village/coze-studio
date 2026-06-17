@@ -324,6 +324,17 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		}
 	}
 
+	// 超级 agent 可插拔扩展工具（P5）：只挂给超级 agent，普通 agent 不受影响。
+	if isSuperAgent(conf) {
+		extTools := newSuperAgentExtensionTools(sandboxKey)
+		for _, et := range extTools {
+			agentTools = append(agentTools, et)
+		}
+		if len(extTools) > 0 {
+			logs.CtxInfof(ctx, "[BuildAgent] mounted %d super-agent extension tools", len(extTools))
+		}
+	}
+
 	var isReActAgent bool
 	if len(agentTools) > 0 {
 		isReActAgent = true
