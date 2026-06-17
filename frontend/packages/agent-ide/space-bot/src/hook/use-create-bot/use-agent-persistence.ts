@@ -218,6 +218,7 @@ export const useAgentPersistence = ({
           monetization_conf: { is_enable: values?.enableMonetize },
         }),
         create_from: bizCreateFrom,
+        agent_type: values?.agentType,
       });
       if (resp.data.check_not_pass) {
         setCheckErr(true);
