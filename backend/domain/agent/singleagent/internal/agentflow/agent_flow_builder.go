@@ -316,7 +316,7 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	}
 
 	if isSuperAgent(conf) || deepTaskEnabled() {
-		if dt, derr := newDeepTaskTool(ctx, chatModel, agentTools); derr != nil {
+		if dt, derr := newDeepTaskTool(ctx, chatModel, append([]tool.BaseTool(nil), agentTools...)); derr != nil {
 			logs.CtxWarnf(ctx, "[BuildAgent] build deep_task tool failed: %v", derr)
 		} else if dt != nil {
 			agentTools = append(agentTools, dt)

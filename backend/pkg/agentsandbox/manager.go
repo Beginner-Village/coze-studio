@@ -127,6 +127,9 @@ func (m *Manager) coldStart(ctx context.Context, key string) error {
 	if err := m.restore(ctx, key); err != nil {
 		return fmt.Errorf("restore workspace: %w", err)
 	}
+	// 建固定文件系统契约目录（直接用 runner.Exec，避免 EnsureSandbox 经 singleflight 递归）。
+	// 目录建不上不应阻断沙箱启动，故忽略错误。
+	_ = m.ensureLayout(ctx, key)
 	return m.reg.Put(ctx, &Entry{
 		SandboxID:      key,
 		State:          sandbox.StateRunning,
@@ -134,13 +137,18 @@ func (m *Manager) coldStart(ctx context.Context, key string) error {
 	})
 }
 
+// ensureLayout 在已运行的沙箱里建固定契约目录（不重新 EnsureSandbox）。
+func (m *Manager) ensureLayout(ctx context.Context, key string) error {
+	_, err := m.runner.Exec(ctx, &sandbox.ExecRequest{SandboxID: key, Cmd: "mkdir -p /workspace /uploads /outputs"})
+	return err
+}
+
 // EnsureWorkspaceLayout 确保固定文件系统契约目录存在：/workspace /uploads /outputs。
 func (m *Manager) EnsureWorkspaceLayout(ctx context.Context, key string) error {
 	if err := m.EnsureSandbox(ctx, key); err != nil {
 		return err
 	}
-	_, err := m.Exec(ctx, key, "mkdir -p /workspace /uploads /outputs", 0)
-	return err
+	return m.ensureLayout(ctx, key)
 }
 
 // Exec 在 key 沙箱执行命令（先 ensure）。

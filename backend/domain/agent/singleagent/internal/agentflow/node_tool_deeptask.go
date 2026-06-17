@@ -24,7 +24,8 @@ package agentflow
 //
 // 关键：这是 eino 原生支持的「agent-as-tool」路径，不需要 adk<->compose 桥接，
 // 不动现有 streaming/interrupt 链路。由 DEEP_TASK_ENABLED 开关控制，默认 OFF，
-// 关闭时对现有行为零影响。
+// 关闭时对普通 agent 零影响。注意：超级 agent（isSuperAgent）会无条件启用 deep_task，
+// env 开关只作用于普通 agent。
 
 import (
 	"context"
