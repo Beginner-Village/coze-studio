@@ -78,6 +78,9 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	// Session key will be retrieved from database when needed by external knowledge tool
 
 	persona := conf.Agent.Prompt.GetPrompt()
+	if isSuperAgent(conf) {
+		persona = persona + "\n\n" + SuperAgentExtraPrompt
+	}
 
 	avConf := &variableConf{
 		Agent:       conf.Agent,

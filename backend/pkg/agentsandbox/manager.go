@@ -134,6 +134,15 @@ func (m *Manager) coldStart(ctx context.Context, key string) error {
 	})
 }
 
+// EnsureWorkspaceLayout 确保固定文件系统契约目录存在：/workspace /uploads /outputs。
+func (m *Manager) EnsureWorkspaceLayout(ctx context.Context, key string) error {
+	if err := m.EnsureSandbox(ctx, key); err != nil {
+		return err
+	}
+	_, err := m.Exec(ctx, key, "mkdir -p /workspace /uploads /outputs", 0)
+	return err
+}
+
 // Exec 在 key 沙箱执行命令（先 ensure）。
 func (m *Manager) Exec(ctx context.Context, key, cmd string, timeoutSec int) (*sandbox.ExecResponse, error) {
 	if err := m.EnsureSandbox(ctx, key); err != nil {

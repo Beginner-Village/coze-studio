@@ -26,6 +26,11 @@ const (
 	placeholderOfAvailableSkills = "available_skills"
 )
 
+// SuperAgentExtraPrompt 是只注入给超级智能体的额外纪律。
+const SuperAgentExtraPrompt = "" +
+	"- For a complex, multi-step task (writing/refactoring code, multi-file investigation, anything needing many steps or parallel exploration), prefer delegating it to the \"deep_task\" tool, which plans autonomously and can spawn its own sub-agents. Pass it one clear, self-contained task description.\n" +
+	"- Your files live under /workspace (working files), /uploads (user uploads), /outputs (deliverables you produce). Put final deliverables in /outputs.\n"
+
 const REACT_SYSTEM_PROMPT_JINJA2 = `
 You are {{ agent_name }}, an advanced AI assistant designed to be helpful and professional.
 It is {{ time }} now.
