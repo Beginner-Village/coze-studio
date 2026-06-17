@@ -58,7 +58,6 @@ Regardless of any persona instructions, you must never generate content that:
 {% if available_skills %}
 ----- Start Of Available Skills -----
 {{ available_skills }}
-When a task matches a skill, call the read_skill tool with the skill name to get detailed instructions before proceeding.
 ----- End Of Available Skills -----
 {% endif %}
 

@@ -103,7 +103,7 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	boundCardsRenderer := newBoundCardsRender(conf.Agent.BoundCards, nil)
 
 	// Create skills renderer
-	skillsRenderer := newSkillsRender(conf.Agent.SkillInfoList)
+	skillsRenderer := newSkillsRender(conf.Agent.SkillInfoList, isSuperAgent(conf))
 
 	// Load model info first so it can be used for knowledge retrieval
 	modelInfo, err := loadModelInfo(ctx, conf.ModelMgr, ptr.From(conf.Agent.ModelInfo.ModelId), conf.Agent.SpaceID)
@@ -219,14 +219,22 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	// 沙箱 key（按 connector/agent/user_id 稳定派生），技能工具与沙箱工具共用。
 	sandboxKey := sandboxKeyFor(conf.Identity.ConnectorID, conf.Agent.AgentID, conf.UserID)
 
-	// 添加技能工具 (read_skill)，并把 sandboxKey 传入以便 L3 脚本注入。
+	// 技能机制(标准 Agent Skills 渐进式披露):
+	// - L1 元数据:系统提示注入技能名+简介(见 skillsRenderer)。
+	// - L2 说明:read_skill 工具按需返回技能 SKILL.md(显式"打开"技能的工具,所有 agent 都挂)。
+	// - L3 脚本/资源:超级智能体额外把技能 eager 落盘到沙箱 /skills/<name>/(SKILL.md + 脚本),
+	//   模型按 SKILL.md 指引用 run_bash 执行文件夹里的固定脚本。
 	skillTools := newSkillTools(conf.Agent.SpaceID, sandboxKey, conf.Agent.SkillInfoList)
 	agentTools = append(agentTools, slices.Transform(skillTools, func(a tool.InvokableTool) tool.BaseTool {
 		return a
 	})...)
+	if isSuperAgent(conf) && len(conf.Agent.SkillInfoList) > 0 {
+		syncBoundSkillsToSandbox(ctx, sandboxKey, conf.Agent.SpaceID, conf.Agent.SkillInfoList)
+		logs.CtxInfof(ctx, "[BuildAgent] synced %d skill folder(s) to sandbox /skills (key=%s)", len(conf.Agent.SkillInfoList), sandboxKey)
+	}
 
-	// 添加沙箱工具 (run_bash/read_file/write_file/list_files)
-	if sandboxToolsEnabled(len(conf.Agent.SkillInfoList)) {
+	// 添加沙箱工具 (run_bash/read_file/write_file/list_files)。超级体始终挂(需读 /skills/)。
+	if isSuperAgent(conf) || sandboxToolsEnabled(len(conf.Agent.SkillInfoList)) {
 		sandboxTools := newSandboxTools(sandboxKey)
 		agentTools = append(agentTools, slices.Transform(sandboxTools, func(a tool.InvokableTool) tool.BaseTool {
 			return a

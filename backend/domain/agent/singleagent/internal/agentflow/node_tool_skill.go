@@ -234,6 +234,37 @@ func resolveResourceReferences(prompt string) string {
 	})
 }
 
+// syncBoundSkillsToSandbox 把超级智能体绑定的技能 eager 落盘到沙箱 /skills/<name>/。
+// 每个技能写出 SKILL.md(技能正文)+ 其内联脚本(<skill-file path>),让 agent 用通用
+// list_files/read_file/run_bash 自己读取技能文件夹并执行 —— 标准的 Claude Code 式技能。
+// SyncSkill 自带内容 hash 去重,同版本跳过,因此每次会话调用代价很低。
+func syncBoundSkillsToSandbox(ctx context.Context, sandboxKey string, spaceID int64, skillInfoList []*singleagent.SkillReference) {
+	svc := crosssandbox.DefaultSVC()
+	skillSvc := crossskill.DefaultSVC()
+	if svc == nil || skillSvc == nil || sandboxKey == "" || len(skillInfoList) == 0 {
+		return
+	}
+	for _, ref := range skillInfoList {
+		skill, err := skillSvc.GetSkill(ctx, ref.SkillID)
+		if err != nil || skill == nil {
+			continue
+		}
+		// 跨空间技能不落盘(空间隔离)。
+		if skill.SpaceID != spaceID {
+			continue
+		}
+		cleaned, files := parseSkillFiles(skill.Prompt)
+		if files == nil {
+			files = make(map[string][]byte, 1)
+		}
+		// SKILL.md = 去掉脚本块后的技能正文(含用途、工作流、脚本用法说明)。
+		files["SKILL.md"] = []byte(resolveResourceReferences(cleaned))
+		if err := svc.SyncSkill(ctx, sandboxKey, skill.Name, files); err != nil {
+			logs.CtxWarnf(ctx, "[syncBoundSkillsToSandbox] sync skill %s failed: %v", skill.Name, err)
+		}
+	}
+}
+
 // newSkillTools creates the read_skill tool if skills are configured.
 func newSkillTools(spaceID int64, sandboxKey string, skillInfoList []*singleagent.SkillReference) []tool.InvokableTool {
 	if len(skillInfoList) == 0 {
