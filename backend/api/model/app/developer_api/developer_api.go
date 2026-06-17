@@ -1614,6 +1614,7 @@ type DraftBotCreateRequest struct {
 	// Create source navi: navbar space: space
 	CreateFrom   *string                  `thrift:"create_from,7,optional" form:"create_from" json:"create_from,omitempty" query:"create_from"`
 	BusinessType *bot_common.BusinessType `thrift:"business_type,9,optional" form:"business_type" json:"business_type,omitempty" query:"business_type"`
+	AgentType    *string                  `thrift:"agent_type,10,optional" form:"agent_type" json:"agent_type,omitempty" query:"agent_type"`
 }
 
 func NewDraftBotCreateRequest() *DraftBotCreateRequest {
@@ -1670,6 +1671,15 @@ func (p *DraftBotCreateRequest) GetBusinessType() (v bot_common.BusinessType) {
 	return *p.BusinessType
 }
 
+var DraftBotCreateRequest_AgentType_DEFAULT string
+
+func (p *DraftBotCreateRequest) GetAgentType() (v string) {
+	if !p.IsSetAgentType() {
+		return DraftBotCreateRequest_AgentType_DEFAULT
+	}
+	return *p.AgentType
+}
+
 var fieldIDToName_DraftBotCreateRequest = map[int16]string{
 	1: "space_id",
 	2: "name",
@@ -1691,6 +1701,10 @@ func (p *DraftBotCreateRequest) IsSetCreateFrom() bool {
 
 func (p *DraftBotCreateRequest) IsSetBusinessType() bool {
 	return p.BusinessType != nil
+}
+
+func (p *DraftBotCreateRequest) IsSetAgentType() bool {
+	return p.AgentType != nil
 }
 
 func (p *DraftBotCreateRequest) Read(iprot thrift.TProtocol) (err error) {

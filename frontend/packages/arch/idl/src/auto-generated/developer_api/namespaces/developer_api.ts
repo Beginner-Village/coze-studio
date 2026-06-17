@@ -2728,6 +2728,7 @@ export interface DraftBotCreateRequest {
   app_id?: string;
   business_type?: bot_common.BusinessType;
   folder_id?: string;
+  agent_type?: string;
 }
 
 export interface DraftBotCreateResponse {
