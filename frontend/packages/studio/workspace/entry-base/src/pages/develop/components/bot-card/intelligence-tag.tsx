@@ -19,10 +19,12 @@ import { I18n } from '@coze-arch/i18n';
 import { Tag } from '@coze-arch/coze-design';
 export interface IntelligenceTagProps {
   intelligenceType: IntelligenceType | undefined;
+  agentType?: string;
 }
 
 export const IntelligenceTag: React.FC<IntelligenceTagProps> = ({
   intelligenceType,
+  agentType,
 }) => {
   if (intelligenceType === IntelligenceType.Project) {
     return (
@@ -32,6 +34,13 @@ export const IntelligenceTag: React.FC<IntelligenceTagProps> = ({
     );
   }
   if (intelligenceType === IntelligenceType.Bot) {
+    if (agentType === 'super') {
+      return (
+        <Tag color="purple" size="small" className="w-fit">
+          超级智能体
+        </Tag>
+      );
+    }
     return (
       <Tag color="primary" size="small" className="w-fit">
         {I18n.t('develop_list_card_tag_agent')}

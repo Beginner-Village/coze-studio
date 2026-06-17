@@ -130,6 +130,7 @@ type IntelligenceBasicInfo struct {
 	PublishTime    int64              `thrift:"publish_time,11" form:"publish_time" json:"publish_time,string" query:"publish_time"`
 	EnterpriseID   *string            `thrift:"enterprise_id,12,optional" form:"enterprise_id" json:"enterprise_id,omitempty" query:"enterprise_id"`
 	OrganizationID *int64             `thrift:"organization_id,13,optional" form:"organization_id" json:"organization_id,omitempty" query:"organization_id"`
+	AgentType      *string            `thrift:"agent_type,14,optional" form:"agent_type" json:"agent_type,omitempty" query:"agent_type"`
 }
 
 func NewIntelligenceBasicInfo() *IntelligenceBasicInfo {

@@ -63,5 +63,7 @@ export interface IntelligenceBasicInfo {
   enterprise_id?: string;
   organization_id?: Int64;
   cache_type?: CacheType;
+  /** 智能体类型:''/normal=普通; super=超级智能体 */
+  agent_type?: string;
 }
 /* eslint-enable */

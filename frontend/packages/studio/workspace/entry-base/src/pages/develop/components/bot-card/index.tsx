@@ -241,7 +241,10 @@ export const BotCard: React.FC<BotCardProps> = ({
           </div>
 
           {/* Projects/Agents */}
-          <IntelligenceTag intelligenceType={type} />
+          <IntelligenceTag
+            intelligenceType={type}
+            agentType={basic_info?.agent_type}
+          />
 
           {/* Bot author information */}
           {!!owner_info && (
