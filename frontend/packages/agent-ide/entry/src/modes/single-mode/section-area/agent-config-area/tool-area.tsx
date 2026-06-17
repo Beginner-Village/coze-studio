@@ -17,6 +17,7 @@
 /* eslint-disable @coze-arch/no-deep-relative-import */
 import classNames from 'classnames';
 import { useModelStore } from '@coze-studio/bot-detail-store/model';
+import { useBotInfoStore } from '@coze-studio/bot-detail-store/bot-info';
 import { ShortcutToolConfig } from '@coze-common/chat-area-plugins-chat-shortcuts/shortcut-tool';
 import { I18n } from '@coze-arch/i18n';
 import { LayoutContext, PlacementEnum } from '@coze-arch/bot-hooks';
@@ -67,6 +68,9 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
   } = props;
   const { node: DataSetArea, initRef: DataSetAreaRef } = useDataSetArea();
   const modelId = useModelStore(state => state.config.model);
+  // 超级智能体:精简中间面板,只留「技能(插件/MCP)」与「对话」,
+  // 砍掉工作流/卡片绑定/知识库/变量记忆 —— 老智能体不受影响。
+  const isSuper = useBotInfoStore(state => state.agentType) === 'super';
   return (
     <LayoutContext value={{ placement: PlacementEnum.CENTER }}>
       <div
@@ -85,21 +89,24 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
                 toolKey={ToolKey.PLUGIN}
                 title={I18n.t('Plugins')}
               />
-              {/* Workflow */}
-              <WorkflowCard
-                flowMode={WorkflowMode.Workflow}
-                toolKey={ToolKey.WORKFLOW}
-                title={I18n.t('Workflows')}
-                from={WorkflowModalFrom.BotSkills}
-              />
-              {/* 卡片绑定 */}
-              <CardBindingArea />
+              {/* Workflow（超级智能体不展示） */}
+              {isSuper ? null : (
+                <WorkflowCard
+                  flowMode={WorkflowMode.Workflow}
+                  toolKey={ToolKey.WORKFLOW}
+                  title={I18n.t('Workflows')}
+                  from={WorkflowModalFrom.BotSkills}
+                />
+              )}
+              {/* 卡片绑定（超级智能体不展示） */}
+              {isSuper ? null : <CardBindingArea />}
               {/* Agent Skills (progressive disclosure) */}
               <AgentSkillArea toolKey={ToolKey.AGENT_SKILL} title="技能" />
               {/* Force tool return switch */}
               <ForceToolReturn />
               {skillToolSlot}
             </GroupingContainer>
+            {isSuper ? null : (
             <GroupingContainer
               toolGroupKey={ToolGroupKey.KNOWLEDGE}
               title={I18n.t('bot_edit_type_knowledge')}
@@ -150,6 +157,8 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
               />
               {knowledgeToolSlot}
             </GroupingContainer>
+            )}
+            {isSuper ? null : (
             <GroupingContainer
               toolGroupKey={ToolGroupKey.MEMORY}
               title={I18n.t('bot_edit_type_memory')}
@@ -161,6 +170,7 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
               />
               {memoryToolSlot}
             </GroupingContainer>
+            )}
             <GroupingContainer
               toolGroupKey={ToolGroupKey.DIALOG}
               title={I18n.t('bot_edit_type_dialog')}

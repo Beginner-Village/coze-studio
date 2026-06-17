@@ -13461,6 +13461,15 @@ type BotInfo struct {
 	SkillInfoList []*skill.SkillReference `thrift:"SkillInfoList,39,optional,list<skill.SkillReference>" form:"skill_info_list" json:"skill_info_list,omitempty"`
 	// When true, all tool results return to model instead of directly to user
 	ForceToolReturn *bool `thrift:"ForceToolReturn,40,optional" form:"force_tool_return" json:"force_tool_return,omitempty"`
+	// Agent type for runtime routing & UI differentiation: ""/normal=普通; super=超级智能体
+	AgentType *string `thrift:"AgentType,41,optional" form:"agent_type" json:"agent_type,omitempty"`
+}
+
+func (p *BotInfo) GetAgentType() (v string) {
+	if p == nil || p.AgentType == nil {
+		return ""
+	}
+	return *p.AgentType
 }
 
 func NewBotInfo() *BotInfo {

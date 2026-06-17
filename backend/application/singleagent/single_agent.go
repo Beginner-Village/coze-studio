@@ -501,6 +501,7 @@ func (s *SingleAgentApplicationService) singleAgentDraftDo2Vo(ctx context.Contex
 		BoundCards:              do.BoundCards,
 		SkillInfoList:           skillCrossdomainToThrift(do.SkillInfoList),
 		ForceToolReturn:         do.ForceToolReturn,
+		AgentType:               ptr.Of(do.AgentType),
 	}
 
 	if do.VariablesMetaID != nil {

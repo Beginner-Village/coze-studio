@@ -315,12 +315,14 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		logs.CtxInfof(ctx, "[BuildAgent] AGENT_ENGINE=deepagents requested; experimental DeepAgents engine not yet wired, falling back to ReAct")
 	}
 
-	if isSuperAgent(conf) || deepTaskEnabled() {
+	// 纯按类型区分:deep_task / 沙箱 / 扩展工具只挂给超级 agent。
+	// 普通(老)智能体沿用原来那一套,完全不碰沙箱与超级工具。
+	if isSuperAgent(conf) {
 		if dt, derr := newDeepTaskTool(ctx, chatModel, append([]tool.BaseTool(nil), agentTools...)); derr != nil {
 			logs.CtxWarnf(ctx, "[BuildAgent] build deep_task tool failed: %v", derr)
 		} else if dt != nil {
 			agentTools = append(agentTools, dt)
-			logs.CtxInfof(ctx, "[BuildAgent] mounted deep_task tool (super=%v)", isSuperAgent(conf))
+			logs.CtxInfof(ctx, "[BuildAgent] mounted deep_task tool for super agent")
 		}
 	}
 
