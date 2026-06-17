@@ -61,6 +61,19 @@ func (s *SingleAgentDraftSuite) TearDownTest() {
 	s.db.WithContext(s.ctx).Unscoped().Where("1 = 1").Delete(&model.SingleAgentDraft{})
 }
 
+func (s *SingleAgentDraftSuite) TestAgentTypePersist() {
+	PatchConvey("agent_type 落库与读取", s.T(), func() {
+		ctx := s.ctx
+		at := "super"
+		So(s.dao.dbQuery.SingleAgentDraft.WithContext(ctx).Create(&model.SingleAgentDraft{
+			AgentID: 90001, SpaceID: 100, Name: "super_test", IconURI: "u", AgentType: &at,
+		}), ShouldBeNil)
+		got, err := s.dao.Get(ctx, 90001)
+		So(err, ShouldBeNil)
+		So(got.AgentType, ShouldEqual, "super")
+	})
+}
+
 func (s *SingleAgentDraftSuite) TestListBySpaceID() {
 	PatchConvey("test list by space id", s.T(), func() {
 		ctx := s.ctx
