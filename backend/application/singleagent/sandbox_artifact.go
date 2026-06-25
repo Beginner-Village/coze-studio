@@ -80,7 +80,7 @@ func checkArtifactObjectKeyOwner(ctx context.Context, objectKey string) error {
 	} else if apiAuth := ctxutil.GetApiAuthFromCtx(ctx); apiAuth != nil && apiAuth.UserID != 0 {
 		callerID = apiAuth.UserID
 	}
-	if callerID != 0 && callerID != ownerID {
+	if callerID != ownerID { // unknown caller (0) OR mismatch -> deny
 		return errorx.New(errno.ErrAgentPermissionCode, errorx.KV("msg", "artifact does not belong to the caller"))
 	}
 	return nil
