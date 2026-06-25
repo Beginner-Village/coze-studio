@@ -84,7 +84,50 @@ type SingleAgent struct {
 	BoundCards              []*bot_common.BoundCardInfo
 	SkillInfoList           []*SkillReference
 	ForceToolReturn         *bool
-	AgentType               string // agent_type：""/normal=普通；super=超级智能体（运行时路由）
+	AgentType               string                // agent_type：""/normal=普通；super=超级智能体（运行时路由）
+	SuperAgentToolConfig    *SuperAgentToolConfig // 超级体能力开关（沙箱/网络/工具权限 + MCP），仅超级体生效
+	SourceProductID         int64                 `json:"source_product_id,omitempty"`
+	SourceProductVersion    string                `json:"source_product_version,omitempty"`
+}
+
+// SuperAgentToolConfig 是超级智能体的能力开关配置（per-agent）。所有开关默认全开
+// （nil 表示开启，保持向后兼容）；关闭沙箱即「纯 MCP 模式」。该结构以 JSON 存进
+// single_agent_draft.super_agent_tool_config 列，并预留 MCPServers 给 MCP 动态接入。
+type SuperAgentToolConfig struct {
+	// Sandbox 沙箱总开关。关闭后不挂任何沙箱工具（run_bash/读写/grep/glob/update_plan），
+	// 进入「纯 MCP」模式（依赖沙箱的 web_search/web_fetch 也随之失效）。
+	Sandbox     *bool `json:"sandbox,omitempty"`
+	WebSearch   *bool `json:"web_search,omitempty"`
+	WebFetch    *bool `json:"web_fetch,omitempty"`
+	RunBash     *bool `json:"run_bash,omitempty"` // 沙箱子开关：仅关 run_bash，保留文件类工具
+	DeepTask    *bool `json:"deep_task,omitempty"`
+	SkillManage *bool `json:"skill_manage,omitempty"`
+
+	// MCPServers 动态 MCP server 列表（第二块接入）。
+	MCPServers []*MCPServerConfig `json:"mcp_servers,omitempty"`
+}
+
+// MCPServerConfig 描述一个可动态接入的 MCP server（stdio / sse / streamable-http）。
+type MCPServerConfig struct {
+	Name       string            `json:"name"`
+	Type       string            `json:"type"`              // "stdio" | "sse" | "streamable_http"
+	Command    string            `json:"command,omitempty"` // stdio: 启动命令
+	Args       []string          `json:"args,omitempty"`
+	Env        map[string]string `json:"env,omitempty"`
+	URL        string            `json:"url,omitempty"` // sse / http
+	TimeoutSec int64             `json:"timeout_sec,omitempty"`
+	Enabled    *bool             `json:"enabled,omitempty"`
+}
+
+// 下列 helper 均为 nil-safe：config 或字段为 nil 时一律视作「开启」（默认全开）。
+func boolEnabled(v *bool) bool                         { return v == nil || *v }
+func (c *SuperAgentToolConfig) SandboxEnabled() bool   { return c == nil || boolEnabled(c.Sandbox) }
+func (c *SuperAgentToolConfig) WebSearchEnabled() bool { return c == nil || boolEnabled(c.WebSearch) }
+func (c *SuperAgentToolConfig) WebFetchEnabled() bool  { return c == nil || boolEnabled(c.WebFetch) }
+func (c *SuperAgentToolConfig) RunBashEnabled() bool   { return c == nil || boolEnabled(c.RunBash) }
+func (c *SuperAgentToolConfig) DeepTaskEnabled() bool  { return c == nil || boolEnabled(c.DeepTask) }
+func (c *SuperAgentToolConfig) SkillManageEnabled() bool {
+	return c == nil || boolEnabled(c.SkillManage)
 }
 
 // SkillReference is a lightweight reference for Bot binding.
@@ -121,6 +164,8 @@ type ExecuteRequest struct {
 	Identity *AgentIdentity
 	UserID   string
 
+	ConversationID int64
+
 	Input        *schema.Message
 	History      []*schema.Message
 	ResumeInfo   *InterruptInfo
@@ -128,6 +173,9 @@ type ExecuteRequest struct {
 
 	// Variables 会话级自定义变量，用于覆盖智能体预设变量
 	Variables map[string]string
+
+	// Ext 透传运行时扩展字段，例如工作流画布模式标记。
+	Ext map[string]string
 }
 
 type AgentIdentity struct {

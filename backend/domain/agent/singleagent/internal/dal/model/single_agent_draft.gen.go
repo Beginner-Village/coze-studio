@@ -22,6 +22,7 @@ package model
 
 import (
 	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_common"
+	crossagent "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
 	"gorm.io/gorm"
 )
 
@@ -58,7 +59,10 @@ type SingleAgentDraft struct {
 	BoundCards              []*bot_common.BoundCardInfo       `gorm:"column:bound_cards;comment:Bound Cards for Prompt Injection;serializer:json" json:"bound_cards"`                 // Bound Cards for Prompt Injection
 	SkillInfoList           []*SkillReference                 `gorm:"column:skill_info_list;comment:Skill references bound to this agent;serializer:json" json:"skill_info_list"`     // Skill references bound to this agent
 	ForceToolReturn         *bool                             `gorm:"column:force_tool_return;comment:Force all tool results to return to model" json:"force_tool_return"` // Force all tool results to return to model
+	SuperAgentToolConfig    *crossagent.SuperAgentToolConfig  `gorm:"column:super_agent_tool_config;comment:Super-agent capability switches (sandbox/web/tools + MCP);serializer:json" json:"super_agent_tool_config"`
 	AgentType               *string                           `gorm:"column:agent_type;comment:Agent Type for Runtime Routing" json:"agent_type"`
+	SourceProductID         int64                             `gorm:"column:source_product_id;default:0" json:"source_product_id"`                                           // agent_app product id this draft was materialized from; 0 = normal agent
+	SourceProductVersion    string                            `gorm:"column:source_product_version;default:''" json:"source_product_version"`                              // pinned agent_app product version for this shadow instance
 }
 
 // SkillReference is a lightweight reference for Bot binding.
