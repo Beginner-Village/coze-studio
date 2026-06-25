@@ -21,9 +21,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"strconv"
 	"strings"
 
 	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
+	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
@@ -35,6 +37,54 @@ const (
 	superAgentArtifactDeleteRoute   = "POST /api/super-agent/artifacts/delete"
 	superAgentArtifactMoveRoute     = "POST /api/super-agent/artifacts/move"
 )
+
+// artifactObjectKey returns the object-storage key for an artifact, scoped per
+// space/user/product/conversation so that artifacts from different users or
+// spaces never share a key prefix.
+// Format: artifacts/s{spaceID}/u{userID}/p{productID}/c{conversationID}/{name}
+func artifactObjectKey(spaceID, userID, productID, conversationID int64, name string) string {
+	return fmt.Sprintf("artifacts/s%d/u%d/p%d/c%d/%s", spaceID, userID, productID, conversationID, name)
+}
+
+// artifactObjectKeyUserID extracts the userID embedded in an artifact object key
+// produced by artifactObjectKey. Returns 0 if the key is not in the expected format.
+func artifactObjectKeyUserID(key string) int64 {
+	// key format: artifacts/s{spaceID}/u{userID}/p{productID}/c{convID}/{name}
+	parts := strings.SplitN(key, "/", 6)
+	if len(parts) < 6 || parts[0] != "artifacts" {
+		return 0
+	}
+	userPart := parts[2] // "u{userID}"
+	if !strings.HasPrefix(userPart, "u") {
+		return 0
+	}
+	uid, err := strconv.ParseInt(userPart[1:], 10, 64)
+	if err != nil {
+		return 0
+	}
+	return uid
+}
+
+// checkArtifactObjectKeyOwner returns an error if the caller resolved from ctx
+// does not own the artifact identified by objectKey. It is a no-op when
+// objectKey is not in artifact object-key format (plain sandbox paths are
+// protected by the sandbox key itself).
+func checkArtifactObjectKeyOwner(ctx context.Context, objectKey string) error {
+	ownerID := artifactObjectKeyUserID(objectKey)
+	if ownerID == 0 {
+		return nil // not an object-key — skip
+	}
+	var callerID int64
+	if uid := ctxutil.GetUIDFromCtx(ctx); uid != nil {
+		callerID = *uid
+	} else if apiAuth := ctxutil.GetApiAuthFromCtx(ctx); apiAuth != nil && apiAuth.UserID != 0 {
+		callerID = apiAuth.UserID
+	}
+	if callerID != 0 && callerID != ownerID {
+		return errorx.New(errno.ErrAgentPermissionCode, errorx.KV("msg", "artifact does not belong to the caller"))
+	}
+	return nil
+}
 
 type SuperAgentArtifactListRequest struct {
 	BotID       int64   `json:"bot_id,string,omitempty"`
@@ -134,6 +184,10 @@ func (s *SingleAgentApplicationService) ListSuperAgentArtifacts(ctx context.Cont
 	if err != nil {
 		return nil, err
 	}
+	// Owner check: if path is an object-key, ensure the caller owns it.
+	if err := checkArtifactObjectKeyOwner(ctx, req.Path); err != nil {
+		return nil, err
+	}
 	path, err := sanitizeSuperAgentArtifactPath(req.Path)
 	if err != nil {
 		return nil, errorx.New(errno.ErrAgentInvalidParamCode, errorx.KV("msg", err.Error()))
@@ -204,6 +258,11 @@ func (s *SingleAgentApplicationService) listSuperAgentArtifactsByPath(ctx contex
 func (s *SingleAgentApplicationService) DownloadSuperAgentArtifact(ctx context.Context, req *SuperAgentArtifactDownloadRequest) (*SuperAgentArtifactDownloadData, error) {
 	svc, key, err := s.resolveSandboxKey(ctx, sandboxRequestAgentID(req.BotID, req.AgentID), req.ConnectorID)
 	if err != nil {
+		return nil, err
+	}
+	// Owner check: if the artifact_id is an object-key (artifacts/s.../u{uid}/...),
+	// ensure the caller owns it before proceeding.
+	if err := checkArtifactObjectKeyOwner(ctx, req.ArtifactID); err != nil {
 		return nil, err
 	}
 	path := req.Path
