@@ -36,9 +36,9 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
 	crossdomainSingleagent "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
-	"github.com/ynet-dev/ynet-studio/backend/api/model/skill"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/data/database/table"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/playground"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/skill"
 	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
 	crossdatabase "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/database"
 	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
@@ -455,6 +455,9 @@ func (s *SingleAgentApplicationService) DeleteAgentDraft(ctx context.Context, re
 		return nil, err
 	}
 
+	// 连带清理该智能体名下「所有用户」的沙箱容器与宿主机持久化目录,避免成为孤儿。
+	purgeAgentSandboxes(ctx, req.GetBotID())
+
 	err = s.appContext.EventBus.PublishProject(ctx, &searchEntity.ProjectDomainEvent{
 		OpType: searchEntity.Deleted,
 		Project: &searchEntity.ProjectDocument{
@@ -694,6 +697,11 @@ func (s *SingleAgentApplicationService) GetAgentDraftDisplayInfo(ctx context.Con
 
 func (s *SingleAgentApplicationService) ValidateAgentDraftAccess(ctx context.Context, agentID int64) (*entity.SingleAgent, error) {
 	uid := ctxutil.GetUIDFromCtx(ctx)
+	if uid == nil {
+		if apiAuth := ctxutil.GetApiAuthFromCtx(ctx); apiAuth != nil && apiAuth.UserID != 0 {
+			uid = ptr.Of(apiAuth.UserID)
+		}
+	}
 	if uid == nil {
 		uid = ptr.Of(int64(888))
 		// return nil, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("msg", "session uid not found"))

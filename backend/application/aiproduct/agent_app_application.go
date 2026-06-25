@@ -62,6 +62,9 @@ type PublishReq struct {
 	Version string
 }
 
+// AgentAppSVC is the package-level singleton wired in application.Init.
+var AgentAppSVC *AgentAppApplication
+
 // AgentAppApplication orchestrates the publish and recruit flows for the
 // virtual-employee agent_app product type.
 type AgentAppApplication struct {
