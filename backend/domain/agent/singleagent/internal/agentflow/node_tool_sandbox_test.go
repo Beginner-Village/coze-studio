@@ -111,6 +111,14 @@ func (m *fakeSandboxMgr) SyncSkill(_ context.Context, key, name string, files ma
 	return nil
 }
 
+func (m *fakeSandboxMgr) CheckpointTo(_ context.Context, _, _ string) (string, error) {
+	return "", nil
+}
+
+func (m *fakeSandboxMgr) RestoreFrom(_ context.Context, _, _ string) error {
+	return nil
+}
+
 func TestSandboxKeyStableAndSafe(t *testing.T) {
 	k1 := sandboxKeyFor(1, 2, "user@x")
 	k2 := sandboxKeyFor(1, 2, "user@x")

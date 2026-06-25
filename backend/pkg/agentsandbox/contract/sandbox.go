@@ -37,6 +37,13 @@ type CreateRequest struct {
 	// MemoryMB / CPUs 资源上限，0 表示后端默认。
 	MemoryMB int
 	CPUs     float64
+	// TemplateObjectKey 可选：冷启动模板归档的对象存储 key。仅在该实例尚无自有
+	// workspace 检查点时用于种子化 /workspace（precedence：实例检查点 > 模板 > 空白）。
+	// 空字符串表示不使用模板（默认）。
+	TemplateObjectKey string
+	// ReadonlySkills 为 true 时，/skills 以只读方式挂载（-v ...:/skills:ro），
+	// 防止运行时改写技能模板。默认 false（读写，保持既有行为）。
+	ReadonlySkills bool
 }
 
 type CreateResponse struct {

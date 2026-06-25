@@ -18,25 +18,48 @@ package docker
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 func TestBuildCreateArgs(t *testing.T) {
+	t.Setenv("SANDBOX_DATA_DIR", "") // 强制走默认根目录,避免环境变量干扰
 	got := buildCreateArgs(&sandbox.CreateRequest{
-		SandboxID: "sb1", Image: "", MemoryMB: 512, CPUs: 1,
+		SandboxID: "sb1", Image: "python:3.11-slim", MemoryMB: 512, CPUs: 1,
 		Env: map[string]string{"FOO": "bar"},
 	}, "ynet-sb-")
 	want := []string{
 		"run", "-d", "--name", "ynet-sb-sb1",
-		"--memory", "512m", "--cpus", "1.00",
+		"-v", "/var/lib/ynet-sandboxes/sb1/workspace:/workspace",
+		"-v", "/var/lib/ynet-sandboxes/sb1/uploads:/uploads",
+		"-v", "/var/lib/ynet-sandboxes/sb1/outputs:/outputs",
+		"-v", "/var/lib/ynet-sandboxes/sb1/skills:/skills",
+		"--memory", "512m", "--memory-swap", "512m", "--cpus", "1.00",
+		"--pids-limit", "512",
 		"-e", "FOO=bar",
 		"-w", "/workspace",
 		"python:3.11-slim", "sleep", "infinity",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
+func TestBuildCreateArgsReadonlySkills(t *testing.T) {
+	t.Setenv("SANDBOX_DATA_DIR", "")
+	got := buildCreateArgs(&sandbox.CreateRequest{
+		SandboxID: "sb1", Image: "python:3.11-slim", ReadonlySkills: true,
+	}, "ynet-sb-")
+	joined := strings.Join(got, " ")
+	// /skills must be mounted read-only (and only once).
+	if !strings.Contains(joined, "/var/lib/ynet-sandboxes/sb1/skills:/skills:ro") {
+		t.Fatalf("expected read-only /skills mount, got %v", got)
+	}
+	if strings.Contains(joined, "/var/lib/ynet-sandboxes/sb1/skills:/skills ") ||
+		strings.HasSuffix(joined, "/var/lib/ynet-sandboxes/sb1/skills:/skills") {
+		t.Fatalf("read-write /skills mount must not coexist with the :ro one, got %v", got)
 	}
 }
 

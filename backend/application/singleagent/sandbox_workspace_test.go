@@ -73,6 +73,14 @@ func (fakeSandboxManager) SyncSkill(context.Context, string, string, map[string]
 	return nil
 }
 
+func (fakeSandboxManager) CheckpointTo(context.Context, string, string) (string, error) {
+	return "", nil
+}
+
+func (fakeSandboxManager) RestoreFrom(context.Context, string, string) error {
+	return nil
+}
+
 type fakeHarnessSandboxManager struct {
 	fakeSandboxManager
 }

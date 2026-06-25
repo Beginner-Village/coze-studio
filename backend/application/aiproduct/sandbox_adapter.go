@@ -32,9 +32,9 @@ import (
 //   - Exec: real returns (*ExecResponse, error); TemplateSandbox needs (stdout,
 //     stderr string, exit int, err error).
 //   - SyncSkill: real takes map[string][]byte; TemplateSandbox needs map[string]string.
-//   - Checkpoint: not exposed by the crosssandbox.Manager interface; the
-//     concrete Manager handles it internally via its blob store, so we return
-//     "" as the content hash (no-op at the interface layer).
+//   - Checkpoint: bridges to crosssandbox.Manager.CheckpointTo(key, objectKey),
+//     which tars the build sandbox's /workspace to the passed template object
+//     key and returns the archive content hash.
 //   - Destroy: not exposed by the crosssandbox.Manager interface; build-sandbox
 //     cleanup is handled by the Manager's own idle-reaper (no-op).
 type sandboxAdapter struct {
@@ -75,13 +75,11 @@ func (a *sandboxAdapter) Exec(ctx context.Context, key, cmd string, timeoutSec i
 	return res.Stdout, res.Stderr, res.ExitCode, nil
 }
 
-// Checkpoint is a no-op at the interface layer: the crosssandbox.Manager
-// interface does not expose a Checkpoint method.  The concrete agentsandbox
-// Manager handles workspace persistence internally via its blob store; the
-// template-build path does not need an explicit archive here.  Returns ""
-// as the content hash (callers treat "" as "no hash available").
-func (a *sandboxAdapter) Checkpoint(_ context.Context, _, _ string) (string, error) {
-	return "", nil
+// Checkpoint tars the build sandbox's /workspace and persists it to the passed
+// template object key via the concrete Manager's CheckpointTo, returning the
+// archive content hash so the caller can record the template version.
+func (a *sandboxAdapter) Checkpoint(ctx context.Context, key, objectKey string) (string, error) {
+	return a.m.CheckpointTo(ctx, key, objectKey)
 }
 
 // Destroy is a no-op: the crosssandbox.Manager interface does not expose

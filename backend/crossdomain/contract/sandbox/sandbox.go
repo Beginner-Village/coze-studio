@@ -37,6 +37,11 @@ type Manager interface {
 	Glob(ctx context.Context, key, pattern string) (string, error)
 	// SyncSkill 把技能的脚本文件注入沙箱 /skills/<name>/，按内容 hash 去重。
 	SyncSkill(ctx context.Context, key, name string, files map[string][]byte) error
+	// CheckpointTo 把 key 沙箱的 /workspace 打包写入调用方指定的对象 key，返回归档内容 hash。
+	// 用于模板构建：把构建沙箱固化成模板归档（区别于内部固定的 per-instance 检查点）。
+	CheckpointTo(ctx context.Context, key, objectKey string) (contentHash string, err error)
+	// RestoreFrom 从调用方指定的对象 key 还原归档到 key 沙箱的 /workspace。用于按模板冷启动。
+	RestoreFrom(ctx context.Context, key, objectKey string) error
 }
 
 var defaultSVC Manager
