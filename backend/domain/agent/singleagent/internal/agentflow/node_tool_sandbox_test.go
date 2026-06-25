@@ -36,6 +36,30 @@ type fakeSandboxMgr struct {
 
 func (m *fakeSandboxMgr) Exec(_ context.Context, key, cmd string, _ int) (*sbx.ExecResponse, error) {
 	m.lastKey, m.lastCmd = key, cmd
+	if strings.HasPrefix(cmd, "cd '/skills/") && strings.Contains(cmd, "' 2>/dev/null && find . -type f") {
+		skillPath := strings.TrimSuffix(strings.TrimPrefix(strings.Split(cmd, " 2>/dev/null && find . -type f")[0], "cd '"), "'")
+		prefix := skillPath + "/"
+		var files []string
+		for p := range m.files {
+			if strings.HasPrefix(p, prefix) {
+				files = append(files, strings.TrimPrefix(p, prefix))
+			}
+		}
+		return &sbx.ExecResponse{Stdout: strings.Join(files, "\n") + "\n", Stderr: "", ExitCode: 0}, nil
+	}
+	if strings.HasPrefix(cmd, "rm -f -- '") && strings.HasSuffix(cmd, "'") {
+		delete(m.files, strings.TrimSuffix(strings.TrimPrefix(cmd, "rm -f -- '"), "'"))
+		return &sbx.ExecResponse{Stdout: "", Stderr: "", ExitCode: 0}, nil
+	}
+	if strings.HasPrefix(cmd, "rm -rf -- '") && strings.HasSuffix(cmd, "'") {
+		prefix := strings.TrimSuffix(strings.TrimPrefix(cmd, "rm -rf -- '"), "'") + "/"
+		for p := range m.files {
+			if strings.HasPrefix(p, prefix) {
+				delete(m.files, p)
+			}
+		}
+		return &sbx.ExecResponse{Stdout: "", Stderr: "", ExitCode: 0}, nil
+	}
 	return &sbx.ExecResponse{Stdout: "hello\n", Stderr: "", ExitCode: 0}, nil
 }
 func (m *fakeSandboxMgr) ReadFile(_ context.Context, key, path string) ([]byte, error) {
@@ -97,7 +121,7 @@ func TestSandboxKeyStableAndSafe(t *testing.T) {
 	if k1 == k3 {
 		t.Fatal("key must differ for different user")
 	}
-	if !strings.HasPrefix(k1, "u") || strings.ContainsAny(k1, "@/ ") {
+	if !strings.HasPrefix(k1, "a2-u") || strings.ContainsAny(k1, "@/ ") {
 		t.Fatalf("key not container-safe: %q", k1)
 	}
 }
@@ -183,6 +207,25 @@ func TestUpdatePlanTool(t *testing.T) {
 	}
 }
 
+func TestUpdatePlanToolAcceptsCompletedStatus(t *testing.T) {
+	fm := &fakeSandboxMgr{}
+	crosssandbox.SetDefaultSVC(fm)
+	defer crosssandbox.SetDefaultSVC(nil)
+
+	up := &updatePlanTool{key: "ukey"}
+	out, err := up.InvokableRun(context.Background(),
+		`{"plan":[{"content":"read input","status":"completed"},{"content":"write output","status":"pending"}]}`)
+	if err != nil {
+		t.Fatalf("update_plan err=%v", err)
+	}
+	if !strings.Contains(out, "1/2 done") {
+		t.Fatalf("completed status should count as done: %q", out)
+	}
+	if !strings.Contains(out, "[x] read input") {
+		t.Fatalf("completed status should render as checked: %q", out)
+	}
+}
+
 func TestSandboxToolsNilWhenNoSVC(t *testing.T) {
 	crosssandbox.SetDefaultSVC(nil)
 	if newSandboxTools("k") != nil {
@@ -217,5 +260,20 @@ func TestSandboxToolsEnabled(t *testing.T) {
 	t.Setenv("SANDBOX_TOOLS_ENABLED", "true")
 	if !sandboxToolsEnabled(0) {
 		t.Fatal("env force -> enabled")
+	}
+}
+
+func TestSkillsPathGuardBlocksInstanceWrites(t *testing.T) {
+	if !pathIsUnderSkills("/skills/pdf/SKILL.md") {
+		t.Fatal("should detect /skills path")
+	}
+	if pathIsUnderSkills("/workspace/out.txt") {
+		t.Fatal("should not flag /workspace path")
+	}
+	if err := guardSkillWrite(true, "/skills/pdf/x.py"); err == nil {
+		t.Fatal("write under /skills must be rejected for instances")
+	}
+	if err := guardSkillWrite(false, "/skills/pdf/x.py"); err != nil {
+		t.Fatal("non-instance writes must be allowed")
 	}
 }
