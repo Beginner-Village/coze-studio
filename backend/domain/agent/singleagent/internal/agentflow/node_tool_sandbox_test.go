@@ -285,3 +285,23 @@ func TestSkillsPathGuardBlocksInstanceWrites(t *testing.T) {
 		t.Fatal("non-instance writes must be allowed")
 	}
 }
+
+func TestSkillsPathGuardResistsTraversalBypass(t *testing.T) {
+	// Traversal paths that land inside /skills must be detected.
+	if !pathIsUnderSkills("/workspace/../skills/evil.py") {
+		t.Fatal("path /workspace/../skills/evil.py resolves to /skills/evil.py — must be blocked")
+	}
+	if !pathIsUnderSkills("../skills/evil.py") {
+		t.Fatal("path ../skills/evil.py resolves to /skills/evil.py — must be blocked")
+	}
+
+	// Traversal path that escapes /skills must NOT be flagged as skills.
+	if pathIsUnderSkills("/skills/../etc/passwd") {
+		t.Fatal("path /skills/../etc/passwd resolves to /etc/passwd — must not be blocked as /skills")
+	}
+
+	// guardSkillWrite must reject the traversal bypass for instances.
+	if err := guardSkillWrite(true, "/workspace/../skills/evil.py"); err == nil {
+		t.Fatal("guardSkillWrite must block /workspace/../skills/evil.py for readonly instance")
+	}
+}

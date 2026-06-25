@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
@@ -77,12 +78,15 @@ func resolvePath(p string) string {
 }
 
 // pathIsUnderSkills reports whether p refers to a path inside the /skills tree.
-// It normalises Windows-style backslashes and leading "./" before checking.
+// It normalises Windows-style backslashes and leading "./" before checking,
+// then resolves ".." segments with path.Clean to prevent traversal bypasses
+// such as "/workspace/../skills/evil.py".
 func pathIsUnderSkills(p string) bool {
 	cleaned := strings.TrimPrefix(strings.ReplaceAll(p, "\\", "/"), "./")
 	if !strings.HasPrefix(cleaned, "/") {
 		cleaned = "/" + cleaned
 	}
+	cleaned = path.Clean(cleaned)
 	return cleaned == "/skills" || strings.HasPrefix(cleaned, "/skills/")
 }
 
