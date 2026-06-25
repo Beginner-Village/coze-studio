@@ -152,7 +152,7 @@ func TestSandboxToolsInvoke(t *testing.T) {
 	defer crosssandbox.SetDefaultSVC(nil)
 
 	ctx := context.Background()
-	tools := newSandboxTools("ukey")
+	tools := newSandboxTools("ukey", false)
 	if len(tools) != 8 {
 		t.Fatalf("want 8 tools, got %d", len(tools))
 	}
@@ -236,7 +236,7 @@ func TestUpdatePlanToolAcceptsCompletedStatus(t *testing.T) {
 
 func TestSandboxToolsNilWhenNoSVC(t *testing.T) {
 	crosssandbox.SetDefaultSVC(nil)
-	if newSandboxTools("k") != nil {
+	if newSandboxTools("k", false) != nil {
 		t.Fatal("expected nil tools when sandbox svc not set")
 	}
 }
@@ -303,5 +303,71 @@ func TestSkillsPathGuardResistsTraversalBypass(t *testing.T) {
 	// guardSkillWrite must reject the traversal bypass for instances.
 	if err := guardSkillWrite(true, "/workspace/../skills/evil.py"); err == nil {
 		t.Fatal("guardSkillWrite must block /workspace/../skills/evil.py for readonly instance")
+	}
+}
+
+// TestInstanceReadonlySkillsFlag verifies that newSandboxTools(key, true) wires
+// readonlySkills=true into the write tools, so /skills writes are rejected.
+func TestInstanceReadonlySkillsFlag(t *testing.T) {
+	fm := &fakeSandboxMgr{}
+	crosssandbox.SetDefaultSVC(fm)
+	defer crosssandbox.SetDefaultSVC(nil)
+
+	ctx := context.Background()
+
+	// readonlySkills=true: write to /skills must fail.
+	tools := newSandboxTools("k", true)
+	if len(tools) != 8 {
+		t.Fatalf("want 8 tools, got %d", len(tools))
+	}
+
+	wf := &writeFileTool{key: "k", readonlySkills: true}
+	out, _ := wf.InvokableRun(ctx, `{"path":"/skills/foo/SKILL.md","content":"x"}`)
+	if !strings.Contains(out, "permission denied") && !strings.Contains(out, "read-only") {
+		t.Fatalf("instance write to /skills must be denied, got: %q", out)
+	}
+
+	// readonlySkills=false (default agent): same path must succeed.
+	wfNormal := &writeFileTool{key: "k", readonlySkills: false}
+	out2, err := wfNormal.InvokableRun(ctx, `{"path":"/skills/foo/SKILL.md","content":"x"}`)
+	if err != nil || strings.Contains(out2, "permission denied") {
+		t.Fatalf("normal agent write to /skills must be allowed, got: %q err=%v", out2, err)
+	}
+}
+
+// TestNewSandboxToolsReadonlyFlag verifies that the readonlySkills bool param
+// is threaded into the tool structs returned by newSandboxTools.
+func TestNewSandboxToolsReadonlyFlag(t *testing.T) {
+	fm := &fakeSandboxMgr{}
+	crosssandbox.SetDefaultSVC(fm)
+	defer crosssandbox.SetDefaultSVC(nil)
+
+	toolsNormal := newSandboxTools("k", false)
+	toolsInstance := newSandboxTools("k", true)
+	if len(toolsNormal) != 8 || len(toolsInstance) != 8 {
+		t.Fatalf("want 8 tools each, got normal=%d instance=%d", len(toolsNormal), len(toolsInstance))
+	}
+
+	// The run_bash, write_file, edit_file tools from the instance set must carry
+	// readonlySkills=true. We can verify indirectly: bash write to /skills should
+	// produce an error for instance but succeed for normal agent.
+	ctx := context.Background()
+	for _, tt := range toolsInstance {
+		info, _ := tt.Info(ctx)
+		if info.Name == "run_bash" {
+			out, _ := tt.InvokableRun(ctx, `{"command":"cp /workspace/a.txt /skills/a.txt"}`)
+			if !strings.Contains(out, "permission denied") && !strings.Contains(out, "read-only") {
+				t.Fatalf("instance run_bash writing to /skills must be denied: %q", out)
+			}
+		}
+	}
+	for _, tt := range toolsNormal {
+		info, _ := tt.Info(ctx)
+		if info.Name == "run_bash" {
+			out, err := tt.InvokableRun(ctx, `{"command":"cp /workspace/a.txt /skills/a.txt"}`)
+			if err != nil || strings.Contains(out, "permission denied") {
+				t.Fatalf("normal agent run_bash writing to /skills must be allowed: %q err=%v", out, err)
+			}
+		}
 	}
 }

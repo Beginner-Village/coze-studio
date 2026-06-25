@@ -105,6 +105,12 @@ func (s *SingleAgentApplicationService) UpdateSingleAgentDraft(ctx context.Conte
 		return nil, err
 	}
 
+	// 虚拟员工实例是产品模板的只读 shadow：不允许在此修改配置，以防消费者扩权
+	// 或改变冻结的能力快照（SuperAgentToolConfig）。
+	if currentAgentInfo.SourceProductID != 0 {
+		return nil, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("msg", "read-only shadow: cannot update config of a virtual employee instance (SourceProductID != 0)"))
+	}
+
 	userID := ctxutil.MustGetUIDFromCtx(ctx)
 
 	updateAgentInfo, err := s.applyAgentUpdates(currentAgentInfo, req.BotInfo)

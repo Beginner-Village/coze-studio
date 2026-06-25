@@ -30,6 +30,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_common"
 	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 	"github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/chatmodel"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/embedding"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
@@ -57,6 +58,7 @@ type Config struct {
 	CPStore       compose.CheckPointStore
 	Embedder      embedding.Embedder
 	SessionCookie string // 用户的session cookie，用于调用RAGFlow API
+	Ext           map[string]string
 }
 
 const (
@@ -77,9 +79,21 @@ const (
 func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	// Session key will be retrieved from database when needed by external knowledge tool
 
+	workflowCanvasMode := isSuperAgent(conf) && workflowCanvasModeEnabled(conf.Ext)
+
 	persona := conf.Agent.Prompt.GetPrompt()
 	if isSuperAgent(conf) {
-		persona = persona + "\n\n" + SuperAgentExtraPrompt
+		if workflowCanvasMode {
+			persona = persona + "\n\n" + SuperAgentWorkflowCanvasPrompt
+		} else {
+			persona = persona + "\n\n" + SuperAgentExtraPrompt
+		}
+		// Hermes 式:开场自动注入该用户的 USER.md/MEMORY.md 长期记忆,让超级体"一上来就懂这个人"。
+		// sandboxKeyFor 是纯函数,可在此提前算(与下方 sandboxKey 一致)。
+		memKey := sandboxKeyFor(conf.Identity.ConnectorID, conf.Agent.AgentID, conf.UserID)
+		if mem := loadSuperAgentMemoryDocs(ctx, memKey); mem != "" {
+			persona = persona + "\n\n" + mem
+		}
 	}
 
 	avConf := &variableConf{
@@ -119,6 +133,20 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		return nil, err
 	}
 
+	// 超级智能体常把大段文件内容塞进 write_file/run_bash 等工具调用的参数里。
+	// max_tokens 只限制「模型单次输出长度」(与输入上下文无关),设小了会把工具调用的
+	// JSON 截断成残缺串(报 "unexpected end of JSON input")。现代模型(qwen3-max 等)
+	// 最大输出本身就很大,这里对超级体**彻底不传 max_tokens**,让模型用满额输出。
+	// 需同时清掉:① 智能体级覆盖;② 模型基础配置里的默认值(否则会回落到那个默认)。
+	if isSuperAgent(conf) {
+		if conf.Agent.ModelInfo != nil {
+			conf.Agent.ModelInfo.MaxTokens = nil
+		}
+		if modelInfo != nil {
+			modelInfo.Meta.ConnConfig.MaxTokens = nil
+		}
+	}
+
 	chatModel, err := newChatModel(ctx, &config{
 		modelFactory:      conf.ModelFactory,
 		modelInfo:         modelInfo,
@@ -129,26 +157,33 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	}
 
 	requireCheckpoint := false
-	pluginTools, err := newPluginTools(ctx, &toolConfig{
-		spaceID:       conf.Agent.SpaceID,
-		userID:        conf.UserID,
-		agentIdentity: conf.Identity,
-		toolConf:      conf.Agent.Plugin,
-	})
-	if err != nil {
-		return nil, err
+	var pluginTools []tool.InvokableTool
+	if !workflowCanvasMode {
+		pluginTools, err = newPluginTools(ctx, &toolConfig{
+			spaceID:       conf.Agent.SpaceID,
+			userID:        conf.UserID,
+			agentIdentity: conf.Identity,
+			toolConf:      conf.Agent.Plugin,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 	tr := newPreToolRetriever(&toolPreCallConf{})
 
-	wfTools, returnDirectlyTools, err := newWorkflowTools(ctx, &workflowConfig{
-		wfInfos: conf.Agent.Workflow,
-	})
-	if err != nil {
-		return nil, err
+	var wfTools []workflow.ToolFromWorkflow
+	returnDirectlyTools := make(map[string]struct{})
+	if !workflowCanvasMode {
+		wfTools, returnDirectlyTools, err = newWorkflowTools(ctx, &workflowConfig{
+			wfInfos: conf.Agent.Workflow,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var dbTools []tool.InvokableTool
-	if len(conf.Agent.Database) > 0 {
+	if !workflowCanvasMode && len(conf.Agent.Database) > 0 {
 		dbTools, err = newDatabaseTools(ctx, &databaseConfig{
 			spaceID:       conf.Agent.SpaceID,
 			userID:        conf.UserID,
@@ -169,7 +204,10 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		memoryToolEnabled = conf.Agent.MemoryToolConfig.Mode == nil || *conf.Agent.MemoryToolConfig.Mode == 1
 	}
 
-	if memoryToolEnabled {
+	// 超级智能体改用自有的 per-user DB 记忆(memory_save/memory_recall),不再挂老的
+	// 关键词记忆工具(getKeywordMemory/setKeywordMemory 等),避免两套记忆并存/不同步。
+	// 普通单智能体保持原有关键词记忆,行为不变。
+	if memoryToolEnabled && !isSuperAgent(conf) {
 		avTools, err = newAgentVariableTools(ctx, avConf)
 		if err != nil {
 			return nil, err
@@ -178,7 +216,7 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 
 	// 添加外部知识库工具（如果配置了dataset_ids）
 	var externalKnowledgeTools []tool.InvokableTool
-	if conf.Agent.ExternalKnowledge != nil && len(conf.Agent.ExternalKnowledge.DatasetIds) > 0 {
+	if !workflowCanvasMode && conf.Agent.ExternalKnowledge != nil && len(conf.Agent.ExternalKnowledge.DatasetIds) > 0 {
 		externalKnowledgeConfig := &externalKnowledgeConfig{
 			spaceID:           conf.Agent.SpaceID,
 			userID:            conf.UserID,
@@ -224,24 +262,59 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	// - L2 说明:read_skill 工具按需返回技能 SKILL.md(显式"打开"技能的工具,所有 agent 都挂)。
 	// - L3 脚本/资源:超级智能体额外把技能 eager 落盘到沙箱 /skills/<name>/(SKILL.md + 脚本),
 	//   模型按 SKILL.md 指引用 run_bash 执行文件夹里的固定脚本。
-	skillTools := newSkillTools(conf.Agent.SpaceID, sandboxKey, conf.Agent.SkillInfoList)
+	var skillTools []tool.InvokableTool
+	if !workflowCanvasMode {
+		skillTools = newSkillTools(conf.Agent.SpaceID, sandboxKey, conf.Agent.SkillInfoList)
+	}
 	agentTools = append(agentTools, slices.Transform(skillTools, func(a tool.InvokableTool) tool.BaseTool {
 		return a
 	})...)
-	if isSuperAgent(conf) && len(conf.Agent.SkillInfoList) > 0 {
+	if isSuperAgent(conf) && !workflowCanvasMode && len(conf.Agent.SkillInfoList) > 0 {
+		// manifest 守卫:技能集合未变时整段跳过,仅首次/变更时才真正落盘。
 		syncBoundSkillsToSandbox(ctx, sandboxKey, conf.Agent.SpaceID, conf.Agent.SkillInfoList)
-		logs.CtxInfof(ctx, "[BuildAgent] synced %d skill folder(s) to sandbox /skills (key=%s)", len(conf.Agent.SkillInfoList), sandboxKey)
+		logs.CtxInfof(ctx, "[BuildAgent] ensured %d skill folder(s) in sandbox /skills (manifest-guarded, key=%s)", len(conf.Agent.SkillInfoList), sandboxKey)
 	}
 
-	// 添加沙箱工具 (run_bash/read_file/write_file/list_files)。超级体始终挂(需读 /skills/)。
-	if isSuperAgent(conf) || sandboxToolsEnabled(len(conf.Agent.SkillInfoList)) {
-		sandboxTools := newSandboxTools(sandboxKey)
+	// 超级体能力开关(per-agent，默认全开)。沙箱总开关关闭=「纯 MCP 模式」。
+	superToolCfg := conf.Agent.SuperAgentToolConfig
+	sandboxOff := isSuperAgent(conf) && !superToolCfg.SandboxEnabled()
+
+	// 添加沙箱工具 (run_bash/read_file/write_file/list_files 等)。超级体默认挂(需读 /skills/)，
+	// 但沙箱总开关关闭时不挂；run_bash 子开关关闭时单独剔除 run_bash。
+	//
+	// 虚拟员工实例(SourceProductID != 0)：/skills 以只读挂载，防止运行时改写技能模板。
+	instanceMode := isInstanceAgent(conf)
+	mountSandbox := !workflowCanvasMode && ((isSuperAgent(conf) && !sandboxOff) || (!isSuperAgent(conf) && sandboxToolsEnabled(len(conf.Agent.SkillInfoList))))
+	if mountSandbox {
+		sandboxTools := newSandboxTools(sandboxKey, instanceMode)
+		if isSuperAgent(conf) {
+			sandboxTools = gateSuperAgentTools(ctx, sandboxTools, superToolCfg, sandboxOff)
+		}
 		agentTools = append(agentTools, slices.Transform(sandboxTools, func(a tool.InvokableTool) tool.BaseTool {
 			return a
 		})...)
 		if len(sandboxTools) > 0 {
-			logs.CtxInfof(ctx, "[BuildAgent] Mounted %d sandbox tools (key=%s)", len(sandboxTools), sandboxKey)
+			logs.CtxInfof(ctx, "[BuildAgent] Mounted %d sandbox tools (key=%s, readonlySkills=%v)", len(sandboxTools), sandboxKey, instanceMode)
 		}
+		// 虚拟员工实例冷启动：从产品模板归档种子化沙箱 /workspace。
+		// 这与 agentsandbox.Manager.coldStart 里的 restoreObject 一致，但 DefaultSVC 是
+		// 共享的（Config.TemplateObjectKey 是单例配置），所以直接在 agentflow 层调用
+		// RestoreFrom，把实例的模板 key 传过去，让沙箱服务用模板冷启动。
+		if instanceMode {
+			templateKey := instanceTemplateObjectKey(conf.Agent.SourceProductID, conf.Agent.SourceProductVersion)
+			if templateKey != "" {
+				svc := crosssandbox.DefaultSVC()
+				if svc != nil {
+					if err := svc.RestoreFrom(ctx, sandboxKey, templateKey); err != nil {
+						logs.CtxWarnf(ctx, "[BuildAgent] instance RestoreFrom template %q failed: %v (continuing)", templateKey, err)
+					} else {
+						logs.CtxInfof(ctx, "[BuildAgent] instance restored template %q to sandbox %s", templateKey, sandboxKey)
+					}
+				}
+			}
+		}
+	} else if sandboxOff {
+		logs.CtxInfof(ctx, "[BuildAgent] sandbox disabled by config (pure-MCP mode), key=%s", sandboxKey)
 	}
 
 	// 自动绑定技能提示词中引用的工作流
@@ -249,7 +322,11 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	for _, wf := range conf.Agent.Workflow {
 		existingWorkflowIDs[wf.GetWorkflowId()] = struct{}{}
 	}
-	skillRes, skillResErr := resolveSkillResources(ctx, conf.Agent.SkillInfoList, existingWorkflowIDs)
+	var skillRes *skillResources
+	var skillResErr error
+	if !workflowCanvasMode {
+		skillRes, skillResErr = resolveSkillResources(ctx, conf.Agent.SkillInfoList, existingWorkflowIDs)
+	}
 	if skillResErr != nil {
 		logs.CtxWarnf(ctx, "[BuildAgent] resolveSkillResources failed: %v", skillResErr)
 	} else if skillRes != nil {
@@ -325,7 +402,7 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 
 	// 纯按类型区分:deep_task / 沙箱 / 扩展工具只挂给超级 agent。
 	// 普通(老)智能体沿用原来那一套,完全不碰沙箱与超级工具。
-	if isSuperAgent(conf) {
+	if isSuperAgent(conf) && !workflowCanvasMode && superToolCfg.DeepTaskEnabled() {
 		if dt, derr := newDeepTaskTool(ctx, chatModel, append([]tool.BaseTool(nil), agentTools...)); derr != nil {
 			logs.CtxWarnf(ctx, "[BuildAgent] build deep_task tool failed: %v", derr)
 		} else if dt != nil {
@@ -335,14 +412,39 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	}
 
 	// 超级 agent 可插拔扩展工具（P5）：只挂给超级 agent，普通 agent 不受影响。
+	// 按能力开关门控 web_search/web_fetch/skill_manage（纯 MCP 模式下 web_* 一并剔除）。
 	if isSuperAgent(conf) {
-		extTools := newSuperAgentExtensionTools(sandboxKey)
+		extTools := newSuperAgentExtensionTools(superAgentToolDeps{
+			SandboxKey: sandboxKey,
+			UserID:     parseSuperAgentUserID(conf.UserID),
+			SpaceID:    conf.Agent.SpaceID,
+			AgentID:    conf.Agent.AgentID,
+			Ext:        conf.Ext,
+		})
+		extTools = gateSuperAgentTools(ctx, extTools, superToolCfg, sandboxOff)
 		for _, et := range extTools {
 			agentTools = append(agentTools, et)
 		}
 		if len(extTools) > 0 {
 			logs.CtxInfof(ctx, "[BuildAgent] mounted %d super-agent extension tools", len(extTools))
 		}
+
+		// MCP 动态接入：把每个启用的 MCP server 暴露的工具挂进 ReAct 循环（官方 eino-ext/mcp 适配器）。
+		if !workflowCanvasMode && superToolCfg != nil && len(superToolCfg.MCPServers) > 0 {
+			mcpTools := newMCPTools(ctx, superToolCfg.MCPServers)
+			agentTools = append(agentTools, mcpTools...)
+			if len(mcpTools) > 0 {
+				logs.CtxInfof(ctx, "[BuildAgent] mounted %d MCP tool(s) from %d server(s)", len(mcpTools), len(superToolCfg.MCPServers))
+			}
+		}
+	}
+
+	if workflowCanvasMode {
+		before := len(agentTools)
+		agentTools = filterWorkflowCanvasTools(ctx, agentTools)
+		returnDirectlyTools = make(map[string]struct{})
+		containWfTool = false
+		logs.CtxInfof(ctx, "[BuildAgent] workflow canvas mode enabled: kept %d/%d canvas tool(s)", len(agentTools), before)
 	}
 
 	var isReActAgent bool
@@ -370,8 +472,8 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 			ToolReturnDirectly: returnDirectlyTools,
 			ModelNodeName:      keyOfReActAgentChatModel,
 			ToolsNodeName:      keyOfReActAgentToolsNode,
-			// 最大步数：默认 30(约15轮工具往返)，可经 AGENT_MAX_STEP 环境变量按需放宽以支持更复杂任务
-			MaxStep: agentMaxStep(),
+			// 最大步数：普通单 Agent 默认 30；超级体不设实际上限(对标 Claude Code/Codex 的长程任务)
+			MaxStep: agentMaxStep(isSuperAgent(conf)),
 		}
 
 		// 根据模型类型自适应选择StreamToolCallChecker
@@ -527,6 +629,9 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		modelInfo:           modelInfo,
 		containWfTool:       containWfTool,
 		returnDirectlyTools: returnDirectlyTools,
+		superAgent:          isSuperAgent(conf),
+		sandboxKey:          sandboxKey,
+		chatModel:           chatModel,
 	}
 
 	// 实验性 DeepAgents 引擎（AGENT_ENGINE=deepagents）：构建成功则挂上，StreamExecute 会优先走它；
@@ -542,6 +647,30 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	}
 
 	return ar, nil
+}
+
+// isInstanceAgent reports whether conf describes a virtual-employee INSTANCE,
+// i.e. an agent whose config was materialized from a published product template
+// (SourceProductID != 0). Instance sandboxes are cold-started from the product
+// template and have /skills mounted read-only.
+func isInstanceAgent(conf *Config) bool {
+	if conf == nil || conf.Agent == nil || conf.Agent.SingleAgent == nil {
+		return false
+	}
+	return conf.Agent.SourceProductID != 0
+}
+
+// instanceTemplateObjectKey computes the object-store key of the product template
+// archive that an instance should restore on cold-start:
+//
+//	"templates/agent_app/{productID}/{version}.tgz"
+//
+// Returns "" when productID is 0 (not an instance).
+func instanceTemplateObjectKey(productID int64, version string) string {
+	if productID == 0 {
+		return ""
+	}
+	return fmt.Sprintf("templates/agent_app/%d/%s.tgz", productID, version)
 }
 
 func extractJinja2Placeholder(persona string) (variableNames []string) {

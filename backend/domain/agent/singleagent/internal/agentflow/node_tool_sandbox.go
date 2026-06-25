@@ -558,15 +558,17 @@ func (t *globTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ .
 }
 
 // newSandboxTools 构造沙箱工具。沙箱服务未初始化时返回 nil。
-func newSandboxTools(key string) []tool.InvokableTool {
+// readonlySkills=true 时，write_file / edit_file / run_bash 工具会拒绝写入 /skills 树
+// （虚拟员工实例使用此标志，普通 agent 传 false）。
+func newSandboxTools(key string, readonlySkills bool) []tool.InvokableTool {
 	if crosssandbox.DefaultSVC() == nil {
 		return nil
 	}
 	return []tool.InvokableTool{
-		&runBashTool{key: key},
+		&runBashTool{key: key, readonlySkills: readonlySkills},
 		&readFileTool{key: key},
-		&writeFileTool{key: key},
-		&editFileTool{key: key},
+		&writeFileTool{key: key, readonlySkills: readonlySkills},
+		&editFileTool{key: key, readonlySkills: readonlySkills},
 		&listFilesTool{key: key},
 		&grepTool{key: key},
 		&globTool{key: key},
