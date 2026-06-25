@@ -201,3 +201,92 @@ func TestColdStartReadonlySkillsPropagates(t *testing.T) {
 		t.Fatalf("CreateRequest.ReadonlySkills not propagated: %+v", fr.lastCreate)
 	}
 }
+
+// TestEnsureSandboxWithTemplateNoOverwriteOnExistingCheckpoint is the core
+// TDD proof for the per-turn-overwrite fix:
+//
+// An instance whose sandbox ALREADY has an instance checkpoint must NOT have
+// its workspace overwritten by the template on a subsequent EnsureSandboxWithTemplate
+// call (simulating the 2nd, 3rd, … conversation turn).
+//
+// Precedence: instance checkpoint (restore) > template > blank.
+// For an ALREADY-RUNNING sandbox: no restore at all — workspace stays as-is.
+func TestEnsureSandboxWithTemplateNoOverwriteOnExistingCheckpoint(t *testing.T) {
+	const (
+		sandboxKey = "instance-u1"
+		tplKey     = "templates/agent_app/100/1.tgz"
+	)
+
+	t.Run("first cold-start: template used when no instance checkpoint", func(t *testing.T) {
+		ctx := context.Background()
+		fr := newRecordingRunner()
+		store := newFakeStorage()
+		m := testManagerWithStore(fr, store, DefaultConfig())
+
+		_ = store.PutObject(ctx, tplKey, []byte("TEMPLATE"))
+
+		if err := m.EnsureSandboxWithTemplate(ctx, sandboxKey, tplKey, true); err != nil {
+			t.Fatalf("EnsureSandboxWithTemplate (first): %v", err)
+		}
+		got, _ := fr.ReadFile(ctx, &sandbox.ReadFileRequest{SandboxID: sandboxKey, Path: workspaceArchivePath})
+		if string(got) != "TEMPLATE" {
+			t.Fatalf("first cold-start: restored archive = %q, want TEMPLATE", got)
+		}
+		if fr.lastCreate == nil || !fr.lastCreate.ReadonlySkills {
+			t.Fatalf("ReadonlySkills not propagated to Create: %+v", fr.lastCreate)
+		}
+	})
+
+	t.Run("first cold-start: instance checkpoint wins over template", func(t *testing.T) {
+		ctx := context.Background()
+		fr := newRecordingRunner()
+		store := newFakeStorage()
+		m := testManagerWithStore(fr, store, DefaultConfig())
+
+		_ = store.PutObject(ctx, m.workspaceKey(sandboxKey), []byte("INSTANCE-CKPT"))
+		_ = store.PutObject(ctx, tplKey, []byte("TEMPLATE"))
+
+		if err := m.EnsureSandboxWithTemplate(ctx, sandboxKey, tplKey, true); err != nil {
+			t.Fatalf("EnsureSandboxWithTemplate (first, with checkpoint): %v", err)
+		}
+		got, _ := fr.ReadFile(ctx, &sandbox.ReadFileRequest{SandboxID: sandboxKey, Path: workspaceArchivePath})
+		if string(got) != "INSTANCE-CKPT" {
+			t.Fatalf("instance checkpoint must take precedence: got %q, want INSTANCE-CKPT", got)
+		}
+	})
+
+	t.Run("second call on running sandbox: workspace NOT overwritten", func(t *testing.T) {
+		ctx := context.Background()
+		fr := newRecordingRunner()
+		store := newFakeStorage()
+		m := testManagerWithStore(fr, store, DefaultConfig())
+
+		_ = store.PutObject(ctx, tplKey, []byte("TEMPLATE"))
+
+		// First call: cold-start → template applied.
+		if err := m.EnsureSandboxWithTemplate(ctx, sandboxKey, tplKey, true); err != nil {
+			t.Fatalf("first ensure: %v", err)
+		}
+		// Simulate user work: the archive in the sandbox is now their accumulated work.
+		fr.seedArchive(sandboxKey, []byte("USER-WORK"))
+		// Simulate that an instance checkpoint now exists (mirroring a Checkpoint() call).
+		_ = store.PutObject(ctx, m.workspaceKey(sandboxKey), []byte("USER-WORK"))
+
+		createCountBefore := fr.CreateCount[sandboxKey]
+
+		// Second call: sandbox is already running → must NOT restore template.
+		if err := m.EnsureSandboxWithTemplate(ctx, sandboxKey, tplKey, true); err != nil {
+			t.Fatalf("second ensure: %v", err)
+		}
+		// Container must not have been recreated.
+		if fr.CreateCount[sandboxKey] != createCountBefore {
+			t.Fatalf("Create called on already-running sandbox (count %d → %d); template overwrite detected",
+				createCountBefore, fr.CreateCount[sandboxKey])
+		}
+		// Archive in sandbox must still be USER-WORK, not TEMPLATE.
+		got, _ := fr.ReadFile(ctx, &sandbox.ReadFileRequest{SandboxID: sandboxKey, Path: workspaceArchivePath})
+		if string(got) != "USER-WORK" {
+			t.Fatalf("workspace overwritten on second call: got %q, want USER-WORK", got)
+		}
+	})
+}

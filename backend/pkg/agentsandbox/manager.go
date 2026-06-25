@@ -95,6 +95,72 @@ func (m *Manager) EnsureSandbox(ctx context.Context, key string) error {
 	return err
 }
 
+// EnsureSandboxWithTemplate 与 EnsureSandbox 相同，但在冷启动时额外传入模板归档 key 和只读技能标志。
+// 对「已在运行」的沙箱什么也不做（不覆写工作区）。
+// 模板种子化遵循 coldStart 内的 precedence：实例自有检查点 > 模板 > 空白。
+// templateObjectKey 为空时退化为普通 EnsureSandbox。
+func (m *Manager) EnsureSandboxWithTemplate(ctx context.Context, key, templateObjectKey string, readonlySkills bool) error {
+	_, err, _ := m.sf.Do(key, func() (interface{}, error) {
+		return nil, m.ensureWithTemplate(ctx, key, templateObjectKey, readonlySkills)
+	})
+	return err
+}
+
+func (m *Manager) ensureWithTemplate(ctx context.Context, key, templateObjectKey string, readonlySkills bool) error {
+	entry, ok, err := m.reg.Get(ctx, key)
+	if err != nil {
+		return err
+	}
+	if ok {
+		// 以真实运行时状态为准。已在运行：不重新种子化。
+		st, _ := m.runner.State(ctx, key)
+		switch st {
+		case sandbox.StateRunning:
+			return m.reg.Touch(ctx, key, m.now())
+		case sandbox.StatePaused:
+			if err := m.runner.Resume(ctx, key); err != nil {
+				return err
+			}
+			_ = m.reg.SetState(ctx, key, sandbox.StateRunning)
+			return m.reg.Touch(ctx, key, m.now())
+		default:
+			// 运行时已没了，清理注册表后走冷启动。
+			_ = m.reg.Delete(ctx, key)
+		}
+		_ = entry
+	}
+	return m.coldStartWithTemplate(ctx, key, templateObjectKey, readonlySkills)
+}
+
+func (m *Manager) coldStartWithTemplate(ctx context.Context, key, templateObjectKey string, readonlySkills bool) error {
+	if _, err := m.runner.Create(ctx, &sandbox.CreateRequest{
+		SandboxID:         key,
+		Image:             m.cfg.Image,
+		MemoryMB:          m.cfg.MemoryMB,
+		CPUs:              m.cfg.CPUs,
+		TemplateObjectKey: templateObjectKey,
+		ReadonlySkills:    readonlySkills,
+	}); err != nil {
+		return fmt.Errorf("create sandbox: %w", err)
+	}
+	// precedence：先尝试本实例自有的 workspace 检查点。
+	if err := m.restore(ctx, key); err != nil {
+		return fmt.Errorf("restore workspace: %w", err)
+	}
+	// 若本实例尚无检查点且传入了模板 key，则用模板归档种子化 /workspace。
+	if templateObjectKey != "" && !m.instanceCheckpointExists(ctx, key) {
+		if _, err := m.restoreObject(ctx, key, templateObjectKey); err != nil {
+			return fmt.Errorf("restore template: %w", err)
+		}
+	}
+	_ = m.ensureLayout(ctx, key)
+	return m.reg.Put(ctx, &Entry{
+		SandboxID:      key,
+		State:          sandbox.StateRunning,
+		LastActiveUnix: m.now(),
+	})
+}
+
 func (m *Manager) ensure(ctx context.Context, key string) error {
 	entry, ok, err := m.reg.Get(ctx, key)
 	if err != nil {

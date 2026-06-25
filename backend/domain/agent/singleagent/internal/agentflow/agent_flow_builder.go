@@ -296,20 +296,17 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		if len(sandboxTools) > 0 {
 			logs.CtxInfof(ctx, "[BuildAgent] Mounted %d sandbox tools (key=%s, readonlySkills=%v)", len(sandboxTools), sandboxKey, instanceMode)
 		}
-		// 虚拟员工实例冷启动：从产品模板归档种子化沙箱 /workspace。
-		// 这与 agentsandbox.Manager.coldStart 里的 restoreObject 一致，但 DefaultSVC 是
-		// 共享的（Config.TemplateObjectKey 是单例配置），所以直接在 agentflow 层调用
-		// RestoreFrom，把实例的模板 key 传过去，让沙箱服务用模板冷启动。
+		// 虚拟员工实例：调用 EnsureSandboxWithTemplate 确保沙箱处于 running，
+		// 仅在冷启动时用模板种子化 /workspace（实例检查点 > 模板 > 空白）。
+		// 对已运行的沙箱（即已有积累工作区的轮次）什么都不做，不再覆写。
 		if instanceMode {
 			templateKey := instanceTemplateObjectKey(conf.Agent.SourceProductID, conf.Agent.SourceProductVersion)
-			if templateKey != "" {
-				svc := crosssandbox.DefaultSVC()
-				if svc != nil {
-					if err := svc.RestoreFrom(ctx, sandboxKey, templateKey); err != nil {
-						logs.CtxWarnf(ctx, "[BuildAgent] instance RestoreFrom template %q failed: %v (continuing)", templateKey, err)
-					} else {
-						logs.CtxInfof(ctx, "[BuildAgent] instance restored template %q to sandbox %s", templateKey, sandboxKey)
-					}
+			svc := crosssandbox.DefaultSVC()
+			if svc != nil {
+				if err := svc.EnsureSandboxWithTemplate(ctx, sandboxKey, templateKey, true); err != nil {
+					logs.CtxWarnf(ctx, "[BuildAgent] instance EnsureSandboxWithTemplate failed: %v (continuing)", err)
+				} else {
+					logs.CtxInfof(ctx, "[BuildAgent] instance sandbox ensured (key=%s, template=%q)", sandboxKey, templateKey)
 				}
 			}
 		}

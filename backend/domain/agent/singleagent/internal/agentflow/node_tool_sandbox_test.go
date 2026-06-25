@@ -119,6 +119,10 @@ func (m *fakeSandboxMgr) RestoreFrom(_ context.Context, _, _ string) error {
 	return nil
 }
 
+func (m *fakeSandboxMgr) EnsureSandboxWithTemplate(_ context.Context, _, _ string, _ bool) error {
+	return nil
+}
+
 func TestSandboxKeyStableAndSafe(t *testing.T) {
 	k1 := sandboxKeyFor(1, 2, "user@x")
 	k2 := sandboxKeyFor(1, 2, "user@x")

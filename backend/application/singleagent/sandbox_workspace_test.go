@@ -81,6 +81,10 @@ func (fakeSandboxManager) RestoreFrom(context.Context, string, string) error {
 	return nil
 }
 
+func (fakeSandboxManager) EnsureSandboxWithTemplate(context.Context, string, string, bool) error {
+	return nil
+}
+
 type fakeHarnessSandboxManager struct {
 	fakeSandboxManager
 }

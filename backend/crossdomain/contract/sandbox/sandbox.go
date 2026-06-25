@@ -42,6 +42,9 @@ type Manager interface {
 	CheckpointTo(ctx context.Context, key, objectKey string) (contentHash string, err error)
 	// RestoreFrom 从调用方指定的对象 key 还原归档到 key 沙箱的 /workspace。用于按模板冷启动。
 	RestoreFrom(ctx context.Context, key, objectKey string) error
+	// EnsureSandboxWithTemplate 确保沙箱处于 running；仅在冷启动时用 templateObjectKey 种子化
+	// /workspace（实例检查点 > 模板 > 空白）。已运行的沙箱不做任何还原，防止覆写积累的工作区。
+	EnsureSandboxWithTemplate(ctx context.Context, key, templateObjectKey string, readonlySkills bool) error
 }
 
 var defaultSVC Manager
