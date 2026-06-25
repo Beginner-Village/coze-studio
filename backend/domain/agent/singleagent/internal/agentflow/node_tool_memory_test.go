@@ -20,48 +20,10 @@ import (
 	"context"
 	"strings"
 	"testing"
-
-	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
 )
 
-func TestMemoryTools(t *testing.T) {
-	fm := &fakeSandboxMgr{}
-	crosssandbox.SetDefaultSVC(fm)
-	defer crosssandbox.SetDefaultSVC(nil)
-
-	ctx := context.Background()
-
-	recall := &memoryRecallTool{key: "k"}
-	out, err := recall.InvokableRun(ctx, "")
-	if err != nil || !strings.Contains(out, "(no memories") {
-		t.Fatalf("empty recall out=%q err=%v", out, err)
-	}
-
-	save := &memorySaveTool{key: "k"}
-	out, err = save.InvokableRun(ctx, `{"content":"likes Go"}`)
-	if err != nil || !strings.Contains(out, "Now 1 memories") {
-		t.Fatalf("save1 out=%q err=%v", out, err)
-	}
-	out, err = save.InvokableRun(ctx, `{"content":"timezone UTC+8"}`)
-	if err != nil || !strings.Contains(out, "Now 2 memories") {
-		t.Fatalf("save2 out=%q err=%v", out, err)
-	}
-
-	out, err = recall.InvokableRun(ctx, "")
-	if err != nil {
-		t.Fatalf("recall err=%v", err)
-	}
-	if !strings.Contains(out, "likes Go") || !strings.Contains(out, "timezone UTC+8") {
-		t.Fatalf("recall missing entries: %q", out)
-	}
-}
-
 func TestSuperAgentExtensionsRegistered(t *testing.T) {
-	fm := &fakeSandboxMgr{}
-	crosssandbox.SetDefaultSVC(fm)
-	defer crosssandbox.SetDefaultSVC(nil)
-
-	tools := newSuperAgentExtensionTools("k")
+	tools := newSuperAgentExtensionTools(superAgentToolDeps{SandboxKey: "k", UserID: 1})
 	names := map[string]bool{}
 	for _, tl := range tools {
 		info, err := tl.Info(context.Background())
@@ -70,9 +32,61 @@ func TestSuperAgentExtensionsRegistered(t *testing.T) {
 		}
 		names[info.Name] = true
 	}
-	for _, want := range []string{"memory_save", "memory_recall", "skill_manage"} {
-		if !names[want] {
-			t.Fatalf("extension %q not registered; got %v", want, names)
+	// skill_manage is a super-agent extension; the (file-based) long-term memory is
+	// NOT a tool — it lives in USER.md/MEMORY.md maintained via the sandbox file tools.
+	if !names["skill_manage"] {
+		t.Fatalf("skill_manage not registered as super-agent extension; got %v", names)
+	}
+}
+
+func TestSuperAgentExtraPromptMentionsStandardSkillFiles(t *testing.T) {
+	for _, want := range []string{"action=list", "action=write_file", "action=edit", "action=remove_file", "action=delete", "action=diff", "scripts/", "references/", "templates/", "assets/"} {
+		if !strings.Contains(SuperAgentExtraPrompt, want) {
+			t.Fatalf("SuperAgentExtraPrompt should mention %q; got %q", want, SuperAgentExtraPrompt)
 		}
+	}
+}
+
+func TestSuperAgentReviewPromptMaintainsMemoryFilesAndSkills(t *testing.T) {
+	// The post-run review fork (closed learning loop) must maintain the markdown
+	// memory files and capture reusable CLASS-LEVEL skills, confined to file/skill tools.
+	for _, want := range []string{"USER.md", "MEMORY.md", "skill_manage", "CLASS-LEVEL", "Nothing to save"} {
+		if !strings.Contains(SuperAgentReviewPrompt, want) {
+			t.Fatalf("SuperAgentReviewPrompt should mention %q; got %q", want, SuperAgentReviewPrompt)
+		}
+	}
+	lower := strings.ToLower(SuperAgentReviewPrompt)
+	if !strings.Contains(lower, "do not run commands") && !strings.Contains(lower, "not run commands") {
+		t.Fatalf("SuperAgentReviewPrompt must forbid running commands; got %q", SuperAgentReviewPrompt)
+	}
+	for _, guard := range []string{"environment-dependent", "transient"} {
+		if !strings.Contains(lower, guard) {
+			t.Fatalf("SuperAgentReviewPrompt should warn against capturing %q failures; got %q", guard, SuperAgentReviewPrompt)
+		}
+	}
+}
+
+func TestSuperAgentExtraPromptMandatesPlanFirst(t *testing.T) {
+	for _, want := range []string{"update_plan", "in_progress", "completed"} {
+		if !strings.Contains(SuperAgentExtraPrompt, want) {
+			t.Fatalf("SuperAgentExtraPrompt should drive plan-first execution mentioning %q; got %q", want, SuperAgentExtraPrompt)
+		}
+	}
+	if !strings.Contains(strings.ToLower(SuperAgentExtraPrompt), "plan") {
+		t.Fatalf("SuperAgentExtraPrompt should instruct the agent to plan multi-step work; got %q", SuperAgentExtraPrompt)
+	}
+}
+
+func TestSuperAgentExtraPromptUsesMarkdownMemoryFiles(t *testing.T) {
+	// Memory is Hermes-style markdown files (USER.md / MEMORY.md), auto-loaded and
+	// maintained via the agent's file tools — not a database or KV tool.
+	for _, want := range []string{"USER.md", "MEMORY.md", "read_file", "write_file", "edit_file"} {
+		if !strings.Contains(SuperAgentExtraPrompt, want) {
+			t.Fatalf("SuperAgentExtraPrompt should describe markdown memory files mentioning %q; got %q", want, SuperAgentExtraPrompt)
+		}
+	}
+	lower := strings.ToLower(SuperAgentExtraPrompt)
+	if !strings.Contains(lower, "auto-loaded") && !strings.Contains(lower, "auto-load") {
+		t.Fatalf("SuperAgentExtraPrompt should say the memory files are auto-loaded; got %q", SuperAgentExtraPrompt)
 	}
 }

@@ -1,0 +1,106 @@
+CREATE TABLE IF NOT EXISTS `ai_product` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` bigint NOT NULL,
+  `space_id` bigint NOT NULL DEFAULT 0,
+  `creator_id` bigint NOT NULL DEFAULT 0,
+  `name` varchar(255) NOT NULL,
+  `description` text,
+  `type` varchar(64) NOT NULL,
+  `status` varchar(64) NOT NULL,
+  `visibility` varchar(64) NOT NULL,
+  `icon_uri` varchar(1024) NOT NULL DEFAULT '',
+  `cover_uri` varchar(1024) NOT NULL DEFAULT '',
+  `document` mediumtext,
+  `feature` json,
+  `source_ref_type` varchar(64) NOT NULL DEFAULT '',
+  `source_ref_id` bigint NOT NULL DEFAULT 0,
+  `latest_version` varchar(64) NOT NULL DEFAULT '',
+  `published_version` varchar(64) NOT NULL DEFAULT '',
+  `official` tinyint(1) NOT NULL DEFAULT 0,
+  `featured` tinyint(1) NOT NULL DEFAULT 0,
+  `install_count` bigint NOT NULL DEFAULT 0,
+  `download_count` bigint NOT NULL DEFAULT 0,
+  `created_at` bigint NOT NULL DEFAULT 0,
+  `updated_at` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_ai_product_product_id` (`product_id`),
+  KEY `idx_ai_product_source` (`source_ref_type`, `source_ref_id`),
+  KEY `idx_ai_product_market` (`type`, `visibility`, `status`, `updated_at`),
+  KEY `idx_ai_product_space` (`space_id`, `type`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ai_product_version` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` bigint NOT NULL,
+  `version` varchar(64) NOT NULL,
+  `source_version` varchar(64) NOT NULL DEFAULT '',
+  `status` varchar(64) NOT NULL,
+  `review_status` varchar(64) NOT NULL DEFAULT '',
+  `review_note` text,
+  `reviewer_id` bigint NOT NULL DEFAULT 0,
+  `content_hash` varchar(128) NOT NULL DEFAULT '',
+  `feature_snapshot` json,
+  `published_at` bigint NOT NULL DEFAULT 0,
+  `created_at` bigint NOT NULL DEFAULT 0,
+  `updated_at` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_ai_product_version` (`product_id`, `version`),
+  KEY `idx_ai_product_version_status` (`product_id`, `status`, `published_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ai_product_installation` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `installation_id` bigint NOT NULL,
+  `product_id` bigint NOT NULL,
+  `product_version` varchar(64) NOT NULL,
+  `target_space_id` bigint NOT NULL,
+  `target_user_id` bigint NOT NULL DEFAULT 0,
+  `installed_by` bigint NOT NULL DEFAULT 0,
+  `status` varchar(64) NOT NULL,
+  `install_mode` varchar(64) NOT NULL DEFAULT 'space',
+  `runtime_config` json,
+  `created_at` bigint NOT NULL DEFAULT 0,
+  `updated_at` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_ai_product_installation` (`product_id`, `target_space_id`, `target_user_id`),
+  KEY `idx_ai_product_installation_space` (`target_space_id`, `status`, `updated_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ai_product_audit_log` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `audit_id` bigint NOT NULL,
+  `product_id` bigint NOT NULL DEFAULT 0,
+  `installation_id` bigint NOT NULL DEFAULT 0,
+  `space_id` bigint NOT NULL DEFAULT 0,
+  `user_id` bigint NOT NULL DEFAULT 0,
+  `action` varchar(64) NOT NULL,
+  `target_type` varchar(64) NOT NULL DEFAULT '',
+  `target_id` varchar(128) NOT NULL DEFAULT '',
+  `detail` json,
+  `created_at` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_ai_product_audit_id` (`audit_id`),
+  KEY `idx_ai_product_audit_product` (`product_id`, `created_at`),
+  KEY `idx_ai_product_audit_space` (`space_id`, `created_at`),
+  KEY `idx_ai_product_audit_user` (`user_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `super_agent_session_runtime_config` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `conversation_id` bigint NOT NULL,
+  `agent_id` bigint NOT NULL DEFAULT 0,
+  `space_id` bigint NOT NULL DEFAULT 0,
+  `model_product_id` bigint NOT NULL DEFAULT 0,
+  `mcp_product_ids` json,
+  `skill_product_ids` json,
+  `tool_policy` json,
+  `context_policy` json,
+  `resolved_snapshot` json,
+  `created_by` bigint NOT NULL DEFAULT 0,
+  `created_at` bigint NOT NULL DEFAULT 0,
+  `updated_at` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_super_agent_session_runtime` (`conversation_id`),
+  KEY `idx_super_agent_session_runtime_agent` (`agent_id`, `space_id`, `updated_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

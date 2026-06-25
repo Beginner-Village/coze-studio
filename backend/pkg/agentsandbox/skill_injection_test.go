@@ -26,7 +26,7 @@ import (
 // TestSyncSkillInjectAndRun 用真实 docker 验证：注入技能脚本→run_bash 跑通；同版本去重跳过。
 func TestSyncSkillInjectAndRun(t *testing.T) {
 	if !dockerAvailable() {
-		t.Skip("docker not available")
+		t.Skip("docker sandbox image ynet-sandbox:rich not available")
 	}
 	ctx := context.Background()
 	runner := dockerimpl.NewRunner()

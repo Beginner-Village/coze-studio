@@ -16,6 +16,8 @@
 
 package aiproduct
 
+import "strconv"
+
 type SnapshotSkill struct {
 	SkillID     int64
 	Name        string
@@ -39,7 +41,10 @@ func BuildAgentSnapshot(in AgentSnapshotInput) map[string]any {
 	skillSet := make([]map[string]any, 0, len(in.Skills))
 	for _, s := range in.Skills {
 		skillSet = append(skillSet, map[string]any{
-			"skill_id":      s.SkillID,
+			// Store as string: a snowflake skill_id exceeds float64's exact range,
+			// so a JSON-number round-trip (decode → map[string]any → float64) would
+			// corrupt it when the recruit flow reads the snapshot back.
+			"skill_id":      strconv.FormatInt(s.SkillID, 10),
 			"name":          s.Name,
 			"skill_version": s.Version,
 			"package_hash":  s.PackageHash,

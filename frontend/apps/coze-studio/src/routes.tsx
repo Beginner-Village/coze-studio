@@ -145,6 +145,7 @@ const AgentPublishPage = lazy(() =>
 );
 
 const AgentChatPage = lazy(() => import('./pages/agent-chat'));
+const EmployeeChatPage = lazy(() => import('./pages/employee-chat'));
 const DocsRedirect = lazy(() => import('./pages/docs'));
 
 const SpaceModelConfig = lazy(() => import('./pages/space-model-config'));
@@ -182,6 +183,14 @@ export const router: ReturnType<typeof createBrowserRouter> =
       loader: () => ({
         hasSider: false,
         requireAuth: false,
+      }),
+    },
+    {
+      path: '/employee-chat',
+      Component: EmployeeChatPage,
+      loader: () => ({
+        hasSider: false,
+        requireAuth: true,
       }),
     },
     {

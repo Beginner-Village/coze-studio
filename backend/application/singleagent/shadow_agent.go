@@ -118,6 +118,54 @@ func (s *SingleAgentApplicationService) CreateShadowDraft(
 		if prompt, ok := snapshot["prompt"].(string); ok && prompt != "" {
 			draft.Prompt = &bot_common.PromptInfo{Prompt: strPtr(prompt)}
 		}
+		// Seed super-agent capabilities (sandbox / web_search / skill_manage …) so
+		// the instance exposes the same tool surface as the published source.
+		if caps, ok := snapshot["capabilities"].(map[string]any); ok {
+			boolPtr := func(k string) *bool {
+				if v, ok := caps[k].(bool); ok {
+					return &v
+				}
+				return nil
+			}
+			draft.SuperAgentToolConfig = &crossdomainSingleagent.SuperAgentToolConfig{
+				Sandbox:     boolPtr("sandbox"),
+				WebSearch:   boolPtr("web_search"),
+				WebFetch:    boolPtr("web_fetch"),
+				RunBash:     boolPtr("run_bash"),
+				DeepTask:    boolPtr("deep_task"),
+				SkillManage: boolPtr("skill_manage"),
+			}
+		}
+		// Seed the bound-skill list so the instance can read_skill the same skills
+		// (skill files themselves are restored from the template sandbox checkpoint).
+		// skill_id is stored as a string in the snapshot to survive the JSON round-trip.
+		if rawSkills, ok := snapshot["skill_set"].([]any); ok {
+			refs := make([]*crossdomainSingleagent.SkillReference, 0, len(rawSkills))
+			for _, item := range rawSkills {
+				m, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				ref := &crossdomainSingleagent.SkillReference{}
+				if idStr, ok := m["skill_id"].(string); ok {
+					if id, err := strconv.ParseInt(idStr, 10, 64); err == nil {
+						ref.SkillID = id
+					}
+				}
+				if name, ok := m["name"].(string); ok {
+					ref.SkillName = name
+				}
+				if desc, ok := m["skill_description"].(string); ok {
+					ref.SkillDescription = desc
+				}
+				if ref.SkillID != 0 {
+					refs = append(refs, ref)
+				}
+			}
+			if len(refs) > 0 {
+				draft.SkillInfoList = refs
+			}
+		}
 	}
 
 	agentID, err := s.DomainSVC.CreateSingleAgentDraft(ctx, userID, draft)
@@ -125,6 +173,20 @@ func (s *SingleAgentApplicationService) CreateShadowDraft(
 		return 0, fmt.Errorf("CreateShadowDraft productID=%d: %w", productID, err)
 	}
 	return agentID, nil
+}
+
+// FindUserInstance returns the agentID of the instance draft the user already
+// materialised from productID, or 0 if none exists. It satisfies
+// aiproduct.ShadowAgentWriter and makes recruitment idempotent.
+func (s *SingleAgentApplicationService) FindUserInstance(ctx context.Context, userID, productID int64) (int64, error) {
+	draft, err := s.DomainSVC.GetDraftBySourceProduct(ctx, userID, productID)
+	if err != nil {
+		return 0, fmt.Errorf("FindUserInstance userID=%d productID=%d: %w", userID, productID, err)
+	}
+	if draft != nil && draft.SingleAgent != nil {
+		return draft.AgentID, nil
+	}
+	return 0, nil
 }
 
 // buildModelParams converts a ModelInfo's numeric fields to a map[string]any.

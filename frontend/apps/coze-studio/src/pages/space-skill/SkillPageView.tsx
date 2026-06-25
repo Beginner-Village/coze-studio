@@ -65,6 +65,7 @@ interface SkillPageViewProps {
   onInstall: (skill: SkillInfo) => void;
   onExport: (skill: SkillInfo) => void;
   onRecruit?: (skill: SkillInfo) => void;
+  onReviewCountChange: (count: number) => void;
 }
 
 const SkillHero: React.FC<
@@ -227,6 +228,7 @@ const SkillContent: React.FC<
     | 'onInstall'
     | 'onExport'
     | 'onRecruit'
+    | 'onReviewCountChange'
   >
 > = ({
   activeView,
@@ -241,11 +243,12 @@ const SkillContent: React.FC<
   onInstall,
   onExport,
   onRecruit,
+  onReviewCountChange,
 }) => {
   if (activeView === 'review') {
     return (
       <div className={styles.content}>
-        <ReviewQueue spaceId={spaceId} />
+        <ReviewQueue spaceId={spaceId} onCountChange={onReviewCountChange} />
       </div>
     );
   }
@@ -333,6 +336,7 @@ export const SkillPageView: React.FC<SkillPageViewProps> = props => (
       onInstall={props.onInstall}
       onExport={props.onExport}
       onRecruit={props.onRecruit}
+      onReviewCountChange={props.onReviewCountChange}
     />
   </div>
 );

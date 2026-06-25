@@ -25,7 +25,7 @@ import (
 )
 
 func TestSuperAgentExtensionRegistry(t *testing.T) {
-	tools := newSuperAgentExtensionTools("ukey")
+	tools := newSuperAgentExtensionTools(superAgentToolDeps{SandboxKey: "ukey"})
 	if len(tools) == 0 {
 		t.Fatal("expected at least one registered extension tool")
 	}

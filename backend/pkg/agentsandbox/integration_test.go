@@ -24,12 +24,15 @@ import (
 	dockerimpl "github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/docker"
 )
 
-func dockerAvailable() bool { return exec.Command("docker", "version").Run() == nil }
+func dockerAvailable() bool {
+	return exec.Command("docker", "version").Run() == nil &&
+		exec.Command("docker", "image", "inspect", "ynet-sandbox:rich").Run() == nil
+}
 
 // TestCheckpointRestoreRoundTrip 用真实 docker 验证 workspace 持久化往返。
 func TestCheckpointRestoreRoundTrip(t *testing.T) {
 	if !dockerAvailable() {
-		t.Skip("docker not available")
+		t.Skip("docker sandbox image ynet-sandbox:rich not available")
 	}
 	ctx := context.Background()
 	runner := dockerimpl.NewRunner()

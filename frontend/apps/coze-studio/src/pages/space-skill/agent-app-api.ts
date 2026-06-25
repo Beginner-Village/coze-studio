@@ -61,6 +61,32 @@ export interface RecruitResult {
   };
 }
 
+export interface AgentAppItem {
+  product_id: string;
+  name: string;
+  description: string;
+  icon_uri?: string;
+  status: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface ListAgentAppsParams {
+  space_id: string;
+  keyword?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface ListAgentAppsResult {
+  code: number;
+  msg: string;
+  data: {
+    products: AgentAppItem[];
+    total: number;
+  };
+}
+
 const post = <T>(url: string, data: Record<string, unknown>): Promise<T> =>
   axiosInstance.request({
     url,
@@ -89,5 +115,17 @@ export const agentAppApi = {
     post<RecruitResult>('/api/super-agent/agent-app/recruit', {
       product_id: params.product_id,
       space_id: params.space_id,
+    }),
+
+  // 虚拟员工商城列表：复用通用商城产品列表端点，按 type=agent_app 过滤。
+  // space_id 为空时必须省略（后端 json:",string" 无法把空串解析为 int64）；
+  // 省略后按全局可见性返回所有已发布的全局虚拟员工，无需先进入空间。
+  listAgentApps: (params: ListAgentAppsParams): Promise<ListAgentAppsResult> =>
+    post<ListAgentAppsResult>('/api/super-agent/marketplace/products/list', {
+      ...(params.space_id ? { space_id: params.space_id } : {}),
+      type: 'agent_app',
+      keyword: params.keyword,
+      page: params.page ?? 1,
+      page_size: params.page_size ?? 100,
     }),
 };

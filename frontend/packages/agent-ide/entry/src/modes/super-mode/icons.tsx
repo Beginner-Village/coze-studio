@@ -25,7 +25,12 @@ interface IconProps {
 }
 
 const wrap = (paths: React.ReactNode, opts?: { fill?: boolean }) => {
-  const Comp: React.FC<IconProps> = ({ size = 16, className, style, color }) => (
+  const Comp: React.FC<IconProps> = ({
+    size = 16,
+    className,
+    style,
+    color,
+  }) => (
     <svg
       width={size}
       height={size}
@@ -126,6 +131,12 @@ export const IcTrash = wrap(
     <path d="M6 7l1 12a2 2 0 0 0 2 1.9h6a2 2 0 0 0 2-1.9L18 7" />
   </>,
 );
+export const IcEdit = wrap(
+  <>
+    <path d="M4 20h4l11-11a2.1 2.1 0 0 0-3-3L5 17l-1 3z" />
+    <path d="M13.5 6.5l4 4" />
+  </>,
+);
 export const IcSettings = wrap(
   <>
     <circle cx="12" cy="12" r="3" />
@@ -135,6 +146,45 @@ export const IcSettings = wrap(
 export const IcChevronRight = wrap(<path d="M9 6l6 6-6 6" />);
 export const IcChevronDown = wrap(<path d="M6 9l6 6 6-6" />);
 export const IcPlus = wrap(<path d="M12 5v14M5 12h14" />);
+export const IcClose = wrap(<path d="M6 6l12 12M18 6 6 18" />);
+export const IcList = wrap(<path d="M4 6h16M4 12h16M4 18h10" />);
+export const IcCheckList = wrap(
+  <>
+    <path d="M10 6h11M10 12h11M10 18h11" />
+    <path d="M3 6l1.2 1.2L6.5 4.8" />
+    <path d="M3 17.5h2.5v2.5H3z" />
+  </>,
+);
+export const IcClock = wrap(
+  <>
+    <path d="M12 3a9 9 0 1 0 9 9" />
+    <path d="M12 7v5l3 2" />
+  </>,
+);
+export const IcSearch = wrap(
+  <>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M21 21l-4.3-4.3" />
+  </>,
+);
+export const IcStop = wrap(<rect x="6" y="6" width="12" height="12" rx="2" />);
+export const IcCopy = wrap(
+  <>
+    <rect x="9" y="9" width="11" height="11" rx="2" />
+    <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+  </>,
+);
+export const IcThumbUp = wrap(
+  <path d="M7 11v9H4v-9h3zm0 0 4-8a2 2 0 0 1 3 1.7V9h5a2 2 0 0 1 2 2.3l-1.3 7A2 2 0 0 1 17 20H7" />,
+);
+export const IcGrid = wrap(
+  <>
+    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+  </>,
+);
 export const IcArchive = wrap(
   <>
     <rect x="3" y="4" width="18" height="4" rx="1" />
@@ -173,7 +223,9 @@ export const iconForFile = (name: string, isDir: boolean, open?: boolean) => {
     return open ? IcFolderOpen : IcFolder;
   }
   const ext = name.split('.').pop()?.toLowerCase() ?? '';
-  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext)) {
+  if (
+    ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext)
+  ) {
     return IcImage;
   }
   if (ext === 'pdf') {
@@ -183,7 +235,23 @@ export const iconForFile = (name: string, isDir: boolean, open?: boolean) => {
     return IcTable;
   }
   if (
-    ['py', 'js', 'ts', 'tsx', 'jsx', 'go', 'java', 'c', 'cpp', 'rs', 'sh', 'rb', 'php', 'vue', 'css'].includes(ext)
+    [
+      'py',
+      'js',
+      'ts',
+      'tsx',
+      'jsx',
+      'go',
+      'java',
+      'c',
+      'cpp',
+      'rs',
+      'sh',
+      'rb',
+      'php',
+      'vue',
+      'css',
+    ].includes(ext)
   ) {
     return IcCode;
   }

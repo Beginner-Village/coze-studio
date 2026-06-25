@@ -20,9 +20,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
@@ -72,23 +74,120 @@ func checkMutationAllowed(action string) (bool, string) {
 	return true, ""
 }
 
+// argParseErrMsg 把「工具参数解析失败」转成可恢复的提示文本(以 nil error 返回)。
+// 模型生成超大工具调用(如把整个文件内容塞进参数)超 max_tokens 时,流式 JSON 会被
+// 截断成残缺串;若直接返回 error 会让整轮 run 崩溃。改为把错误反馈给模型,让它重试
+// (分块写),run 不中断。
+func argParseErrMsg(err error) string {
+	return fmt.Sprintf("Error: could not parse tool arguments (%v). The arguments were likely truncated because the payload is too large for a single tool call. Retry with a smaller payload — for large files, write them in several smaller steps (e.g. multiple `run_bash` calls appending chunks with `cat >> file`, or write_file in parts) instead of one huge call.", err)
+}
+
 // ---- context 压缩：DeepAgent 式结构化截断 + 落盘引用 ----
 
 const toolOutputsDir = "/workspace/.agent/tooloutputs"
 
+type toolOutputConversationIDKey struct{}
+
+type toolOutputOffloadRecord struct {
+	Version        string                  `json:"version"`
+	ConversationID string                  `json:"conversation_id,omitempty"`
+	ToolCallID     string                  `json:"tool_call_id,omitempty"`
+	Tool           string                  `json:"tool"`
+	Status         string                  `json:"status"`
+	Arguments      any                     `json:"arguments,omitempty"`
+	Summary        string                  `json:"summary"`
+	Result         toolOutputOffloadResult `json:"result"`
+}
+
+type toolOutputOffloadResult struct {
+	Content   string `json:"content"`
+	Bytes     int    `json:"bytes"`
+	Truncated bool   `json:"truncated"`
+}
+
+type toolOutputOffloadMeta struct {
+	ToolCallID string
+	Tool       string
+	Status     string
+	Arguments  any
+}
+
+func withToolOutputConversationID(ctx context.Context, conversationID int64) context.Context {
+	if conversationID <= 0 {
+		return ctx
+	}
+	return context.WithValue(ctx, toolOutputConversationIDKey{}, conversationID)
+}
+
+func toolOutputConversationID(ctx context.Context) int64 {
+	if ctx == nil {
+		return 0
+	}
+	if conversationID, ok := ctx.Value(toolOutputConversationIDKey{}).(int64); ok && conversationID > 0 {
+		return conversationID
+	}
+	return 0
+}
+
 // offloadOrTruncate 处理超长工具输出：写进沙箱文件，只回灌「头尾摘要 + 文件引用」，不调额外 LLM。
 // 写盘失败时退回纯截断。
 func offloadOrTruncate(ctx context.Context, svc crosssandbox.Manager, key, s string) string {
+	return offloadToolResultOrTruncate(ctx, svc, key, toolOutputOffloadMeta{Tool: "tool_output"}, s)
+}
+
+func offloadToolResultOrTruncate(ctx context.Context, svc crosssandbox.Manager, key string, meta toolOutputOffloadMeta, s string) string {
 	max := maxToolOutputBytes()
 	if len(s) <= max {
-		return s
+		// 工具输出(尤其网页内容)可能含非法 UTF-8;入库前必须清洗,否则 message 表 INSERT
+		// 会报 MySQL 1366 Incorrect string value 导致整轮失败。
+		return strings.ToValidUTF8(s, "")
 	}
 	sum := sha256.Sum256([]byte(s))
-	path := toolOutputsDir + "/" + hex.EncodeToString(sum[:])[:16] + ".txt"
-	if svc == nil || svc.WriteFile(ctx, key, path, []byte(s)) != nil {
+	conversationID := toolOutputConversationID(ctx)
+	path := toolOutputPath(conversationID, hex.EncodeToString(sum[:])[:16])
+	content := strings.ToValidUTF8(s, "")
+	toolName := strings.TrimSpace(meta.Tool)
+	if toolName == "" {
+		toolName = "tool_output"
+	}
+	status := strings.TrimSpace(meta.Status)
+	if status == "" {
+		status = "completed"
+	}
+	record := toolOutputOffloadRecord{
+		Version:        "v1",
+		ConversationID: formatToolOutputConversationID(conversationID),
+		ToolCallID:     strings.TrimSpace(meta.ToolCallID),
+		Tool:           toolName,
+		Status:         status,
+		Arguments:      meta.Arguments,
+		Summary:        fmt.Sprintf("%s output offloaded: %d bytes", toolName, len(s)),
+		Result: toolOutputOffloadResult{
+			Content:   content,
+			Bytes:     len(s),
+			Truncated: true,
+		},
+	}
+	raw, err := json.MarshalIndent(record, "", "  ")
+	if err != nil || svc == nil || svc.WriteFile(ctx, key, path, raw) != nil {
 		return truncateForModel(s)
 	}
-	head := s[:max*7/10]
-	tail := s[len(s)-max*3/10:]
+	// 按字节切会把多字节字符(中文/emoji)切成两半 → 非法 UTF-8,ToValidUTF8 去掉碎片。
+	head := strings.ToValidUTF8(s[:max*7/10], "")
+	tail := strings.ToValidUTF8(s[len(s)-max*3/10:], "")
 	return head + fmt.Sprintf("\n\n...[output truncated; full %d bytes saved to %s — use read_file/grep on that path to view more]...\n\n", len(s), path) + tail
+}
+
+func toolOutputPath(conversationID int64, digest string) string {
+	if conversationID > 0 {
+		return fmt.Sprintf("%s/sessions/%d/%s.json", toolOutputsDir, conversationID, digest)
+	}
+	return toolOutputsDir + "/" + digest + ".json"
+}
+
+func formatToolOutputConversationID(conversationID int64) string {
+	if conversationID <= 0 {
+		return ""
+	}
+	return strconv.FormatInt(conversationID, 10)
 }

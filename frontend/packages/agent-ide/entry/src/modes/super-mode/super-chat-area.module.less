@@ -1,0 +1,202 @@
+/*
+ * Copyright 2025 ynet-dev Authors
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ */
+
+.chatShell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--coz-bg-max, #fff);
+}
+
+.chatHeader {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+}
+
+.chatTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--coz-fg-plus, rgba(15, 21, 40, 90%));
+}
+
+.superChat {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  background: var(--coz-bg-max, #fff);
+}
+
+.tracePane {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--coz-bg-max, #fff);
+}
+
+.nativeChat {
+  display: flex;
+  flex-direction: column;
+}
+
+.nativeChatPane {
+  position: relative;
+
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+
+  :global(.semi-chat),
+  :global([class*='chat-area-main']) {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  :global([class*='chat-input-integration-layout']) {
+    width: 100% !important;
+  }
+
+  :global([class*='header-node']) {
+    flex: 0 0 0 !important;
+    width: 100% !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  :global([class*='chat-area-message-group-list']) {
+    flex: 1 1 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+}
+
+.nativeChatSlot {
+  pointer-events: none;
+
+  position: absolute;
+  inset: 0 auto auto 0;
+
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.headerActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 回复区字号调节:[A] − 14 + 紧凑胶囊 */
+.fontControl {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 4px;
+  background: var(--coz-bg-secondary, rgba(247, 248, 251, 1));
+  border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 12%));
+  border-radius: 999px;
+}
+
+.fontGlyph {
+  display: inline-flex;
+  align-items: baseline;
+  padding: 0 5px 0 6px;
+  color: var(--coz-fg-secondary, rgba(32, 41, 69, 62%));
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.3px;
+  user-select: none;
+}
+
+.fontBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  color: var(--coz-fg-secondary, rgba(32, 41, 69, 70%));
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    color: var(--coz-fg-hglt, #4d53e8);
+    background: var(--coz-mg-primary, rgba(82, 100, 154, 10%));
+  }
+
+  &:active:not(:disabled) {
+    background: var(--coz-mg-secondary, rgba(82, 100, 154, 16%));
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.fontValue {
+  min-width: 20px;
+  color: var(--coz-fg-primary, rgba(15, 21, 40, 82%));
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  user-select: none;
+}
+
+/* 只露出 BotDebugChatArea 的输入框:原生消息组与 onboarding 已被注入隐藏,
+   把聊天区高度压到自适应,消息滚动区收为 0。 */
+.composerPane {
+  display: flex;
+  align-items: flex-end;
+  min-height: 0;
+  padding: 8px 16px 10px;
+  border-top: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
+  background: var(--coz-bg-max, #fff);
+
+  // ChatArea 内部默认想撑满高度,这里压成只占输入框的高度
+  :global(.semi-chat) {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  :global([class*='chat-area-main']),
+  :global([class*='chat-input-integration-layout']),
+  :global([class*='chat-input-']) {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  :global(.semi-chat-content) {
+    display: none !important;
+  }
+  :global([class*='chat-area-message-group-list']),
+  :global([class*='safe-area-']) {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  :global(.semi-chat-chatBox) {
+    border-radius: 12px !important;
+  }
+}

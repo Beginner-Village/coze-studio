@@ -18,11 +18,16 @@ package agentflow
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -31,8 +36,10 @@ import (
 
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/agentrun"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
+	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
 	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
 	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/chatmodel"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/modelmgr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
@@ -46,9 +53,10 @@ type AgentState struct {
 }
 
 type AgentRequest struct {
-	UserID  string
-	Input   *schema.Message
-	History []*schema.Message
+	UserID         string
+	ConversationID int64
+	Input          *schema.Message
+	History        []*schema.Message
 
 	Identity *singleagent.AgentIdentity
 
@@ -70,11 +78,35 @@ type AgentRunner struct {
 	deepAgent adkAgent
 	// cpStore 复用现有 checkpoint store（Redis），供 DeepAgents 引擎做中断/恢复。
 	cpStore compose.CheckPointStore
+
+	superAgent bool
+	sandboxKey string
+	// chatModel is reused for super-agent context-compaction LLM summaries
+	// (nil => fall back to the rule-based summary; keeps non-super and test paths intact).
+	chatModel chatmodel.ToolCallingChatModel
 }
+
+const (
+	contextSummaryPath                = "/workspace/.agent/context-summary.json"
+	defaultContextCompactMaxBytes     = 160 * 1024
+	defaultContextCompactRecentMsgs   = 16
+	contextSummarySnippetMaxRunes     = 1600
+	contextSummaryInjectedMessageHead = "Context summary (auto-compacted)"
+	// defaultContextCompactRatio:当模型配置了上下文窗口(Capability.InputTokens)时,
+	// 历史占用达到「窗口 × 该比例」即触发压缩。默认 0.85 —— 给「压缩动作本身 + 下一轮回复」
+	// 留足头寸,不卡到接近 100% 才压(那样容易溢出)。
+	defaultContextCompactRatio = 0.85
+	// defaultContextCompactBytesPerToken:字节↔token 的粗略换算(中英文混合经验值约 3 字节/token)。
+	// 仅用于触发判断,无需精确;偏小会更早触发(更安全)。
+	defaultContextCompactBytesPerToken = 3.0
+)
 
 func (r *AgentRunner) StreamExecute(ctx context.Context, req *AgentRequest) (
 	sr *schema.StreamReader[*entity.AgentEvent], err error,
 ) {
+	if req != nil {
+		ctx = withToolOutputConversationID(ctx, req.ConversationID)
+	}
 	// 实验性 DeepAgents 引擎（特性开关，默认关；下游消费的 entity.AgentEvent 类型不变）。
 	if r.deepAgent != nil {
 		return r.streamExecuteDeep(ctx, req)
@@ -224,6 +256,7 @@ func (r *AgentRunner) processWfMidAnswerStream(ctx context.Context, sw *schema.S
 func (r *AgentRunner) PreHandlerReq(ctx context.Context, req *AgentRequest) *AgentRequest {
 	req.Input = r.preHandlerInput(req.Input)
 	req.History = r.preHandlerHistory(req.History)
+	req.History = r.preHandlerContextCompaction(ctx, req, req.History)
 	logs.CtxInfof(ctx, "[AgentRunner] PreHandlerReq, req: %v", conv.DebugJsonToStr(req))
 
 	return req
@@ -346,6 +379,420 @@ func (r *AgentRunner) preHandlerHistory(history []*schema.Message) []*schema.Mes
 	hm = r.validateAndFixToolCallSequence(hm)
 
 	return hm
+}
+
+type contextCompactionSummary struct {
+	Version           string   `json:"version"`
+	Summary           string   `json:"summary"`
+	UpdatedAt         int64    `json:"updated_at"`
+	Trigger           string   `json:"trigger,omitempty"`
+	OriginalMessages  int      `json:"original_messages,omitempty"`
+	CompactedMessages int      `json:"compacted_messages,omitempty"`
+	RetainedMessages  int      `json:"retained_messages,omitempty"`
+	OriginalBytes     int      `json:"original_bytes,omitempty"`
+	MaxBytes          int      `json:"max_bytes,omitempty"`
+	SummaryPath       string   `json:"summary_path,omitempty"`
+	KeyFiles          []string `json:"key_files,omitempty"`
+	Artifacts         []string `json:"artifacts,omitempty"`
+	NextActions       []string `json:"next_actions,omitempty"`
+}
+
+func (r *AgentRunner) preHandlerContextCompaction(ctx context.Context, req *AgentRequest, history []*schema.Message) []*schema.Message {
+	maxBytes := r.contextCompactThresholdBytes()
+	originalBytes := historyApproxBytes(history)
+	if !r.superAgent || len(history) == 0 || originalBytes <= maxBytes {
+		return history
+	}
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return history
+	}
+	key := r.sandboxKey
+	if key == "" && req != nil && req.Identity != nil {
+		key = sandboxKeyFor(req.Identity.ConnectorID, req.Identity.AgentID, req.UserID)
+	}
+	if key == "" {
+		return history
+	}
+
+	tail := contextCompactionRecentTail(history, contextCompactRecentMessages())
+	if len(tail) == 0 || len(tail) >= len(history) {
+		return history
+	}
+	old := history[:len(history)-len(tail)]
+	summaryPath := contextSummaryPathForRequest(req)
+	summary := buildContextCompactionSummary(ctx, svc, key, req, old, summaryPath, r.chatModel)
+	if window := r.modelContextWindowTokens(); window > 0 {
+		summary.Trigger = fmt.Sprintf("context_window_ratio_exceeded(window=%d)", window)
+	} else {
+		summary.Trigger = "history_bytes_exceeded(no_window_configured)"
+	}
+	summary.OriginalMessages = len(history)
+	summary.CompactedMessages = len(old)
+	summary.RetainedMessages = len(tail)
+	summary.OriginalBytes = originalBytes
+	summary.MaxBytes = maxBytes
+	summary.SummaryPath = summaryPath
+	raw, err := json.MarshalIndent(summary, "", "  ")
+	if err != nil {
+		logs.CtxWarnf(ctx, "[AgentRunner] marshal context summary failed: %v", err)
+		return history
+	}
+	unlock := lockSandboxFile(key, summaryPath)
+	werr := svc.WriteFile(ctx, key, summaryPath, raw)
+	unlock()
+	if werr != nil {
+		logs.CtxWarnf(ctx, "[AgentRunner] write context summary failed: %v", werr)
+		return history
+	}
+
+	compact := make([]*schema.Message, 0, len(tail)+1)
+	compact = append(compact, schema.SystemMessage(formatContextSummaryForModel(summary)))
+	compact = append(compact, tail...)
+	return r.validateAndFixToolCallSequence(compact)
+}
+
+func contextSummaryPathForRequest(req *AgentRequest) string {
+	if req != nil && req.ConversationID > 0 {
+		return fmt.Sprintf("/workspace/.agent/sessions/%d/context-summary.json", req.ConversationID)
+	}
+	return contextSummaryPath
+}
+
+func contextCompactMaxBytes() int {
+	return envInt("AGENT_CONTEXT_COMPACT_MAX_BYTES", defaultContextCompactMaxBytes)
+}
+
+// modelContextWindowTokens 返回当前模型的上下文窗口(max input tokens):
+//   - 优先用模型配置的 Capability.InputTokens(用户在模型配置里填的精确值);
+//   - 未配置时按模型名推断已知家族的窗口(兜底,见 inferContextWindowByModelName);
+//   - 仍无法识别返回 0 → 上层退回固定字节阈值(对未知小窗口模型最安全)。
+func (r *AgentRunner) modelContextWindowTokens() int {
+	if r == nil || r.modelInfo == nil {
+		return 0
+	}
+	if r.modelInfo.Meta.Capability != nil {
+		if n := r.modelInfo.Meta.Capability.InputTokens; n > 0 {
+			return n
+		}
+	}
+	return inferContextWindowByModelName(r.modelInfo.Name)
+}
+
+// inferContextWindowByModelName 按模型名推断已知家族的上下文窗口(token)。
+// 仅对能明确识别的家族返回窗口;不认识的返回 0(由上层走字节兜底,避免给小模型猜过大窗口)。
+func inferContextWindowByModelName(name string) int {
+	n := strings.ToLower(strings.TrimSpace(name))
+	if n == "" {
+		return 0
+	}
+	switch {
+	case strings.Contains(n, "glm-5") || strings.Contains(n, "glm5") || strings.Contains(n, "glm-4.6") || strings.Contains(n, "glm-4-plus"):
+		return 1000000 // GLM-5.x / 长上下文 GLM:1M
+	case strings.Contains(n, "claude"):
+		return 200000 // Claude:200K
+	case strings.Contains(n, "deepseek"):
+		return 128000 // DeepSeek:128K
+	case strings.Contains(n, "gpt-4o") || strings.Contains(n, "gpt-4.1") || strings.Contains(n, "gpt-4-turbo") || strings.Contains(n, "o1") || strings.Contains(n, "o3"):
+		return 128000 // OpenAI 主流长上下文:128K
+	case strings.Contains(n, "qwen"):
+		return 128000 // 通义千问主流:128K
+	case strings.Contains(n, "gemini"):
+		return 1000000 // Gemini 1.5/2.x:1M
+	default:
+		return 0 // 未知模型:走字节兜底
+	}
+}
+
+// contextCompactThresholdBytes 计算触发压缩的字节阈值:
+//   - 若模型配置了上下文窗口 → 阈值 = 窗口token × ratio × 每token字节数(随模型自适应);
+//   - 否则 → 退回固定字节阈值(默认 160KB),保证永不溢出/不崩。
+//
+// 沿用字节比较(无需引入分词器),把阈值从模型窗口推导即可做到「按窗口百分比压缩」。
+func (r *AgentRunner) contextCompactThresholdBytes() int {
+	window := r.modelContextWindowTokens()
+	if window <= 0 {
+		return contextCompactMaxBytes()
+	}
+	ratio := envFloat("AGENT_CONTEXT_COMPACT_RATIO", defaultContextCompactRatio)
+	bytesPerToken := envFloat("AGENT_CONTEXT_COMPACT_BYTES_PER_TOKEN", defaultContextCompactBytesPerToken)
+	threshold := int(float64(window) * ratio * bytesPerToken)
+	if threshold <= 0 {
+		return contextCompactMaxBytes()
+	}
+	return threshold
+}
+
+func envFloat(key string, fallback float64) float64 {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+	n, err := strconv.ParseFloat(raw, 64)
+	if err != nil || n <= 0 {
+		return fallback
+	}
+	return n
+}
+
+func contextCompactRecentMessages() int {
+	return envInt("AGENT_CONTEXT_COMPACT_RECENT_MESSAGES", defaultContextCompactRecentMsgs)
+}
+
+func envInt(key string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n <= 0 {
+		return fallback
+	}
+	return n
+}
+
+func historyApproxBytes(history []*schema.Message) int {
+	total := 0
+	for _, msg := range history {
+		if msg == nil {
+			continue
+		}
+		total += len(msg.Content)
+		for _, part := range msg.MultiContent {
+			total += len(part.Text)
+			if part.ImageURL != nil {
+				total += len(part.ImageURL.URL)
+			}
+			if part.FileURL != nil {
+				total += len(part.FileURL.URL)
+			}
+			if part.AudioURL != nil {
+				total += len(part.AudioURL.URL)
+			}
+			if part.VideoURL != nil {
+				total += len(part.VideoURL.URL)
+			}
+		}
+	}
+	return total
+}
+
+func contextCompactionRecentTail(history []*schema.Message, keep int) []*schema.Message {
+	if keep <= 0 || keep >= len(history) {
+		return history
+	}
+	start := len(history) - keep
+	for start > 0 && history[start] != nil && history[start].Role != schema.User {
+		start--
+	}
+	for start < len(history) && history[start] != nil && history[start].Role == schema.Tool {
+		start++
+	}
+	return history[start:]
+}
+
+func buildContextCompactionSummary(ctx context.Context, svc crosssandbox.Manager, key string, req *AgentRequest, old []*schema.Message, summaryPath string, chatModel chatmodel.ToolCallingChatModel) *contextCompactionSummary {
+	previous := readExistingContextSummary(ctx, svc, key, summaryPath)
+	if previous == nil && summaryPath != contextSummaryPath {
+		previous = readExistingContextSummary(ctx, svc, key, contextSummaryPath)
+	}
+	lines := make([]string, 0, 8)
+	if previous != nil && strings.TrimSpace(previous.Summary) != "" {
+		lines = append(lines, "Previous summary: "+previous.Summary)
+	}
+	lines = append(lines, summarizeMessagesForContext(old)...)
+	if len(lines) == 0 {
+		lines = append(lines, "Older conversation context was compacted.")
+	}
+	summary := strings.Join(lines, "\n")
+	if len([]rune(summary)) > contextSummarySnippetMaxRunes {
+		rs := []rune(summary)
+		summary = string(rs[:contextSummarySnippetMaxRunes]) + "..."
+	}
+
+	// Prefer a higher-quality LLM summary when a chat model is available; fall back
+	// to the rule-based summary above on any error/timeout (keeps the hot path safe).
+	if chatModel != nil {
+		if llm := llmCompactionSummary(ctx, chatModel, old, previousSummaryText(previous)); strings.TrimSpace(llm) != "" {
+			summary = strings.TrimSpace(llm)
+			if len([]rune(summary)) > contextSummarySnippetMaxRunes {
+				rs := []rune(summary)
+				summary = string(rs[:contextSummarySnippetMaxRunes]) + "..."
+			}
+		}
+	}
+
+	nextActions := make([]string, 0, 1)
+	if req != nil && req.Input != nil && strings.TrimSpace(req.Input.Content) != "" {
+		nextActions = append(nextActions, strings.TrimSpace(req.Input.Content))
+	}
+
+	allText := summary
+	if req != nil && req.Input != nil {
+		allText += "\n" + req.Input.Content
+	}
+	return &contextCompactionSummary{
+		Version:     "v1",
+		Summary:     summary,
+		UpdatedAt:   time.Now().Unix(),
+		KeyFiles:    uniqueMatches(allText, `/workspace/[^\s,，。；;'"）)]+`),
+		Artifacts:   uniqueMatches(allText, `/outputs/[^\s,，。；;'"）)]+`),
+		NextActions: nextActions,
+	}
+}
+
+// contextCompactionLLMTimeout bounds the synchronous LLM summary call so a slow
+// model never stalls the user-facing run; on timeout we fall back to rule-based.
+const contextCompactionLLMTimeout = 25 * time.Second
+
+// contextCompactionLLMInputBudget caps how many bytes of older turns we feed the
+// summarizer (keeps the most recent older turns when over budget).
+const contextCompactionLLMInputBudget = 120_000
+
+func previousSummaryText(previous *contextCompactionSummary) string {
+	if previous == nil {
+		return ""
+	}
+	return strings.TrimSpace(previous.Summary)
+}
+
+// llmCompactionSummary produces a higher-quality structured summary of the older
+// turns via the chat model (Hermes-style checkpoint). Returns "" on any error so
+// the caller falls back to the rule-based summary. Best-effort, timeout-bounded.
+func llmCompactionSummary(ctx context.Context, chatModel chatmodel.ToolCallingChatModel, old []*schema.Message, previous string) string {
+	if chatModel == nil || len(old) == 0 {
+		return ""
+	}
+	transcript := renderMessagesForCompaction(old, contextCompactionLLMInputBudget)
+	if strings.TrimSpace(transcript) == "" {
+		return ""
+	}
+
+	var sb strings.Builder
+	if previous != "" {
+		sb.WriteString("Earlier checkpoint to UPDATE (carry forward still-relevant facts, move finished items to completed):\n")
+		sb.WriteString(previous)
+		sb.WriteString("\n\n")
+	}
+	sb.WriteString("Older conversation turns to compact:\n")
+	sb.WriteString(transcript)
+
+	sys := schema.SystemMessage("You compress earlier conversation turns into a faithful, concise CHECKPOINT for the agent to keep working. " +
+		"Do NOT answer the user or perform any task — only summarize. Write reference-only notes, not a transcript copy. " +
+		"Cover, only when present: Goal/Task; Completed actions (tool + outcome); Active state (working dir, files created/edited, test/build status); Key decisions; Open questions / pending user asks; Relevant files and /outputs artifacts (full paths). " +
+		"Rewrite pending-sounding actions as past-tense facts so they are not re-executed. Keep it tight (a few short sections).")
+	usr := schema.UserMessage(sb.String())
+
+	cctx, cancel := context.WithTimeout(ctx, contextCompactionLLMTimeout)
+	defer cancel()
+	out, err := chatModel.Generate(cctx, []*schema.Message{sys, usr})
+	if err != nil || out == nil {
+		logs.CtxWarnf(ctx, "[AgentRunner] LLM context summary failed, using rule-based fallback: %v", err)
+		return ""
+	}
+	return out.Content
+}
+
+// renderMessagesForCompaction renders messages as "role: content" lines, capping
+// per-message length and total bytes (keeping the most recent when over budget).
+func renderMessagesForCompaction(messages []*schema.Message, budgetBytes int) string {
+	lines := make([]string, 0, len(messages))
+	for _, msg := range messages {
+		if msg == nil || strings.TrimSpace(msg.Content) == "" {
+			continue
+		}
+		content := strings.Join(strings.Fields(msg.Content), " ")
+		if len([]rune(content)) > 1000 {
+			content = string([]rune(content)[:1000]) + "..."
+		}
+		lines = append(lines, string(msg.Role)+": "+content)
+	}
+	// Keep the most recent lines within budget.
+	total := 0
+	start := len(lines)
+	for i := len(lines) - 1; i >= 0; i-- {
+		total += len(lines[i]) + 1
+		if total > budgetBytes {
+			break
+		}
+		start = i
+	}
+	return strings.Join(lines[start:], "\n")
+}
+
+func readExistingContextSummary(ctx context.Context, svc crosssandbox.Manager, key string, summaryPath string) *contextCompactionSummary {
+	if svc == nil {
+		return nil
+	}
+	raw, err := svc.ReadFile(ctx, key, summaryPath)
+	if err != nil || strings.TrimSpace(string(raw)) == "" {
+		return nil
+	}
+	summary := &contextCompactionSummary{}
+	if err := json.Unmarshal(raw, summary); err != nil {
+		return nil
+	}
+	return summary
+}
+
+func summarizeMessagesForContext(messages []*schema.Message) []string {
+	lines := make([]string, 0, len(messages))
+	for _, msg := range messages {
+		if msg == nil || strings.TrimSpace(msg.Content) == "" {
+			continue
+		}
+		role := string(msg.Role)
+		content := strings.Join(strings.Fields(msg.Content), " ")
+		if len([]rune(content)) > 220 {
+			content = string([]rune(content)[:220]) + "..."
+		}
+		lines = append(lines, role+": "+content)
+		if len(lines) >= 12 {
+			break
+		}
+	}
+	return lines
+}
+
+func uniqueMatches(text string, pattern string) []string {
+	re := regexp.MustCompile(pattern)
+	matches := re.FindAllString(text, -1)
+	out := make([]string, 0, len(matches))
+	seen := map[string]struct{}{}
+	for _, match := range matches {
+		match = strings.TrimRight(match, ".。")
+		if _, ok := seen[match]; ok {
+			continue
+		}
+		seen[match] = struct{}{}
+		out = append(out, match)
+	}
+	return out
+}
+
+func formatContextSummaryForModel(summary *contextCompactionSummary) string {
+	if summary == nil {
+		return contextSummaryInjectedMessageHead + "\nOlder conversation context was compacted."
+	}
+	summaryPath := strings.TrimSpace(summary.SummaryPath)
+	if summaryPath == "" {
+		summaryPath = contextSummaryPath
+	}
+	parts := []string{
+		contextSummaryInjectedMessageHead,
+		"Persisted summary: " + summaryPath,
+		"Summary:\n" + summary.Summary,
+	}
+	if len(summary.KeyFiles) > 0 {
+		parts = append(parts, "Key files: "+strings.Join(summary.KeyFiles, ", "))
+	}
+	if len(summary.Artifacts) > 0 {
+		parts = append(parts, "Artifacts: "+strings.Join(summary.Artifacts, ", "))
+	}
+	if len(summary.NextActions) > 0 {
+		parts = append(parts, "Next actions: "+strings.Join(summary.NextActions, "; "))
+	}
+	return strings.Join(parts, "\n")
 }
 
 // validateAndFixToolCallSequence 验证并修复 tool_calls 消息序列

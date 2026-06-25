@@ -17,9 +17,42 @@
 package agentflow
 
 import (
+	"context"
 	"strings"
 	"testing"
+
+	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
+	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
+	crossskill "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/skill"
+	"github.com/ynet-dev/ynet-studio/backend/domain/skill/entity"
 )
+
+type fakeSkillSvc struct {
+	skills map[int64]*entity.Skill
+}
+
+func (s *fakeSkillSvc) GetSkill(_ context.Context, skillID int64) (*entity.Skill, error) {
+	return s.skills[skillID], nil
+}
+
+func (s *fakeSkillSvc) GetSkillByName(_ context.Context, spaceID int64, name string) (*entity.Skill, error) {
+	for _, skill := range s.skills {
+		if skill.SpaceID == spaceID && skill.Name == name {
+			return skill, nil
+		}
+	}
+	return nil, nil
+}
+
+func (s *fakeSkillSvc) MGetSkills(_ context.Context, skillIDs []int64) ([]*entity.Skill, error) {
+	result := make([]*entity.Skill, 0, len(skillIDs))
+	for _, skillID := range skillIDs {
+		if skill := s.skills[skillID]; skill != nil {
+			result = append(result, skill)
+		}
+	}
+	return result, nil
+}
 
 func TestParseSkillFiles(t *testing.T) {
 	prompt := `# PDF 技能
@@ -73,5 +106,84 @@ func TestParseSkillFilesRejectsUnsafePaths(t *testing.T) {
 	}
 	if _, ok := files["ok.py"]; !ok {
 		t.Fatalf("safe path not kept: %v", files)
+	}
+}
+
+func TestReadSkillToolUsesStandardSkillFilesAsInstructions(t *testing.T) {
+	fm := &fakeSandboxMgr{}
+	crosssandbox.SetDefaultSVC(fm)
+	defer crosssandbox.SetDefaultSVC(nil)
+
+	crossskill.SetDefaultSVC(&fakeSkillSvc{skills: map[int64]*entity.Skill{
+		7: {
+			SkillID: 7,
+			SpaceID: 11,
+			Name:    "report",
+			Prompt:  "legacy prompt should not be returned",
+			Files: map[string]string{
+				"SKILL.md":           "# Report Skill\nUse scripts/run.py.",
+				"scripts/run.py":     "print('ok')",
+				"references/spec.md": "details",
+			},
+		},
+	}})
+	defer crossskill.SetDefaultSVC(nil)
+
+	readTool := newReadSkillTool(11, "sandbox-key", []*singleagent.SkillReference{
+		{SkillID: 7, SkillName: "report"},
+	})
+
+	out, err := readTool.InvokableRun(context.Background(), `{"skill_name":"report"}`)
+	if err != nil {
+		t.Fatalf("read_skill returned err: %v", err)
+	}
+	if !strings.Contains(out, "# Report Skill") {
+		t.Fatalf("read_skill should return SKILL.md content, got %q", out)
+	}
+	if strings.Contains(out, "legacy prompt") {
+		t.Fatalf("read_skill returned stale prompt instead of SKILL.md: %q", out)
+	}
+	if string(fm.files["/skills/report/SKILL.md"]) != "# Report Skill\nUse scripts/run.py." {
+		t.Fatalf("SKILL.md not synced into sandbox: %v", fm.files)
+	}
+	if string(fm.files["/skills/report/scripts/run.py"]) != "print('ok')" {
+		t.Fatalf("script file not synced into sandbox: %v", fm.files)
+	}
+	if string(fm.files["/skills/report/references/spec.md"]) != "details" {
+		t.Fatalf("reference file not synced into sandbox: %v", fm.files)
+	}
+}
+
+func TestSyncBoundSkillsToSandboxInstallsStandardFolderSkill(t *testing.T) {
+	fm := &fakeSandboxMgr{}
+	crosssandbox.SetDefaultSVC(fm)
+	defer crosssandbox.SetDefaultSVC(nil)
+
+	crossskill.SetDefaultSVC(&fakeSkillSvc{skills: map[int64]*entity.Skill{
+		8: {
+			SkillID: 8,
+			SpaceID: 12,
+			Name:    "slides",
+			Prompt:  "fallback prompt",
+			Files: map[string]string{
+				"SKILL.md":        "# Slides Skill",
+				"scripts/make.js": "console.log('slides')",
+			},
+		},
+	}})
+	defer crossskill.SetDefaultSVC(nil)
+
+	syncBoundSkillsToSandbox(context.Background(), "sandbox-key", 12, []*singleagent.SkillReference{
+		{SkillID: 8, SkillName: "slides"},
+	})
+
+	if string(fm.files["/skills/slides/SKILL.md"]) != "# Slides Skill" {
+		t.Fatalf("SKILL.md not synced: %v", fm.files)
+	}
+	if string(fm.files["/skills/slides/scripts/make.js"]) != "console.log('slides')" {
+		t.Fatalf("script not synced: %v", fm.files)
+	}
+	if len(fm.files[skillManifestPath]) == 0 {
+		t.Fatalf("manifest should be written after successful sync: %v", fm.files)
 	}
 }

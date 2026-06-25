@@ -1,0 +1,73 @@
+/* 轻量代码主题(浅色,One Light 风格),scoped 到 .coz-codeview。
+ * 使用 highlight.js 的 token 类名,自带样式不引入外网 CSS。 */
+.coz-codeview {
+  background: var(--coz-bg-plus, #fff);
+}
+.coz-codeview-gutter {
+  border-right: 1px solid var(--coz-stroke-primary, rgba(15, 23, 42, 0.08));
+  background: var(--coz-bg-secondary, #fafbfc);
+  min-width: 44px;
+}
+.coz-codeview pre,
+.coz-codeview code {
+  background: transparent;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  white-space: pre;
+  tab-size: 4;
+}
+.coz-codeview code.hljs {
+  color: var(--coz-fg-primary, #383a42);
+  padding: 0;
+}
+
+.coz-codeview .hljs-comment,
+.coz-codeview .hljs-quote {
+  color: #a0a1a7;
+  font-style: italic;
+}
+.coz-codeview .hljs-keyword,
+.coz-codeview .hljs-selector-tag,
+.coz-codeview .hljs-doctag,
+.coz-codeview .hljs-formula {
+  color: #a626a4;
+}
+.coz-codeview .hljs-string,
+.coz-codeview .hljs-regexp,
+.coz-codeview .hljs-addition,
+.coz-codeview .hljs-meta-string {
+  color: #50a14f;
+}
+.coz-codeview .hljs-number,
+.coz-codeview .hljs-literal,
+.coz-codeview .hljs-type,
+.coz-codeview .hljs-class .hljs-title,
+.coz-codeview .hljs-params {
+  color: #b76b01;
+}
+.coz-codeview .hljs-title,
+.coz-codeview .hljs-title.function_,
+.coz-codeview .hljs-section {
+  color: #c18401;
+}
+.coz-codeview .hljs-attr,
+.coz-codeview .hljs-attribute,
+.coz-codeview .hljs-variable,
+.coz-codeview .hljs-template-variable,
+.coz-codeview .hljs-built_in,
+.coz-codeview .hljs-builtin-name {
+  color: #e45649;
+}
+.coz-codeview .hljs-symbol,
+.coz-codeview .hljs-bullet,
+.coz-codeview .hljs-link,
+.coz-codeview .hljs-meta,
+.coz-codeview .hljs-selector-id,
+.coz-codeview .hljs-selector-class {
+  color: #0184bc;
+}
+.coz-codeview .hljs-emphasis {
+  font-style: italic;
+}
+.coz-codeview .hljs-strong {
+  font-weight: bold;
+}

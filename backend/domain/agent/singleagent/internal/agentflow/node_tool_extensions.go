@@ -30,6 +30,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/cloudwego/eino/components/tool"
@@ -38,8 +39,28 @@ import (
 	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
 )
 
-// superAgentExtensionFactory 按沙箱 key 造一个工具。
-type superAgentExtensionFactory func(key string) tool.InvokableTool
+// parseSuperAgentUserID parses the runtime user id (a decimal string in Config)
+// to int64 for per-user capabilities like memory; returns 0 when absent/invalid.
+func parseSuperAgentUserID(s string) int64 {
+	id, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return id
+}
+
+// superAgentToolDeps 是构造一个超级 agent 扩展工具所需的运行时依赖。
+// SandboxKey 给沙箱类工具用;UserID/SpaceID/AgentID 给 per-user 能力(如记忆)用。
+type superAgentToolDeps struct {
+	SandboxKey string
+	UserID     int64
+	SpaceID    int64
+	AgentID    int64
+	Ext        map[string]string
+}
+
+// superAgentExtensionFactory 按运行时依赖造一个工具。
+type superAgentExtensionFactory func(deps superAgentToolDeps) tool.InvokableTool
 
 // superAgentExtensions 是已注册的超级 agent 扩展工具工厂。
 var superAgentExtensions []superAgentExtensionFactory
@@ -51,10 +72,10 @@ func registerSuperAgentExtension(f superAgentExtensionFactory) {
 }
 
 // newSuperAgentExtensionTools 为超级 agent 构造全部已注册的扩展工具。
-func newSuperAgentExtensionTools(key string) []tool.InvokableTool {
+func newSuperAgentExtensionTools(deps superAgentToolDeps) []tool.InvokableTool {
 	out := make([]tool.InvokableTool, 0, len(superAgentExtensions))
 	for _, f := range superAgentExtensions {
-		if t := f(key); t != nil {
+		if t := f(deps); t != nil {
 			out = append(out, t)
 		}
 	}
@@ -62,9 +83,75 @@ func newSuperAgentExtensionTools(key string) []tool.InvokableTool {
 }
 
 func init() {
-	registerSuperAgentExtension(func(key string) tool.InvokableTool {
-		return &webFetchTool{key: key}
+	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
+		return &webFetchTool{key: deps.SandboxKey}
 	})
+	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
+		return &webSearchTool{key: deps.SandboxKey}
+	})
+}
+
+// ---- 内置工具：web_search（沙箱内查 Bing,免费、无需 API key）----
+// 后端服务器没有通用外网,但沙箱可达 cn.bing.com,故在沙箱里用 python 抓取并解析。
+
+type webSearchTool struct{ key string }
+
+type webSearchRequest struct {
+	Query string `json:"query" jsonschema:"description=The search query keywords"`
+}
+
+// bingSearchPy 抓取 cn.bing.com 搜索结果页并解析出 标题/链接/摘要,输出 JSON 数组。
+const bingSearchPy = "import sys,urllib.request,urllib.parse,re,json,html\n" +
+	"q=sys.argv[1]\n" +
+	"url='https://cn.bing.com/search?q='+urllib.parse.quote(q)\n" +
+	"req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36'})\n" +
+	"d=urllib.request.urlopen(req,timeout=15).read().decode('utf-8','replace')\n" +
+	"r=[]\n" +
+	"for b in d.split('class=\"b_algo\"')[1:9]:\n" +
+	"    m=re.search(r'<h2[^>]*><a[^>]*href=\"([^\"]+)\"[^>]*>(.*?)</a>',b,re.S)\n" +
+	"    if not m: continue\n" +
+	"    t=html.unescape(re.sub(r'<[^>]+>','',m.group(2))).strip()\n" +
+	"    sn=re.search(r'<p[^>]*>(.*?)</p>',b,re.S)\n" +
+	"    s=html.unescape(re.sub(r'<[^>]+>','',sn.group(1))).strip()[:240] if sn else ''\n" +
+	"    r.append({'title':t,'url':m.group(1),'snippet':s})\n" +
+	"print(json.dumps(r,ensure_ascii=False))"
+
+func (t *webSearchTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "web_search",
+		Desc: "Search the web for up-to-date information by keywords (uses Bing). Returns a JSON array of results, each with title, url and snippet. Use this to find current facts, news or pages; then optionally use web_fetch to read a specific url.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"query": {Type: schema.String, Desc: "The search query keywords", Required: true},
+		}),
+	}, nil
+}
+
+func (t *webSearchTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req webSearchRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return argParseErrMsg(err), nil
+	}
+	q := strings.TrimSpace(req.Query)
+	if q == "" {
+		return "Error: query is required", nil
+	}
+	cmd := fmt.Sprintf("python3 -c %s %s", shQuote(bingSearchPy), shQuote(q))
+	res, err := svc.Exec(ctx, t.key, cmd, 30)
+	if err != nil {
+		return fmt.Sprintf("Error searching: %v", err), nil
+	}
+	out := strings.TrimSpace(res.Stdout)
+	if out == "" || out == "[]" {
+		return fmt.Sprintf("(no results; exit_code=%d stderr=%s)", res.ExitCode, res.Stderr), nil
+	}
+	return offloadToolResultOrTruncate(ctx, svc, t.key, toolOutputOffloadMeta{
+		Tool:      "web_search",
+		Arguments: req,
+	}, out), nil
 }
 
 // ---- 示范工具：web_fetch（沙箱内 curl 拉取 URL）----
@@ -92,7 +179,7 @@ func (t *webFetchTool) InvokableRun(ctx context.Context, argumentsInJSON string,
 	}
 	var req webFetchRequest
 	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
+		return argParseErrMsg(err), nil
 	}
 	u := strings.TrimSpace(req.URL)
 	if !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
@@ -110,7 +197,10 @@ func (t *webFetchTool) InvokableRun(ctx context.Context, argumentsInJSON string,
 	if strings.TrimSpace(res.Stdout) == "" {
 		return fmt.Sprintf("(empty response; exit_code=%d stderr=%s)", res.ExitCode, res.Stderr), nil
 	}
-	return offloadOrTruncate(ctx, svc, t.key, res.Stdout), nil
+	return offloadToolResultOrTruncate(ctx, svc, t.key, toolOutputOffloadMeta{
+		Tool:      "web_fetch",
+		Arguments: req,
+	}, res.Stdout), nil
 }
 
 // shQuote 把字符串安全包成单引号 shell 参数。

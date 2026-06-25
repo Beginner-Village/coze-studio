@@ -43,6 +43,9 @@ type SingleAgentDraftRepo interface {
 	Create(ctx context.Context, creatorID int64, draft *entity.SingleAgent) (draftID int64, err error)
 	CreateWithID(ctx context.Context, creatorID, agentID int64, draft *entity.SingleAgent) (draftID int64, err error)
 	Get(ctx context.Context, agentID int64) (*entity.SingleAgent, error)
+	// GetBySourceProduct returns the most recently updated draft the creator
+	// materialised from the given source agent_app product, or (nil, nil) if none.
+	GetBySourceProduct(ctx context.Context, creatorID, sourceProductID int64) (*entity.SingleAgent, error)
 	MGet(ctx context.Context, agentIDs []int64) ([]*entity.SingleAgent, error)
 	Delete(ctx context.Context, spaceID, agentID int64) (err error)
 	Save(ctx context.Context, agentInfo *entity.SingleAgent) (err error)

@@ -15,79 +15,50 @@
  */
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 
-import { SubMenuItem, SubMenu } from '@coze-community/components';
+import { SubMenuItem } from '@coze-community/components';
 import { I18n } from '@coze-arch/i18n';
-// import {
-//   // IconCozTemplate,
-//   // IconCozTemplateFill,
-//   IconCozPlugin,
-//   IconCozPluginFill,
-// } from '@coze-arch/coze-design/icons';
+import { IconCozStore } from '@coze-arch/coze-design/icons';
 import {
   IconBotDevelop,
-  IconBotDevelopActive,
-  IconBotPlugin,
-  IconBotPluginActive,
   IconBotCard,
-  IconBotCardActive,
 } from '../../../../../components/bot-icons';
 import { Space } from '@coze-arch/coze-design';
-import {
-  IconBotDevelop,
-  IconBotPlugin,
-  IconCard,
-  IconCardActive,
-} from '../../../../../components/bot-icons';
 import { aopApi } from '@coze-arch/bot-api';
 
 import { useExploreRoute } from '../../hooks/use-explore-route';
 import cls from 'classnames';
-import { aopApi } from '@coze-arch/bot-api';
 
 import styles from './index.module.less';
 
-const getExploreMenuConfig = () => [
-  {
-    type: 'project',
-    icon: <IconBotDevelop />,
-    activeIcon: <IconBotDevelop />,
-    title: I18n.t('Project'),
-    // isActive: true,
-    // path: '/explore/project',
-    children: [
-      {
-        type: 'latest',
-        title: I18n.t('Project_latest'),
-        isActive: true,
-        path: '/explore/project/latest',
-      },
-      {
-        type: 'tools',
-        title: I18n.t('Project_tools'),
-        isActive: true,
-        path: '/explore/project/tools',
-      },
-    ],
-  },
-  {
-    type: 'plugin',
-    icon: <IconBotPlugin />,
-    activeIcon: <IconBotPlugin />,
-    title: I18n.t('Plugins'),
-    isActive: true,
-    path: '/explore/plugin',
-  },
-  // {
-  //   icon: <IconCozTemplate />,
-  //   activeIcon: <IconCozTemplateFill />,
-  //   title: I18n.t('template_name'),
-  //   isActive: true,
-  //   type: 'template',
-  //   path: '/explore/template',
-  // },
-];
+const SkillStoreNavButton = ({
+  active = false,
+  children,
+  icon,
+  suffix,
+  onClick,
+}: {
+  active?: boolean;
+  children: ReactNode;
+  icon: ReactNode;
+  suffix?: ReactNode;
+  onClick?: () => void;
+}) => (
+  <button
+    type="button"
+    className={cls(styles.skillStoreNavItem, {
+      [styles.skillStoreNavItemActive]: active,
+    })}
+    onClick={onClick}
+  >
+    {icon}
+    <span className={styles.skillStoreNavText}>{children}</span>
+    {suffix ? (
+      <span className={styles.skillStoreNavSuffix}>{suffix}</span>
+    ) : null}
+  </button>
+);
 
 const CustomSubMenu = ({ menuConfig }) => {
   const navigate = useNavigate();
@@ -146,9 +117,33 @@ const CustomSubMenu = ({ menuConfig }) => {
   );
 };
 
-export const ExploreSubMenu = () => (
-  <CustomSubMenu menuConfig={getExploreMenuConfig()} />
-);
+export const ExploreSubMenu = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className={styles.skillStoreNav} data-testid="skill-store-sub-menu">
+      <button
+        type="button"
+        className={styles.skillStoreWorkspace}
+        onClick={() => {
+          navigate('/explore/project/latest');
+        }}
+      >
+        <span className={styles.skillStoreWorkspaceIcon}>
+          <IconCozStore />
+        </span>
+        <span className={styles.skillStoreWorkspaceName}>商店</span>
+        <span className={styles.skillStoreWorkspaceChevron}>⌄</span>
+      </button>
+      <div className={styles.skillStoreNavScroll}>
+        <div className={styles.skillStoreNavLabel}>浏览</div>
+        <SkillStoreNavButton active icon={<IconCozStore />}>
+          标准技能包
+        </SkillStoreNavButton>
+      </div>
+    </div>
+  );
+};
 
 const SubText = ({ children }) => (
   <span className={cls('text-[12px] ml-[4px]')}>{children}</span>

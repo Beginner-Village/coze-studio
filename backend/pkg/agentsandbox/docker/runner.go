@@ -17,10 +17,12 @@
 package docker
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,11 +48,38 @@ func (r *Runner) runDocker(ctx context.Context, stdin []byte, args ...string) (s
 }
 
 func (r *Runner) Create(ctx context.Context, req *sandbox.CreateRequest) (*sandbox.CreateResponse, error) {
+	name := containerName(r.prefix, req.SandboxID)
+
+	// 沙箱容器按 (connector/agent/user) 确定性命名,需幂等:同名容器若已存在则复用,
+	// 避免再次 docker run 撞名报 125 Conflict(并防止误删用户已有的沙箱文件)。
+	status, _, _ := r.runDocker(ctx, nil, "inspect", "-f", "{{.State.Status}}", name)
+	switch strings.TrimSpace(status) {
+	case "running":
+		// 已就绪,直接复用
+		_, _, _ = r.runDocker(ctx, nil, "exec", name, "mkdir", "-p", defaultWorkDir)
+		return &sandbox.CreateResponse{SandboxID: req.SandboxID, State: sandbox.StateRunning}, nil
+	case "paused":
+		// 空闲被暂停过,恢复后复用
+		if _, stderr, err := r.runDocker(ctx, nil, "unpause", name); err != nil {
+			return nil, fmt.Errorf("docker unpause: %w (%s)", err, stderr)
+		}
+		_, _, _ = r.runDocker(ctx, nil, "exec", name, "mkdir", "-p", defaultWorkDir)
+		return &sandbox.CreateResponse{SandboxID: req.SandboxID, State: sandbox.StateRunning}, nil
+	case "exited", "created":
+		// 已停止,启动后复用(保留其中的文件)
+		if _, stderr, err := r.runDocker(ctx, nil, "start", name); err != nil {
+			return nil, fmt.Errorf("docker start: %w (%s)", err, stderr)
+		}
+		_, _, _ = r.runDocker(ctx, nil, "exec", name, "mkdir", "-p", defaultWorkDir)
+		return &sandbox.CreateResponse{SandboxID: req.SandboxID, State: sandbox.StateRunning}, nil
+	}
+
+	// 不存在,正常创建。
 	if _, stderr, err := r.runDocker(ctx, nil, buildCreateArgs(req, r.prefix)...); err != nil {
 		return nil, fmt.Errorf("docker run: %w (%s)", err, stderr)
 	}
 	// 确保 workspace 存在。
-	if _, stderr, err := r.runDocker(ctx, nil, "exec", containerName(r.prefix, req.SandboxID), "mkdir", "-p", defaultWorkDir); err != nil {
+	if _, stderr, err := r.runDocker(ctx, nil, "exec", name, "mkdir", "-p", defaultWorkDir); err != nil {
 		return nil, fmt.Errorf("mkdir workspace: %w (%s)", err, stderr)
 	}
 	return &sandbox.CreateResponse{SandboxID: req.SandboxID, State: sandbox.StateRunning}, nil
@@ -73,6 +102,60 @@ func (r *Runner) Exec(ctx context.Context, req *sandbox.ExecRequest) (*sandbox.E
 		}
 	}
 	return &sandbox.ExecResponse{Stdout: stdout, Stderr: stderr, ExitCode: exitCode}, nil
+}
+
+// PurgeAgent 删除某智能体名下「所有用户/连接器」的沙箱容器及其宿主机持久化目录。
+// 删智能体时调用,避免容器与数据目录成为孤儿。仅此处会删数据,reaper 的回收不删数据。
+func (r *Runner) PurgeAgent(ctx context.Context, agentID int64) error {
+	idStr := strconv.FormatInt(agentID, 10)
+	// 1) 按容器名前缀枚举并强删该 agent 的所有沙箱容器(key 形如 a<id>-u<hash>)。
+	namePrefix := r.prefix + "a" + idStr + "-"
+	out, _, _ := r.runDocker(ctx, nil, "ps", "-aq", "--filter", "name="+namePrefix)
+	for _, id := range strings.Fields(out) {
+		_, _, _ = r.runDocker(ctx, nil, "rm", "-f", id)
+	}
+	// 2) 删宿主机数据目录(后端在容器内无法直接操作宿主机路径,用辅助容器 rm)。
+	//    匹配 <root>/a<id>-* 覆盖该 agent 全部用户的目录(含已被 reaper 回收只剩目录的)。
+	root := sandboxDataRoot()
+	if _, stderr, err := r.runDocker(ctx, nil,
+		"run", "--rm", "-v", root+":/data", resolveImage(""),
+		"sh", "-c", "rm -rf /data/a"+idStr+"-*",
+	); err != nil {
+		return fmt.Errorf("purge agent %d data dirs: %w (%s)", agentID, err, stderr)
+	}
+	return nil
+}
+
+// WriteFilesTar 把多个文件打成 tar 通过单次 `docker exec -i tar x` 灌入,
+// 避免逐文件 docker exec(技能文件夹常有上百个文件,逐个写会慢到几十秒)。
+// files 的 key 为容器内绝对路径。
+func (r *Runner) WriteFilesTar(ctx context.Context, sandboxID string, files map[string][]byte) error {
+	if len(files) == 0 {
+		return nil
+	}
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	for p, content := range files {
+		name := strings.TrimPrefix(p, "/")
+		if err := tw.WriteHeader(&tar.Header{
+			Name: name,
+			Mode: 0o644,
+			Size: int64(len(content)),
+		}); err != nil {
+			return fmt.Errorf("tar header %s: %w", name, err)
+		}
+		if _, err := tw.Write(content); err != nil {
+			return fmt.Errorf("tar write %s: %w", name, err)
+		}
+	}
+	if err := tw.Close(); err != nil {
+		return fmt.Errorf("tar close: %w", err)
+	}
+	name := containerName(r.prefix, sandboxID)
+	if _, stderr, err := r.runDocker(ctx, buf.Bytes(), "exec", "-i", name, "tar", "-xpf", "-", "-C", "/"); err != nil {
+		return fmt.Errorf("tar extract: %w (%s)", err, stderr)
+	}
+	return nil
 }
 
 func (r *Runner) WriteFile(ctx context.Context, req *sandbox.WriteFileRequest) error {

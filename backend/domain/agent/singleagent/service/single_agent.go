@@ -31,6 +31,9 @@ type SingleAgent interface {
 	CreateSingleAgentDraftWithID(ctx context.Context, creatorID, agentID int64, draft *entity.SingleAgent) (int64, error)
 	MGetSingleAgentDraft(ctx context.Context, agentIDs []int64) (agents []*entity.SingleAgent, err error)
 	GetSingleAgentDraft(ctx context.Context, agentID int64) (agentInfo *entity.SingleAgent, err error)
+	// GetDraftBySourceProduct returns the existing instance draft the creator
+	// materialised from the given source agent_app product, or (nil, nil) if none.
+	GetDraftBySourceProduct(ctx context.Context, creatorID, sourceProductID int64) (agentInfo *entity.SingleAgent, err error)
 	UpdateSingleAgentDraft(ctx context.Context, agentInfo *entity.SingleAgent) (err error)
 	DeleteAgentDraft(ctx context.Context, spaceID, agentID int64) (err error)
 	UpdateAgentDraftDisplayInfo(ctx context.Context, userID int64, e *entity.AgentDraftDisplayInfo) error
@@ -40,6 +43,10 @@ type SingleAgent interface {
 	CreateSingleAgent(ctx context.Context, connectorID int64, version string, e *entity.SingleAgent) (int64, error)
 	DuplicateInMemory(ctx context.Context, req *entity.DuplicateInfo) (newAgent *entity.SingleAgent, err error)
 	StreamExecute(ctx context.Context, req *entity.ExecuteRequest) (events *schema.StreamReader[*entity.AgentEvent], err error)
+	// PostRunReview runs the closed-learning-loop review fork for a just-finished
+	// super-agent run (distill per-user memory + author/patch skills). It is a no-op
+	// for non-super agents, so it never affects the original single-agent flow.
+	PostRunReview(ctx context.Context, identity *entity.AgentIdentity, userID string, transcript []*schema.Message) (summary string, err error)
 	GetSingleAgent(ctx context.Context, agentID int64, version string) (botInfo *entity.SingleAgent, err error)
 	ListAgentPublishHistory(ctx context.Context, agentID int64, pageIndex, pageSize int32, connectorID *int64) ([]*entity.SingleAgentPublish, error)
 	// ObtainAgentByIdentity support obtain agent by connectorID and agentID

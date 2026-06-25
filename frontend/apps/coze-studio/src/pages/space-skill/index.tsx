@@ -69,6 +69,7 @@ const SpaceSkillPage: React.FC = () => {
   } = useSkillManagement(space_id || '');
 
   const [activeView, setActiveView] = useState<SkillView>('mine');
+  const [reviewCount, setReviewCount] = useState(0);
   const [importing, setImporting] = useState(false);
   const [exportingSkillId, setExportingSkillId] = useState('');
   const [importError, setImportError] = useState('');
@@ -87,7 +88,12 @@ const SpaceSkillPage: React.FC = () => {
 
   const currentList = activeView === 'mine' ? skillList : marketplaceList;
   const currentLoading = activeView === 'mine' ? loading : marketplaceLoading;
-  const currentTotal = activeView === 'mine' ? total : marketplaceTotal;
+  const currentTotal =
+    activeView === 'mine'
+      ? total
+      : activeView === 'review'
+        ? reviewCount
+        : marketplaceTotal;
 
   const handleCreate = () => {
     navigate(`/space/${space_id}/skill-detail/create`);
@@ -258,6 +264,7 @@ const SpaceSkillPage: React.FC = () => {
       onInstall={handleInstall}
       onExport={handleExport}
       onRecruit={handleRecruit}
+      onReviewCountChange={setReviewCount}
     />
   );
 };

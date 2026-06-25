@@ -19,6 +19,7 @@ package aiproduct
 import (
 	"context"
 	"testing"
+	"time"
 
 	productentity "github.com/ynet-dev/ynet-studio/backend/domain/aiproduct/entity"
 )
@@ -52,18 +53,33 @@ func (f *fakeShadowWriter) CreateShadowDraft(_ context.Context, _, _, productID 
 	return f.nextID, nil
 }
 
+// FindUserInstance always reports "no existing instance" so the tests keep
+// exercising the create-shadow-draft path on every recruit.
+func (f *fakeShadowWriter) FindUserInstance(_ context.Context, _, _ int64) (int64, error) {
+	return 0, nil
+}
+
 // ---- fakeDomainSVC ---------------------------------------------------------
 
 type fakeDomainSVC struct {
 	lastSyncedType string
 	nextProductID  int64
+	// synced fires once per SyncProduct call so async tests can wait for the
+	// detached template-build goroutine's persist without polling. Non-blocking.
+	synced chan string
 }
 
 func (f *fakeDomainSVC) SyncProduct(_ context.Context, product *productentity.Product, _ *productentity.ProductVersion) (*productentity.Product, error) {
-	f.lastSyncedType = string(product.Type)
 	if product.ProductID == 0 {
 		f.nextProductID++
 		product.ProductID = f.nextProductID
+	}
+	f.lastSyncedType = string(product.Type)
+	if f.synced != nil {
+		select {
+		case f.synced <- string(product.Type):
+		default:
+		}
 	}
 	return product, nil
 }
@@ -111,7 +127,7 @@ type testAgentAppApp struct {
 }
 
 func newTestAgentAppApp(_ *testing.T) *testAgentAppApp {
-	svc := &fakeDomainSVC{nextProductID: 100}
+	svc := &fakeDomainSVC{nextProductID: 100, synced: make(chan string, 8)}
 	sb := &fakeSandbox{}
 	shadow := &fakeShadowWriter{}
 
@@ -139,6 +155,15 @@ func TestPublishAgentAppFreezesSnapshotAndBuildsTemplate(t *testing.T) {
 	})
 	if err != nil || pid == 0 || ver != "1" {
 		t.Fatalf("publish failed: pid=%d ver=%s err=%v", pid, ver, err)
+	}
+	// Publish creates the product synchronously (1st SyncProduct), then runs the
+	// template build on a detached goroutine that persists the terminal status
+	// (2nd SyncProduct). Wait for that persist before asserting the build ran.
+	<-app.fakeSvc.synced // synchronous create
+	select {
+	case <-app.fakeSvc.synced: // async template build persisted its result
+	case <-time.After(2 * time.Second):
+		t.Fatal("template build goroutine did not persist build result in time")
 	}
 	if got := app.fakeSvc.lastSyncedType; got != "agent_app" {
 		t.Fatalf("product type not agent_app: %s", got)

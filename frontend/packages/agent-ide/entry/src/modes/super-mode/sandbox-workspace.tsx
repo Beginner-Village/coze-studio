@@ -14,16 +14,33 @@
  * limitations under the License.
  */
 
-/* eslint-disable @coze-arch/max-line-per-function */
+/* eslint-disable @coze-arch/max-line-per-function, max-lines --
+ * This workbench owns the sandbox tree, editor preview, and upload flows.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import classNames from 'classnames';
 import { useBotInfoStore } from '@coze-studio/bot-detail-store/bot-info';
 import { LazyCozeMdBox } from '@coze-common/chat-uikit';
+import {
+  Button,
+  Input,
+  Modal,
+  Spin,
+  Toast,
+  Typography,
+} from '@coze-arch/coze-design';
 import { DeveloperApi } from '@coze-arch/bot-api';
-import { Button, Spin, Toast, Typography } from '@coze-arch/coze-design';
 
 import {
+  sortSandboxFiles,
+  summarizeHarnessPlan,
+  type SandboxFile,
+  type SuperAgentHarnessPlanState,
+} from './sandbox-workspace-utils';
+import {
   iconForFile,
+  IcArchive,
   IcUpload,
   IcRefresh,
   IcDownload,
@@ -31,23 +48,69 @@ import {
   IcChevronRight,
   IcChevronDown,
   IcFile,
+  IcPlus,
+  IcClose,
+  IcFolder,
 } from './icons';
 
-interface SandboxFile {
-  name: string;
-  path: string;
-  is_dir: boolean;
-  size: number;
-}
+import { OfficeViewer } from './office-viewer';
+import ws from './sandbox-workspace.module.less';
 
 const ROOTS = [
-  { key: '/workspace', label: '工作区' },
-  { key: '/outputs', label: '产出物' },
-  { key: '/uploads', label: '上传区' },
+  { key: '/workspace', label: '文件', Icon: IcFolder },
+  { key: '/outputs', label: '产物', Icon: IcArchive },
+  { key: '/uploads', label: '上传区', Icon: IcUpload },
 ];
 
 const IMG_EXT = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'];
 const OFFICE_EXT = ['xlsx', 'xls', 'docx', 'doc', 'pptx', 'ppt'];
+const CODE_EXT = [
+  'py',
+  'js',
+  'ts',
+  'tsx',
+  'jsx',
+  'go',
+  'java',
+  'c',
+  'cpp',
+  'rs',
+  'sh',
+  'rb',
+  'php',
+  'vue',
+  'css',
+  'txt',
+  'log',
+];
+
+const CODE_KEYWORDS = new Set([
+  'async',
+  'await',
+  'catch',
+  'class',
+  'const',
+  'def',
+  'else',
+  'export',
+  'False',
+  'for',
+  'from',
+  'function',
+  'if',
+  'import',
+  'in',
+  'let',
+  'new',
+  'return',
+  'throw',
+  'True',
+  'try',
+  'var',
+]);
+
+const CODE_TOKEN_RE =
+  /(#.*$|\/\/.*$|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|`(?:\\.|[^`])*`|\b(?:async|await|catch|class|const|def|else|export|False|for|from|function|if|import|in|let|new|return|throw|True|try|var)\b|\b\d+(?:\.\d+)?\b)/g;
 
 const extOf = (name: string) => name.split('.').pop()?.toLowerCase() ?? '';
 
@@ -59,6 +122,26 @@ const formatSize = (n: number): string => {
     return `${(n / 1024).toFixed(1)} KB`;
   }
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
+};
+
+const editorMeta = (preview?: PreviewState | null) => {
+  if (!preview) {
+    return { lang: '沙箱', size: '', line: '' };
+  }
+  const ext = extOf(preview.name);
+  const lang =
+    ext === 'py'
+      ? 'Python'
+      : ext === 'md' || ext === 'markdown'
+        ? 'Markdown'
+        : ext === 'js'
+          ? 'JavaScript'
+          : ext.toUpperCase() || 'TEXT';
+  return {
+    lang,
+    size: preview.isBinary ? '' : formatSize(preview.content.length),
+    line: '',
+  };
 };
 
 const base64ToBlobUrl = (b64: string, mime: string): string => {
@@ -83,11 +166,51 @@ const downloadFile = (name: string, content: string, isBinary: boolean) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
+const renderCodeLine = (line: string) => {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  for (const match of line.matchAll(CODE_TOKEN_RE)) {
+    const token = match[0];
+    const index = match.index ?? 0;
+    if (index > lastIndex) {
+      parts.push(line.slice(lastIndex, index));
+    }
+    const className =
+      token.startsWith('#') || token.startsWith('//')
+        ? ws.codeComment
+        : token.startsWith('"') ||
+            token.startsWith("'") ||
+            token.startsWith('`')
+          ? ws.codeString
+          : CODE_KEYWORDS.has(token)
+            ? ws.codeKeyword
+            : ws.codeNumber;
+    parts.push(
+      <span key={`${index}-${token}`} className={className}>
+        {token}
+      </span>,
+    );
+    lastIndex = index + token.length;
+  }
+  if (lastIndex < line.length) {
+    parts.push(line.slice(lastIndex));
+  }
+  return parts.length ? parts : ' ';
+};
+
 interface PreviewState {
   name: string;
   path: string;
   content: string;
   isBinary: boolean;
+}
+
+interface HarnessState {
+  plan?: SuperAgentHarnessPlanState | null;
+  tool_outputs?: {
+    root?: string;
+    files?: SandboxFile[];
+  };
 }
 
 // ---- 文件查看器(按类型内联渲染) ----
@@ -152,7 +275,10 @@ const FileViewer: React.FC<{ preview: PreviewState }> = ({ preview }) => {
         <table className="text-[12px] border-collapse">
           <tbody>
             {rows.map((r, i) => (
-              <tr key={i} className={i === 0 ? 'coz-mg-secondary font-medium' : ''}>
+              <tr
+                key={i}
+                className={i === 0 ? 'coz-mg-secondary font-medium' : ''}
+              >
                 {r.map((c, j) => (
                   <td
                     key={j}
@@ -169,13 +295,16 @@ const FileViewer: React.FC<{ preview: PreviewState }> = ({ preview }) => {
     );
   }
   if (OFFICE_EXT.includes(ext)) {
+    if (isBinary) {
+      return <OfficeViewer ext={ext} content={content} />;
+    }
     const Icon = iconForFile(name, false);
     return (
       <div className="flex flex-col items-center justify-center h-full gap-[12px] coz-fg-secondary">
         <Icon size={48} className="opacity-50" />
         <div className="text-[13px]">{name}</div>
         <div className="coz-fg-dim text-[12px]">
-          Office 文档在线预览即将支持,可先下载用本地软件打开
+          无法在线渲染此文档,可先下载用本地软件打开
         </div>
         <Button
           color="primary"
@@ -191,7 +320,7 @@ const FileViewer: React.FC<{ preview: PreviewState }> = ({ preview }) => {
     try {
       pretty = JSON.stringify(JSON.parse(content), null, 2);
     } catch {
-      /* keep raw */
+      pretty = content;
     }
     return (
       <pre className="text-[12px] font-mono leading-[1.65] coz-fg-primary whitespace-pre-wrap break-all p-[14px]">
@@ -204,6 +333,18 @@ const FileViewer: React.FC<{ preview: PreviewState }> = ({ preview }) => {
       <div className="flex items-center justify-center h-full coz-fg-secondary text-[13px]">
         二进制文件,暂不支持预览（{formatSize(content.length)}）
       </div>
+    );
+  }
+  if (CODE_EXT.includes(ext)) {
+    return (
+      <pre className={ws.codePreview}>
+        {content.split('\n').map((line, index) => (
+          <span className={ws.codeLine} key={index}>
+            <span className={ws.codeLineNumber}>{index + 1}</span>
+            <span>{renderCodeLine(line)}</span>
+          </span>
+        ))}
+      </pre>
     );
   }
   return (
@@ -222,7 +363,17 @@ const TreeNode: React.FC<{
   onOpen: (f: SandboxFile) => void;
   onDelete: (f: SandboxFile) => void;
   onDownload: (f: SandboxFile) => void;
-}> = ({ file, depth, activePath, listDir, onOpen, onDelete, onDownload }) => {
+  readonly?: boolean;
+}> = ({
+  file,
+  depth,
+  activePath,
+  listDir,
+  onOpen,
+  onDelete,
+  onDownload,
+  readonly,
+}) => {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<SandboxFile[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -246,13 +397,11 @@ const TreeNode: React.FC<{
   return (
     <div>
       <div
-        className={`group flex items-center gap-[6px] py-[4px] pr-[6px] rounded-[6px] cursor-pointer text-[13px] ${
-          active ? 'coz-mg-hglt' : 'hover:coz-mg-secondary'
-        }`}
-        style={{ paddingLeft: depth * 14 + 6 }}
+        className={classNames(ws.fileRow, active && ws.fileRowActive)}
+        style={{ paddingLeft: depth * 14 + 8 }}
         onClick={toggle}
       >
-        <span className="w-[12px] coz-fg-dim shrink-0 flex items-center">
+        <span className={ws.twirl}>
           {file.is_dir ? (
             expanded ? (
               <IcChevronDown size={12} />
@@ -263,45 +412,52 @@ const TreeNode: React.FC<{
         </span>
         <Icon
           size={15}
-          className={file.is_dir ? 'coz-fg-hglt' : 'coz-fg-secondary'}
+          className={classNames(ws.fileIcon, file.is_dir && ws.dirIcon)}
         />
-        <Typography.Text
-          ellipsis={{ showTooltip: true }}
-          className={`flex-1 !text-[13px] ${active ? 'coz-fg-hglt' : 'coz-fg-primary'}`}
-        >
-          {file.name}
-        </Typography.Text>
-        {!file.is_dir ? (
-          <span className="text-[11px] coz-fg-dim shrink-0">
-            {formatSize(file.size)}
-          </span>
-        ) : null}
-        {!file.is_dir ? (
-          <span
-            className="opacity-0 group-hover:opacity-100 shrink-0 coz-fg-dim hover:coz-fg-primary"
-            title="下载"
-            onClick={e => {
-              e.stopPropagation();
-              onDownload(file);
-            }}
+        <div className={ws.fileMain}>
+          <Typography.Text
+            ellipsis={{ showTooltip: true }}
+            className={ws.fileName}
           >
-            <IcDownload size={14} />
-          </span>
-        ) : null}
-        <span
-          className="opacity-0 group-hover:opacity-100 shrink-0 coz-fg-dim hover:coz-fg-hglt-red"
-          title="删除"
-          onClick={e => {
-            e.stopPropagation();
-            onDelete(file);
-          }}
-        >
-          <IcTrash size={14} />
+            {file.name}
+          </Typography.Text>
+          {!file.is_dir ? (
+            <div className={ws.fileMeta}>{formatSize(file.size)}</div>
+          ) : null}
+        </div>
+        <span className={ws.rowActions}>
+          {!file.is_dir ? (
+            <span
+              className={ws.rowAction}
+              title="下载"
+              onClick={e => {
+                e.stopPropagation();
+                onDownload(file);
+              }}
+            >
+              <IcDownload size={14} />
+            </span>
+          ) : null}
+          {!readonly ? (
+            <span
+              className={classNames(ws.rowAction, ws.rowActionDanger)}
+              title="删除"
+              onClick={e => {
+                e.stopPropagation();
+                onDelete(file);
+              }}
+            >
+              <IcTrash size={14} />
+            </span>
+          ) : null}
         </span>
       </div>
       {file.is_dir && expanded ? (
         loading ? (
-          <div style={{ paddingLeft: (depth + 1) * 14 + 6 }} className="py-[4px]">
+          <div
+            style={{ paddingLeft: (depth + 1) * 14 + 6 }}
+            className="py-[4px]"
+          >
             <Spin size="small" />
           </div>
         ) : (
@@ -315,6 +471,7 @@ const TreeNode: React.FC<{
               onOpen={onOpen}
               onDelete={onDelete}
               onDownload={onDownload}
+              readonly={readonly}
             />
           ))
         )
@@ -324,14 +481,40 @@ const TreeNode: React.FC<{
 };
 
 export const SandboxWorkspace: React.FC = () => {
-  const botId = useBotInfoStore(state => state.botId);
-  const spaceId = useBotInfoStore(state => state.space_id);
+  const botId = useBotInfoStore((state: { botId: string }) => state.botId);
+  const spaceId = useBotInfoStore(
+    (state: { space_id: string }) => state.space_id,
+  );
   const [root, setRoot] = useState('/workspace');
   const [files, setFiles] = useState<SandboxFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [openTabs, setOpenTabs] = useState<PreviewState[]>([]);
   const [preview, setPreview] = useState<PreviewState | null>(null);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [harnessState, setHarnessState] = useState<HarnessState | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [creating, setCreating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchHarnessState =
+    useCallback(async (): Promise<HarnessState | null> => {
+      if (!botId) {
+        return null;
+      }
+      try {
+        const resp = await DeveloperApi.SuperAgentGetHarnessState({
+          space_id: spaceId,
+          bot_id: botId,
+        });
+        const data = (resp?.data ?? null) as HarnessState | null;
+        setHarnessState(data);
+        return data;
+      } catch {
+        return null;
+      }
+    }, [botId, spaceId]);
 
   const listDir = useCallback(
     async (path: string): Promise<SandboxFile[]> => {
@@ -339,19 +522,13 @@ export const SandboxWorkspace: React.FC = () => {
         return [];
       }
       try {
-        const resp = await DeveloperApi.ListSandboxFiles({
+        const resp = await DeveloperApi.SuperAgentListWorkspaceFiles({
           space_id: spaceId,
           bot_id: botId,
           path,
         });
         const list = (resp?.data?.files as SandboxFile[]) ?? [];
-        return list.sort((a, b) =>
-          a.is_dir === b.is_dir
-            ? a.name.localeCompare(b.name)
-            : a.is_dir
-              ? -1
-              : 1,
-        );
+        return sortSandboxFiles(list);
       } catch (e) {
         Toast.error('读取沙箱目录失败');
         return [];
@@ -363,35 +540,103 @@ export const SandboxWorkspace: React.FC = () => {
   const loadRoot = useCallback(
     async (path: string) => {
       setLoading(true);
-      setFiles(await listDir(path));
+      const list = await listDir(path);
+      setFiles(list);
+      setCounts(prev => ({ ...prev, [path]: list.length }));
       setLoading(false);
     },
     [listDir],
   );
 
+  const refreshCounts = useCallback(async () => {
+    if (!botId) {
+      return;
+    }
+    const entries = await Promise.all(
+      ROOTS.map(async r => [r.key, (await listDir(r.key)).length] as const),
+    );
+    setCounts(prev => {
+      const next = { ...prev };
+      for (const [key, n] of entries) {
+        next[key] = n;
+      }
+      return next;
+    });
+  }, [botId, listDir]);
+
   useEffect(() => {
     loadRoot(root);
   }, [root, loadRoot]);
+
+  useEffect(() => {
+    refreshCounts();
+  }, [refreshCounts]);
+
+  useEffect(() => {
+    fetchHarnessState();
+  }, [fetchHarnessState]);
 
   const openFile = async (f: SandboxFile) => {
     if (f.is_dir) {
       return;
     }
     try {
-      const resp = await DeveloperApi.ReadSandboxFile({
+      const resp = await DeveloperApi.SuperAgentReadWorkspaceFile({
         space_id: spaceId,
         bot_id: botId,
         path: f.path,
       });
-      setPreview({
+      const nextPreview = {
         name: f.name,
         path: f.path,
         content: resp?.data?.content ?? '',
         isBinary: Boolean(resp?.data?.is_binary),
+      };
+      setPreview(nextPreview);
+      setOpenTabs(prev => {
+        const exists = prev.some(tab => tab.path === nextPreview.path);
+        return exists
+          ? prev.map(tab => (tab.path === nextPreview.path ? nextPreview : tab))
+          : [...prev, nextPreview];
       });
     } catch (e) {
       Toast.error('读取文件失败');
     }
+  };
+
+  const activateTab = async (tab: PreviewState) => {
+    if (tab.content || tab.isBinary) {
+      setPreview(tab);
+      return;
+    }
+    try {
+      const resp = await DeveloperApi.SuperAgentReadWorkspaceFile({
+        space_id: spaceId,
+        bot_id: botId,
+        path: tab.path,
+      });
+      const nextPreview = {
+        ...tab,
+        content: resp?.data?.content ?? '',
+        isBinary: Boolean(resp?.data?.is_binary),
+      };
+      setPreview(nextPreview);
+      setOpenTabs(prev =>
+        prev.map(item => (item.path === nextPreview.path ? nextPreview : item)),
+      );
+    } catch {
+      setPreview(tab);
+    }
+  };
+
+  const closeTab = (tab: PreviewState) => {
+    setOpenTabs(prev => {
+      const next = prev.filter(item => item.path !== tab.path);
+      if (preview?.path === tab.path) {
+        setPreview(next[0] ?? null);
+      }
+      return next;
+    });
   };
 
   const uploadOne = (file: File) => {
@@ -400,7 +645,7 @@ export const SandboxWorkspace: React.FC = () => {
       const result = String(reader.result || '');
       const base64 = result.includes(',') ? result.split(',')[1] : result;
       try {
-        await DeveloperApi.UploadSandboxFile({
+        await DeveloperApi.SuperAgentUploadWorkspaceFile({
           space_id: spaceId,
           bot_id: botId,
           path: `/uploads/${file.name}`,
@@ -410,6 +655,7 @@ export const SandboxWorkspace: React.FC = () => {
         Toast.success(`已上传 ${file.name}`);
         setRoot('/uploads');
         loadRoot('/uploads');
+        refreshCounts();
       } catch (e) {
         Toast.error('上传失败');
       }
@@ -417,18 +663,47 @@ export const SandboxWorkspace: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
+  const submitCreate = async () => {
+    const name = createName.trim().replace(/^\/+/, '');
+    if (!name) {
+      Toast.error('请输入文件名');
+      return;
+    }
+    setCreating(true);
+    try {
+      await DeveloperApi.SuperAgentWriteWorkspaceFile({
+        space_id: spaceId,
+        bot_id: botId,
+        path: `${root}/${name}`,
+        content: '',
+        is_base64: false,
+      });
+      Toast.success(`已创建 ${name}`);
+      setCreateOpen(false);
+      setCreateName('');
+      loadRoot(root);
+      refreshCounts();
+    } catch (e) {
+      Toast.error('创建文件失败');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const onDelete = async (f: SandboxFile) => {
     try {
-      await DeveloperApi.DeleteSandboxFile({
+      await DeveloperApi.SuperAgentDeleteWorkspaceFile({
         space_id: spaceId,
         bot_id: botId,
         path: f.path,
       });
       Toast.success('已删除');
+      setOpenTabs(prev => prev.filter(tab => tab.path !== f.path));
       if (preview?.path === f.path) {
         setPreview(null);
       }
       loadRoot(root);
+      refreshCounts();
     } catch (e) {
       Toast.error('删除失败');
     }
@@ -436,7 +711,7 @@ export const SandboxWorkspace: React.FC = () => {
 
   const onDownload = async (f: SandboxFile) => {
     try {
-      const resp = await DeveloperApi.ReadSandboxFile({
+      const resp = await DeveloperApi.SuperAgentReadWorkspaceFile({
         space_id: spaceId,
         bot_id: botId,
         path: f.path,
@@ -451,40 +726,71 @@ export const SandboxWorkspace: React.FC = () => {
     }
   };
 
+  const planSummary = summarizeHarnessPlan(harnessState?.plan);
+  const toolOutputCount = harnessState?.tool_outputs?.files?.length ?? 0;
+  const meta = editorMeta(preview);
+
   return (
-    <div className="flex h-full">
-      {/* 左:文件树 */}
-      <div className="w-[270px] shrink-0 flex flex-col border-r coz-stroke-primary">
-        <div className="flex items-center gap-[4px] px-[8px] py-[8px]">
-          <div className="flex items-center gap-[2px] p-[2px] rounded-[8px] coz-mg-secondary flex-1">
-            {ROOTS.map(r => (
-              <div
-                key={r.key}
-                onClick={() => setRoot(r.key)}
-                className={`flex-1 text-center cursor-pointer px-[6px] py-[4px] rounded-[6px] text-[12px] font-medium transition-all ${
-                  root === r.key
-                    ? 'coz-bg-max coz-fg-plus shadow-sm'
-                    : 'coz-fg-secondary hover:coz-fg-primary'
-                }`}
-              >
-                {r.label}
-              </div>
-            ))}
+    <div className={ws.workbench}>
+      <section className={ws.panel}>
+        <div className={ws.panelHeader}>
+          <div className={ws.panelTitle}>沙箱工作区</div>
+          <div className={ws.runtime}>
+            <span className={ws.runtimeDot} />
+            <span>运行中 · 隔离环境</span>
           </div>
-          <span
-            className="shrink-0 coz-fg-secondary hover:coz-fg-primary cursor-pointer p-[4px]"
+        </div>
+        <div className={ws.segment}>
+          {ROOTS.map(r => {
+            const SegmentIcon = r.Icon;
+            return (
+              <button
+                key={r.key}
+                type="button"
+                onClick={() => setRoot(r.key)}
+                className={classNames(
+                  ws.segmentButton,
+                  root === r.key && ws.segmentButtonActive,
+                )}
+              >
+                <SegmentIcon size={13} />
+                <span>{r.label}</span>
+                {counts[r.key] !== undefined ? (
+                  <span className={ws.segmentCount}>{counts[r.key]}</span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+        <div className={ws.iconRow}>
+          <span className={ws.iconSpacer} />
+          <button
+            className={ws.iconButton}
+            title="新建"
+            type="button"
+            onClick={() => {
+              setCreateName('');
+              setCreateOpen(true);
+            }}
+          >
+            <IcPlus size={16} />
+          </button>
+          <button
+            className={ws.iconButton}
             title="上传"
+            type="button"
             onClick={() => fileInputRef.current?.click()}
           >
             <IcUpload size={16} />
-          </span>
-          <span
-            className="shrink-0 coz-fg-secondary hover:coz-fg-primary cursor-pointer p-[4px]"
+          </button>
+          <button
+            className={ws.iconButton}
             title="刷新"
+            type="button"
             onClick={() => loadRoot(root)}
           >
             <IcRefresh size={16} />
-          </span>
+          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -498,10 +804,25 @@ export const SandboxWorkspace: React.FC = () => {
             }}
           />
         </div>
+        {root === '/uploads' ? (
+          <div
+            className={ws.uploadZone}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className={ws.uploadIcon}>
+              <IcUpload size={20} />
+            </div>
+            <div className={ws.uploadTitle}>
+              拖拽文件到此处，或
+              <span className={ws.uploadLink}>点击上传</span>
+            </div>
+            <div className={ws.uploadDesc}>
+              支持 图片/PDF/Markdown/代码/CSV，单个 ≤ 50MB
+            </div>
+          </div>
+        ) : null}
         <div
-          className={`flex-1 overflow-auto px-[6px] pb-[8px] ${
-            dragOver ? 'coz-mg-hglt' : ''
-          }`}
+          className={classNames(ws.fileTree, dragOver && ws.fileTreeDrag)}
           onDragOver={e => {
             e.preventDefault();
             setDragOver(true);
@@ -541,41 +862,87 @@ export const SandboxWorkspace: React.FC = () => {
             ))
           )}
         </div>
-      </div>
-
-      {/* 右:内联预览区 */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        {preview ? (
-          <>
-            <div className="flex items-center gap-[10px] px-[14px] py-[8px] border-b coz-stroke-primary shrink-0">
-              <span className="font-mono text-[12px] coz-fg-secondary flex-1 truncate">
-                {preview.path}
-              </span>
-              <Button
-                size="small"
-                color="primary"
-                icon={<IcDownload size={14} />}
-                onClick={() =>
-                  downloadFile(preview.name, preview.content, preview.isBinary)
-                }
-              >
-                下载
-              </Button>
-            </div>
-            <div className="flex-1 min-h-0 overflow-auto">
-              <FileViewer preview={preview} />
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center coz-fg-dim gap-[10px] select-none">
-            <IcFile size={40} className="opacity-40" />
-            <div className="text-[13px]">选择左侧文件查看</div>
-            <div className="text-[12px]">
-              支持图片 / PDF / Markdown / 代码 / CSV 等在线预览
-            </div>
+        <div className={ws.fileFooter}>
+          <div className={ws.footerPill}>{planSummary}</div>
+          <div className={ws.footerPill}>
+            工具输出 <b>{toolOutputCount}</b>
           </div>
-        )}
-      </div>
+        </div>
+      </section>
+
+      <section className={ws.panel}>
+        <div className={ws.editorTabs}>
+          {openTabs.map(tab => (
+            <button
+              key={tab.path}
+              type="button"
+              className={classNames(
+                ws.editorTab,
+                preview?.path === tab.path && ws.editorTabActive,
+              )}
+              onClick={() => activateTab(tab)}
+            >
+              <IcFile size={14} />
+              <span>{tab.name}</span>
+              <span
+                className={ws.editorTabClose}
+                onClick={e => {
+                  e.stopPropagation();
+                  closeTab(tab);
+                }}
+              >
+                <IcClose size={12} />
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className={ws.editorArea}>
+          {preview ? <FileViewer preview={preview} /> : null}
+          {!preview ? (
+            <div className={ws.empty}>
+              <div className={ws.emptyIcon}>
+                <IcFile size={30} />
+              </div>
+              <div className={ws.emptyTitle}>选择左侧文件查看</div>
+              <div className={ws.emptyDesc}>
+                支持 图片 / PDF / Markdown / 代码 / CSV 等在线预览
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <div className={ws.editorStatus}>
+          {preview ? (
+            <>
+              <span>{meta.lang}</span>
+              <span>UTF-8</span>
+              <span>沙箱 · 隔离环境</span>
+              <span className={ws.editorStatusRight}>
+                {meta.line ? <span>{meta.line}</span> : null}
+                {meta.size ? <span>{meta.size}</span> : null}
+              </span>
+            </>
+          ) : (
+            <span>沙箱 · 隔离环境</span>
+          )}
+        </div>
+      </section>
+
+      <Modal
+        visible={createOpen}
+        title="新建文件"
+        okText="创建"
+        cancelText="取消"
+        okButtonProps={{ loading: creating }}
+        onOk={submitCreate}
+        onCancel={() => setCreateOpen(false)}
+      >
+        <Input
+          value={createName}
+          placeholder={`文件名，将创建在 ${root}/`}
+          onChange={setCreateName}
+          onEnterPress={submitCreate}
+        />
+      </Modal>
     </div>
   );
 };
