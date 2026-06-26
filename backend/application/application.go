@@ -76,6 +76,7 @@ import (
 	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
 	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
 	crossskill "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/skill"
+	crossstrategy "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/strategy"
 	crossuser "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/user"
 	crossusermemory "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/usermemory"
 	crossvariables "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/variables"
@@ -93,9 +94,11 @@ import (
 	searchImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/search"
 	singleagentImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/singleagent"
 	skillImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/skill"
+	strategyImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/strategy"
 	variablesImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/variables"
 	workflowImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/workflow"
 	adminrepo "github.com/ynet-dev/ynet-studio/backend/domain/admin/repository"
+	strategyservice "github.com/ynet-dev/ynet-studio/backend/domain/strategy/service"
 	"github.com/ynet-dev/ynet-studio/backend/domain/ynet_agent"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/eventbus"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/checkpoint"
@@ -124,11 +127,12 @@ type primaryServices struct {
 	basicServices *basicServices
 	infra         *appinfra.AppDependencies
 
-	pluginSVC    *plugin.PluginApplicationService
-	memorySVC    *memory.MemoryApplicationServices
-	knowledgeSVC *knowledge.KnowledgeApplicationService
-	workflowSVC  *workflow.ApplicationService
-	shortcutSVC  *shortcutcmd.ShortcutCmdApplicationService
+	pluginSVC         *plugin.PluginApplicationService
+	memorySVC         *memory.MemoryApplicationServices
+	knowledgeSVC      *knowledge.KnowledgeApplicationService
+	workflowSVC       *workflow.ApplicationService
+	shortcutSVC       *shortcutcmd.ShortcutCmdApplicationService
+	strategyDomainSVC strategyservice.Strategy
 }
 
 type complexServices struct {
@@ -191,6 +195,9 @@ func Init(ctx context.Context) (err error) {
 	crossdatacopy.SetDefaultSVC(dataCopyImpl.InitDomainService(basicServices.infra))
 	crosssearch.SetDefaultSVC(searchImpl.InitDomainService(complexServices.searchSVC.DomainSVC))
 	crossmodelmgr.SetDefaultSVC(modelmgrImpl.InitDomainService(infra.ModelMgr, nil))
+
+	// Wire strategy domain service for progressive-disclosure runtime tools.
+	crossstrategy.SetDefaultSVC(strategyImpl.InitDomainService(primaryServices.strategyDomainSVC))
 
 	// Initialize Model Service
 	modelService := initModelService(infra)
@@ -390,14 +397,17 @@ func initPrimaryServices(ctx context.Context, basicServices *basicServices) (*pr
 
 	shortcutSVC := shortcutcmd.InitService(basicServices.infra.DB, basicServices.infra.IDGenSVC)
 
+	strategyDomainSVC := strategyservice.NewStrategyServiceWithDB(basicServices.infra.DB, basicServices.infra.IDGenSVC)
+
 	return &primaryServices{
-		basicServices: basicServices,
-		pluginSVC:     pluginSVC,
-		memorySVC:     memorySVC,
-		knowledgeSVC:  knowledgeSVC,
-		workflowSVC:   workflowDomainSVC,
-		shortcutSVC:   shortcutSVC,
-		infra:         basicServices.infra,
+		basicServices:     basicServices,
+		pluginSVC:         pluginSVC,
+		memorySVC:         memorySVC,
+		knowledgeSVC:      knowledgeSVC,
+		workflowSVC:       workflowDomainSVC,
+		shortcutSVC:       shortcutSVC,
+		infra:             basicServices.infra,
+		strategyDomainSVC: strategyDomainSVC,
 	}, nil
 }
 
@@ -521,6 +531,7 @@ func (p *primaryServices) toSearchServiceComponents(singleAgentSVC *singleagent.
 		ConnectorDomainSVC:   p.basicServices.connectorSVC.DomainSVC,
 		PromptDomainSVC:      p.basicServices.promptSVC.DomainSVC,
 		DatabaseDomainSVC:    p.memorySVC.DatabaseDomainSVC,
+		StrategyDomainSVC:    p.strategyDomainSVC,
 	}
 }
 

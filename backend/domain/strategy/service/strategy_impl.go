@@ -20,8 +20,12 @@ import (
 	"context"
 	"errors"
 
+	"gorm.io/gorm"
+
 	"github.com/ynet-dev/ynet-studio/backend/domain/strategy/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/strategy/internal/dal"
 	"github.com/ynet-dev/ynet-studio/backend/domain/strategy/repository"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
 )
 
 type strategyService struct {
@@ -31,6 +35,14 @@ type strategyService struct {
 // NewStrategyService creates a Strategy domain service backed by the given DAO.
 func NewStrategyService(dao repository.StrategyDAO) Strategy {
 	return &strategyService{dao: dao}
+}
+
+// NewStrategyServiceWithDB creates a Strategy domain service using the given
+// database and id-generator, constructing the DAO internally. This is the
+// preferred entry-point for callers outside the domain/strategy tree that
+// cannot import the internal/dal package directly.
+func NewStrategyServiceWithDB(db *gorm.DB, gen idgen.IDGenerator) Strategy {
+	return NewStrategyService(dal.NewStrategyDAO(db, gen))
 }
 
 // ---- Strategy CRUD ----
