@@ -80,6 +80,7 @@ export { usePluginConfig } from './hooks/use-entity-configs/use-plugin-config';
 export { useWorkflowConfig } from './hooks/use-entity-configs/use-workflow-config';
 export { usePromptConfig } from './hooks/use-entity-configs/use-prompt-config';
 export { useKnowledgeConfig } from './hooks/use-entity-configs/use-knowledge-config';
+export { useStrategyConfig } from './hooks/use-entity-configs/use-strategy-config';
 export { type LibraryEntityConfig } from './types';
 export { type UseEntityConfigHook } from './hooks/use-entity-configs/types';
 import { GridLibraryItem } from './components/grid-library-item';

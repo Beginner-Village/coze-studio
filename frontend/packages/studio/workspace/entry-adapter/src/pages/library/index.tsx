@@ -24,6 +24,7 @@ import {
   useWorkflowConfig,
   usePromptConfig,
   useKnowledgeConfig,
+  useStrategyConfig,
 } from '@coze-studio/workspace-base/library';
 
 // Lazy load the external knowledge page
@@ -60,6 +61,8 @@ export const LibraryPage: FC<{ spaceId: string; sourceType: string }> = ({
     usePromptConfig(configCommonParams);
   const { config: databaseConfig, modals: databaseModals } =
     useDatabaseConfig(configCommonParams);
+  const { config: strategyConfig, modals: strategyModals } =
+    useStrategyConfig(configCommonParams);
 
   return (
     <>
@@ -73,6 +76,7 @@ export const LibraryPage: FC<{ spaceId: string; sourceType: string }> = ({
           knowledgeConfig,
           promptConfig,
           databaseConfig,
+          strategyConfig,
         ]}
       />
       {pluginModals}
@@ -80,6 +84,7 @@ export const LibraryPage: FC<{ spaceId: string; sourceType: string }> = ({
       {promptModals}
       {databaseModals}
       {knowledgeModals}
+      {strategyModals}
     </>
   );
 };
