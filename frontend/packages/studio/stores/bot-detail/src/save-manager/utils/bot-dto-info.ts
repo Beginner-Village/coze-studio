@@ -51,6 +51,7 @@ export const getBotDetailDtoInfo = () => {
     onboardingContent,
     pluginApis,
     agentSkills,
+    strategies,
     backgroundImageInfoList,
     shortcut,
     tts,
@@ -100,6 +101,10 @@ export const getBotDetailDtoInfo = () => {
       skill_info_list: isMulti
         ? undefined
         : botSkill.transformVo2Dto.agentSkills(agentSkills),
+      // @ts-expect-error strategy_id_list not yet in generated frontend types
+      strategy_id_list: isMulti
+        ? undefined
+        : botSkill.transformVo2Dto.strategies(strategies),
       hook_info: isMulti ? undefined : devHooks,
       user_query_collect_conf: queryCollect.transformVo2Dto(queryCollect),
       memory_tool_config: botSkill.transformVo2Dto.memoryToolConfig(

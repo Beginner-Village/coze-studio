@@ -287,3 +287,10 @@ export interface AgentSkillItem {
   skill_name: string;
   skill_description: string;
 }
+
+// Strategy Bind（策略绑定）
+export interface StrategyBindItem {
+  strategy_id: string;
+  strategy_name: string;
+  strategy_desc?: string;
+}

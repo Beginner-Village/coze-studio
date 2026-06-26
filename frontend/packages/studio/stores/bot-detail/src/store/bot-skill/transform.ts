@@ -66,6 +66,7 @@ import {
   type TableMemoryItem,
   type VoicesInfo,
   type AgentSkillItem,
+  type StrategyBindItem,
   type BoundCardInfo,
   type CardParam,
   type CardParamMapping,
@@ -351,6 +352,14 @@ export const transformDto2Vo = {
       skill_description: item.skill_description ?? '',
     })) ?? [],
 
+  // 策略绑定数据转换 (dto → vo)
+  strategies: (data?: string[]): StrategyBindItem[] =>
+    data?.map(id => ({
+      strategy_id: id,
+      strategy_name: '',
+      strategy_desc: '',
+    })) ?? [],
+
   // 卡片绑定数据转换
   boundCards: (data?: BoundCardDTO[]): BoundCardInfo[] =>
     data?.map(card => ({
@@ -511,6 +520,10 @@ export const transformVo2Dto = {
       skill_name: s.skill_name,
       skill_description: s.skill_description,
     })),
+
+  // 策略绑定数据转换 (vo → dto): 只返回 id 列表
+  strategies: (strategies: StrategyBindItem[]): string[] =>
+    strategies.map(s => s.strategy_id),
 
   // 卡片绑定数据转换
   boundCards: (boundCards: BoundCardInfo[]): BoundCardDTO[] =>

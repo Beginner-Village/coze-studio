@@ -24,6 +24,7 @@ import { voicesInfoConfig } from './voices-info';
 import { variablesConfig } from './variables';
 import { taskInfoConfig } from './task-info';
 import { suggestionConfig } from './suggestion-config';
+import { strategiesConfig } from './strategies';
 import { pluginConfig } from './plugin';
 import { onboardingConfig } from './onboarding-content';
 import { memoryToolConfig } from './memory-tool-config';
@@ -53,4 +54,5 @@ export const registers: HostedObserverConfig<
   boundCardsConfig,
   forceToolReturnConfig,
   agentSkillsConfig,
+  strategiesConfig,
 ];

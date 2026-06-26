@@ -24,3 +24,4 @@ export {
   DEFAULT_SUGGESTION_PROMPT,
   DEFAULT_KNOWLEDGE_CONFIG,
 } from './defaults';
+export type { StrategyBindItem } from '../../types/skill';
