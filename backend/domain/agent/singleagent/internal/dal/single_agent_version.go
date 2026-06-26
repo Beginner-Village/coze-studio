@@ -112,6 +112,7 @@ func (sa *SingleAgentVersionDAO) singleAgentVersionPo2Do(po *model.SingleAgentVe
 			SkillInfoList:     skillPOsToSkillDOs(po.SkillInfoList),
 			ForceToolReturn:   po.ForceToolReturn,
 			AgentType:         ptr.From(po.AgentType),
+			Strategies:        po.StrategyConfig,
 		},
 	}
 }
@@ -144,5 +145,6 @@ func (sa *SingleAgentVersionDAO) singleAgentVersionDo2Po(do *entity.SingleAgent)
 		SkillInfoList:     skillDOsToPOs(do.SkillInfoList),
 		ForceToolReturn:   do.ForceToolReturn,
 		AgentType:         ptr.Of(do.AgentType),
+		StrategyConfig:    do.Strategies,
 	}
 }

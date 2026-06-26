@@ -85,6 +85,7 @@ type SingleAgent struct {
 	SkillInfoList           []*SkillReference
 	ForceToolReturn         *bool
 	AgentType               string                // agent_type：""/normal=普通；super=超级智能体（运行时路由）
+	Strategies              []int64               // bound strategy IDs (latest-published semantics, no per-strategy version pinning in v1)
 	SuperAgentToolConfig    *SuperAgentToolConfig // 超级体能力开关（沙箱/网络/工具权限 + MCP），仅超级体生效
 	SourceProductID         int64                 `json:"source_product_id,omitempty"`
 	SourceProductVersion    string                `json:"source_product_version,omitempty"`

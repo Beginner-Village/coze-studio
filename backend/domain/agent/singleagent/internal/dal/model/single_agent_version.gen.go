@@ -61,6 +61,7 @@ type SingleAgentVersion struct {
 	SkillInfoList           []*SkillReference                 `gorm:"column:skill_info_list;comment:Skill references bound to this agent;serializer:json" json:"skill_info_list"`     // Skill references bound to this agent
 	ForceToolReturn         *bool                             `gorm:"column:force_tool_return;comment:Force all tool results to return to model" json:"force_tool_return"` // Force all tool results to return to model
 	AgentType               *string                           `gorm:"column:agent_type;comment:Agent Type for Runtime Routing" json:"agent_type"`
+	StrategyConfig          []int64                           `gorm:"column:strategy_config;comment:Bound Strategy IDs;serializer:json" json:"strategy_config"`              // Bound Strategy IDs
 }
 
 // TableName SingleAgentVersion's table name

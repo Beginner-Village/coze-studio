@@ -63,6 +63,7 @@ type SingleAgentDraft struct {
 	AgentType               *string                           `gorm:"column:agent_type;comment:Agent Type for Runtime Routing" json:"agent_type"`
 	SourceProductID         int64                             `gorm:"column:source_product_id;default:0" json:"source_product_id"`                                           // agent_app product id this draft was materialized from; 0 = normal agent
 	SourceProductVersion    string                            `gorm:"column:source_product_version;default:''" json:"source_product_version"`                              // pinned agent_app product version for this shadow instance
+	StrategyConfig          []int64                           `gorm:"column:strategy_config;comment:Bound Strategy IDs;serializer:json" json:"strategy_config"`              // Bound Strategy IDs
 }
 
 // SkillReference is a lightweight reference for Bot binding.

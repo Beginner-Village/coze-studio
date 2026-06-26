@@ -212,6 +212,7 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftPo2Do(po *model.SingleAgentDraft)
 			SuperAgentToolConfig:    po.SuperAgentToolConfig,
 			SourceProductID:         po.SourceProductID,
 			SourceProductVersion:    po.SourceProductVersion,
+			Strategies:              po.StrategyConfig,
 		},
 	}
 }
@@ -250,6 +251,7 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftDo2Po(do *entity.SingleAgent) *mo
 		SuperAgentToolConfig:    do.SuperAgentToolConfig,
 		SourceProductID:         do.SourceProductID,
 		SourceProductVersion:    do.SourceProductVersion,
+		StrategyConfig:          do.Strategies,
 	}
 }
 
