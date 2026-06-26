@@ -156,7 +156,7 @@ type AddCapabilityRequest struct {
 	ScenarioID       int64  `json:"scenario_id,string" vd:"$>0"`
 	StrategyID       int64  `json:"strategy_id,string" vd:"$>0"`
 	Type             string `json:"type" vd:"len($)>0"`
-	RefID            int64  `json:"ref_id,string" vd:"$>0"`
+	RefID            int64  `json:"ref_id,string"`
 	RefSubID         int64  `json:"ref_sub_id,string,omitempty"`
 	RefVersion       string `json:"ref_version,omitempty"`
 	PromptContent    string `json:"prompt_content,omitempty"`
