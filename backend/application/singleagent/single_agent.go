@@ -347,6 +347,17 @@ func (s *SingleAgentApplicationService) applyAgentUpdates(target *entity.SingleA
 		target.Workflow = patch.WorkflowInfoList
 	}
 
+	if patch.StrategyIdList != nil {
+		strategies := make([]int64, 0, len(patch.StrategyIdList))
+		for _, s := range patch.StrategyIdList {
+			id, err := strconv.ParseInt(s, 10, 64)
+			if err == nil {
+				strategies = append(strategies, id)
+			}
+		}
+		target.Strategies = strategies
+	}
+
 	if patch.PluginInfoList != nil {
 		target.Plugin = patch.PluginInfoList
 	}
@@ -435,6 +446,17 @@ func skillThriftToCrossdomain(refs []*skill.SkillReference) []*crossdomainSingle
 }
 
 // skillCrossdomainToThrift converts crossdomain SkillReference to thrift-generated SkillReference.
+func strategyIDsToStrings(ids []int64) []string {
+	if len(ids) == 0 {
+		return nil
+	}
+	out := make([]string, len(ids))
+	for i, id := range ids {
+		out[i] = strconv.FormatInt(id, 10)
+	}
+	return out
+}
+
 func skillCrossdomainToThrift(refs []*crossdomainSingleagent.SkillReference) []*skill.SkillReference {
 	if len(refs) == 0 {
 		return nil
@@ -493,6 +515,7 @@ func (s *SingleAgentApplicationService) singleAgentDraftDo2Vo(ctx context.Contex
 		PluginInfoList:          do.Plugin,
 		Knowledge:               do.Knowledge,
 		WorkflowInfoList:        do.Workflow,
+		StrategyIdList:          strategyIDsToStrings(do.Strategies),
 		SuggestReplyInfo:        do.SuggestReply,
 		CreatorId:               do.CreatorID,
 		TaskInfo:                &bot_common.TaskInfo{},
