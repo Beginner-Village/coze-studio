@@ -30,11 +30,13 @@ import (
 
 	knowledgeModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
 	pluginModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
+	workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
 	crossknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
 	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge/knowledgemock"
 	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
 	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin/pluginmock"
 	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
+	agentEntity "github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 	"github.com/ynet-dev/ynet-studio/backend/domain/strategy/entity"
 	workflowDomain "github.com/ynet-dev/ynet-studio/backend/domain/workflow"
 	workflowEntity "github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
@@ -576,13 +578,22 @@ type crossworkflowStub struct {
 	tools          []workflowDomain.ToolFromWorkflow
 	wfErr          error
 	wantWorkflowID int64
+	wantQType      workflowModel.Locator
+	wantVersion    string
 	t              *testing.T
 }
 
 func (s *crossworkflowStub) WorkflowAsModelTool(_ context.Context, policies []*vo.GetPolicy) ([]workflowDomain.ToolFromWorkflow, error) {
-	if s.t != nil && len(policies) > 0 && s.wantWorkflowID != 0 {
-		if policies[0].ID != s.wantWorkflowID {
-			s.t.Errorf("WorkflowAsModelTool policy.ID = %d, want %d", policies[0].ID, s.wantWorkflowID)
+	if s.t != nil && len(policies) > 0 {
+		p := policies[0]
+		if s.wantWorkflowID != 0 && p.ID != s.wantWorkflowID {
+			s.t.Errorf("WorkflowAsModelTool policy.ID = %d, want %d", p.ID, s.wantWorkflowID)
+		}
+		if s.wantQType != 0 && p.QType != s.wantQType {
+			s.t.Errorf("WorkflowAsModelTool policy.QType = %v, want %v", p.QType, s.wantQType)
+		}
+		if s.wantVersion != "" && p.Version != s.wantVersion {
+			s.t.Errorf("WorkflowAsModelTool policy.Version = %q, want %q", p.Version, s.wantVersion)
 		}
 	}
 	return s.tools, s.wfErr
@@ -692,5 +703,93 @@ func TestStrategy_InvokeWorkflow_ErrorIsString(t *testing.T) {
 	}
 	if !strings.Contains(out, "Error executing workflow") {
 		t.Fatalf("expected friendly workflow error string, got: %s", out)
+	}
+}
+
+// TestStrategy_InvokeWorkflow_PinnedVersion verifies that when cap.RefVersion != "",
+// the GetPolicy uses FromSpecificVersion and passes the version string through.
+func TestStrategy_InvokeWorkflow_PinnedVersion(t *testing.T) {
+	const (
+		wantWorkflowID int64 = 88
+		wantVersion          = "v1.2.3"
+		wantResult           = "pinned workflow output"
+	)
+
+	fakeTool := &fakeInvokableWorkflow{result: wantResult}
+	fakeSVC := &crossworkflowStub{
+		tools:          []workflowDomain.ToolFromWorkflow{fakeTool},
+		wantWorkflowID: wantWorkflowID,
+		wantQType:      workflowModel.FromSpecificVersion,
+		wantVersion:    wantVersion,
+		t:              t,
+	}
+
+	origWorkflow := crossworkflow.DefaultSVC()
+	crossworkflow.SetDefaultSVC(fakeSVC)
+	defer crossworkflow.SetDefaultSVC(origWorkflow)
+
+	svc := &fakeStrategySvcWithCap{
+		cap: &entity.Capability{
+			ID:         100,
+			Type:       entity.CapabilityTypeWorkflow,
+			RefID:      wantWorkflowID,
+			RefVersion: wantVersion,
+		},
+	}
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         svc,
+	})
+
+	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	if err != nil {
+		t.Fatalf("invoke pinned-version workflow should not return Go error: %v", err)
+	}
+	if strings.HasPrefix(out, "Error") {
+		t.Fatalf("invoke pinned-version workflow should succeed, got: %s", out)
+	}
+	if out != wantResult {
+		t.Fatalf("invoke pinned-version workflow: expected %q, got %q", wantResult, out)
+	}
+}
+
+// TestStrategy_InvokePlugin_DraftExecScene verifies that when agentIdentity.IsDraft=true,
+// the ExecScene is ExecSceneOfDraftAgent (mirroring node_tool_plugin.go).
+func TestStrategy_InvokePlugin_DraftExecScene(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	const wantResp = "draft plugin result"
+
+	mockPlugin := pluginmock.NewMockPluginService(ctrl)
+	mockPlugin.EXPECT().
+		ExecuteTool(gomock.Any(), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, req *pluginModel.ExecuteToolRequest, _ ...pluginModel.ExecuteToolOpt) (*pluginModel.ExecuteToolResponse, error) {
+			if req.ExecScene != pluginModel.ExecSceneOfDraftAgent {
+				t.Errorf("ExecScene = %v, want ExecSceneOfDraftAgent", req.ExecScene)
+			}
+			return &pluginModel.ExecuteToolResponse{TrimmedResp: wantResp}, nil
+		})
+
+	origPlugin := crossplugin.DefaultSVC()
+	crossplugin.SetDefaultSVC(mockPlugin)
+	defer crossplugin.SetDefaultSVC(origPlugin)
+
+	svc := &fakeStrategySvcWithCap{
+		cap: &entity.Capability{ID: 100, Type: entity.CapabilityTypePlugin, RefSubID: 42, RefID: 77},
+	}
+
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs:   []int64{1},
+		svc:           svc,
+		agentIdentity: &agentEntity.AgentIdentity{IsDraft: true},
+	})
+
+	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	if err != nil {
+		t.Fatalf("invoke draft plugin should not return Go error: %v", err)
+	}
+	if out != wantResp {
+		t.Fatalf("invoke draft plugin: expected %q, got %q", wantResp, out)
 	}
 }

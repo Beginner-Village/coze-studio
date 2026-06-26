@@ -380,13 +380,17 @@ func (t *invokeCapabilityTool) InvokableRun(ctx context.Context, argumentsInJSON
 		return cap.PromptContent, nil
 
 	case strategyEntity.CapabilityTypePlugin:
+		execScene := pluginModel.ExecSceneOfOnlineAgent
+		if t.conf.agentIdentity != nil && t.conf.agentIdentity.IsDraft {
+			execScene = pluginModel.ExecSceneOfDraftAgent
+		}
 		pluginReq := &pluginModel.ExecuteToolRequest{
 			UserID:          t.conf.userID,
 			PluginID:        cap.RefSubID,
 			ToolID:          cap.RefID,
 			ExecDraftTool:   false,
 			ArgumentsInJson: argumentsJSON,
-			ExecScene:       pluginModel.ExecSceneOfOnlineAgent,
+			ExecScene:       execScene,
 		}
 		opts := []pluginModel.ExecuteToolOpt{
 			pluginModel.WithToolVersion(cap.RefVersion),
@@ -402,12 +406,15 @@ func (t *invokeCapabilityTool) InvokableRun(ctx context.Context, argumentsInJSON
 		return pluginResp.TrimmedResp, nil
 
 	case strategyEntity.CapabilityTypeWorkflow:
-		policies := []*vo.GetPolicy{
-			{
-				ID:    cap.RefID,
-				QType: workflowModel.FromLatestVersion,
-			},
+		policy := &vo.GetPolicy{
+			ID:    cap.RefID,
+			QType: workflowModel.FromLatestVersion,
 		}
+		if cap.RefVersion != "" {
+			policy.QType = workflowModel.FromSpecificVersion
+			policy.Version = cap.RefVersion
+		}
+		policies := []*vo.GetPolicy{policy}
 		wfSVC := crossworkflow.DefaultSVC()
 		if wfSVC == nil {
 			return "Error: workflow service is not available", nil
