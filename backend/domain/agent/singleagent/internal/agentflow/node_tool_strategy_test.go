@@ -798,8 +798,9 @@ func TestStrategy_InvokeWorkflow_RoutesCorrectly(t *testing.T) {
 		},
 	}
 	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
-		strategyIDs: []int64{1},
-		svc:         svc,
+		strategyIDs:     []int64{1},
+		svc:             svc,
+		forceToolReturn: true, // suppress marker so test can assert plain output
 	})
 
 	// scene=1, cap=1 → the workflow capability.
@@ -875,8 +876,9 @@ func TestStrategy_InvokeWorkflow_PinnedVersion(t *testing.T) {
 		},
 	}
 	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
-		strategyIDs: []int64{1},
-		svc:         svc,
+		strategyIDs:     []int64{1},
+		svc:             svc,
+		forceToolReturn: true, // suppress marker so test can assert plain output
 	})
 
 	out, err := tools[2].InvokableRun(context.Background(), `{"scene":1,"cap":1}`)
@@ -888,6 +890,110 @@ func TestStrategy_InvokeWorkflow_PinnedVersion(t *testing.T) {
 	}
 	if out != wantResult {
 		t.Fatalf("run pinned-version workflow: expected %q, got %q", wantResult, out)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// ReturnDirectly sentinel tests (BE9c)
+// ---------------------------------------------------------------------------
+
+// fakeInvokableWorkflowReturnDirect is like fakeInvokableWorkflow but with
+// TerminatePlan==UseAnswerContent (returnDirectly).
+type fakeInvokableWorkflowReturnDirect struct {
+	result string
+}
+
+func (f *fakeInvokableWorkflowReturnDirect) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{Name: "fake_wf_direct"}, nil
+}
+func (f *fakeInvokableWorkflowReturnDirect) InvokableRun(_ context.Context, _ string, _ ...tool.Option) (string, error) {
+	return f.result, nil
+}
+func (f *fakeInvokableWorkflowReturnDirect) TerminatePlan() vo.TerminatePlan {
+	return vo.UseAnswerContent
+}
+func (f *fakeInvokableWorkflowReturnDirect) GetWorkflow() *workflowEntity.Workflow {
+	return &workflowEntity.Workflow{}
+}
+
+var _ workflowDomain.ToolFromWorkflow = (*fakeInvokableWorkflowReturnDirect)(nil)
+
+// TestStrategy_WorkflowReturnDirectly verifies that when a workflow capability has
+// TerminatePlan==UseAnswerContent and forceToolReturn=false, run prefixes the result
+// with StrategyReturnDirectlyMarker so the callback can route it directly to the user.
+func TestStrategy_WorkflowReturnDirectly(t *testing.T) {
+	const wantResult = "direct answer from workflow"
+
+	fakeTool := &fakeInvokableWorkflowReturnDirect{result: wantResult}
+	fakeSVC := &crossworkflowStub{tools: []workflowDomain.ToolFromWorkflow{fakeTool}}
+
+	origWorkflow := crossworkflow.DefaultSVC()
+	crossworkflow.SetDefaultSVC(fakeSVC)
+	defer crossworkflow.SetDefaultSVC(origWorkflow)
+
+	svc := &fakeStrategySvcWithCap{
+		cap: &entity.Capability{
+			ID:       100,
+			Type:     entity.CapabilityTypeWorkflow,
+			RefID:    88,
+			SortOrder: 1,
+		},
+	}
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs:     []int64{1},
+		svc:             svc,
+		forceToolReturn: false,
+	})
+
+	out, err := tools[2].InvokableRun(context.Background(), `{"scene":1,"cap":1}`)
+	if err != nil {
+		t.Fatalf("run returnDirectly workflow should not return Go error: %v", err)
+	}
+	if !strings.HasPrefix(out, StrategyReturnDirectlyMarker) {
+		t.Fatalf("run: expected result prefixed with StrategyReturnDirectlyMarker, got: %q", out)
+	}
+	withoutMarker := strings.TrimPrefix(out, StrategyReturnDirectlyMarker)
+	if withoutMarker != wantResult {
+		t.Fatalf("run: content after marker = %q, want %q", withoutMarker, wantResult)
+	}
+}
+
+// TestStrategy_WorkflowReturnDirectly_ForceToolReturn verifies that when
+// forceToolReturn=true, a returnDirectly workflow is NOT marked — its result is
+// returned to the model as a normal tool response.
+func TestStrategy_WorkflowReturnDirectly_ForceToolReturn(t *testing.T) {
+	const wantResult = "answer for model"
+
+	fakeTool := &fakeInvokableWorkflowReturnDirect{result: wantResult}
+	fakeSVC := &crossworkflowStub{tools: []workflowDomain.ToolFromWorkflow{fakeTool}}
+
+	origWorkflow := crossworkflow.DefaultSVC()
+	crossworkflow.SetDefaultSVC(fakeSVC)
+	defer crossworkflow.SetDefaultSVC(origWorkflow)
+
+	svc := &fakeStrategySvcWithCap{
+		cap: &entity.Capability{
+			ID:       100,
+			Type:     entity.CapabilityTypeWorkflow,
+			RefID:    88,
+			SortOrder: 1,
+		},
+	}
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs:     []int64{1},
+		svc:             svc,
+		forceToolReturn: true,
+	})
+
+	out, err := tools[2].InvokableRun(context.Background(), `{"scene":1,"cap":1}`)
+	if err != nil {
+		t.Fatalf("run forceToolReturn workflow should not return Go error: %v", err)
+	}
+	if strings.HasPrefix(out, StrategyReturnDirectlyMarker) {
+		t.Fatalf("run with forceToolReturn=true: result must NOT be marked, got: %q", out)
+	}
+	if out != wantResult {
+		t.Fatalf("run forceToolReturn: expected %q, got %q", wantResult, out)
 	}
 }
 

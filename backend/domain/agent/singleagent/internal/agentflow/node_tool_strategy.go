@@ -46,6 +46,14 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
+// StrategyReturnDirectlyMarker is a sentinel prefix the run tool prepends to its
+// result when a workflow capability has TerminatePlan==UseAnswerContent (returnDirectly)
+// AND forceToolReturn is not set. The callback layer detects this prefix, routes the
+// content directly to the user via EventTypeOfToolsAsChatModelStream (bypassing the
+// model), and strips the marker before forwarding. All other capability types (prompt,
+// knowledge, plugin) and forceToolReturn=true cases never use this marker.
+const StrategyReturnDirectlyMarker = "\x00__STRATEGY_RETURN_DIRECTLY__\x00"
+
 // strategyConfig holds the per-agent configuration for the 3 progressive-disclosure
 // strategy tools. svc is injectable so unit tests can pass a fake implementation.
 type strategyConfig struct {
@@ -54,6 +62,9 @@ type strategyConfig struct {
 	agentIdentity *entity.AgentIdentity
 	// strategyIDs are the strategy IDs bound to this agent.
 	strategyIDs []int64
+	// forceToolReturn mirrors bot_common.BotInfo.ForceToolReturn: when true,
+	// workflow results always go back through the model (no returnDirectly behaviour).
+	forceToolReturn bool
 	// svc is the cross-domain strategy service. If nil, DefaultSVC() is used at
 	// call time (production path).
 	svc crossstrategy.StrategyService
@@ -486,6 +497,12 @@ func (t *invokeCapabilityTool) InvokableRun(ctx context.Context, argumentsInJSON
 		wfResult, wfRunErr := invokable.InvokableRun(ctx, argumentsJSON)
 		if wfRunErr != nil {
 			return fmt.Sprintf("Error executing workflow: %v", wfRunErr), nil
+		}
+		// Mirror native workflow returnDirectly: if the workflow's TerminatePlan==
+		// UseAnswerContent AND forceToolReturn is not set, prefix the result with the
+		// sentinel so the callback can route it directly to the user (bypass the model).
+		if !t.conf.forceToolReturn && wfTools[0].TerminatePlan() == vo.UseAnswerContent {
+			return StrategyReturnDirectlyMarker + wfResult, nil
 		}
 		return wfResult, nil
 
