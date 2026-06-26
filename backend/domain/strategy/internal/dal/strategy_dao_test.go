@@ -217,15 +217,22 @@ func TestStrategyDAO_ListCapabilityIDsByStrategies(t *testing.T) {
 	dao := newTestStrategyDAO(t)
 	ctx := context.Background()
 
-	sid1, _ := dao.CreateStrategy(ctx, &entity.Strategy{SpaceID: 1, CreatorID: 1, Name: "s1"})
-	sid2, _ := dao.CreateStrategy(ctx, &entity.Strategy{SpaceID: 1, CreatorID: 1, Name: "s2"})
-	sid3, _ := dao.CreateStrategy(ctx, &entity.Strategy{SpaceID: 1, CreatorID: 1, Name: "s3"})
+	sid1, err := dao.CreateStrategy(ctx, &entity.Strategy{SpaceID: 1, CreatorID: 1, Name: "s1"})
+	require.NoError(t, err)
+	sid2, err := dao.CreateStrategy(ctx, &entity.Strategy{SpaceID: 1, CreatorID: 1, Name: "s2"})
+	require.NoError(t, err)
+	sid3, err := dao.CreateStrategy(ctx, &entity.Strategy{SpaceID: 1, CreatorID: 1, Name: "s3"})
+	require.NoError(t, err)
 
-	scID1, _ := dao.CreateScenario(ctx, &entity.Scenario{StrategyID: sid1, Name: "sc1"})
-	scID2, _ := dao.CreateScenario(ctx, &entity.Scenario{StrategyID: sid2, Name: "sc2"})
+	scID1, err := dao.CreateScenario(ctx, &entity.Scenario{StrategyID: sid1, Name: "sc1"})
+	require.NoError(t, err)
+	scID2, err := dao.CreateScenario(ctx, &entity.Scenario{StrategyID: sid2, Name: "sc2"})
+	require.NoError(t, err)
 
-	cID1, _ := dao.CreateCapability(ctx, &entity.Capability{StrategyID: sid1, ScenarioID: scID1, Type: entity.CapabilityTypeWorkflow})
-	cID2, _ := dao.CreateCapability(ctx, &entity.Capability{StrategyID: sid2, ScenarioID: scID2, Type: entity.CapabilityTypePlugin})
+	cID1, err := dao.CreateCapability(ctx, &entity.Capability{StrategyID: sid1, ScenarioID: scID1, Type: entity.CapabilityTypeWorkflow})
+	require.NoError(t, err)
+	cID2, err := dao.CreateCapability(ctx, &entity.Capability{StrategyID: sid2, ScenarioID: scID2, Type: entity.CapabilityTypePlugin})
+	require.NoError(t, err)
 
 	ids, err := dao.ListCapabilityIDsByStrategies(ctx, []int64{sid1, sid2})
 	require.NoError(t, err)
@@ -235,4 +242,15 @@ func TestStrategyDAO_ListCapabilityIDsByStrategies(t *testing.T) {
 	ids, err = dao.ListCapabilityIDsByStrategies(ctx, []int64{sid3})
 	require.NoError(t, err)
 	require.Empty(t, ids)
+
+	// Soft-delete one capability and confirm it is excluded from the auth id list.
+	// This is the authorization-critical assertion: a deleted capability must NOT
+	// remain in the set that gates agent invocation permissions.
+	err = dao.DeleteCapability(ctx, cID1)
+	require.NoError(t, err)
+
+	ids, err = dao.ListCapabilityIDsByStrategies(ctx, []int64{sid1, sid2})
+	require.NoError(t, err)
+	require.NotContains(t, ids, cID1, "soft-deleted capability must not appear in auth id list")
+	require.ElementsMatch(t, []int64{cID2}, ids)
 }
