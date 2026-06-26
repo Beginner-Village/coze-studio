@@ -20,12 +20,12 @@ package strategy
 
 // CapabilityInfo mirrors entity.Capability for HTTP transport.
 type CapabilityInfo struct {
-	ID               int64  `json:"id"`
-	StrategyID       int64  `json:"strategy_id"`
-	ScenarioID       int64  `json:"scenario_id"`
+	ID               int64  `json:"id,string"`
+	StrategyID       int64  `json:"strategy_id,string"`
+	ScenarioID       int64  `json:"scenario_id,string"`
 	Type             string `json:"type"`
-	RefID            int64  `json:"ref_id"`
-	RefSubID         int64  `json:"ref_sub_id,omitempty"`
+	RefID            int64  `json:"ref_id,string"`
+	RefSubID         int64  `json:"ref_sub_id,string,omitempty"`
 	RefVersion       string `json:"ref_version,omitempty"`
 	PromptContent    string `json:"prompt_content,omitempty"`
 	RetrieveConfig   string `json:"retrieve_config,omitempty"`
@@ -36,8 +36,8 @@ type CapabilityInfo struct {
 
 // ScenarioInfo mirrors entity.Scenario for HTTP transport.
 type ScenarioInfo struct {
-	ID           int64             `json:"id"`
-	StrategyID   int64             `json:"strategy_id"`
+	ID           int64             `json:"id,string"`
+	StrategyID   int64             `json:"strategy_id,string"`
 	Name         string            `json:"name"`
 	Description  string            `json:"description,omitempty"`
 	SortOrder    int32             `json:"sort_order"`
@@ -46,10 +46,10 @@ type ScenarioInfo struct {
 
 // StrategyInfo mirrors entity.Strategy for HTTP transport.
 type StrategyInfo struct {
-	ID          int64           `json:"id"`
-	SpaceID     int64           `json:"space_id"`
-	AppID       int64           `json:"app_id,omitempty"`
-	CreatorID   int64           `json:"creator_id"`
+	ID          int64           `json:"id,string"`
+	SpaceID     int64           `json:"space_id,string"`
+	AppID       int64           `json:"app_id,string,omitempty"`
+	CreatorID   int64           `json:"creator_id,string"`
 	Name        string          `json:"name"`
 	Description string          `json:"description,omitempty"`
 	IconURI     string          `json:"icon_uri,omitempty"`
@@ -61,7 +61,7 @@ type StrategyInfo struct {
 // ---------- Strategy ----------
 
 type CreateStrategyRequest struct {
-	SpaceID     int64  `json:"space_id" vd:"$>0"`
+	SpaceID     int64  `json:"space_id,string" vd:"$>0"`
 	Name        string `json:"name" vd:"len($)>0"`
 	Description string `json:"description,omitempty"`
 	IconURI     string `json:"icon_uri,omitempty"`
@@ -74,7 +74,7 @@ type CreateStrategyResponse struct {
 }
 
 type GetStrategyDetailRequest struct {
-	ID int64 `json:"id" vd:"$>0"`
+	ID int64 `json:"id,string" vd:"$>0"`
 }
 
 type GetStrategyDetailResponse struct {
@@ -84,7 +84,7 @@ type GetStrategyDetailResponse struct {
 }
 
 type UpdateStrategyRequest struct {
-	ID          int64  `json:"id" vd:"$>0"`
+	ID          int64  `json:"id,string" vd:"$>0"`
 	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
 	IconURI     string `json:"icon_uri,omitempty"`
@@ -96,7 +96,7 @@ type UpdateStrategyResponse struct {
 }
 
 type DeleteStrategyRequest struct {
-	ID int64 `json:"id" vd:"$>0"`
+	ID int64 `json:"id,string" vd:"$>0"`
 }
 
 type DeleteStrategyResponse struct {
@@ -105,7 +105,7 @@ type DeleteStrategyResponse struct {
 }
 
 type PublishStrategyRequest struct {
-	ID      int64  `json:"id" vd:"$>0"`
+	ID      int64  `json:"id,string" vd:"$>0"`
 	Version string `json:"version,omitempty"`
 }
 
@@ -117,7 +117,7 @@ type PublishStrategyResponse struct {
 // ---------- Scenario ----------
 
 type CreateScenarioRequest struct {
-	StrategyID  int64  `json:"strategy_id" vd:"$>0"`
+	StrategyID  int64  `json:"strategy_id,string" vd:"$>0"`
 	Name        string `json:"name" vd:"len($)>0"`
 	Description string `json:"description,omitempty"`
 	SortOrder   int32  `json:"sort_order,omitempty"`
@@ -130,7 +130,7 @@ type CreateScenarioResponse struct {
 }
 
 type UpdateScenarioRequest struct {
-	ID          int64  `json:"id" vd:"$>0"`
+	ID          int64  `json:"id,string" vd:"$>0"`
 	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
 	SortOrder   int32  `json:"sort_order,omitempty"`
@@ -142,7 +142,7 @@ type UpdateScenarioResponse struct {
 }
 
 type DeleteScenarioRequest struct {
-	ID int64 `json:"id" vd:"$>0"`
+	ID int64 `json:"id,string" vd:"$>0"`
 }
 
 type DeleteScenarioResponse struct {
@@ -153,11 +153,11 @@ type DeleteScenarioResponse struct {
 // ---------- Capability ----------
 
 type AddCapabilityRequest struct {
-	ScenarioID       int64  `json:"scenario_id" vd:"$>0"`
-	StrategyID       int64  `json:"strategy_id" vd:"$>0"`
+	ScenarioID       int64  `json:"scenario_id,string" vd:"$>0"`
+	StrategyID       int64  `json:"strategy_id,string" vd:"$>0"`
 	Type             string `json:"type" vd:"len($)>0"`
-	RefID            int64  `json:"ref_id" vd:"$>0"`
-	RefSubID         int64  `json:"ref_sub_id,omitempty"`
+	RefID            int64  `json:"ref_id,string" vd:"$>0"`
+	RefSubID         int64  `json:"ref_sub_id,string,omitempty"`
 	RefVersion       string `json:"ref_version,omitempty"`
 	PromptContent    string `json:"prompt_content,omitempty"`
 	RetrieveConfig   string `json:"retrieve_config,omitempty"`
@@ -173,7 +173,7 @@ type AddCapabilityResponse struct {
 }
 
 type UpdateCapabilityRequest struct {
-	ID               int64  `json:"id" vd:"$>0"`
+	ID               int64  `json:"id,string" vd:"$>0"`
 	RefVersion       string `json:"ref_version,omitempty"`
 	PromptContent    string `json:"prompt_content,omitempty"`
 	RetrieveConfig   string `json:"retrieve_config,omitempty"`
@@ -188,7 +188,7 @@ type UpdateCapabilityResponse struct {
 }
 
 type DeleteCapabilityRequest struct {
-	ID int64 `json:"id" vd:"$>0"`
+	ID int64 `json:"id,string" vd:"$>0"`
 }
 
 type DeleteCapabilityResponse struct {
