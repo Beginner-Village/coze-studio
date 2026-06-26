@@ -96,6 +96,12 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		}
 	}
 
+	// 策略 L1 提示:绑定策略后,强约束智能体走 scenes→caps→run 渐进披露流程,
+	// 显著提升账户/业务类请求的触达可靠性(避免凭空臆测或向用户索要可由 run 获取的信息)。
+	if len(conf.Agent.Strategies) > 0 {
+		persona = persona + "\n\n" + StrategyL1Prompt
+	}
+
 	avConf := &variableConf{
 		Agent:       conf.Agent,
 		UserID:      conf.UserID,
@@ -198,10 +204,11 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	var strategyTools []tool.InvokableTool
 	if len(conf.Agent.Strategies) > 0 {
 		strategyTools, err = newStrategyTools(ctx, &strategyConfig{
-			spaceID:       conf.Agent.SpaceID,
-			userID:        conf.UserID,
-			agentIdentity: conf.Identity,
-			strategyIDs:   conf.Agent.Strategies,
+			spaceID:         conf.Agent.SpaceID,
+			userID:          conf.UserID,
+			agentIdentity:   conf.Identity,
+			strategyIDs:     conf.Agent.Strategies,
+			forceToolReturn: conf.Agent.ForceToolReturn != nil && *conf.Agent.ForceToolReturn,
 		})
 		if err != nil {
 			return nil, err

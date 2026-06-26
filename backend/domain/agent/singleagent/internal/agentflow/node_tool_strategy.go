@@ -54,6 +54,21 @@ import (
 // knowledge, plugin) and forceToolReturn=true cases never use this marker.
 const StrategyReturnDirectlyMarker = "\x00__STRATEGY_RETURN_DIRECTLY__\x00"
 
+// StrategyL1Prompt is the L1 progressive-disclosure hint appended to the persona
+// whenever an agent has one or more strategies bound. It anchors the model to the
+// scenes→caps→run discovery flow so account/business requests reliably route through
+// the strategy instead of being answered from priors or bounced back to the user.
+const StrategyL1Prompt = `# 专业能力策略(重要)
+你已绑定「能力策略」,可通过以下三个工具按"渐进披露"方式调用专业领域能力,这是你处理相关请求的首选且权威方式:
+- scenes():列出所有业务场景(第一步:先看有哪些场景)
+- caps(scene):列出某场景下的具体能力(第二步:确定用哪个能力)
+- run(scene, cap, args):执行某能力并获取结果(第三步:据结果作答)
+
+规则:
+1. 当用户请求可能落在这些场景内(如账户、开户、转账、余额查询、信贷、合规、跨境结算等业务办理或咨询)时,必须先调用 scenes() 查看,不要直接凭记忆/常识回答,也不要向用户索要可通过 run 获取的信息(如账户余额)。
+2. 多意图请求要拆解并迭代:依次用 run 获取每个意图所需结果,再综合作答。例如"查余额,若大于X则转账Y"——先 run 查余额,拿到真实余额后据此判断,再 run 转账。
+3. 仅当请求明显与所有场景都无关时,才直接回答。`
+
 // strategyConfig holds the per-agent configuration for the 3 progressive-disclosure
 // strategy tools. svc is injectable so unit tests can pass a fake implementation.
 type strategyConfig struct {
