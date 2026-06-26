@@ -44,6 +44,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/application/admin"
 	aiProductApp "github.com/ynet-dev/ynet-studio/backend/application/aiproduct"
 	"github.com/ynet-dev/ynet-studio/backend/application/app"
+	strategyApp "github.com/ynet-dev/ynet-studio/backend/application/strategy"
 	"github.com/ynet-dev/ynet-studio/backend/application/base/appinfra"
 	"github.com/ynet-dev/ynet-studio/backend/application/connector"
 	"github.com/ynet-dev/ynet-studio/backend/application/conversation"
@@ -398,6 +399,10 @@ func initPrimaryServices(ctx context.Context, basicServices *basicServices) (*pr
 	shortcutSVC := shortcutcmd.InitService(basicServices.infra.DB, basicServices.infra.IDGenSVC)
 
 	strategyDomainSVC := strategyservice.NewStrategyServiceWithDB(basicServices.infra.DB, basicServices.infra.IDGenSVC)
+
+	// Wire the strategy application service singleton.
+	strategyApp.StrategyApplicationSVC.DomainSVC = strategyDomainSVC
+	strategyApp.StrategyApplicationSVC.Eventbus = basicServices.eventbus.resourceEventBus
 
 	return &primaryServices{
 		basicServices:     basicServices,

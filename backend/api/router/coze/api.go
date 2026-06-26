@@ -323,6 +323,26 @@ func Register(r *server.Hertz) {
 			}
 		}
 		{
+			_strategy := _api.Group("/strategy")
+			_strategy.POST("/create", coze.CreateStrategy)
+			_strategy.POST("/get_detail", coze.GetStrategyDetail)
+			_strategy.POST("/update", coze.UpdateStrategy)
+			_strategy.POST("/delete", coze.DeleteStrategy)
+			_strategy.POST("/publish", coze.PublishStrategy)
+			{
+				_scenario := _strategy.Group("/scenario")
+				_scenario.POST("/create", coze.CreateScenario)
+				_scenario.POST("/update", coze.UpdateScenario)
+				_scenario.POST("/delete", coze.DeleteScenario)
+			}
+			{
+				_capability := _strategy.Group("/capability")
+				_capability.POST("/add", coze.AddCapability)
+				_capability.POST("/update", coze.UpdateCapability)
+				_capability.POST("/delete", coze.DeleteCapability)
+			}
+		}
+		{
 			_oauth := _api.Group("/oauth", _oauthMw()...)
 			_oauth.GET("/authorization_code", append(_oauthauthorizationcodeMw(), coze.OauthAuthorizationCode)...)
 		}
