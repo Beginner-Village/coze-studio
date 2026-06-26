@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/* eslint-disable max-lines -- StrategyBindingArea owns select modal, bound-warning, and list-item in one file. */
 import React, { useState, useCallback, useEffect } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -29,6 +30,7 @@ import {
   Button,
   Empty,
   Typography,
+  Tooltip,
 } from '@coze-arch/coze-design';
 import { useSpaceStore } from '@coze-arch/bot-studio-store';
 import { PluginDevelopApi } from '@coze-arch/bot-api';
@@ -40,11 +42,47 @@ import {
 
 const { Text } = Typography;
 
+const S_ITEM_ROW: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: 12,
+  padding: '12px',
+  borderRadius: 10,
+  transition: 'background 0.14s ease-out',
+};
+const S_ICON: React.CSSProperties = {
+  display: 'grid',
+  placeItems: 'center',
+  flexShrink: 0,
+  width: 40,
+  height: 40,
+  marginTop: 2,
+  fontSize: 16,
+  fontWeight: 700,
+  color: '#fff',
+  background: 'linear-gradient(135deg, #f5a623 0%, #e8643c 100%)',
+  borderRadius: 10,
+};
+const S_NAME: React.CSSProperties = {
+  maxWidth: 360,
+  fontSize: 14,
+  fontWeight: 600,
+  color: 'var(--coz-fg, rgba(15,21,40,82%))',
+};
+const S_DESC: React.CSSProperties = {
+  display: 'block',
+  marginTop: 2,
+  fontSize: 12,
+  color: 'var(--coz-fg-secondary, rgba(32,41,69,62%))',
+};
+
 interface StrategyListItemProps {
   id: string;
   name: string;
   description?: string;
   isAdded: boolean;
+  disabled?: boolean;
+  disabledHint?: string;
   onAdd: () => void;
   onRemove: () => void;
 }
@@ -54,18 +92,13 @@ const StrategyListItem: React.FC<StrategyListItemProps> = ({
   name,
   description,
   isAdded,
+  disabled,
+  disabledHint,
   onAdd,
   onRemove,
 }) => (
   <div
-    style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: 12,
-      padding: '12px',
-      borderRadius: 10,
-      transition: 'background 0.14s ease-out',
-    }}
+    style={S_ITEM_ROW}
     onMouseEnter={e =>
       ((e.currentTarget as HTMLDivElement).style.background =
         'var(--coz-bg-secondary, rgb(240,240,247))')
@@ -74,34 +107,10 @@ const StrategyListItem: React.FC<StrategyListItemProps> = ({
       ((e.currentTarget as HTMLDivElement).style.background = 'transparent')
     }
   >
-    <div
-      style={{
-        display: 'grid',
-        placeItems: 'center',
-        flexShrink: 0,
-        width: 40,
-        height: 40,
-        marginTop: 2,
-        fontSize: 16,
-        fontWeight: 700,
-        color: '#fff',
-        background: 'linear-gradient(135deg, #f5a623 0%, #e8643c 100%)',
-        borderRadius: 10,
-      }}
-    >
-      {(name?.trim()?.slice(0, 1) || 'S').toUpperCase()}
-    </div>
+    <div style={S_ICON}>{(name?.trim()?.slice(0, 1) || 'S').toUpperCase()}</div>
     <div style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Text
-          ellipsis={{ showTooltip: true }}
-          style={{
-            maxWidth: 360,
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--coz-fg, rgba(15,21,40,82%))',
-          }}
-        >
+        <Text ellipsis={{ showTooltip: true }} style={S_NAME}>
           {name || id}
         </Text>
         {isAdded ? (
@@ -111,15 +120,7 @@ const StrategyListItem: React.FC<StrategyListItemProps> = ({
         ) : null}
       </div>
       {description ? (
-        <Text
-          ellipsis={{ showTooltip: true }}
-          style={{
-            display: 'block',
-            marginTop: 2,
-            fontSize: 12,
-            color: 'var(--coz-fg-secondary, rgba(32,41,69,62%))',
-          }}
-        >
+        <Text ellipsis={{ showTooltip: true }} style={S_DESC}>
           {description}
         </Text>
       ) : null}
@@ -136,6 +137,12 @@ const StrategyListItem: React.FC<StrategyListItemProps> = ({
         >
           {I18n.t('strategy_bound', {}, '已添加')}
         </Button>
+      ) : disabled ? (
+        <Tooltip content={disabledHint}>
+          <Button size="small" type="primary" theme="solid" disabled>
+            {I18n.t('Add', {}, '添加')}
+          </Button>
+        </Tooltip>
       ) : (
         <Button
           size="small"
@@ -165,11 +172,126 @@ interface StrategySelectModalProps {
   search: string;
   strategyList: RemoteStrategyItem[];
   addedIds: Set<string>;
+  hasOneBound: boolean;
   onClose: () => void;
   onSearchChange: (val: string) => void;
   onAdd: (item: RemoteStrategyItem) => void;
   onRemove: (id: string) => void;
 }
+
+const SINGLE_STRATEGY_HINT = '每个智能体只能绑定一个策略，请先移除当前策略';
+
+const CENTERED_240: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: 240,
+};
+
+interface StrategyModalBodyProps {
+  loading: boolean;
+  search: string;
+  strategyList: RemoteStrategyItem[];
+  addedIds: Set<string>;
+  hasOneBound: boolean;
+  onSearchChange: (val: string) => void;
+  onAdd: (item: RemoteStrategyItem) => void;
+  onRemove: (id: string) => void;
+}
+
+const StrategyModalBody: React.FC<StrategyModalBodyProps> = ({
+  loading,
+  search,
+  strategyList,
+  addedIds,
+  hasOneBound,
+  onSearchChange,
+  onAdd,
+  onRemove,
+}) => (
+  <div
+    style={{
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: 380,
+      maxHeight: 'calc(88vh - 138px)',
+    }}
+  >
+    <div style={{ flexShrink: 0, padding: '0 24px 12px' }}>
+      <Search
+        placeholder={I18n.t(
+          'strategy_bind_search_placeholder',
+          {},
+          '搜索策略...',
+        )}
+        value={search}
+        onChange={val => onSearchChange(val as string)}
+        style={{ width: '100%' }}
+      />
+      {hasOneBound ? (
+        <div
+          style={{
+            marginTop: 8,
+            padding: '6px 10px',
+            borderRadius: 6,
+            background: 'var(--coz-bg-warning-secondary, rgba(255,166,0,0.08))',
+            color: 'var(--coz-fg-warning, rgba(180,110,0,0.9))',
+            fontSize: 12,
+          }}
+        >
+          每个智能体仅可绑定 1 个策略，如需更换请先移除当前策略
+        </div>
+      ) : null}
+    </div>
+    <div
+      style={{
+        flex: '1 1 auto',
+        minHeight: 0,
+        overflowY: 'auto',
+        padding: '0 16px 12px',
+        scrollbarWidth: 'thin',
+      }}
+    >
+      {loading ? (
+        <div style={CENTERED_240}>
+          <Spin />
+        </div>
+      ) : strategyList.length === 0 ? (
+        <div style={CENTERED_240}>
+          <Empty
+            description={
+              search
+                ? I18n.t('strategy_bind_no_results', {}, '未找到匹配的策略')
+                : I18n.t(
+                    'strategy_bind_empty',
+                    {},
+                    '暂无策略，请先在「策略管理」页面创建',
+                  )
+            }
+          />
+        </div>
+      ) : (
+        strategyList.map(item => {
+          const isAdded = addedIds.has(item.res_id ?? '');
+          const isDisabled = hasOneBound && !isAdded;
+          return (
+            <StrategyListItem
+              key={item.res_id}
+              id={item.res_id ?? ''}
+              name={item.name ?? ''}
+              description={item.description}
+              isAdded={isAdded}
+              disabled={isDisabled}
+              disabledHint={isDisabled ? SINGLE_STRATEGY_HINT : undefined}
+              onAdd={() => onAdd(item)}
+              onRemove={() => onRemove(item.res_id ?? '')}
+            />
+          );
+        })
+      )}
+    </div>
+  </div>
+);
 
 const StrategySelectModal: React.FC<StrategySelectModalProps> = ({
   visible,
@@ -177,6 +299,7 @@ const StrategySelectModal: React.FC<StrategySelectModalProps> = ({
   search,
   strategyList,
   addedIds,
+  hasOneBound,
   onClose,
   onSearchChange,
   onAdd,
@@ -237,82 +360,16 @@ const StrategySelectModal: React.FC<StrategySelectModalProps> = ({
     width={680}
     bodyStyle={{ padding: 0, overflow: 'hidden' }}
   >
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 380,
-        maxHeight: 'calc(88vh - 138px)',
-      }}
-    >
-      <div style={{ flexShrink: 0, padding: '0 24px 12px' }}>
-        <Search
-          placeholder={I18n.t(
-            'strategy_bind_search_placeholder',
-            {},
-            '搜索策略...',
-          )}
-          value={search}
-          onChange={val => onSearchChange(val as string)}
-          style={{ width: '100%' }}
-        />
-      </div>
-      <div
-        style={{
-          flex: '1 1 auto',
-          minHeight: 0,
-          overflowY: 'auto',
-          padding: '0 16px 12px',
-          scrollbarWidth: 'thin',
-        }}
-      >
-        {loading ? (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 240,
-            }}
-          >
-            <Spin />
-          </div>
-        ) : strategyList.length === 0 ? (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 240,
-            }}
-          >
-            <Empty
-              description={
-                search
-                  ? I18n.t('strategy_bind_no_results', {}, '未找到匹配的策略')
-                  : I18n.t(
-                      'strategy_bind_empty',
-                      {},
-                      '暂无策略，请先在「策略管理」页面创建',
-                    )
-              }
-            />
-          </div>
-        ) : (
-          strategyList.map(item => (
-            <StrategyListItem
-              key={item.res_id}
-              id={item.res_id ?? ''}
-              name={item.name ?? ''}
-              description={item.description}
-              isAdded={addedIds.has(item.res_id ?? '')}
-              onAdd={() => onAdd(item)}
-              onRemove={() => onRemove(item.res_id ?? '')}
-            />
-          ))
-        )}
-      </div>
-    </div>
+    <StrategyModalBody
+      loading={loading}
+      search={search}
+      strategyList={strategyList}
+      addedIds={addedIds}
+      hasOneBound={hasOneBound}
+      onSearchChange={onSearchChange}
+      onAdd={onAdd}
+      onRemove={onRemove}
+    />
   </Modal>
 );
 
@@ -420,7 +477,21 @@ export const StrategyBindingArea: React.FC<StrategyBindingAreaProps> = ({
   return (
     <>
       <ToolContentBlock
-        header={displayTitle}
+        header={
+          <span>
+            {displayTitle}
+            <span
+              style={{
+                marginLeft: 6,
+                fontSize: 11,
+                fontWeight: 400,
+                color: 'var(--coz-fg-dim, rgba(55,67,106,38%))',
+              }}
+            >
+              每个智能体仅可绑定 1 个策略
+            </span>
+          </span>
+        }
         showBottomBorder
         defaultExpand={true}
         actionButton={<AddButton onClick={handleOpenModal} enableAutoHidden />}
@@ -477,6 +548,7 @@ export const StrategyBindingArea: React.FC<StrategyBindingAreaProps> = ({
         search={search}
         strategyList={strategyList}
         addedIds={addedIds}
+        hasOneBound={strategies.length > 0}
         onClose={handleCloseModal}
         onSearchChange={setSearch}
         onAdd={handleAddStrategy}
