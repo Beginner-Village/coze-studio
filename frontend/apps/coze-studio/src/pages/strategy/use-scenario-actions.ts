@@ -21,8 +21,8 @@ import { strategyApi, type ScenarioInfo } from '@coze-arch/bot-api';
 
 interface UseScenarioActionsOptions {
   strategyId: string | undefined;
-  selectedScenarioId: number | null;
-  setSelectedScenarioId: (id: number | null) => void;
+  selectedScenarioId: string | null;
+  setSelectedScenarioId: (id: string | null) => void;
   reload: () => Promise<void>;
 }
 
@@ -38,7 +38,8 @@ export const useScenarioActions = ({
   const [newScenarioDesc, setNewScenarioDesc] = useState('');
   const [addingScenario, setAddingScenario] = useState(false);
 
-  const [renameScenarioId, setRenameScenarioId] = useState<number | null>(null);
+  // renameScenarioId is a string (int64) or null
+  const [renameScenarioId, setRenameScenarioId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [renaming, setRenaming] = useState(false);
 
@@ -49,7 +50,7 @@ export const useScenarioActions = ({
     setAddingScenario(true);
     try {
       const resp = await strategyApi.createScenario({
-        strategy_id: Number(strategyId),
+        strategy_id: strategyId,
         name: newScenarioName.trim(),
         description: newScenarioDesc.trim() || undefined,
       });

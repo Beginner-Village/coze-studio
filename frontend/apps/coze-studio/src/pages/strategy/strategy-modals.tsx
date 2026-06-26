@@ -56,6 +56,8 @@ export const AddScenarioModal: React.FC<AddScenarioModalProps> = ({
   <Modal
     visible={visible}
     title={I18n.t('strategy_scenario_add')}
+    okText="确定"
+    cancelText="取消"
     onOk={onOk}
     onCancel={onCancel}
     okButtonProps={{ loading, disabled: !name.trim() }}
@@ -99,6 +101,8 @@ export const RenameScenarioModal: React.FC<RenameScenarioModalProps> = ({
   <Modal
     visible={visible}
     title="重命名场景"
+    okText="确定"
+    cancelText="取消"
     onOk={onOk}
     onCancel={onCancel}
     okButtonProps={{ loading, disabled: !value.trim() }}
@@ -133,6 +137,8 @@ export const AddCapabilityModal: React.FC<AddCapabilityModalProps> = ({
   <Modal
     visible={visible}
     title={I18n.t('strategy_capability_add')}
+    okText="确定"
+    cancelText="取消"
     onOk={onOk}
     onCancel={onCancel}
     okButtonProps={{ loading }}
@@ -244,6 +250,8 @@ export const EditCapabilityModal: React.FC<EditCapabilityModalProps> = ({
   <Modal
     visible={visible}
     title="编辑能力项"
+    okText="确定"
+    cancelText="取消"
     onOk={onOk}
     onCancel={onCancel}
     okButtonProps={{ loading }}

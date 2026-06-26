@@ -24,7 +24,7 @@ import { DEFAULT_ADD_CAP_FORM } from './constants';
 
 interface UseCapabilityActionsOptions {
   strategyId: string | undefined;
-  selectedScenarioId: number | null;
+  selectedScenarioId: string | null;
   reload: () => Promise<void>;
 }
 
@@ -39,7 +39,8 @@ export const useCapabilityActions = ({
     useState<AddCapabilityForm>(DEFAULT_ADD_CAP_FORM);
   const [addingCap, setAddingCap] = useState(false);
 
-  const [editCapId, setEditCapId] = useState<number | null>(null);
+  // editCapId is a string (int64) or null
+  const [editCapId, setEditCapId] = useState<string | null>(null);
   const [editCapForm, setEditCapForm] = useState<EditCapabilityForm>({
     alias_name: '',
     alias_description: '',
@@ -64,12 +65,13 @@ export const useCapabilityActions = ({
     try {
       await strategyApi.addCapability({
         scenario_id: selectedScenarioId,
-        strategy_id: Number(strategyId),
+        strategy_id: strategyId,
         type: addCapForm.type,
-        ref_id: isPrompt ? 0 : Number(addCapForm.ref_id),
+        // ref_id is a string id on the backend; for prompt type use '0'
+        ref_id: isPrompt ? '0' : addCapForm.ref_id.trim(),
         ref_sub_id:
-          addCapForm.type === 'plugin' && addCapForm.ref_sub_id
-            ? Number(addCapForm.ref_sub_id)
+          addCapForm.type === 'plugin' && addCapForm.ref_sub_id.trim()
+            ? addCapForm.ref_sub_id.trim()
             : undefined,
         prompt_content: isPrompt ? addCapForm.prompt_content : undefined,
         alias_name: addCapForm.alias_name || undefined,

@@ -94,8 +94,8 @@ export const StrategyHeader: React.FC<StrategyHeaderProps> = ({
 
 interface ScenarioPanelProps {
   scenarios: ScenarioInfo[] | undefined;
-  selectedScenarioId: number | null;
-  onSelect: (id: number) => void;
+  selectedScenarioId: string | null;
+  onSelect: (id: string) => void;
   onAdd: () => void;
   onRename: (scenario: ScenarioInfo) => void;
   onDelete: (scenario: ScenarioInfo) => void;

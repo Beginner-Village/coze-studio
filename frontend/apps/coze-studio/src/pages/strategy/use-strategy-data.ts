@@ -28,19 +28,21 @@ export const useStrategyData = (strategyId: string | undefined) => {
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [saving, setSaving] = useState(false);
-  const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(
+  // selectedScenarioId is a string (int64 id) or null
+  const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(
     null,
   );
 
   const loadDetail = useCallback(
-    async (currentSelectedId: number | null) => {
+    async (currentSelectedId: string | null) => {
       if (!strategyId) {
         return;
       }
       setLoading(true);
       try {
+        // strategyId is already a string from useParams — pass directly, no Number()
         const resp = await strategyApi.getStrategyDetail({
-          id: Number(strategyId),
+          id: strategyId,
         });
         if (resp?.data) {
           setStrategy(resp.data);
@@ -77,7 +79,7 @@ export const useStrategyData = (strategyId: string | undefined) => {
     setSaving(true);
     try {
       await strategyApi.updateStrategy({
-        id: Number(strategyId),
+        id: strategyId,
         name: editName.trim(),
         description: editDesc.trim() || undefined,
       });
@@ -97,7 +99,7 @@ export const useStrategyData = (strategyId: string | undefined) => {
     }
     setPublishing(true);
     try {
-      await strategyApi.publishStrategy({ id: Number(strategyId) });
+      await strategyApi.publishStrategy({ id: strategyId });
       Toast.success(`${I18n.t('strategy_publish')} 成功`);
       await reload();
     } catch (err) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import React from 'react';
 
 import { Typography } from '@coze-arch/coze-design';
@@ -38,13 +38,25 @@ import styles from './index.module.less';
 const { Text } = Typography;
 
 const StrategyEditorPage: React.FC = () => {
-  const { strategy_id } = useParams<{ strategy_id: string }>();
+  const { strategy_id, space_id } = useParams<{
+    strategy_id: string;
+    space_id: string;
+  }>();
+  const navigate = useNavigate();
   const editor = useStrategyEditor(strategy_id);
 
   const selectedScenario = editor.strategy?.scenarios?.find(
     s => s.id === editor.selectedScenarioId,
   );
   const capabilities = selectedScenario?.capabilities || [];
+
+  const handleBack = () => {
+    if (space_id) {
+      navigate(`/space/${space_id}/library/10`);
+    } else {
+      navigate(-1);
+    }
+  };
 
   if (editor.loading && !editor.strategy) {
     return (
@@ -56,6 +68,16 @@ const StrategyEditorPage: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      {/* Top nav bar with back button */}
+      <div className={styles.topNav}>
+        <button type="button" className={styles.backBtn} onClick={handleBack}>
+          ← 返回
+        </button>
+        <span className={styles.topNavTitle}>
+          {editor.strategy?.name || '策略编辑器'}
+        </span>
+      </div>
+
       <StrategyHeader
         strategy={editor.strategy}
         editName={editor.editName}

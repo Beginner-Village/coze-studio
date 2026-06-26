@@ -20,14 +20,16 @@ import { axiosInstance, type BotAPIRequestConfig } from './axios';
 // JSON field names match backend/api/model/data/strategy/strategy.go exactly.
 
 // ---------- shared sub-models ----------
+// NOTE: id fields are int64 on the backend (>2^53), sent as JSON strings via
+// `json:"...,string"` tags. All id-type fields MUST be string here.
 
 export interface CapabilityInfo {
-  id: number;
-  strategy_id: number;
-  scenario_id: number;
+  id: string;
+  strategy_id: string;
+  scenario_id: string;
   type: string;
-  ref_id: number;
-  ref_sub_id?: number;
+  ref_id: string;
+  ref_sub_id?: string;
   ref_version?: string;
   prompt_content?: string;
   retrieve_config?: string;
@@ -37,8 +39,8 @@ export interface CapabilityInfo {
 }
 
 export interface ScenarioInfo {
-  id: number;
-  strategy_id: number;
+  id: string;
+  strategy_id: string;
   name: string;
   description?: string;
   sort_order: number;
@@ -46,10 +48,10 @@ export interface ScenarioInfo {
 }
 
 export interface StrategyInfo {
-  id: number;
-  space_id: number;
-  app_id?: number;
-  creator_id: number;
+  id: string;
+  space_id: string;
+  app_id?: string;
+  creator_id: string;
   name: string;
   description?: string;
   icon_uri?: string;
@@ -61,7 +63,7 @@ export interface StrategyInfo {
 // ---------- Strategy ----------
 
 export interface CreateStrategyRequest {
-  space_id: number;
+  space_id: string;
   name: string;
   description?: string;
   icon_uri?: string;
@@ -74,7 +76,7 @@ export interface CreateStrategyResponse {
 }
 
 export interface GetStrategyDetailRequest {
-  id: number;
+  id: string;
 }
 
 export interface GetStrategyDetailResponse {
@@ -84,7 +86,7 @@ export interface GetStrategyDetailResponse {
 }
 
 export interface UpdateStrategyRequest {
-  id: number;
+  id: string;
   name?: string;
   description?: string;
   icon_uri?: string;
@@ -96,7 +98,7 @@ export interface UpdateStrategyResponse {
 }
 
 export interface DeleteStrategyRequest {
-  id: number;
+  id: string;
 }
 
 export interface DeleteStrategyResponse {
@@ -105,7 +107,7 @@ export interface DeleteStrategyResponse {
 }
 
 export interface PublishStrategyRequest {
-  id: number;
+  id: string;
   version?: string;
 }
 
@@ -117,7 +119,7 @@ export interface PublishStrategyResponse {
 // ---------- Scenario ----------
 
 export interface CreateScenarioRequest {
-  strategy_id: number;
+  strategy_id: string;
   name: string;
   description?: string;
   sort_order?: number;
@@ -130,7 +132,7 @@ export interface CreateScenarioResponse {
 }
 
 export interface UpdateScenarioRequest {
-  id: number;
+  id: string;
   name?: string;
   description?: string;
   sort_order?: number;
@@ -142,7 +144,7 @@ export interface UpdateScenarioResponse {
 }
 
 export interface DeleteScenarioRequest {
-  id: number;
+  id: string;
 }
 
 export interface DeleteScenarioResponse {
@@ -153,11 +155,11 @@ export interface DeleteScenarioResponse {
 // ---------- Capability ----------
 
 export interface AddCapabilityRequest {
-  scenario_id: number;
-  strategy_id: number;
+  scenario_id: string;
+  strategy_id: string;
   type: string;
-  ref_id: number;
-  ref_sub_id?: number;
+  ref_id: string;
+  ref_sub_id?: string;
   ref_version?: string;
   prompt_content?: string;
   retrieve_config?: string;
@@ -173,7 +175,7 @@ export interface AddCapabilityResponse {
 }
 
 export interface UpdateCapabilityRequest {
-  id: number;
+  id: string;
   ref_version?: string;
   prompt_content?: string;
   retrieve_config?: string;
@@ -188,7 +190,7 @@ export interface UpdateCapabilityResponse {
 }
 
 export interface DeleteCapabilityRequest {
-  id: number;
+  id: string;
 }
 
 export interface DeleteCapabilityResponse {
