@@ -52,7 +52,7 @@ export const useStrategyConfig: UseEntityConfigHook = ({
   const { run: createStrategy, loading: creating } = useRequest(
     () =>
       strategyApi.createStrategy({
-        space_id: Number(spaceId),
+        space_id: spaceId,
         name: strategyName,
         description: strategyDesc,
       }),
@@ -72,7 +72,7 @@ export const useStrategyConfig: UseEntityConfigHook = ({
   const { run: deleteStrategy } = useRequest(
     (strategyId: string) =>
       strategyApi.deleteStrategy({
-        id: Number(strategyId),
+        id: strategyId,
       }),
     {
       manual: true,
@@ -93,6 +93,8 @@ export const useStrategyConfig: UseEntityConfigHook = ({
         }
       }}
       onCancel={() => setCreateVisible(false)}
+      okText="确定"
+      cancelText="取消"
       okButtonProps={{ loading: creating, disabled: !strategyName.trim() }}
     >
       <div style={{ marginBottom: 12 }}>
