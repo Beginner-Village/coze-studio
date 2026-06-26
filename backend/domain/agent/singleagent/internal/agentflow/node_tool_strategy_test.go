@@ -19,6 +19,7 @@ package agentflow
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -26,11 +27,14 @@ import (
 )
 
 // fakeStrategySvc implements crossstrategy.StrategyService for tests.
+// Bound strategies: [1, 2]. Each strategy has one scenario (ID = strategyID*10).
+// Scenarios 10 and 20 are valid; scenario 99 is foreign/unbound.
+// Capabilities 100, 101 belong to scenario 10 (strategy 1).
 type fakeStrategySvc struct{}
 
 func (f *fakeStrategySvc) ListScenarios(_ context.Context, strategyID int64) ([]*entity.Scenario, error) {
 	return []*entity.Scenario{
-		{ID: 10, StrategyID: strategyID, Name: "ScenarioA", Description: "desc A", SortOrder: 1},
+		{ID: strategyID * 10, StrategyID: strategyID, Name: "ScenarioA", Description: "desc A", SortOrder: 1},
 	}, nil
 }
 
@@ -48,7 +52,11 @@ func (f *fakeStrategySvc) ListCapabilities(_ context.Context, scenarioID int64) 
 }
 
 func (f *fakeStrategySvc) ResolveCapability(_ context.Context, capID int64) (*entity.Capability, error) {
-	return &entity.Capability{ID: capID, Type: entity.CapabilityTypePrompt}, nil
+	return &entity.Capability{
+		ID:            capID,
+		Type:          entity.CapabilityTypePrompt,
+		PromptContent: "Hello, I am the prompt content for cap " + fmt.Sprint(capID),
+	}, nil
 }
 
 func (f *fakeStrategySvc) ListCapabilityIDsByStrategies(_ context.Context, ids []int64) ([]int64, error) {
@@ -170,25 +178,17 @@ func TestStrategyTools_ListCapabilitiesInvoke(t *testing.T) {
 	}
 }
 
-// TestStrategyTools_InvokeSentinel verifies that strategy_invoke_capability
-// returns the BE9 sentinel string and no error (sentinel signals deferred wiring).
-func TestStrategyTools_InvokeSentinel(t *testing.T) {
-	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
-		strategyIDs: []int64{1},
-		svc:         &fakeStrategySvc{},
-	})
-
-	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
-	if err != nil {
-		t.Fatalf("invoke_capability should not return error (sentinel): %v", err)
-	}
-	if !strings.Contains(out, "BE9") && !strings.Contains(out, "not yet") {
-		t.Fatalf("invoke_capability sentinel not found in output: %s", out)
-	}
+// TestStrategyTools_InvokeSentinel was the BE8 sentinel test. After BE9a, the
+// invoke tool returns real results. This test is superseded by the BE9a security
+// tests below; it's kept but renamed to avoid confusion.
+// (Disabled — sentinel string no longer produced after BE9a implementation.)
+func TestStrategyTools_InvokeSentinel_Superseded(t *testing.T) {
+	t.Skip("sentinel removed in BE9a — see TestStrategy_InvokePromptSuccess")
 }
 
 // TestStrategyTools_ListScenariosFilteredByStrategyID verifies that when
 // strategy_id param is provided, only that strategy's scenarios are returned.
+// The bound strategies are [1, 2], strategy_id=1 is in-bound → allowed.
 func TestStrategyTools_ListScenariosFilteredByStrategyID(t *testing.T) {
 	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
 		strategyIDs: []int64{1, 2},
@@ -209,5 +209,88 @@ func TestStrategyTools_ListScenariosFilteredByStrategyID(t *testing.T) {
 		if sid, _ := row["strategy_id"].(float64); int64(sid) != 1 {
 			t.Fatalf("filtered list_scenarios should only return strategy_id=1, got %v", row)
 		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// BE9a Security tests (TDD: written before implementation)
+// ---------------------------------------------------------------------------
+
+// TestStrategy_ListScenariosIDORReject verifies that passing a strategy_id that
+// is NOT in the agent's bound set is rejected BEFORE any svc.ListScenarios call.
+func TestStrategy_ListScenariosIDORReject(t *testing.T) {
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1, 2}, // bound: 1 and 2 only
+		svc:         &fakeStrategySvc{},
+	})
+
+	// strategy_id=99 is foreign — must be rejected.
+	out, err := tools[0].InvokableRun(context.Background(), `{"strategy_id":"99"}`)
+	if err != nil {
+		t.Fatalf("list_scenarios IDOR reject should not return Go error: %v", err)
+	}
+	const wantMsg = "Error: strategy_id is not bound to this agent"
+	if !strings.Contains(out, wantMsg) {
+		t.Fatalf("list_scenarios IDOR: expected rejection message %q, got: %s", wantMsg, out)
+	}
+}
+
+// TestStrategy_ListCapabilitiesIDORReject verifies that passing a scenario_id
+// that does NOT belong to any bound strategy is rejected before svc.ListCapabilities.
+// Bound strategies [1] → valid scenario IDs = {10}. Scenario 99 is foreign.
+func TestStrategy_ListCapabilitiesIDORReject(t *testing.T) {
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1}, // strategy 1 → scenario 10
+		svc:         &fakeStrategySvc{},
+	})
+
+	out, err := tools[1].InvokableRun(context.Background(), `{"scenario_id":"99"}`)
+	if err != nil {
+		t.Fatalf("list_capabilities IDOR reject should not return Go error: %v", err)
+	}
+	const wantMsg = "Error: scenario_id is not accessible to this agent"
+	if !strings.Contains(out, wantMsg) {
+		t.Fatalf("list_capabilities IDOR: expected rejection message %q, got: %s", wantMsg, out)
+	}
+}
+
+// TestStrategy_InvokePromptSuccess verifies that invoking a bound prompt capability
+// returns the PromptContent (the primary BE9a success path).
+func TestStrategy_InvokePromptSuccess(t *testing.T) {
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         &fakeStrategySvc{},
+	})
+
+	// capID=100 is in the allowed set returned by fakeStrategySvc.ListCapabilityIDsByStrategies.
+	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	if err != nil {
+		t.Fatalf("invoke prompt capability should not return Go error: %v", err)
+	}
+	if strings.HasPrefix(out, "Error:") {
+		t.Fatalf("invoke prompt capability should succeed, got: %s", out)
+	}
+	// fakeStrategySvc.ResolveCapability returns PromptContent containing the cap ID.
+	if !strings.Contains(out, "100") {
+		t.Fatalf("invoke prompt: expected prompt content containing capID, got: %s", out)
+	}
+}
+
+// TestStrategy_InvokeAuthReject verifies that invoking a capability_id that is
+// NOT in the agent's allowed set is rejected BEFORE svc.ResolveCapability is called.
+func TestStrategy_InvokeAuthReject(t *testing.T) {
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         &fakeStrategySvc{},
+	})
+
+	// capID=999 is NOT in {100, 101} returned by fakeStrategySvc.ListCapabilityIDsByStrategies.
+	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"999"}`)
+	if err != nil {
+		t.Fatalf("invoke auth reject should not return Go error: %v", err)
+	}
+	const wantMsg = "Error: capability_id is not bound to this agent"
+	if !strings.Contains(out, wantMsg) {
+		t.Fatalf("invoke auth reject: expected %q, got: %s", wantMsg, out)
 	}
 }

@@ -25,6 +25,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/cloudwego/eino/components/tool"
@@ -119,6 +120,10 @@ func (t *listScenariosTool) InvokableRun(ctx context.Context, argumentsInJSON st
 		id, err := strconv.ParseInt(req.StrategyID, 10, 64)
 		if err != nil {
 			return fmt.Sprintf("Error: invalid strategy_id %q: %v", req.StrategyID, err), nil
+		}
+		// R1: verify the requested strategy_id is in the agent's bound set.
+		if !slices.Contains(t.conf.strategyIDs, id) {
+			return "Error: strategy_id is not bound to this agent", nil
 		}
 		strategyIDs = []int64{id}
 	}
@@ -240,6 +245,22 @@ func (t *listCapabilitiesTool) InvokableRun(ctx context.Context, argumentsInJSON
 		return fmt.Sprintf("Error: invalid scenario_id %q: %v", req.ScenarioID, err), nil
 	}
 
+	// R2: verify scenario_id belongs to one of the agent's bound strategies.
+	validScenarioIDs := make(map[int64]struct{})
+	for _, sid := range t.conf.strategyIDs {
+		scenarios, sErr := svc.ListScenarios(ctx, sid)
+		if sErr != nil {
+			logs.CtxWarnf(ctx, "strategy_list_capabilities: failed to list scenarios for strategy %d: %v", sid, sErr)
+			continue
+		}
+		for _, sc := range scenarios {
+			validScenarioIDs[sc.ID] = struct{}{}
+		}
+	}
+	if _, ok := validScenarioIDs[scenarioID]; !ok {
+		return "Error: scenario_id is not accessible to this agent", nil
+	}
+
 	caps, err := svc.ListCapabilities(ctx, scenarioID)
 	if err != nil {
 		return fmt.Sprintf("Error listing capabilities for scenario %d: %v", scenarioID, err), nil
@@ -293,11 +314,59 @@ func (t *invokeCapabilityTool) Info(_ context.Context) (*schema.ToolInfo, error)
 	}, nil
 }
 
-// InvokableRun is a sentinel for BE-9. The full dispatch logic (prompt / knowledge /
-// workflow / plugin routing) is implemented in the next task (BE-9).
-//
-// Returning a non-nil string with nil error lets the LLM see the explanation
-// without crashing the tool-call chain.
-func (t *invokeCapabilityTool) InvokableRun(_ context.Context, _ string, _ ...tool.Option) (string, error) {
-	return "Error: strategy_invoke_capability dispatch not yet wired — implemented in BE9", nil
+type invokeCapabilityRequest struct {
+	CapabilityID string         `json:"capability_id"`
+	Arguments    map[string]any `json:"arguments,omitempty"`
+}
+
+// InvokableRun implements BE9a: auth gate + prompt dispatch.
+// workflow / plugin / knowledge routing is implemented in BE9b.
+func (t *invokeCapabilityTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := t.conf.getSvc()
+	if svc == nil {
+		return "Error: strategy service is not available", nil
+	}
+
+	// 1. Parse arguments.
+	var req invokeCapabilityRequest
+	if argumentsInJSON != "" && argumentsInJSON != "null" {
+		if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+			return argParseErrMsg(err), nil
+		}
+	}
+	if req.CapabilityID == "" {
+		return "Error: capability_id is required", nil
+	}
+	capID, err := strconv.ParseInt(req.CapabilityID, 10, 64)
+	if err != nil {
+		return fmt.Sprintf("Error: invalid capability_id %q: %v", req.CapabilityID, err), nil
+	}
+
+	// 2. AUTH: verify capability_id is in the agent's bound set.
+	allowed, err := svc.ListCapabilityIDsByStrategies(ctx, t.conf.strategyIDs)
+	if err != nil {
+		return fmt.Sprintf("Error: failed to validate capability authorization: %v", err), nil
+	}
+	if !slices.Contains(allowed, capID) {
+		return "Error: capability_id is not bound to this agent", nil
+	}
+
+	// 3. Resolve and dispatch.
+	cap, err := svc.ResolveCapability(ctx, capID)
+	if err != nil {
+		return fmt.Sprintf("Error: failed to resolve capability %d: %v", capID, err), nil
+	}
+
+	switch cap.Type {
+	case strategyEntity.CapabilityTypePrompt:
+		return cap.PromptContent, nil
+	case strategyEntity.CapabilityTypeWorkflow:
+		return "Error: workflow capability execution is wired in a following task", nil
+	case strategyEntity.CapabilityTypePlugin:
+		return "Error: plugin capability execution is wired in a following task", nil
+	case strategyEntity.CapabilityTypeKnowledge:
+		return "Error: knowledge capability execution is wired in a following task", nil
+	default:
+		return fmt.Sprintf("Error: unknown capability type %q", cap.Type), nil
+	}
 }
