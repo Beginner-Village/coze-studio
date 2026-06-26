@@ -122,6 +122,8 @@ const WorkflowPage = lazy(() =>
   })),
 );
 
+const StrategyEditorPage = lazy(() => import('./pages/strategy'));
+
 const PluginPageLayout = lazy(() => import('./pages/plugin/layout'));
 const PluginPage = lazy(() => import('./pages/plugin/page'));
 const PluginToolPage = lazy(() => import('./pages/plugin/tool/page'));
@@ -492,6 +494,13 @@ export const router: ReturnType<typeof createBrowserRouter> =
                     showMobileTips: true,
                     requireBotEditorInit: true,
                     pageName: 'bot',
+                  }),
+                },
+                {
+                  path: 'strategy/:strategy_id',
+                  Component: StrategyEditorPage,
+                  loader: () => ({
+                    hasSider: false,
                   }),
                 },
                 {
