@@ -195,6 +195,19 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 		}
 	}
 
+	var strategyTools []tool.InvokableTool
+	if len(conf.Agent.Strategies) > 0 {
+		strategyTools, err = newStrategyTools(ctx, &strategyConfig{
+			spaceID:       conf.Agent.SpaceID,
+			userID:        conf.UserID,
+			agentIdentity: conf.Identity,
+			strategyIDs:   conf.Agent.Strategies,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var avTools []tool.InvokableTool
 	// 检查记忆工具配置开关
 	// 如果配置为启用(默认)或未配置，则添加记忆工具
@@ -236,12 +249,15 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	if len(wfTools) > 0 {
 		containWfTool = true
 	}
-	agentTools := make([]tool.BaseTool, 0, len(pluginTools)+len(wfTools)+len(dbTools)+len(avTools)+len(externalKnowledgeTools))
+	agentTools := make([]tool.BaseTool, 0, len(pluginTools)+len(wfTools)+len(dbTools)+len(strategyTools)+len(avTools)+len(externalKnowledgeTools))
 	agentTools = append(agentTools, slices.Transform(pluginTools, func(a tool.InvokableTool) tool.BaseTool {
 		return a
 	})...)
 	agentTools = append(agentTools, slices.Transform(wfTools, func(a workflow.ToolFromWorkflow) tool.BaseTool { return a.(tool.BaseTool) })...)
 	agentTools = append(agentTools, slices.Transform(dbTools, func(a tool.InvokableTool) tool.BaseTool {
+		return a
+	})...)
+	agentTools = append(agentTools, slices.Transform(strategyTools, func(a tool.InvokableTool) tool.BaseTool {
 		return a
 	})...)
 
