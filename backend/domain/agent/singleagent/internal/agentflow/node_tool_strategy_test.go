@@ -49,6 +49,14 @@ import (
 // Capabilities 100, 101 belong to scenario 10 (strategy 1).
 type fakeStrategySvc struct{}
 
+func (f *fakeStrategySvc) GetStrategy(_ context.Context, id int64) (*entity.Strategy, error) {
+	return &entity.Strategy{
+		ID:          id,
+		Name:        fmt.Sprintf("Strategy-%d", id),
+		Description: fmt.Sprintf("desc for strategy %d", id),
+	}, nil
+}
+
 func (f *fakeStrategySvc) ListScenarios(_ context.Context, strategyID int64) ([]*entity.Scenario, error) {
 	return []*entity.Scenario{
 		{ID: strategyID * 10, StrategyID: strategyID, Name: "ScenarioA", Description: "desc A", SortOrder: 1},
@@ -81,7 +89,7 @@ func (f *fakeStrategySvc) ListCapabilityIDsByStrategies(_ context.Context, ids [
 }
 
 // TestStrategyTools_Info verifies that newStrategyTools returns 3 tools with the
-// exact names required by the progressive-disclosure design.
+// exact short names (scenes / caps / run).
 func TestStrategyTools_Info(t *testing.T) {
 	tools, err := newStrategyTools(context.Background(), &strategyConfig{
 		strategyIDs: []int64{1},
@@ -94,11 +102,7 @@ func TestStrategyTools_Info(t *testing.T) {
 		t.Fatalf("expected 3 tools, got %d", len(tools))
 	}
 
-	wantNames := []string{
-		"strategy_list_scenarios",
-		"strategy_list_capabilities",
-		"strategy_invoke_capability",
-	}
+	wantNames := []string{"scenes", "caps", "run"}
 	for i, wantName := range wantNames {
 		info, err := tools[i].Info(context.Background())
 		if err != nil {
@@ -110,8 +114,28 @@ func TestStrategyTools_Info(t *testing.T) {
 	}
 }
 
-// TestStrategyTools_ListScenariosInvoke verifies list_scenarios returns the
-// fake scenarios serialised with the required JSON keys.
+// TestStrategyTools_ScenesDescContainsStrategyName verifies that the "scenes" tool
+// description embeds the bound strategy's name, enabling autonomous discovery.
+func TestStrategyTools_ScenesDescContainsStrategyName(t *testing.T) {
+	tools, err := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         &fakeStrategySvc{},
+	})
+	if err != nil {
+		t.Fatalf("newStrategyTools err=%v", err)
+	}
+
+	info, err := tools[0].Info(context.Background())
+	if err != nil {
+		t.Fatalf("scenes.Info() err=%v", err)
+	}
+	// fakeStrategySvc.GetStrategy returns "Strategy-1" for id=1.
+	if !strings.Contains(info.Desc, "Strategy-1") {
+		t.Fatalf("scenes desc should contain bound strategy name %q, got: %s", "Strategy-1", info.Desc)
+	}
+}
+
+// TestStrategyTools_ListScenariosInvoke verifies scenes returns short JSON keys.
 func TestStrategyTools_ListScenariosInvoke(t *testing.T) {
 	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
 		strategyIDs: []int64{1},
@@ -120,60 +144,59 @@ func TestStrategyTools_ListScenariosInvoke(t *testing.T) {
 
 	out, err := tools[0].InvokableRun(context.Background(), `{}`)
 	if err != nil {
-		t.Fatalf("list_scenarios err=%v", err)
+		t.Fatalf("scenes err=%v", err)
 	}
 
 	var rows []map[string]any
 	if jsonErr := json.Unmarshal([]byte(out), &rows); jsonErr != nil {
-		t.Fatalf("list_scenarios output not valid JSON: %v\noutput: %s", jsonErr, out)
+		t.Fatalf("scenes output not valid JSON: %v\noutput: %s", jsonErr, out)
 	}
 	if len(rows) == 0 {
 		t.Fatalf("expected at least one scenario, got empty array")
 	}
 
 	row := rows[0]
-	for _, key := range []string{"strategy_id", "scenario_id", "name", "description", "capability_count"} {
+	for _, key := range []string{"id", "name", "desc", "n"} {
 		if _, ok := row[key]; !ok {
-			t.Fatalf("list_scenarios row missing key %q: %v", key, row)
+			t.Fatalf("scenes row missing key %q: %v", key, row)
 		}
 	}
 }
 
-// TestStrategyTools_ListCapabilitiesInvoke verifies list_capabilities maps
-// prompt and knowledge capabilities with the correct type and input_schema.
+// TestStrategyTools_ListCapabilitiesInvoke verifies caps returns short JSON keys.
 func TestStrategyTools_ListCapabilitiesInvoke(t *testing.T) {
 	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
 		strategyIDs: []int64{1},
 		svc:         &fakeStrategySvc{},
 	})
 
-	out, err := tools[1].InvokableRun(context.Background(), `{"scenario_id":"10"}`)
+	out, err := tools[1].InvokableRun(context.Background(), `{"scene":"10"}`)
 	if err != nil {
-		t.Fatalf("list_capabilities err=%v", err)
+		t.Fatalf("caps err=%v", err)
 	}
 
 	// Must contain prompt type
 	if !strings.Contains(out, `"type":"prompt"`) {
-		t.Fatalf("list_capabilities should contain prompt capability, got: %s", out)
+		t.Fatalf("caps should contain prompt capability, got: %s", out)
 	}
 	// Must contain knowledge type
 	if !strings.Contains(out, `"type":"knowledge"`) {
-		t.Fatalf("list_capabilities should contain knowledge capability, got: %s", out)
+		t.Fatalf("caps should contain knowledge capability, got: %s", out)
 	}
 
 	var rows []map[string]any
 	if jsonErr := json.Unmarshal([]byte(out), &rows); jsonErr != nil {
-		t.Fatalf("list_capabilities output not valid JSON: %v\noutput: %s", jsonErr, out)
+		t.Fatalf("caps output not valid JSON: %v\noutput: %s", jsonErr, out)
 	}
 	for _, row := range rows {
-		for _, key := range []string{"capability_id", "type", "name", "description", "input_schema"} {
+		for _, key := range []string{"id", "type", "name", "desc", "schema"} {
 			if _, ok := row[key]; !ok {
-				t.Fatalf("list_capabilities row missing key %q: %v", key, row)
+				t.Fatalf("caps row missing key %q: %v", key, row)
 			}
 		}
 	}
 
-	// knowledge entry should have query in its input_schema
+	// knowledge entry should have query in its schema
 	var knowledgeRow map[string]any
 	for _, row := range rows {
 		if row["type"] == "knowledge" {
@@ -184,131 +207,126 @@ func TestStrategyTools_ListCapabilitiesInvoke(t *testing.T) {
 	if knowledgeRow == nil {
 		t.Fatalf("no knowledge row found")
 	}
-	schemaRaw, _ := json.Marshal(knowledgeRow["input_schema"])
+	schemaRaw, _ := json.Marshal(knowledgeRow["schema"])
 	if !strings.Contains(string(schemaRaw), "query") {
-		t.Fatalf("knowledge input_schema should contain query, got: %s", schemaRaw)
+		t.Fatalf("knowledge schema should contain query, got: %s", schemaRaw)
 	}
 
 	// prompt alias name should be reflected
 	if !strings.Contains(out, "MyPrompt") {
-		t.Fatalf("list_capabilities prompt entry should use AliasName, got: %s", out)
+		t.Fatalf("caps prompt entry should use AliasName, got: %s", out)
 	}
 }
 
-// TestStrategyTools_InvokeSentinel was the BE8 sentinel test. After BE9a, the
-// invoke tool returns real results. This test is superseded by the BE9a security
-// tests below; it's kept but renamed to avoid confusion.
-// (Disabled — sentinel string no longer produced after BE9a implementation.)
+// TestStrategyTools_InvokeSentinel_Superseded is kept for historical context but skipped.
 func TestStrategyTools_InvokeSentinel_Superseded(t *testing.T) {
 	t.Skip("sentinel removed in BE9a — see TestStrategy_InvokePromptSuccess")
 }
 
 // TestStrategyTools_ListScenariosFilteredByStrategyID verifies that when
-// strategy_id param is provided, only that strategy's scenarios are returned.
-// The bound strategies are [1, 2], strategy_id=1 is in-bound → allowed.
+// strat param is provided, only that strategy's scenarios are returned.
 func TestStrategyTools_ListScenariosFilteredByStrategyID(t *testing.T) {
 	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
 		strategyIDs: []int64{1, 2},
 		svc:         &fakeStrategySvc{},
 	})
 
-	out, err := tools[0].InvokableRun(context.Background(), `{"strategy_id":"1"}`)
+	out, err := tools[0].InvokableRun(context.Background(), `{"strat":"1"}`)
 	if err != nil {
-		t.Fatalf("list_scenarios with strategy_id filter err=%v", err)
+		t.Fatalf("scenes with strat filter err=%v", err)
 	}
 
 	var rows []map[string]any
 	if jsonErr := json.Unmarshal([]byte(out), &rows); jsonErr != nil {
-		t.Fatalf("list_scenarios output not valid JSON: %v\noutput: %s", jsonErr, out)
+		t.Fatalf("scenes output not valid JSON: %v\noutput: %s", jsonErr, out)
 	}
-	// should only have scenarios for strategy 1
+	// All returned scenario ids should be multiples of strategy 1 (i.e. id=10)
 	for _, row := range rows {
-		if sid, _ := row["strategy_id"].(float64); int64(sid) != 1 {
-			t.Fatalf("filtered list_scenarios should only return strategy_id=1, got %v", row)
+		if id, _ := row["id"].(float64); int64(id) != 10 {
+			t.Fatalf("filtered scenes should only return scenario from strategy 1 (id=10), got %v", row)
 		}
 	}
 }
 
 // ---------------------------------------------------------------------------
-// BE9a Security tests (TDD: written before implementation)
+// Security tests
 // ---------------------------------------------------------------------------
 
-// TestStrategy_ListScenariosIDORReject verifies that passing a strategy_id that
-// is NOT in the agent's bound set is rejected BEFORE any svc.ListScenarios call.
+// TestStrategy_ListScenariosIDORReject verifies that passing a strat that is
+// NOT in the agent's bound set is rejected BEFORE any svc.ListScenarios call.
 func TestStrategy_ListScenariosIDORReject(t *testing.T) {
 	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
 		strategyIDs: []int64{1, 2}, // bound: 1 and 2 only
 		svc:         &fakeStrategySvc{},
 	})
 
-	// strategy_id=99 is foreign — must be rejected.
-	out, err := tools[0].InvokableRun(context.Background(), `{"strategy_id":"99"}`)
+	// strat=99 is foreign — must be rejected.
+	out, err := tools[0].InvokableRun(context.Background(), `{"strat":"99"}`)
 	if err != nil {
-		t.Fatalf("list_scenarios IDOR reject should not return Go error: %v", err)
+		t.Fatalf("scenes IDOR reject should not return Go error: %v", err)
 	}
 	const wantMsg = "Error: strategy_id is not bound to this agent"
 	if !strings.Contains(out, wantMsg) {
-		t.Fatalf("list_scenarios IDOR: expected rejection message %q, got: %s", wantMsg, out)
+		t.Fatalf("scenes IDOR: expected rejection message %q, got: %s", wantMsg, out)
 	}
 }
 
-// TestStrategy_ListCapabilitiesIDORReject verifies that passing a scenario_id
-// that does NOT belong to any bound strategy is rejected before svc.ListCapabilities.
-// Bound strategies [1] → valid scenario IDs = {10}. Scenario 99 is foreign.
+// TestStrategy_ListCapabilitiesIDORReject verifies that passing a scene that
+// does NOT belong to any bound strategy is rejected before svc.ListCapabilities.
 func TestStrategy_ListCapabilitiesIDORReject(t *testing.T) {
 	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
 		strategyIDs: []int64{1}, // strategy 1 → scenario 10
 		svc:         &fakeStrategySvc{},
 	})
 
-	out, err := tools[1].InvokableRun(context.Background(), `{"scenario_id":"99"}`)
+	out, err := tools[1].InvokableRun(context.Background(), `{"scene":"99"}`)
 	if err != nil {
-		t.Fatalf("list_capabilities IDOR reject should not return Go error: %v", err)
+		t.Fatalf("caps IDOR reject should not return Go error: %v", err)
 	}
 	const wantMsg = "Error: scenario_id is not accessible to this agent"
 	if !strings.Contains(out, wantMsg) {
-		t.Fatalf("list_capabilities IDOR: expected rejection message %q, got: %s", wantMsg, out)
+		t.Fatalf("caps IDOR: expected rejection message %q, got: %s", wantMsg, out)
 	}
 }
 
 // TestStrategy_InvokePromptSuccess verifies that invoking a bound prompt capability
-// returns the PromptContent (the primary BE9a success path).
+// returns the PromptContent via the short "cap" param.
 func TestStrategy_InvokePromptSuccess(t *testing.T) {
 	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
 		strategyIDs: []int64{1},
 		svc:         &fakeStrategySvc{},
 	})
 
-	// capID=100 is in the allowed set returned by fakeStrategySvc.ListCapabilityIDsByStrategies.
-	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	// cap=100 is in the allowed set returned by fakeStrategySvc.ListCapabilityIDsByStrategies.
+	out, err := tools[2].InvokableRun(context.Background(), `{"cap":"100"}`)
 	if err != nil {
-		t.Fatalf("invoke prompt capability should not return Go error: %v", err)
+		t.Fatalf("run prompt capability should not return Go error: %v", err)
 	}
 	if strings.HasPrefix(out, "Error:") {
-		t.Fatalf("invoke prompt capability should succeed, got: %s", out)
+		t.Fatalf("run prompt capability should succeed, got: %s", out)
 	}
 	// fakeStrategySvc.ResolveCapability returns PromptContent containing the cap ID.
 	if !strings.Contains(out, "100") {
-		t.Fatalf("invoke prompt: expected prompt content containing capID, got: %s", out)
+		t.Fatalf("run prompt: expected prompt content containing capID, got: %s", out)
 	}
 }
 
-// TestStrategy_InvokeAuthReject verifies that invoking a capability_id that is
-// NOT in the agent's allowed set is rejected BEFORE svc.ResolveCapability is called.
+// TestStrategy_InvokeAuthReject verifies that invoking a cap that is NOT in the
+// agent's allowed set is rejected BEFORE svc.ResolveCapability is called.
 func TestStrategy_InvokeAuthReject(t *testing.T) {
 	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
 		strategyIDs: []int64{1},
 		svc:         &fakeStrategySvc{},
 	})
 
-	// capID=999 is NOT in {100, 101} returned by fakeStrategySvc.ListCapabilityIDsByStrategies.
-	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"999"}`)
+	// cap=999 is NOT in {100, 101} returned by fakeStrategySvc.ListCapabilityIDsByStrategies.
+	out, err := tools[2].InvokableRun(context.Background(), `{"cap":"999"}`)
 	if err != nil {
-		t.Fatalf("invoke auth reject should not return Go error: %v", err)
+		t.Fatalf("run auth reject should not return Go error: %v", err)
 	}
 	const wantMsg = "Error: capability_id is not bound to this agent"
 	if !strings.Contains(out, wantMsg) {
-		t.Fatalf("invoke auth reject: expected %q, got: %s", wantMsg, out)
+		t.Fatalf("run auth reject: expected %q, got: %s", wantMsg, out)
 	}
 }
 
@@ -375,15 +393,15 @@ func TestStrategy_InvokePlugin_RoutesCorrectly(t *testing.T) {
 		svc:         svc,
 	})
 
-	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	out, err := tools[2].InvokableRun(context.Background(), `{"cap":"100"}`)
 	if err != nil {
-		t.Fatalf("invoke plugin should not return Go error: %v", err)
+		t.Fatalf("run plugin should not return Go error: %v", err)
 	}
 	if strings.HasPrefix(out, "Error") {
-		t.Fatalf("invoke plugin should succeed, got: %s", out)
+		t.Fatalf("run plugin should succeed, got: %s", out)
 	}
 	if out != wantResp {
-		t.Fatalf("invoke plugin: expected %q, got %q", wantResp, out)
+		t.Fatalf("run plugin: expected %q, got %q", wantResp, out)
 	}
 }
 
@@ -410,7 +428,7 @@ func TestStrategy_InvokePlugin_ErrorIsString(t *testing.T) {
 		svc:         svc,
 	})
 
-	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	out, err := tools[2].InvokableRun(context.Background(), `{"cap":"100"}`)
 	if err != nil {
 		t.Fatalf("plugin error must be returned as string, not Go error: %v", err)
 	}
@@ -424,7 +442,7 @@ func TestStrategy_InvokePlugin_ErrorIsString(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 // TestStrategy_InvokeKnowledge_RoutesCorrectly verifies that a knowledge capability
-// parses the query from arguments, passes the capability's RefID as KnowledgeID,
+// parses the query from args, passes the capability's RefID as KnowledgeID,
 // and returns the retrieved slice content.
 func TestStrategy_InvokeKnowledge_RoutesCorrectly(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -477,16 +495,16 @@ func TestStrategy_InvokeKnowledge_RoutesCorrectly(t *testing.T) {
 		svc:         svc,
 	})
 
-	argsJSON, _ := json.Marshal(map[string]any{"capability_id": "100", "arguments": map[string]any{"query": wantQuery}})
+	argsJSON, _ := json.Marshal(map[string]any{"cap": "100", "args": map[string]any{"query": wantQuery}})
 	out, err := tools[2].InvokableRun(context.Background(), string(argsJSON))
 	if err != nil {
-		t.Fatalf("invoke knowledge should not return Go error: %v", err)
+		t.Fatalf("run knowledge should not return Go error: %v", err)
 	}
 	if strings.HasPrefix(out, "Error") {
-		t.Fatalf("invoke knowledge should succeed, got: %s", out)
+		t.Fatalf("run knowledge should succeed, got: %s", out)
 	}
 	if !strings.Contains(out, sliceText) {
-		t.Fatalf("invoke knowledge: expected slice content %q in output, got: %s", sliceText, out)
+		t.Fatalf("run knowledge: expected slice content %q in output, got: %s", sliceText, out)
 	}
 }
 
@@ -501,8 +519,8 @@ func TestStrategy_InvokeKnowledge_MissingQuery(t *testing.T) {
 		svc:         svc,
 	})
 
-	// arguments has no "query" key.
-	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100","arguments":{}}`)
+	// args has no "query" key.
+	out, err := tools[2].InvokableRun(context.Background(), `{"cap":"100","args":{}}`)
 	if err != nil {
 		t.Fatalf("missing query must not return Go error: %v", err)
 	}
@@ -534,7 +552,7 @@ func TestStrategy_InvokeKnowledge_ErrorIsString(t *testing.T) {
 		svc:         svc,
 	})
 
-	argsJSON := `{"capability_id":"100","arguments":{"query":"test"}}`
+	argsJSON := `{"cap":"100","args":{"query":"test"}}`
 	out, err := tools[2].InvokableRun(context.Background(), argsJSON)
 	if err != nil {
 		t.Fatalf("knowledge error must be returned as string, not Go error: %v", err)
@@ -545,8 +563,7 @@ func TestStrategy_InvokeKnowledge_ErrorIsString(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Workflow branch (NOTE: no gomock for crossworkflow.Workflow interface;
-// tested via a hand-written stub that implements the minimal interface needed.)
+// Workflow branch
 // ---------------------------------------------------------------------------
 
 // fakeInvokableWorkflow is a minimal tool.InvokableTool used as a stand-in
@@ -571,9 +588,6 @@ func (f *fakeInvokableWorkflow) GetWorkflow() *workflowEntity.Workflow {
 var _ workflowDomain.ToolFromWorkflow = (*fakeInvokableWorkflow)(nil)
 
 // crossworkflowStub is a hand-written stub implementing crossworkflow.Workflow.
-// NOTE: crossworkflow.Workflow has no generated gomock — a hand-stub is necessary.
-// Only WorkflowAsModelTool is exercised by strategy_invoke_capability; all other
-// methods panic if unexpectedly called.
 type crossworkflowStub struct {
 	tools          []workflowDomain.ToolFromWorkflow
 	wfErr          error
@@ -599,7 +613,6 @@ func (s *crossworkflowStub) WorkflowAsModelTool(_ context.Context, policies []*v
 	return s.tools, s.wfErr
 }
 
-// Remaining crossworkflow.Workflow methods — panics if called unexpectedly.
 func (s *crossworkflowStub) WithResumeToolWorkflow(_ *workflowEntity.ToolInterruptEvent, _ string, _ map[string]*workflowEntity.ToolInterruptEvent) einoCompose.Option {
 	panic("crossworkflowStub.WithResumeToolWorkflow not implemented")
 }
@@ -635,8 +648,7 @@ func (s *crossworkflowStub) InitApplicationDefaultConversationTemplate(_ context
 }
 
 // TestStrategy_InvokeWorkflow_RoutesCorrectly verifies that a workflow capability
-// routes to crossworkflow.DefaultSVC().WorkflowAsModelTool with the policy ID=RefID
-// and then calls InvokableRun on the returned tool.
+// routes to crossworkflow.DefaultSVC().WorkflowAsModelTool with the policy ID=RefID.
 func TestStrategy_InvokeWorkflow_RoutesCorrectly(t *testing.T) {
 	const (
 		wantWorkflowID int64  = 88
@@ -666,15 +678,15 @@ func TestStrategy_InvokeWorkflow_RoutesCorrectly(t *testing.T) {
 		svc:         svc,
 	})
 
-	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	out, err := tools[2].InvokableRun(context.Background(), `{"cap":"100"}`)
 	if err != nil {
-		t.Fatalf("invoke workflow should not return Go error: %v", err)
+		t.Fatalf("run workflow should not return Go error: %v", err)
 	}
 	if strings.HasPrefix(out, "Error") {
-		t.Fatalf("invoke workflow should succeed, got: %s", out)
+		t.Fatalf("run workflow should succeed, got: %s", out)
 	}
 	if out != wantResult {
-		t.Fatalf("invoke workflow: expected %q, got %q", wantResult, out)
+		t.Fatalf("run workflow: expected %q, got %q", wantResult, out)
 	}
 }
 
@@ -697,7 +709,7 @@ func TestStrategy_InvokeWorkflow_ErrorIsString(t *testing.T) {
 		svc:         svc,
 	})
 
-	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	out, err := tools[2].InvokableRun(context.Background(), `{"cap":"100"}`)
 	if err != nil {
 		t.Fatalf("workflow error must be returned as string, not Go error: %v", err)
 	}
@@ -741,20 +753,20 @@ func TestStrategy_InvokeWorkflow_PinnedVersion(t *testing.T) {
 		svc:         svc,
 	})
 
-	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	out, err := tools[2].InvokableRun(context.Background(), `{"cap":"100"}`)
 	if err != nil {
-		t.Fatalf("invoke pinned-version workflow should not return Go error: %v", err)
+		t.Fatalf("run pinned-version workflow should not return Go error: %v", err)
 	}
 	if strings.HasPrefix(out, "Error") {
-		t.Fatalf("invoke pinned-version workflow should succeed, got: %s", out)
+		t.Fatalf("run pinned-version workflow should succeed, got: %s", out)
 	}
 	if out != wantResult {
-		t.Fatalf("invoke pinned-version workflow: expected %q, got %q", wantResult, out)
+		t.Fatalf("run pinned-version workflow: expected %q, got %q", wantResult, out)
 	}
 }
 
 // TestStrategy_InvokePlugin_DraftExecScene verifies that when agentIdentity.IsDraft=true,
-// the ExecScene is ExecSceneOfDraftAgent (mirroring node_tool_plugin.go).
+// the ExecScene is ExecSceneOfDraftAgent.
 func TestStrategy_InvokePlugin_DraftExecScene(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -785,11 +797,11 @@ func TestStrategy_InvokePlugin_DraftExecScene(t *testing.T) {
 		agentIdentity: &agentEntity.AgentIdentity{IsDraft: true},
 	})
 
-	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	out, err := tools[2].InvokableRun(context.Background(), `{"cap":"100"}`)
 	if err != nil {
-		t.Fatalf("invoke draft plugin should not return Go error: %v", err)
+		t.Fatalf("run draft plugin should not return Go error: %v", err)
 	}
 	if out != wantResp {
-		t.Fatalf("invoke draft plugin: expected %q, got %q", wantResp, out)
+		t.Fatalf("run draft plugin: expected %q, got %q", wantResp, out)
 	}
 }

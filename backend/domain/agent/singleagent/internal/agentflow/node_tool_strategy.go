@@ -66,31 +66,66 @@ func (c *strategyConfig) getSvc() crossstrategy.StrategyService {
 }
 
 // newStrategyTools returns the 3 strategy tools for an agent:
-//   - strategy_list_scenarios
-//   - strategy_list_capabilities
-//   - strategy_invoke_capability   (dispatch body wired in BE-9; sentinel for now)
-func newStrategyTools(_ context.Context, conf *strategyConfig) ([]tool.InvokableTool, error) {
+//   - scenes  (list scenarios)
+//   - caps    (list capabilities in a scenario)
+//   - run     (invoke a capability)
+//
+// The "scenes" tool description embeds each bound strategy's name+desc so the
+// model can autonomously decide when to invoke it without a persona instruction.
+func newStrategyTools(ctx context.Context, conf *strategyConfig) ([]tool.InvokableTool, error) {
+	scenesDesc := buildScenesDesc(ctx, conf)
 	return []tool.InvokableTool{
-		&listScenariosTool{conf: conf},
+		&listScenariosTool{conf: conf, desc: scenesDesc},
 		&listCapabilitiesTool{conf: conf},
 		&invokeCapabilityTool{conf: conf},
 	}, nil
 }
 
+// buildScenesDesc constructs the autonomous-discovery description for the "scenes" tool
+// by fetching each bound strategy's name+desc. Failures are silently skipped.
+func buildScenesDesc(ctx context.Context, conf *strategyConfig) string {
+	svc := conf.getSvc()
+	base := "发现并使用以下策略下的能力。当用户请求与之相关时，先调用本工具列出场景，再用 caps 查看能力，用 run 调用。"
+	if svc == nil || len(conf.strategyIDs) == 0 {
+		return base
+	}
+
+	var parts []string
+	for _, id := range conf.strategyIDs {
+		strat, err := svc.GetStrategy(ctx, id)
+		if err != nil || strat == nil {
+			logs.CtxWarnf(ctx, "buildScenesDesc: failed to fetch strategy %d: %v", id, err)
+			continue
+		}
+		entry := strat.Name
+		if strat.Description != "" {
+			entry += "（" + strat.Description + "）"
+		}
+		parts = append(parts, entry)
+	}
+	if len(parts) == 0 {
+		return base
+	}
+	return base + "可用策略：" + strings.Join(parts, "；") + "。"
+}
+
 // ---------------------------------------------------------------------------
-// strategy_list_scenarios
+// scenes — list scenarios
 // ---------------------------------------------------------------------------
 
-type listScenariosTool struct{ conf *strategyConfig }
+type listScenariosTool struct {
+	conf *strategyConfig
+	desc string
+}
 
 func (t *listScenariosTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
-		Name: "strategy_list_scenarios",
-		Desc: "List the scenarios (use-case groups) available in the agent's bound strategies. Optionally filter by a specific strategy_id. Returns scenario metadata and the number of capabilities in each scenario.",
+		Name: "scenes",
+		Desc: t.desc,
 		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
-			"strategy_id": {
+			"strat": {
 				Type:     schema.String,
-				Desc:     "Optional strategy ID to filter by. Omit to list scenarios from all bound strategies.",
+				Desc:     "Strategy id to filter by (optional; omit to list all bound strategies).",
 				Required: false,
 			},
 		}),
@@ -98,15 +133,14 @@ func (t *listScenariosTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 }
 
 type listScenariosRequest struct {
-	StrategyID string `json:"strategy_id,omitempty"`
+	Strat string `json:"strat,omitempty"`
 }
 
 type scenarioRow struct {
-	StrategyID      int64  `json:"strategy_id"`
-	ScenarioID      int64  `json:"scenario_id"`
-	Name            string `json:"name"`
-	Description     string `json:"description"`
-	CapabilityCount int    `json:"capability_count"`
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+	Desc string `json:"desc"`
+	N    int    `json:"n"`
 }
 
 func (t *listScenariosTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
@@ -124,12 +158,12 @@ func (t *listScenariosTool) InvokableRun(ctx context.Context, argumentsInJSON st
 
 	// Determine which strategy IDs to query.
 	strategyIDs := t.conf.strategyIDs
-	if req.StrategyID != "" {
-		id, err := strconv.ParseInt(req.StrategyID, 10, 64)
+	if req.Strat != "" {
+		id, err := strconv.ParseInt(req.Strat, 10, 64)
 		if err != nil {
-			return fmt.Sprintf("Error: invalid strategy_id %q: %v", req.StrategyID, err), nil
+			return fmt.Sprintf("Error: invalid strat %q: %v", req.Strat, err), nil
 		}
-		// R1: verify the requested strategy_id is in the agent's bound set.
+		// R1: verify the requested strategy id is in the agent's bound set.
 		if !slices.Contains(t.conf.strategyIDs, id) {
 			return "Error: strategy_id is not bound to this agent", nil
 		}
@@ -145,14 +179,13 @@ func (t *listScenariosTool) InvokableRun(ctx context.Context, argumentsInJSON st
 		for _, sc := range scenarios {
 			caps, countErr := svc.ListCapabilities(ctx, sc.ID)
 			if countErr != nil {
-				logs.CtxWarnf(ctx, "strategy_list_scenarios: count capabilities for scenario %d failed: %v", sc.ID, countErr)
+				logs.CtxWarnf(ctx, "scenes: count capabilities for scenario %d failed: %v", sc.ID, countErr)
 			}
 			rows = append(rows, scenarioRow{
-				StrategyID:      sid,
-				ScenarioID:      sc.ID,
-				Name:            sc.Name,
-				Description:     sc.Description,
-				CapabilityCount: len(caps),
+				ID:   sc.ID,
+				Name: sc.Name,
+				Desc: sc.Description,
+				N:    len(caps),
 			})
 		}
 	}
@@ -165,19 +198,19 @@ func (t *listScenariosTool) InvokableRun(ctx context.Context, argumentsInJSON st
 }
 
 // ---------------------------------------------------------------------------
-// strategy_list_capabilities
+// caps — list capabilities
 // ---------------------------------------------------------------------------
 
 type listCapabilitiesTool struct{ conf *strategyConfig }
 
 func (t *listCapabilitiesTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
-		Name: "strategy_list_capabilities",
-		Desc: "List the capabilities inside a scenario. Each capability represents an invokable action (prompt, knowledge retrieval, workflow, or plugin) with its input schema.",
+		Name: "caps",
+		Desc: "List capabilities inside a scenario. Each capability is an invokable action (prompt, knowledge, workflow, or plugin) with its input schema.",
 		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
-			"scenario_id": {
+			"scene": {
 				Type:     schema.String,
-				Desc:     "The scenario ID whose capabilities to list.",
+				Desc:     "Scenario id (from scenes).",
 				Required: true,
 			},
 		}),
@@ -185,25 +218,18 @@ func (t *listCapabilitiesTool) Info(_ context.Context) (*schema.ToolInfo, error)
 }
 
 type listCapabilitiesRequest struct {
-	ScenarioID string `json:"scenario_id"`
+	Scene string `json:"scene"`
 }
 
 type capabilityRow struct {
-	CapabilityID int64          `json:"capability_id"`
-	Type         string         `json:"type"`
-	Name         string         `json:"name"`
-	Description  string         `json:"description"`
-	InputSchema  map[string]any `json:"input_schema"`
+	ID     int64          `json:"id"`
+	Type   string         `json:"type"`
+	Name   string         `json:"name"`
+	Desc   string         `json:"desc"`
+	Schema map[string]any `json:"schema"`
 }
 
 // capabilityInputSchema returns a minimal JSON schema for each capability type.
-//
-// P1 follow-up (workflow/plugin): full parameter-schema enrichment from
-// crossworkflow / crossplugin is NOT coupled to this task to keep BE-8
-// scope tight. Today both types return the minimal empty-object schema.
-// The enrichment path is: crossworkflow.DefaultSVC().GetWorkflowInputParams()
-// and crossplugin.DefaultSVC().GetPluginToolsInfo() — to be wired in a
-// dedicated follow-up task.
 func capabilityInputSchema(cap *strategyEntity.Capability) map[string]any {
 	switch cap.Type {
 	case strategyEntity.CapabilityTypePrompt:
@@ -221,7 +247,6 @@ func capabilityInputSchema(cap *strategyEntity.Capability) map[string]any {
 			},
 		}
 	case strategyEntity.CapabilityTypeWorkflow, strategyEntity.CapabilityTypePlugin:
-		// P1 follow-up: enrich from crossworkflow / crossplugin once BE-8 lands.
 		return map[string]any{
 			"type":       "object",
 			"properties": map[string]any{},
@@ -244,13 +269,13 @@ func (t *listCapabilitiesTool) InvokableRun(ctx context.Context, argumentsInJSON
 	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
 		return argParseErrMsg(err), nil
 	}
-	if req.ScenarioID == "" {
-		return "Error: scenario_id is required", nil
+	if req.Scene == "" {
+		return "Error: scene is required", nil
 	}
 
-	scenarioID, err := strconv.ParseInt(req.ScenarioID, 10, 64)
+	scenarioID, err := strconv.ParseInt(req.Scene, 10, 64)
 	if err != nil {
-		return fmt.Sprintf("Error: invalid scenario_id %q: %v", req.ScenarioID, err), nil
+		return fmt.Sprintf("Error: invalid scene %q: %v", req.Scene, err), nil
 	}
 
 	// R2: verify scenario_id belongs to one of the agent's bound strategies.
@@ -258,7 +283,7 @@ func (t *listCapabilitiesTool) InvokableRun(ctx context.Context, argumentsInJSON
 	for _, sid := range t.conf.strategyIDs {
 		scenarios, sErr := svc.ListScenarios(ctx, sid)
 		if sErr != nil {
-			logs.CtxWarnf(ctx, "strategy_list_capabilities: failed to list scenarios for strategy %d: %v", sid, sErr)
+			logs.CtxWarnf(ctx, "caps: failed to list scenarios for strategy %d: %v", sid, sErr)
 			continue
 		}
 		for _, sc := range scenarios {
@@ -285,11 +310,11 @@ func (t *listCapabilitiesTool) InvokableRun(ctx context.Context, argumentsInJSON
 			desc = fmt.Sprintf("%s capability (id=%d)", cap.Type, cap.ID)
 		}
 		rows = append(rows, capabilityRow{
-			CapabilityID: cap.ID,
-			Type:         cap.Type,
-			Name:         name,
-			Description:  desc,
-			InputSchema:  capabilityInputSchema(cap),
+			ID:     cap.ID,
+			Type:   cap.Type,
+			Name:   name,
+			Desc:   desc,
+			Schema: capabilityInputSchema(cap),
 		})
 	}
 
@@ -298,24 +323,24 @@ func (t *listCapabilitiesTool) InvokableRun(ctx context.Context, argumentsInJSON
 }
 
 // ---------------------------------------------------------------------------
-// strategy_invoke_capability  (BE-9 sentinel)
+// run — invoke a capability
 // ---------------------------------------------------------------------------
 
 type invokeCapabilityTool struct{ conf *strategyConfig }
 
 func (t *invokeCapabilityTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
-		Name: "strategy_invoke_capability",
-		Desc: "Invoke a specific capability by its ID. The capability may be a prompt expansion, knowledge retrieval, workflow execution, or plugin call. Pass any required arguments as a JSON object in the arguments field.",
+		Name: "run",
+		Desc: "Invoke a capability by its id. Returns the result (prompt text, retrieved knowledge, workflow output, or plugin response).",
 		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
-			"capability_id": {
+			"cap": {
 				Type:     schema.String,
-				Desc:     "The capability ID to invoke (from strategy_list_capabilities).",
+				Desc:     "Capability id (from caps).",
 				Required: true,
 			},
-			"arguments": {
+			"args": {
 				Type:     schema.Object,
-				Desc:     "Optional arguments to pass to the capability (shape depends on capability type).",
+				Desc:     "Arguments for the capability (shape depends on type).",
 				Required: false,
 			},
 		}),
@@ -323,8 +348,8 @@ func (t *invokeCapabilityTool) Info(_ context.Context) (*schema.ToolInfo, error)
 }
 
 type invokeCapabilityRequest struct {
-	CapabilityID string         `json:"capability_id"`
-	Arguments    map[string]any `json:"arguments,omitempty"`
+	Cap  string         `json:"cap"`
+	Args map[string]any `json:"args,omitempty"`
 }
 
 // InvokableRun implements BE9a: auth gate + prompt dispatch.
@@ -342,12 +367,12 @@ func (t *invokeCapabilityTool) InvokableRun(ctx context.Context, argumentsInJSON
 			return argParseErrMsg(err), nil
 		}
 	}
-	if req.CapabilityID == "" {
-		return "Error: capability_id is required", nil
+	if req.Cap == "" {
+		return "Error: cap is required", nil
 	}
-	capID, err := strconv.ParseInt(req.CapabilityID, 10, 64)
+	capID, err := strconv.ParseInt(req.Cap, 10, 64)
 	if err != nil {
-		return fmt.Sprintf("Error: invalid capability_id %q: %v", req.CapabilityID, err), nil
+		return fmt.Sprintf("Error: invalid cap %q: %v", req.Cap, err), nil
 	}
 
 	// 2. AUTH: verify capability_id is in the agent's bound set.
@@ -367,10 +392,10 @@ func (t *invokeCapabilityTool) InvokableRun(ctx context.Context, argumentsInJSON
 
 	// Re-marshal arguments for downstream callers that expect a JSON string.
 	var argumentsJSON string
-	if req.Arguments != nil {
-		b, marshalErr := json.Marshal(req.Arguments)
+	if req.Args != nil {
+		b, marshalErr := json.Marshal(req.Args)
 		if marshalErr != nil {
-			return fmt.Sprintf("Error: failed to marshal arguments: %v", marshalErr), nil
+			return fmt.Sprintf("Error: failed to marshal args: %v", marshalErr), nil
 		}
 		argumentsJSON = string(b)
 	}
@@ -437,15 +462,15 @@ func (t *invokeCapabilityTool) InvokableRun(ctx context.Context, argumentsInJSON
 		return wfResult, nil
 
 	case strategyEntity.CapabilityTypeKnowledge:
-		// Parse query from arguments (required).
-		query, _ := req.Arguments["query"].(string)
+		// Parse query from args (required).
+		query, _ := req.Args["query"].(string)
 		if query == "" {
 			return "Error: knowledge capability requires a 'query' argument", nil
 		}
 
-		// Parse optional top_k from arguments, falling back to RetrieveConfig.
+		// Parse optional top_k from args, falling back to RetrieveConfig.
 		var topK *int64
-		if tkRaw, ok := req.Arguments["top_k"]; ok {
+		if tkRaw, ok := req.Args["top_k"]; ok {
 			switch v := tkRaw.(type) {
 			case float64:
 				n := int64(v)

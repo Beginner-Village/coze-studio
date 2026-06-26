@@ -33,6 +33,10 @@ func InitDomainService(domainSVC strategyservice.Strategy) crossstrategy.Strateg
 	return &impl{domainSVC: domainSVC}
 }
 
+func (s *impl) GetStrategy(ctx context.Context, id int64) (*entity.Strategy, error) {
+	return s.domainSVC.GetStrategy(ctx, id)
+}
+
 func (s *impl) ListScenarios(ctx context.Context, strategyID int64) ([]*entity.Scenario, error) {
 	return s.domainSVC.ListScenarios(ctx, strategyID)
 }

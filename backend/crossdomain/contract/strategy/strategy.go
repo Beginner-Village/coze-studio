@@ -27,6 +27,7 @@ import (
 // progressive-disclosure tools; the full domain service interface lives in
 // domain/strategy/service.
 type StrategyService interface {
+	GetStrategy(ctx context.Context, id int64) (*entity.Strategy, error)
 	ListScenarios(ctx context.Context, strategyID int64) ([]*entity.Scenario, error)
 	ListCapabilities(ctx context.Context, scenarioID int64) ([]*entity.Capability, error)
 	ResolveCapability(ctx context.Context, capID int64) (*entity.Capability, error)
