@@ -33,6 +33,7 @@ import (
 	crossstrategy "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/strategy"
 	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 	strategyEntity "github.com/ynet-dev/ynet-studio/backend/domain/strategy/entity"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
 // strategyConfig holds the per-agent configuration for the 3 progressive-disclosure
@@ -129,7 +130,10 @@ func (t *listScenariosTool) InvokableRun(ctx context.Context, argumentsInJSON st
 			return fmt.Sprintf("Error listing scenarios for strategy %d: %v", sid, err), nil
 		}
 		for _, sc := range scenarios {
-			caps, _ := svc.ListCapabilities(ctx, sc.ID)
+			caps, countErr := svc.ListCapabilities(ctx, sc.ID)
+			if countErr != nil {
+				logs.CtxWarnf(ctx, "strategy_list_scenarios: count capabilities for scenario %d failed: %v", sc.ID, countErr)
+			}
 			rows = append(rows, scenarioRow{
 				StrategyID:      sid,
 				ScenarioID:      sc.ID,

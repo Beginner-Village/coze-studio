@@ -19,6 +19,7 @@ package agentflow
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/ynet-dev/ynet-studio/backend/domain/strategy/entity"
@@ -127,11 +128,11 @@ func TestStrategyTools_ListCapabilitiesInvoke(t *testing.T) {
 	}
 
 	// Must contain prompt type
-	if !contains(out, `"type":"prompt"`) {
+	if !strings.Contains(out, `"type":"prompt"`) {
 		t.Fatalf("list_capabilities should contain prompt capability, got: %s", out)
 	}
 	// Must contain knowledge type
-	if !contains(out, `"type":"knowledge"`) {
+	if !strings.Contains(out, `"type":"knowledge"`) {
 		t.Fatalf("list_capabilities should contain knowledge capability, got: %s", out)
 	}
 
@@ -159,12 +160,12 @@ func TestStrategyTools_ListCapabilitiesInvoke(t *testing.T) {
 		t.Fatalf("no knowledge row found")
 	}
 	schemaRaw, _ := json.Marshal(knowledgeRow["input_schema"])
-	if !contains(string(schemaRaw), "query") {
+	if !strings.Contains(string(schemaRaw), "query") {
 		t.Fatalf("knowledge input_schema should contain query, got: %s", schemaRaw)
 	}
 
 	// prompt alias name should be reflected
-	if !contains(out, "MyPrompt") {
+	if !strings.Contains(out, "MyPrompt") {
 		t.Fatalf("list_capabilities prompt entry should use AliasName, got: %s", out)
 	}
 }
@@ -181,7 +182,7 @@ func TestStrategyTools_InvokeSentinel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("invoke_capability should not return error (sentinel): %v", err)
 	}
-	if !contains(out, "BE9") && !contains(out, "not yet") {
+	if !strings.Contains(out, "BE9") && !strings.Contains(out, "not yet") {
 		t.Fatalf("invoke_capability sentinel not found in output: %s", out)
 	}
 }
@@ -209,16 +210,4 @@ func TestStrategyTools_ListScenariosFilteredByStrategyID(t *testing.T) {
 			t.Fatalf("filtered list_scenarios should only return strategy_id=1, got %v", row)
 		}
 	}
-}
-
-func contains(s, sub string) bool {
-	return len(s) >= len(sub) && (s == sub || len(sub) == 0 ||
-		func() bool {
-			for i := 0; i <= len(s)-len(sub); i++ {
-				if s[i:i+len(sub)] == sub {
-					return true
-				}
-			}
-			return false
-		}())
 }
