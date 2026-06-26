@@ -67,6 +67,8 @@ func NewResourcePacker(resID int64, t common.ResType, appContext *ServiceCompone
 		return &promptPacker{resourceBasePacker: base}, nil
 	case common.ResType_Database:
 		return &databasePacker{resourceBasePacker: base}, nil
+	case common.ResType_Strategy:
+		return &strategyPacker{resourceBasePacker: base}, nil
 	}
 
 	return nil, fmt.Errorf("unsupported resource type: %s , resID: %d", t, resID)
@@ -370,4 +372,36 @@ func (d *databasePacker) GetProjectDefaultActions(ctx context.Context) []*common
 			Enable: true,
 		},
 	}
+}
+
+type strategyPacker struct {
+	resourceBasePacker
+}
+
+func (s *strategyPacker) GetDataInfo(ctx context.Context) (*dataInfo, error) {
+	st, err := s.appContext.StrategyDomainSVC.GetStrategy(ctx, s.resID)
+	if err != nil {
+		return nil, err
+	}
+	if st == nil {
+		return nil, fmt.Errorf("strategy not found, id: %d", s.resID)
+	}
+
+	return &dataInfo{
+		iconURI: ptr.Of(st.IconURI),
+		desc:    ptr.Of(st.Description),
+	}, nil
+}
+
+func (s *strategyPacker) GetActions(ctx context.Context) []*common.ResourceAction {
+	return []*common.ResourceAction{
+		{
+			Key:    common.ActionKey_Delete,
+			Enable: true,
+		},
+	}
+}
+
+func (s *strategyPacker) GetProjectDefaultActions(ctx context.Context) []*common.ProjectResourceAction {
+	return []*common.ProjectResourceAction{}
 }
