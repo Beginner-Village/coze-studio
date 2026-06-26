@@ -42,6 +42,7 @@ type Strategy interface {
 	CreateScenario(ctx context.Context, req *CreateScenarioRequest) (*CreateScenarioResponse, error)
 	UpdateScenario(ctx context.Context, req *UpdateScenarioRequest) error
 	DeleteScenario(ctx context.Context, id int64) error
+	GetScenario(ctx context.Context, id int64) (*entity.Scenario, error)
 	ListScenarios(ctx context.Context, strategyID int64) ([]*entity.Scenario, error)
 
 	// --- Capability CRUD ---

@@ -33,6 +33,7 @@ type StrategyDAO interface {
 	CreateScenario(ctx context.Context, sc *entity.Scenario) (int64, error)
 	UpdateScenario(ctx context.Context, sc *entity.Scenario) error
 	DeleteScenario(ctx context.Context, id int64) error
+	GetScenario(ctx context.Context, id int64) (*entity.Scenario, error)
 	ListScenarios(ctx context.Context, strategyID int64) ([]*entity.Scenario, error)
 
 	CreateCapability(ctx context.Context, c *entity.Capability) (int64, error)

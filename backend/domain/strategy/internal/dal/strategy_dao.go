@@ -164,6 +164,14 @@ func (d *StrategyDAO) DeleteScenario(ctx context.Context, id int64) error {
 	return d.db.WithContext(ctx).Delete(&model.StrategyScenario{}, id).Error
 }
 
+func (d *StrategyDAO) GetScenario(ctx context.Context, id int64) (*entity.Scenario, error) {
+	var m model.StrategyScenario
+	if err := d.db.WithContext(ctx).First(&m, id).Error; err != nil {
+		return nil, err
+	}
+	return scenarioFromModel(&m), nil
+}
+
 func (d *StrategyDAO) ListScenarios(ctx context.Context, strategyID int64) ([]*entity.Scenario, error) {
 	var ms []*model.StrategyScenario
 	if err := d.db.WithContext(ctx).

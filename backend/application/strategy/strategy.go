@@ -149,26 +149,29 @@ func (s *StrategyApplicationService) CreateStrategy(ctx context.Context, req *ap
 		return nil, err
 	}
 
+	// I-2: Fetch the newly created strategy first so a re-fetch failure does not
+	// leave us in a state where we've published an event but returned an error.
+	// The event publish is the last step — success is authoritative.
+	created, err := s.DomainSVC.GetStrategy(ctx, res.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	// Publish resource event so the search index stays current.
 	if pubErr := s.Eventbus.PublishResources(ctx, &searchEntity.ResourceDomainEvent{
 		OpType: searchEntity.Created,
 		Resource: &searchEntity.ResourceDocument{
-			ResType: resCommon.ResType_Strategy,
-			ResID:   res.ID,
-			Name:    &req.Name,
-			SpaceID: &req.SpaceID,
-			OwnerID: &uid,
+			ResType:       resCommon.ResType_Strategy,
+			ResID:         res.ID,
+			Name:          &req.Name,
+			SpaceID:       &req.SpaceID,
+			OwnerID:       &uid,
 			PublishStatus: ptr.Of(resCommon.PublishStatus_UnPublished),
 		},
 	}); pubErr != nil {
 		return nil, fmt.Errorf("publish resource failed: %w", pubErr)
 	}
 
-	// Fetch the newly created strategy to return full info.
-	created, err := s.DomainSVC.GetStrategy(ctx, res.ID)
-	if err != nil {
-		return nil, err
-	}
 	return &apiModel.CreateStrategyResponse{
 		Code: 0,
 		Msg:  "success",
@@ -177,12 +180,17 @@ func (s *StrategyApplicationService) CreateStrategy(ctx context.Context, req *ap
 }
 
 func (s *StrategyApplicationService) GetStrategyDetail(ctx context.Context, req *apiModel.GetStrategyDetailRequest) (*apiModel.GetStrategyDetailResponse, error) {
-	if _, err := s.requireUID(ctx); err != nil {
+	uid, err := s.requireUID(ctx)
+	if err != nil {
 		return nil, err
 	}
 
 	detail, err := s.DomainSVC.GetDetail(ctx, req.ID)
 	if err != nil {
+		return nil, err
+	}
+	// C-1: verify caller belongs to the strategy's space.
+	if err := s.checkSpaceAccess(ctx, uid, detail.SpaceID); err != nil {
 		return nil, err
 	}
 	return &apiModel.GetStrategyDetailResponse{
@@ -196,6 +204,11 @@ func (s *StrategyApplicationService) UpdateStrategy(ctx context.Context, req *ap
 	uid, err := s.requireUID(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// I-1: reject no-op updates — at least one field must be provided.
+	if req.Name == "" && req.Description == "" && req.IconURI == "" {
+		return nil, errorx.New(errno.ErrMemoryInvalidParamCode, errorx.KV("msg", "at least one of name, description, icon_uri must be provided"))
 	}
 
 	// Fetch existing to get SpaceID for auth check.
@@ -218,6 +231,9 @@ func (s *StrategyApplicationService) UpdateStrategy(ctx context.Context, req *ap
 		existing.IconURI = req.IconURI
 	}
 
+	// I-3: UpdateStrategy DAO does a column-scoped map[string]any update (not a
+	// full-row replace), so passing the loaded entity with an empty Scenarios
+	// slice does NOT clear child associations — safe as-is.
 	if err := s.DomainSVC.UpdateStrategy(ctx, &strategyDomain.UpdateStrategyRequest{Strategy: existing}); err != nil {
 		return nil, err
 	}
@@ -296,7 +312,17 @@ func (s *StrategyApplicationService) PublishStrategy(ctx context.Context, req *a
 // ---------- Scenario operations ----------
 
 func (s *StrategyApplicationService) CreateScenario(ctx context.Context, req *apiModel.CreateScenarioRequest) (*apiModel.CreateScenarioResponse, error) {
-	if _, err := s.requireUID(ctx); err != nil {
+	uid, err := s.requireUID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// C-2: verify caller belongs to the parent strategy's space.
+	parent, err := s.DomainSVC.GetStrategy(ctx, req.StrategyID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkSpaceAccess(ctx, uid, parent.SpaceID); err != nil {
 		return nil, err
 	}
 
@@ -323,7 +349,21 @@ func (s *StrategyApplicationService) CreateScenario(ctx context.Context, req *ap
 }
 
 func (s *StrategyApplicationService) UpdateScenario(ctx context.Context, req *apiModel.UpdateScenarioRequest) (*apiModel.UpdateScenarioResponse, error) {
-	if _, err := s.requireUID(ctx); err != nil {
+	uid, err := s.requireUID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// C-3: resolve owning strategy and verify space access.
+	sc, err := s.DomainSVC.GetScenario(ctx, req.ID)
+	if err != nil {
+		return nil, err
+	}
+	parent, err := s.DomainSVC.GetStrategy(ctx, sc.StrategyID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkSpaceAccess(ctx, uid, parent.SpaceID); err != nil {
 		return nil, err
 	}
 
@@ -341,9 +381,24 @@ func (s *StrategyApplicationService) UpdateScenario(ctx context.Context, req *ap
 }
 
 func (s *StrategyApplicationService) DeleteScenario(ctx context.Context, req *apiModel.DeleteScenarioRequest) (*apiModel.DeleteScenarioResponse, error) {
-	if _, err := s.requireUID(ctx); err != nil {
+	uid, err := s.requireUID(ctx)
+	if err != nil {
 		return nil, err
 	}
+
+	// C-4: resolve owning strategy and verify space access before deletion.
+	sc, err := s.DomainSVC.GetScenario(ctx, req.ID)
+	if err != nil {
+		return nil, err
+	}
+	parent, err := s.DomainSVC.GetStrategy(ctx, sc.StrategyID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkSpaceAccess(ctx, uid, parent.SpaceID); err != nil {
+		return nil, err
+	}
+
 	if err := s.DomainSVC.DeleteScenario(ctx, req.ID); err != nil {
 		return nil, err
 	}
@@ -353,8 +408,27 @@ func (s *StrategyApplicationService) DeleteScenario(ctx context.Context, req *ap
 // ---------- Capability operations ----------
 
 func (s *StrategyApplicationService) AddCapability(ctx context.Context, req *apiModel.AddCapabilityRequest) (*apiModel.AddCapabilityResponse, error) {
-	if _, err := s.requireUID(ctx); err != nil {
+	uid, err := s.requireUID(ctx)
+	if err != nil {
 		return nil, err
+	}
+
+	// C-5: verify caller belongs to the parent strategy's space.
+	parent, err := s.DomainSVC.GetStrategy(ctx, req.StrategyID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkSpaceAccess(ctx, uid, parent.SpaceID); err != nil {
+		return nil, err
+	}
+
+	// C-8: verify the scenario actually belongs to the stated strategy (parent-child consistency).
+	sc, err := s.DomainSVC.GetScenario(ctx, req.ScenarioID)
+	if err != nil {
+		return nil, err
+	}
+	if sc.StrategyID != req.StrategyID {
+		return nil, errorx.New(errno.ErrMemoryInvalidParamCode, errorx.KV("msg", "scenario does not belong to the specified strategy"))
 	}
 
 	res, err := s.DomainSVC.CreateCapability(ctx, &strategyDomain.CreateCapabilityRequest{
@@ -396,11 +470,25 @@ func (s *StrategyApplicationService) AddCapability(ctx context.Context, req *api
 }
 
 func (s *StrategyApplicationService) UpdateCapability(ctx context.Context, req *apiModel.UpdateCapabilityRequest) (*apiModel.UpdateCapabilityResponse, error) {
-	if _, err := s.requireUID(ctx); err != nil {
+	uid, err := s.requireUID(ctx)
+	if err != nil {
 		return nil, err
 	}
 
-	existing := &strategyEntity.Capability{
+	// C-6: resolve owning strategy via capability and verify space access.
+	cap, err := s.DomainSVC.ResolveCapability(ctx, req.ID)
+	if err != nil {
+		return nil, err
+	}
+	parent, err := s.DomainSVC.GetStrategy(ctx, cap.StrategyID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkSpaceAccess(ctx, uid, parent.SpaceID); err != nil {
+		return nil, err
+	}
+
+	patch := &strategyEntity.Capability{
 		ID:               req.ID,
 		RefVersion:       req.RefVersion,
 		PromptContent:    req.PromptContent,
@@ -409,16 +497,31 @@ func (s *StrategyApplicationService) UpdateCapability(ctx context.Context, req *
 		AliasDescription: req.AliasDescription,
 		SortOrder:        req.SortOrder,
 	}
-	if err := s.DomainSVC.UpdateCapability(ctx, &strategyDomain.UpdateCapabilityRequest{Capability: existing}); err != nil {
+	if err := s.DomainSVC.UpdateCapability(ctx, &strategyDomain.UpdateCapabilityRequest{Capability: patch}); err != nil {
 		return nil, err
 	}
 	return &apiModel.UpdateCapabilityResponse{Code: 0, Msg: "success"}, nil
 }
 
 func (s *StrategyApplicationService) DeleteCapability(ctx context.Context, req *apiModel.DeleteCapabilityRequest) (*apiModel.DeleteCapabilityResponse, error) {
-	if _, err := s.requireUID(ctx); err != nil {
+	uid, err := s.requireUID(ctx)
+	if err != nil {
 		return nil, err
 	}
+
+	// C-7: resolve owning strategy via capability and verify space access before deletion.
+	cap, err := s.DomainSVC.ResolveCapability(ctx, req.ID)
+	if err != nil {
+		return nil, err
+	}
+	parent, err := s.DomainSVC.GetStrategy(ctx, cap.StrategyID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkSpaceAccess(ctx, uid, parent.SpaceID); err != nil {
+		return nil, err
+	}
+
 	if err := s.DomainSVC.DeleteCapability(ctx, req.ID); err != nil {
 		return nil, err
 	}

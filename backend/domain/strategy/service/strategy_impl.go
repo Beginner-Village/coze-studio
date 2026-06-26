@@ -134,6 +134,10 @@ func (s *strategyService) DeleteScenario(ctx context.Context, id int64) error {
 	return s.dao.DeleteScenario(ctx, id)
 }
 
+func (s *strategyService) GetScenario(ctx context.Context, id int64) (*entity.Scenario, error) {
+	return s.dao.GetScenario(ctx, id)
+}
+
 func (s *strategyService) ListScenarios(ctx context.Context, strategyID int64) ([]*entity.Scenario, error) {
 	return s.dao.ListScenarios(ctx, strategyID)
 }
@@ -152,9 +156,6 @@ func (s *strategyService) CreateCapability(ctx context.Context, req *CreateCapab
 }
 
 func (s *strategyService) UpdateCapability(ctx context.Context, req *UpdateCapabilityRequest) error {
-	if req.Capability.Type == "" {
-		return errors.New("capability type must not be empty")
-	}
 	return s.dao.UpdateCapability(ctx, req.Capability)
 }
 
