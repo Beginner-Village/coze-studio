@@ -27,13 +27,21 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/schema"
 
+	pluginModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
+	knowledgeModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
+	crossknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
+	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
 	crossstrategy "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/strategy"
+	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
 	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 	strategyEntity "github.com/ynet-dev/ynet-studio/backend/domain/strategy/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
@@ -357,15 +365,130 @@ func (t *invokeCapabilityTool) InvokableRun(ctx context.Context, argumentsInJSON
 		return fmt.Sprintf("Error: failed to resolve capability %d: %v", capID, err), nil
 	}
 
+	// Re-marshal arguments for downstream callers that expect a JSON string.
+	var argumentsJSON string
+	if req.Arguments != nil {
+		b, marshalErr := json.Marshal(req.Arguments)
+		if marshalErr != nil {
+			return fmt.Sprintf("Error: failed to marshal arguments: %v", marshalErr), nil
+		}
+		argumentsJSON = string(b)
+	}
+
 	switch cap.Type {
 	case strategyEntity.CapabilityTypePrompt:
 		return cap.PromptContent, nil
-	case strategyEntity.CapabilityTypeWorkflow:
-		return "Error: workflow capability execution is wired in a following task", nil
+
 	case strategyEntity.CapabilityTypePlugin:
-		return "Error: plugin capability execution is wired in a following task", nil
+		pluginReq := &pluginModel.ExecuteToolRequest{
+			UserID:          t.conf.userID,
+			PluginID:        cap.RefSubID,
+			ToolID:          cap.RefID,
+			ExecDraftTool:   false,
+			ArgumentsInJson: argumentsJSON,
+			ExecScene:       pluginModel.ExecSceneOfOnlineAgent,
+		}
+		opts := []pluginModel.ExecuteToolOpt{
+			pluginModel.WithToolVersion(cap.RefVersion),
+		}
+		pluginSVC := crossplugin.DefaultSVC()
+		if pluginSVC == nil {
+			return "Error: plugin service is not available", nil
+		}
+		pluginResp, pluginErr := pluginSVC.ExecuteTool(ctx, pluginReq, opts...)
+		if pluginErr != nil {
+			return fmt.Sprintf("Error executing plugin: %v", pluginErr), nil
+		}
+		return pluginResp.TrimmedResp, nil
+
+	case strategyEntity.CapabilityTypeWorkflow:
+		policies := []*vo.GetPolicy{
+			{
+				ID:    cap.RefID,
+				QType: workflowModel.FromLatestVersion,
+			},
+		}
+		wfSVC := crossworkflow.DefaultSVC()
+		if wfSVC == nil {
+			return "Error: workflow service is not available", nil
+		}
+		wfTools, wfErr := wfSVC.WorkflowAsModelTool(ctx, policies)
+		if wfErr != nil {
+			return fmt.Sprintf("Error executing workflow: %v", wfErr), nil
+		}
+		if len(wfTools) == 0 {
+			return fmt.Sprintf("Error executing workflow: workflow %d not found", cap.RefID), nil
+		}
+		invokable, ok := wfTools[0].(tool.InvokableTool)
+		if !ok {
+			return "Error executing workflow: workflow tool is not invokable", nil
+		}
+		wfResult, wfRunErr := invokable.InvokableRun(ctx, argumentsJSON)
+		if wfRunErr != nil {
+			return fmt.Sprintf("Error executing workflow: %v", wfRunErr), nil
+		}
+		return wfResult, nil
+
 	case strategyEntity.CapabilityTypeKnowledge:
-		return "Error: knowledge capability execution is wired in a following task", nil
+		// Parse query from arguments (required).
+		query, _ := req.Arguments["query"].(string)
+		if query == "" {
+			return "Error: knowledge capability requires a 'query' argument", nil
+		}
+
+		// Parse optional top_k from arguments, falling back to RetrieveConfig.
+		var topK *int64
+		if tkRaw, ok := req.Arguments["top_k"]; ok {
+			switch v := tkRaw.(type) {
+			case float64:
+				n := int64(v)
+				topK = &n
+			case int64:
+				topK = &v
+			case int:
+				n := int64(v)
+				topK = &n
+			}
+		}
+		if topK == nil && cap.RetrieveConfig != "" {
+			var rc struct {
+				TopK *int64 `json:"top_k"`
+			}
+			if jsonErr := json.Unmarshal([]byte(cap.RetrieveConfig), &rc); jsonErr == nil && rc.TopK != nil {
+				topK = rc.TopK
+			}
+		}
+
+		knowledgeSVC := crossknowledge.DefaultSVC()
+		if knowledgeSVC == nil {
+			return "Error: knowledge service is not available", nil
+		}
+		retrieveReq := &knowledgeModel.RetrieveRequest{
+			Query:        query,
+			KnowledgeIDs: []int64{cap.RefID},
+		}
+		if topK != nil {
+			retrieveReq.Strategy = &knowledgeModel.RetrievalStrategy{TopK: topK}
+		}
+		retrieveResp, retrieveErr := knowledgeSVC.Retrieve(ctx, retrieveReq)
+		if retrieveErr != nil {
+			return fmt.Sprintf("Error retrieving knowledge: %v", retrieveErr), nil
+		}
+		if retrieveResp == nil || len(retrieveResp.RetrieveSlices) == 0 {
+			return "No results found.", nil
+		}
+		var sb strings.Builder
+		for i, rs := range retrieveResp.RetrieveSlices {
+			if rs.Slice == nil {
+				continue
+			}
+			if i > 0 {
+				sb.WriteString("\n\n---\n\n")
+			}
+			sb.WriteString(rs.Slice.GetSliceContent())
+		}
+		return sb.String(), nil
+
 	default:
 		return fmt.Sprintf("Error: unknown capability type %q", cap.Type), nil
 	}

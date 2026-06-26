@@ -23,7 +23,22 @@ import (
 	"strings"
 	"testing"
 
+	einoCompose "github.com/cloudwego/eino/compose"
+	"github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/schema"
+	"go.uber.org/mock/gomock"
+
+	knowledgeModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
+	pluginModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
+	crossknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge/knowledgemock"
+	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
+	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin/pluginmock"
+	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
 	"github.com/ynet-dev/ynet-studio/backend/domain/strategy/entity"
+	workflowDomain "github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	workflowEntity "github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
 )
 
 // fakeStrategySvc implements crossstrategy.StrategyService for tests.
@@ -292,5 +307,390 @@ func TestStrategy_InvokeAuthReject(t *testing.T) {
 	const wantMsg = "Error: capability_id is not bound to this agent"
 	if !strings.Contains(out, wantMsg) {
 		t.Fatalf("invoke auth reject: expected %q, got: %s", wantMsg, out)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// BE9b: execution routing tests (plugin / workflow / knowledge)
+// ---------------------------------------------------------------------------
+
+// fakeStrategySvcWithCap extends fakeStrategySvc to return a custom capability
+// from ResolveCapability, allowing BE9b tests to control the dispatched type.
+type fakeStrategySvcWithCap struct {
+	fakeStrategySvc
+	cap *entity.Capability
+}
+
+func (f *fakeStrategySvcWithCap) ResolveCapability(_ context.Context, _ int64) (*entity.Capability, error) {
+	return f.cap, nil
+}
+
+// ---------------------------------------------------------------------------
+// Plugin branch
+// ---------------------------------------------------------------------------
+
+// TestStrategy_InvokePlugin_RoutesCorrectly verifies that a plugin capability
+// routes to crossplugin.DefaultSVC().ExecuteTool with PluginID=RefSubID, ToolID=RefID.
+func TestStrategy_InvokePlugin_RoutesCorrectly(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	const (
+		wantPluginID int64 = 42
+		wantToolID   int64 = 77
+		wantResp           = "plugin result text"
+	)
+
+	mockPlugin := pluginmock.NewMockPluginService(ctrl)
+	mockPlugin.EXPECT().
+		ExecuteTool(gomock.Any(), gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, req *pluginModel.ExecuteToolRequest, _ ...pluginModel.ExecuteToolOpt) (*pluginModel.ExecuteToolResponse, error) {
+			if req.PluginID != wantPluginID {
+				t.Errorf("PluginID = %d, want %d", req.PluginID, wantPluginID)
+			}
+			if req.ToolID != wantToolID {
+				t.Errorf("ToolID = %d, want %d", req.ToolID, wantToolID)
+			}
+			return &pluginModel.ExecuteToolResponse{TrimmedResp: wantResp}, nil
+		})
+
+	// Wire mock as default SVC; restore original after test.
+	origPlugin := crossplugin.DefaultSVC()
+	crossplugin.SetDefaultSVC(mockPlugin)
+	defer crossplugin.SetDefaultSVC(origPlugin)
+
+	svc := &fakeStrategySvcWithCap{
+		cap: &entity.Capability{
+			ID:       100,
+			Type:     entity.CapabilityTypePlugin,
+			RefSubID: wantPluginID, // plugin_id
+			RefID:    wantToolID,   // tool_id
+		},
+	}
+
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         svc,
+	})
+
+	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	if err != nil {
+		t.Fatalf("invoke plugin should not return Go error: %v", err)
+	}
+	if strings.HasPrefix(out, "Error") {
+		t.Fatalf("invoke plugin should succeed, got: %s", out)
+	}
+	if out != wantResp {
+		t.Fatalf("invoke plugin: expected %q, got %q", wantResp, out)
+	}
+}
+
+// TestStrategy_InvokePlugin_ErrorIsString verifies plugin errors are returned as
+// model-visible strings, not Go errors.
+func TestStrategy_InvokePlugin_ErrorIsString(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockPlugin := pluginmock.NewMockPluginService(ctrl)
+	mockPlugin.EXPECT().
+		ExecuteTool(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil, fmt.Errorf("upstream failure"))
+
+	origPlugin := crossplugin.DefaultSVC()
+	crossplugin.SetDefaultSVC(mockPlugin)
+	defer crossplugin.SetDefaultSVC(origPlugin)
+
+	svc := &fakeStrategySvcWithCap{
+		cap: &entity.Capability{ID: 100, Type: entity.CapabilityTypePlugin},
+	}
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         svc,
+	})
+
+	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	if err != nil {
+		t.Fatalf("plugin error must be returned as string, not Go error: %v", err)
+	}
+	if !strings.Contains(out, "Error executing plugin") {
+		t.Fatalf("expected friendly plugin error string, got: %s", out)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Knowledge branch
+// ---------------------------------------------------------------------------
+
+// TestStrategy_InvokeKnowledge_RoutesCorrectly verifies that a knowledge capability
+// parses the query from arguments, passes the capability's RefID as KnowledgeID,
+// and returns the retrieved slice content.
+func TestStrategy_InvokeKnowledge_RoutesCorrectly(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	const (
+		wantKnowledgeID int64 = 55
+		wantQuery             = "what is the meaning of life"
+		sliceText             = "42"
+	)
+
+	txt := sliceText
+	mockKnowledge := knowledgemock.NewMockKnowledge(ctrl)
+	mockKnowledge.EXPECT().
+		Retrieve(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, req *knowledgeModel.RetrieveRequest) (*knowledgeModel.RetrieveResponse, error) {
+			if req.Query != wantQuery {
+				t.Errorf("query = %q, want %q", req.Query, wantQuery)
+			}
+			if len(req.KnowledgeIDs) != 1 || req.KnowledgeIDs[0] != wantKnowledgeID {
+				t.Errorf("KnowledgeIDs = %v, want [%d]", req.KnowledgeIDs, wantKnowledgeID)
+			}
+			return &knowledgeModel.RetrieveResponse{
+				RetrieveSlices: []*knowledgeModel.RetrieveSlice{
+					{
+						Slice: &knowledgeModel.Slice{
+							RawContent: []*knowledgeModel.SliceContent{
+								{Type: knowledgeModel.SliceContentTypeText, Text: &txt},
+							},
+						},
+						Score: 0.9,
+					},
+				},
+			}, nil
+		})
+
+	origKnowledge := crossknowledge.DefaultSVC()
+	crossknowledge.SetDefaultSVC(mockKnowledge)
+	defer crossknowledge.SetDefaultSVC(origKnowledge)
+
+	svc := &fakeStrategySvcWithCap{
+		cap: &entity.Capability{
+			ID:    100,
+			Type:  entity.CapabilityTypeKnowledge,
+			RefID: wantKnowledgeID,
+		},
+	}
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         svc,
+	})
+
+	argsJSON, _ := json.Marshal(map[string]any{"capability_id": "100", "arguments": map[string]any{"query": wantQuery}})
+	out, err := tools[2].InvokableRun(context.Background(), string(argsJSON))
+	if err != nil {
+		t.Fatalf("invoke knowledge should not return Go error: %v", err)
+	}
+	if strings.HasPrefix(out, "Error") {
+		t.Fatalf("invoke knowledge should succeed, got: %s", out)
+	}
+	if !strings.Contains(out, sliceText) {
+		t.Fatalf("invoke knowledge: expected slice content %q in output, got: %s", sliceText, out)
+	}
+}
+
+// TestStrategy_InvokeKnowledge_MissingQuery verifies that omitting the query
+// argument returns a friendly error string (not a Go error).
+func TestStrategy_InvokeKnowledge_MissingQuery(t *testing.T) {
+	svc := &fakeStrategySvcWithCap{
+		cap: &entity.Capability{ID: 100, Type: entity.CapabilityTypeKnowledge, RefID: 55},
+	}
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         svc,
+	})
+
+	// arguments has no "query" key.
+	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100","arguments":{}}`)
+	if err != nil {
+		t.Fatalf("missing query must not return Go error: %v", err)
+	}
+	const wantMsg = "Error: knowledge capability requires a 'query' argument"
+	if !strings.Contains(out, wantMsg) {
+		t.Fatalf("missing query: expected %q, got: %s", wantMsg, out)
+	}
+}
+
+// TestStrategy_InvokeKnowledge_ErrorIsString verifies Retrieve errors become friendly strings.
+func TestStrategy_InvokeKnowledge_ErrorIsString(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockKnowledge := knowledgemock.NewMockKnowledge(ctrl)
+	mockKnowledge.EXPECT().
+		Retrieve(gomock.Any(), gomock.Any()).
+		Return(nil, fmt.Errorf("db timeout"))
+
+	origKnowledge := crossknowledge.DefaultSVC()
+	crossknowledge.SetDefaultSVC(mockKnowledge)
+	defer crossknowledge.SetDefaultSVC(origKnowledge)
+
+	svc := &fakeStrategySvcWithCap{
+		cap: &entity.Capability{ID: 100, Type: entity.CapabilityTypeKnowledge, RefID: 55},
+	}
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         svc,
+	})
+
+	argsJSON := `{"capability_id":"100","arguments":{"query":"test"}}`
+	out, err := tools[2].InvokableRun(context.Background(), argsJSON)
+	if err != nil {
+		t.Fatalf("knowledge error must be returned as string, not Go error: %v", err)
+	}
+	if !strings.Contains(out, "Error retrieving knowledge") {
+		t.Fatalf("expected friendly knowledge error string, got: %s", out)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Workflow branch (NOTE: no gomock for crossworkflow.Workflow interface;
+// tested via a hand-written stub that implements the minimal interface needed.)
+// ---------------------------------------------------------------------------
+
+// fakeInvokableWorkflow is a minimal tool.InvokableTool used as a stand-in
+// for the real workflow tool returned by WorkflowAsModelTool.
+type fakeInvokableWorkflow struct {
+	result string
+	err    error
+}
+
+func (f *fakeInvokableWorkflow) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{Name: "fake_wf"}, nil
+}
+func (f *fakeInvokableWorkflow) InvokableRun(_ context.Context, _ string, _ ...tool.Option) (string, error) {
+	return f.result, f.err
+}
+func (f *fakeInvokableWorkflow) TerminatePlan() vo.TerminatePlan { return vo.UseAnswerContent }
+func (f *fakeInvokableWorkflow) GetWorkflow() *workflowEntity.Workflow {
+	return &workflowEntity.Workflow{}
+}
+
+// Verify fakeInvokableWorkflow satisfies workflowDomain.ToolFromWorkflow at compile time.
+var _ workflowDomain.ToolFromWorkflow = (*fakeInvokableWorkflow)(nil)
+
+// crossworkflowStub is a hand-written stub implementing crossworkflow.Workflow.
+// NOTE: crossworkflow.Workflow has no generated gomock — a hand-stub is necessary.
+// Only WorkflowAsModelTool is exercised by strategy_invoke_capability; all other
+// methods panic if unexpectedly called.
+type crossworkflowStub struct {
+	tools          []workflowDomain.ToolFromWorkflow
+	wfErr          error
+	wantWorkflowID int64
+	t              *testing.T
+}
+
+func (s *crossworkflowStub) WorkflowAsModelTool(_ context.Context, policies []*vo.GetPolicy) ([]workflowDomain.ToolFromWorkflow, error) {
+	if s.t != nil && len(policies) > 0 && s.wantWorkflowID != 0 {
+		if policies[0].ID != s.wantWorkflowID {
+			s.t.Errorf("WorkflowAsModelTool policy.ID = %d, want %d", policies[0].ID, s.wantWorkflowID)
+		}
+	}
+	return s.tools, s.wfErr
+}
+
+// Remaining crossworkflow.Workflow methods — panics if called unexpectedly.
+func (s *crossworkflowStub) WithResumeToolWorkflow(_ *workflowEntity.ToolInterruptEvent, _ string, _ map[string]*workflowEntity.ToolInterruptEvent) einoCompose.Option {
+	panic("crossworkflowStub.WithResumeToolWorkflow not implemented")
+}
+func (s *crossworkflowStub) ReleaseApplicationWorkflows(_ context.Context, _ int64, _ *vo.ReleaseWorkflowConfig) ([]*vo.ValidateIssue, error) {
+	panic("crossworkflowStub.ReleaseApplicationWorkflows not implemented")
+}
+func (s *crossworkflowStub) GetWorkflowIDsByAppID(_ context.Context, _ int64) ([]int64, error) {
+	panic("crossworkflowStub.GetWorkflowIDsByAppID not implemented")
+}
+func (s *crossworkflowStub) SyncExecuteWorkflow(_ context.Context, _ crossworkflow.ExecuteConfig, _ map[string]any) (*workflowEntity.WorkflowExecution, vo.TerminatePlan, error) {
+	panic("crossworkflowStub.SyncExecuteWorkflow not implemented")
+}
+func (s *crossworkflowStub) AsyncExecute(_ context.Context, _ crossworkflow.ExecuteConfig, _ map[string]any) (int64, error) {
+	panic("crossworkflowStub.AsyncExecute not implemented")
+}
+func (s *crossworkflowStub) GetExecution(_ context.Context, _ *workflowEntity.WorkflowExecution, _ bool) (*workflowEntity.WorkflowExecution, error) {
+	panic("crossworkflowStub.GetExecution not implemented")
+}
+func (s *crossworkflowStub) StreamExecute(_ context.Context, _ crossworkflow.ExecuteConfig, _ map[string]any) (*schema.StreamReader[*workflowEntity.Message], error) {
+	panic("crossworkflowStub.StreamExecute not implemented")
+}
+func (s *crossworkflowStub) WithExecuteConfig(_ crossworkflow.ExecuteConfig) einoCompose.Option {
+	panic("crossworkflowStub.WithExecuteConfig not implemented")
+}
+func (s *crossworkflowStub) StreamResume(_ context.Context, _ *workflowEntity.ResumeRequest, _ crossworkflow.ExecuteConfig) (*schema.StreamReader[*workflowEntity.Message], error) {
+	panic("crossworkflowStub.StreamResume not implemented")
+}
+func (s *crossworkflowStub) WithMessagePipe() (einoCompose.Option, *schema.StreamReader[*workflowEntity.Message], *schema.StreamWriter[*workflowEntity.Message]) {
+	panic("crossworkflowStub.WithMessagePipe not implemented")
+}
+func (s *crossworkflowStub) InitApplicationDefaultConversationTemplate(_ context.Context, _ int64, _ int64, _ int64) error {
+	panic("crossworkflowStub.InitApplicationDefaultConversationTemplate not implemented")
+}
+
+// TestStrategy_InvokeWorkflow_RoutesCorrectly verifies that a workflow capability
+// routes to crossworkflow.DefaultSVC().WorkflowAsModelTool with the policy ID=RefID
+// and then calls InvokableRun on the returned tool.
+func TestStrategy_InvokeWorkflow_RoutesCorrectly(t *testing.T) {
+	const (
+		wantWorkflowID int64  = 88
+		wantResult            = "workflow output"
+	)
+
+	fakeTool := &fakeInvokableWorkflow{result: wantResult}
+	fakeSVC := &crossworkflowStub{
+		tools:          []workflowDomain.ToolFromWorkflow{fakeTool},
+		wantWorkflowID: wantWorkflowID,
+		t:              t,
+	}
+
+	origWorkflow := crossworkflow.DefaultSVC()
+	crossworkflow.SetDefaultSVC(fakeSVC)
+	defer crossworkflow.SetDefaultSVC(origWorkflow)
+
+	svc := &fakeStrategySvcWithCap{
+		cap: &entity.Capability{
+			ID:    100,
+			Type:  entity.CapabilityTypeWorkflow,
+			RefID: wantWorkflowID,
+		},
+	}
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         svc,
+	})
+
+	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	if err != nil {
+		t.Fatalf("invoke workflow should not return Go error: %v", err)
+	}
+	if strings.HasPrefix(out, "Error") {
+		t.Fatalf("invoke workflow should succeed, got: %s", out)
+	}
+	if out != wantResult {
+		t.Fatalf("invoke workflow: expected %q, got %q", wantResult, out)
+	}
+}
+
+// TestStrategy_InvokeWorkflow_ErrorIsString verifies workflow errors become friendly strings.
+func TestStrategy_InvokeWorkflow_ErrorIsString(t *testing.T) {
+	fakeSVC := &crossworkflowStub{
+		wfErr: fmt.Errorf("workflow not found"),
+		t:     t,
+	}
+
+	origWorkflow := crossworkflow.DefaultSVC()
+	crossworkflow.SetDefaultSVC(fakeSVC)
+	defer crossworkflow.SetDefaultSVC(origWorkflow)
+
+	svc := &fakeStrategySvcWithCap{
+		cap: &entity.Capability{ID: 100, Type: entity.CapabilityTypeWorkflow, RefID: 88},
+	}
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         svc,
+	})
+
+	out, err := tools[2].InvokableRun(context.Background(), `{"capability_id":"100"}`)
+	if err != nil {
+		t.Fatalf("workflow error must be returned as string, not Go error: %v", err)
+	}
+	if !strings.Contains(out, "Error executing workflow") {
+		t.Fatalf("expected friendly workflow error string, got: %s", out)
 	}
 }
