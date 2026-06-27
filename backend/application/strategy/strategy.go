@@ -623,19 +623,46 @@ func (s *StrategyApplicationService) UpdateCapability(ctx context.Context, req *
 		return nil, err
 	}
 
-	patch := &strategyEntity.Capability{
-		ID:               req.ID,
-		RefVersion:       req.RefVersion,
-		PromptContent:    req.PromptContent,
-		RetrieveConfig:   req.RetrieveConfig,
-		AliasName:        req.AliasName,
-		AliasDescription: req.AliasDescription,
-		SortOrder:        req.SortOrder,
+	// Build the update from the existing capability so identity fields
+	// (StrategyID/ScenarioID/Type/RefID/RefSubID) are preserved — the domain
+	// UpdateCapability does a gorm Updates(map) that writes every column,
+	// including zero values, so a partial entity here would wipe them.
+	cap.RefVersion = req.RefVersion
+	cap.PromptContent = req.PromptContent
+	cap.RetrieveConfig = req.RetrieveConfig
+	cap.AliasName = req.AliasName
+	cap.AliasDescription = req.AliasDescription
+	if req.SortOrder != 0 {
+		cap.SortOrder = req.SortOrder
 	}
-	if err := s.DomainSVC.UpdateCapability(ctx, &strategyDomain.UpdateCapabilityRequest{Capability: patch}); err != nil {
+	if req.Type != "" {
+		cap.Type = req.Type
+	}
+	cap.RefID = req.RefID
+	cap.RefSubID = req.RefSubID
+	if err := s.DomainSVC.UpdateCapability(ctx, &strategyDomain.UpdateCapabilityRequest{Capability: cap}); err != nil {
 		return nil, err
 	}
 	return &apiModel.UpdateCapabilityResponse{Code: 0, Msg: "success"}, nil
+}
+
+// PreviewCapabilitySchema derives the input JSON schema for a resource (by
+// type + ref ids) before any capability is saved, so the editor can show the
+// params a workflow/plugin expects the moment a resource is picked. It only
+// reads a workflow/plugin schema, so no space-access check is required.
+// Resilient by contract: any derive failure returns code:0 with schema:null.
+func (s *StrategyApplicationService) PreviewCapabilitySchema(ctx context.Context, req *apiModel.PreviewCapabilitySchemaRequest) (*apiModel.PreviewCapabilitySchemaResponse, error) {
+	probe := &strategyEntity.Capability{
+		Type:       req.Type,
+		RefID:      req.RefID,
+		RefSubID:   req.RefSubID,
+		RefVersion: req.RefVersion,
+	}
+	return &apiModel.PreviewCapabilitySchemaResponse{
+		Code:   0,
+		Msg:    "success",
+		Schema: capabilitySchemaForMgmt(ctx, probe),
+	}, nil
 }
 
 func (s *StrategyApplicationService) DeleteCapability(ctx context.Context, req *apiModel.DeleteCapabilityRequest) (*apiModel.DeleteCapabilityResponse, error) {

@@ -340,6 +340,7 @@ func Register(r *server.Hertz) {
 				_capability.POST("/add", coze.AddCapability)
 				_capability.POST("/update", coze.UpdateCapability)
 				_capability.POST("/delete", coze.DeleteCapability)
+				_capability.POST("/preview_schema", coze.PreviewCapabilitySchema)
 			}
 		}
 		{

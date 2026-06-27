@@ -175,6 +175,9 @@ type AddCapabilityResponse struct {
 
 type UpdateCapabilityRequest struct {
 	ID               int64  `json:"id,string" vd:"$>0"`
+	Type             string `json:"type,omitempty"`
+	RefID            int64  `json:"ref_id,string,omitempty"`
+	RefSubID         int64  `json:"ref_sub_id,string,omitempty"`
 	RefVersion       string `json:"ref_version,omitempty"`
 	PromptContent    string `json:"prompt_content,omitempty"`
 	RetrieveConfig   string `json:"retrieve_config,omitempty"`
@@ -186,6 +189,22 @@ type UpdateCapabilityRequest struct {
 type UpdateCapabilityResponse struct {
 	Code int64  `json:"code"`
 	Msg  string `json:"msg"`
+}
+
+// PreviewCapabilitySchemaRequest derives the input schema for a resource
+// (workflow/plugin/etc.) before a capability is saved, so the editor can show
+// the params the resource expects as soon as it is picked.
+type PreviewCapabilitySchemaRequest struct {
+	Type       string `json:"type"`
+	RefID      int64  `json:"ref_id,string"`
+	RefSubID   int64  `json:"ref_sub_id,string,omitempty"`
+	RefVersion string `json:"ref_version,omitempty"`
+}
+
+type PreviewCapabilitySchemaResponse struct {
+	Code   int64          `json:"code"`
+	Msg    string         `json:"msg"`
+	Schema map[string]any `json:"schema,omitempty"`
 }
 
 type DeleteCapabilityRequest struct {
