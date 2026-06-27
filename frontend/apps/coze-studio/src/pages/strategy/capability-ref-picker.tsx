@@ -128,7 +128,7 @@ function usePluginTools(
     PluginDevelopApi.GetPluginAPIs({
       plugin_id: pluginId,
       page: 1,
-      size: 100,
+      size: 20,
     })
       .then(resp => {
         if (resp.code === 0 || resp.code === null || resp.code === undefined) {
