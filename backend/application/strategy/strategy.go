@@ -72,6 +72,68 @@ func (s *StrategyApplicationService) checkSpaceAccess(ctx context.Context, uid, 
 	return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "space id is invalid"))
 }
 
+// resolveWorkflowSpaceID resolves the owning space of a workflow by id (and
+// optional version), reusing the same WorkflowAsModelTool path the schema
+// derivation uses. Returns (spaceID, true, nil) when resolved; (0, false, nil)
+// when the workflow service is unavailable or the workflow cannot be loaded so
+// callers can decide policy; a non-nil error only for unexpected failures.
+func (s *StrategyApplicationService) resolveWorkflowSpaceID(ctx context.Context, refID int64, refVersion string) (int64, bool, error) {
+	wfSVC := crossworkflow.DefaultSVC()
+	if wfSVC == nil {
+		return 0, false, nil
+	}
+	policy := &vo.GetPolicy{
+		ID:    refID,
+		QType: workflowModel.FromLatestVersion,
+	}
+	if refVersion != "" {
+		policy.QType = workflowModel.FromSpecificVersion
+		policy.Version = refVersion
+	}
+	wfTools, err := wfSVC.WorkflowAsModelTool(ctx, []*vo.GetPolicy{policy})
+	if err != nil || len(wfTools) == 0 {
+		logs.CtxWarnf(ctx, "resolveWorkflowSpaceID: load workflow %d failed: %v", refID, err)
+		return 0, false, nil
+	}
+	wf := wfTools[0].GetWorkflow()
+	if wf == nil {
+		return 0, false, nil
+	}
+	return wf.GetBasic().SpaceID, true, nil
+}
+
+// validateCapabilityRefInSpace verifies the resource a capability points to
+// belongs to spaceID, guarding against cross-space repoint / reference. Only
+// the workflow type is verified here (the primary type with a clean space
+// resolver); plugin/knowledge per-resource checks are a follow-up — the
+// space-access gate on the strategy still applies for all types.
+func (s *StrategyApplicationService) validateCapabilityRefInSpace(ctx context.Context, capType string, refID, refSubID, spaceID int64) error {
+	switch capType {
+	case strategyEntity.CapabilityTypeWorkflow:
+		wfSpaceID, ok, err := s.resolveWorkflowSpaceID(ctx, refID, "")
+		if err != nil {
+			return err
+		}
+		if !ok {
+			// Could not resolve the workflow's space — fail closed: a ref that
+			// cannot be confirmed to live in this space must not be accepted.
+			return errorx.New(errno.ErrMemoryInvalidParamCode, errorx.KV("msg", "referenced workflow not found or not accessible"))
+		}
+		if wfSpaceID != spaceID {
+			return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "referenced workflow does not belong to this space"))
+		}
+		return nil
+	case strategyEntity.CapabilityTypePlugin, strategyEntity.CapabilityTypeKnowledge:
+		// TODO(sec): add per-resource space validation for plugin (ref_id tool +
+		// ref_sub_id plugin) and knowledge once a clean space resolver is wired.
+		// The strategy-level checkSpaceAccess gate still applies.
+		logs.CtxWarnf(ctx, "validateCapabilityRefInSpace: per-resource space check not implemented for type %s (refID=%d refSubID=%d)", capType, refID, refSubID)
+		return nil
+	default:
+		return nil
+	}
+}
+
 // ---------- schema helpers (mirrors node_tool_strategy.go logic) ----------
 
 // capabilitySchemaForMgmt derives the input JSON schema for a capability so the
@@ -566,6 +628,12 @@ func (s *StrategyApplicationService) AddCapability(ctx context.Context, req *api
 		return nil, errorx.New(errno.ErrMemoryInvalidParamCode, errorx.KV("msg", "scenario does not belong to the specified strategy"))
 	}
 
+	// C-9: the referenced resource (workflow/plugin/knowledge) must belong to
+	// the strategy's space — reject cross-space references.
+	if err := s.validateCapabilityRefInSpace(ctx, req.Type, req.RefID, req.RefSubID, parent.SpaceID); err != nil {
+		return nil, err
+	}
+
 	res, err := s.DomainSVC.CreateCapability(ctx, &strategyDomain.CreateCapabilityRequest{
 		Capability: &strategyEntity.Capability{
 			StrategyID:       req.StrategyID,
@@ -640,6 +708,11 @@ func (s *StrategyApplicationService) UpdateCapability(ctx context.Context, req *
 	}
 	cap.RefID = req.RefID
 	cap.RefSubID = req.RefSubID
+	// C-9: the (possibly repointed) referenced resource must belong to the
+	// strategy's space — reject cross-space repoint. Validate the final values.
+	if err := s.validateCapabilityRefInSpace(ctx, cap.Type, cap.RefID, cap.RefSubID, parent.SpaceID); err != nil {
+		return nil, err
+	}
 	if err := s.DomainSVC.UpdateCapability(ctx, &strategyDomain.UpdateCapabilityRequest{Capability: cap}); err != nil {
 		return nil, err
 	}
@@ -648,10 +721,39 @@ func (s *StrategyApplicationService) UpdateCapability(ctx context.Context, req *
 
 // PreviewCapabilitySchema derives the input JSON schema for a resource (by
 // type + ref ids) before any capability is saved, so the editor can show the
-// params a workflow/plugin expects the moment a resource is picked. It only
-// reads a workflow/plugin schema, so no space-access check is required.
-// Resilient by contract: any derive failure returns code:0 with schema:null.
+// params a workflow/plugin expects the moment a resource is picked. Because it
+// reads an arbitrary resource's schema by raw ref id, it must authorize the
+// caller against the strategy's space and confirm the referenced resource
+// belongs to that space (defense-in-depth against cross-tenant enumeration).
+// Resilient by contract: any *derive* failure returns code:0 with schema:null,
+// but auth/space failures return an error.
 func (s *StrategyApplicationService) PreviewCapabilitySchema(ctx context.Context, req *apiModel.PreviewCapabilitySchemaRequest) (*apiModel.PreviewCapabilitySchemaResponse, error) {
+	uid, err := s.requireUID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Gate: caller must have access to the stated space.
+	if err := s.checkSpaceAccess(ctx, uid, req.SpaceID); err != nil {
+		return nil, err
+	}
+
+	// Defense-in-depth: verify the referenced resource actually lives in the
+	// stated space before deriving its schema. For workflow we resolve the
+	// owning space; mismatch / unresolvable → return schema:null rather than
+	// leaking another tenant's schema. Plugin/knowledge fall back to the space
+	// gate above (per-resource check is a follow-up — see
+	// validateCapabilityRefInSpace).
+	if req.Type == strategyEntity.CapabilityTypeWorkflow {
+		wfSpaceID, ok, rerr := s.resolveWorkflowSpaceID(ctx, req.RefID, req.RefVersion)
+		if rerr != nil {
+			return nil, rerr
+		}
+		if !ok || wfSpaceID != req.SpaceID {
+			logs.CtxWarnf(ctx, "PreviewCapabilitySchema: workflow %d not in space %d (resolved=%v space=%d), refusing schema", req.RefID, req.SpaceID, ok, wfSpaceID)
+			return &apiModel.PreviewCapabilitySchemaResponse{Code: 0, Msg: "success"}, nil
+		}
+	}
+
 	probe := &strategyEntity.Capability{
 		Type:       req.Type,
 		RefID:      req.RefID,

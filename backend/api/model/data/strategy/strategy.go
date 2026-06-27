@@ -193,8 +193,11 @@ type UpdateCapabilityResponse struct {
 
 // PreviewCapabilitySchemaRequest derives the input schema for a resource
 // (workflow/plugin/etc.) before a capability is saved, so the editor can show
-// the params the resource expects as soon as it is picked.
+// the params the resource expects as soon as it is picked. SpaceID is required
+// so the handler can authorize the caller and verify the referenced resource
+// belongs to that space before reading its schema.
 type PreviewCapabilitySchemaRequest struct {
+	SpaceID    int64  `json:"space_id,string" vd:"$>0"`
 	Type       string `json:"type"`
 	RefID      int64  `json:"ref_id,string"`
 	RefSubID   int64  `json:"ref_sub_id,string,omitempty"`
