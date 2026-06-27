@@ -141,6 +141,7 @@ const StrategyEditorPage: React.FC = () => {
         visible={editor.addCapabilityVisible}
         form={editor.addCapForm}
         loading={editor.addingCap}
+        spaceId={space_id ?? ''}
         onOk={editor.handleAddCapability}
         onCancel={() => editor.setAddCapabilityVisible(false)}
         onFormChange={patch => editor.setAddCapForm(f => ({ ...f, ...patch }))}

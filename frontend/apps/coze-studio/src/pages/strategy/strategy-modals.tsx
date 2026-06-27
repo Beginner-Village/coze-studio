@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
+import { ResType } from '@coze-arch/idl/plugin_develop';
 import { I18n } from '@coze-arch/i18n';
 import {
   Input,
   Modal,
   Select,
+  Spin,
   TextArea,
   Typography,
 } from '@coze-arch/coze-design';
+import { PluginDevelopApi } from '@coze-arch/bot-api';
 
 import type { AddCapabilityForm, EditCapabilityForm } from './types';
 import { CAPABILITY_TYPES } from './constants';
@@ -117,10 +120,158 @@ export const RenameScenarioModal: React.FC<RenameScenarioModalProps> = ({
 
 // ---------- Add Capability ----------
 
+interface ResourceOption {
+  res_id: string;
+  name: string;
+  description?: string;
+}
+
+function useResourceOptions(
+  spaceId: string,
+  type: string,
+  visible: boolean,
+): { options: ResourceOption[]; loading: boolean } {
+  const [options, setOptions] = useState<ResourceOption[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!visible || !spaceId || type === 'prompt' || type === 'plugin') {
+      setOptions([]);
+      return;
+    }
+    const resType = type === 'workflow' ? ResType.Workflow : ResType.Knowledge;
+    setLoading(true);
+    PluginDevelopApi.LibraryResourceList({
+      space_id: spaceId,
+      res_type_filter: [resType],
+      size: 200,
+    })
+      .then(resp => {
+        if (resp.code === 0 || resp.code === null || resp.code === undefined) {
+          setOptions(
+            (resp.resource_list ?? []).map(r => ({
+              res_id: r.res_id ?? '',
+              name: r.name ?? r.res_id ?? '',
+              description: r.description,
+            })),
+          );
+        }
+      })
+      .catch(() => setOptions([]))
+      .finally(() => setLoading(false));
+  }, [spaceId, type, visible]);
+
+  return { options, loading };
+}
+
+// ---------- Resource picker (workflow / knowledge) ----------
+
+interface CapabilityRefPickerProps {
+  type: string;
+  refId: string;
+  refSubId: string;
+  options: ResourceOption[];
+  resourceLoading: boolean;
+  onFormChange: (patch: Partial<AddCapabilityForm>) => void;
+}
+
+const CapabilityRefPicker: React.FC<CapabilityRefPickerProps> = ({
+  type,
+  refId,
+  refSubId,
+  options,
+  resourceLoading,
+  onFormChange,
+}) => {
+  const emptyLabel =
+    type === 'workflow' ? '该空间暂无可用工作流' : '该空间暂无可用知识库';
+  const kindLabel = type === 'workflow' ? '工作流' : '知识库';
+
+  if (type === 'workflow' || type === 'knowledge') {
+    return (
+      <div>
+        <Text style={{ display: 'block', marginBottom: 4 }}>
+          {type === 'workflow' ? '选择工作流' : '选择知识库'}
+        </Text>
+        {resourceLoading ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Spin size="small" />
+            <Text type="tertiary">加载中...</Text>
+          </div>
+        ) : (
+          <Select
+            value={refId || undefined}
+            onChange={v => {
+              const selected = options.find(o => o.res_id === String(v));
+              onFormChange({
+                ref_id: String(v),
+                alias_name: selected?.name ?? '',
+                alias_description: selected?.description ?? '',
+              });
+            }}
+            style={{ width: '100%' }}
+            filter
+            showClear
+            placeholder={
+              options.length === 0 ? emptyLabel : `搜索并选择${kindLabel}...`
+            }
+            emptyContent={emptyLabel}
+            optionList={options.map(o => ({
+              label: o.name,
+              value: o.res_id,
+              showTick: true,
+            }))}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (type === 'plugin') {
+    return (
+      <>
+        <div>
+          <Text style={{ display: 'block', marginBottom: 4 }}>
+            Tool ID (ref_id)
+          </Text>
+          <Input
+            value={refId}
+            onChange={v => onFormChange({ ref_id: v })}
+            placeholder="工具 ID（数字）"
+            type="number"
+          />
+        </div>
+        <div>
+          <Text style={{ display: 'block', marginBottom: 4 }}>
+            Plugin ID (ref_sub_id)
+          </Text>
+          <Input
+            value={refSubId}
+            onChange={v => onFormChange({ ref_sub_id: v })}
+            placeholder="插件 ID（数字）"
+            type="number"
+          />
+          <Text
+            type="tertiary"
+            style={{ display: 'block', marginTop: 4, fontSize: 12 }}
+          >
+            提示：可在插件管理页面查看对应的 Tool ID 和 Plugin ID
+          </Text>
+        </div>
+      </>
+    );
+  }
+
+  return null;
+};
+
+// ---------- AddCapabilityModal ----------
+
 interface AddCapabilityModalProps {
   visible: boolean;
   form: AddCapabilityForm;
   loading: boolean;
+  spaceId: string;
   onOk: () => void;
   onCancel: () => void;
   onFormChange: (patch: Partial<AddCapabilityForm>) => void;
@@ -130,103 +281,94 @@ export const AddCapabilityModal: React.FC<AddCapabilityModalProps> = ({
   visible,
   form,
   loading,
+  spaceId,
   onOk,
   onCancel,
   onFormChange,
-}) => (
-  <Modal
-    visible={visible}
-    title={I18n.t('strategy_capability_add')}
-    okText="确定"
-    cancelText="取消"
-    onOk={onOk}
-    onCancel={onCancel}
-    okButtonProps={{ loading }}
-    style={{ width: 520 }}
-  >
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div>
-        <Text style={{ display: 'block', marginBottom: 4 }}>类型</Text>
-        <Select
-          value={form.type}
-          onChange={v => onFormChange({ type: String(v) })}
-          style={{ width: '100%' }}
-          optionList={CAPABILITY_TYPES.map(t => ({
-            label: t.label(),
-            value: t.value,
-          }))}
-        />
-      </div>
+}) => {
+  const { options, loading: resourceLoading } = useResourceOptions(
+    spaceId,
+    form.type,
+    visible,
+  );
+  const isOkDisabled = form.type !== 'prompt' && !form.ref_id.trim();
 
-      {form.type !== 'prompt' && (
+  return (
+    <Modal
+      visible={visible}
+      title={I18n.t('strategy_capability_add')}
+      okText="确定"
+      cancelText="取消"
+      onOk={onOk}
+      onCancel={onCancel}
+      okButtonProps={{ loading, disabled: isOkDisabled }}
+      style={{ width: 520 }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
-          <Text style={{ display: 'block', marginBottom: 4 }}>
-            {form.type === 'workflow'
-              ? 'Workflow ID'
-              : form.type === 'plugin'
-                ? 'Tool ID (ref_id)'
-                : 'Knowledge ID'}
-          </Text>
-          <Input
-            value={form.ref_id}
-            onChange={v => onFormChange({ ref_id: v })}
-            placeholder="数字 ID"
-            type="number"
+          <Text style={{ display: 'block', marginBottom: 4 }}>类型</Text>
+          <Select
+            value={form.type}
+            onChange={v =>
+              onFormChange({ type: String(v), ref_id: '', ref_sub_id: '' })
+            }
+            style={{ width: '100%' }}
+            optionList={CAPABILITY_TYPES.map(t => ({
+              label: t.label(),
+              value: t.value,
+            }))}
           />
         </div>
-      )}
 
-      {form.type === 'plugin' && (
+        {form.type !== 'prompt' && (
+          <CapabilityRefPicker
+            type={form.type}
+            refId={form.ref_id}
+            refSubId={form.ref_sub_id}
+            options={options}
+            resourceLoading={resourceLoading}
+            onFormChange={onFormChange}
+          />
+        )}
+
+        {form.type === 'prompt' && (
+          <div>
+            <Text style={{ display: 'block', marginBottom: 4 }}>
+              {I18n.t('strategy_prompt_content')}
+            </Text>
+            <TextArea
+              value={form.prompt_content}
+              onChange={v => onFormChange({ prompt_content: v })}
+              placeholder={I18n.t('strategy_prompt_content')}
+              rows={4}
+            />
+          </div>
+        )}
+
         <div>
-          <Text style={{ display: 'block', marginBottom: 4 }}>
-            Plugin ID (ref_sub_id)
-          </Text>
+          <Text style={{ display: 'block', marginBottom: 4 }}>别名</Text>
           <Input
-            value={form.ref_sub_id}
-            onChange={v => onFormChange({ ref_sub_id: v })}
-            placeholder="插件 ID（数字）"
-            type="number"
+            value={form.alias_name}
+            onChange={v => onFormChange({ alias_name: v })}
+            placeholder="面向模型的能力名称"
           />
         </div>
-      )}
 
-      {form.type === 'prompt' && (
         <div>
           <Text style={{ display: 'block', marginBottom: 4 }}>
-            {I18n.t('strategy_prompt_content')}
+            {I18n.t('strategy_model_facing_desc')}
           </Text>
           <TextArea
-            value={form.prompt_content}
-            onChange={v => onFormChange({ prompt_content: v })}
-            placeholder={I18n.t('strategy_prompt_content')}
-            rows={4}
+            value={form.alias_description}
+            onChange={v => onFormChange({ alias_description: v })}
+            placeholder={I18n.t('strategy_model_facing_desc')}
+            rows={2}
           />
         </div>
-      )}
-
-      <div>
-        <Text style={{ display: 'block', marginBottom: 4 }}>别名</Text>
-        <Input
-          value={form.alias_name}
-          onChange={v => onFormChange({ alias_name: v })}
-          placeholder="面向模型的能力名称"
-        />
       </div>
-
-      <div>
-        <Text style={{ display: 'block', marginBottom: 4 }}>
-          {I18n.t('strategy_model_facing_desc')}
-        </Text>
-        <TextArea
-          value={form.alias_description}
-          onChange={v => onFormChange({ alias_description: v })}
-          placeholder={I18n.t('strategy_model_facing_desc')}
-          rows={2}
-        />
-      </div>
-    </div>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 // ---------- Edit Capability ----------
 
