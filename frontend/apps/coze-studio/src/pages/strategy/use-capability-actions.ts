@@ -47,6 +47,7 @@ export const useCapabilityActions = ({
     prompt_content: '',
     type: '',
     ref_id: '',
+    ref_sub_id: '',
   });
   const [editingCap, setEditingCap] = useState(false);
 
@@ -116,11 +117,21 @@ export const useCapabilityActions = ({
     }
     setEditingCap(true);
     try {
+      const isPrompt = editCapForm.type === 'prompt';
       await strategyApi.updateCapability({
         id: editCapId,
+        type: editCapForm.type || undefined,
+        ref_id:
+          !isPrompt && editCapForm.ref_id ? editCapForm.ref_id : undefined,
+        ref_sub_id:
+          editCapForm.type === 'plugin' && editCapForm.ref_sub_id
+            ? editCapForm.ref_sub_id
+            : undefined,
         alias_name: editCapForm.alias_name || undefined,
         alias_description: editCapForm.alias_description || undefined,
-        prompt_content: editCapForm.prompt_content || undefined,
+        prompt_content: isPrompt
+          ? editCapForm.prompt_content || undefined
+          : undefined,
       });
       setEditCapId(null);
       await reload();
@@ -140,6 +151,7 @@ export const useCapabilityActions = ({
       prompt_content: cap.prompt_content || '',
       type: cap.type,
       ref_id: cap.ref_id,
+      ref_sub_id: cap.ref_sub_id || '',
       schema: cap.schema,
     });
   };

@@ -30,8 +30,8 @@ export interface EditCapabilityForm {
   alias_name: string;
   alias_description: string;
   prompt_content: string;
-  /** read-only context carried into the modal */
   type: string;
   ref_id: string;
+  ref_sub_id: string;
   schema?: CapabilitySchema;
 }

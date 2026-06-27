@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { ResType } from '@coze-arch/idl/plugin_develop';
 import { I18n } from '@coze-arch/i18n';
@@ -23,18 +23,14 @@ import {
   Modal,
   Select,
   Spin,
-  Tag,
   TextArea,
   Typography,
 } from '@coze-arch/coze-design';
-import { PluginDevelopApi } from '@coze-arch/bot-api';
+import { PluginDevelopApi, strategyApi } from '@coze-arch/bot-api';
+import type { CapabilitySchema } from '@coze-arch/bot-api';
 
 import type { AddCapabilityForm, EditCapabilityForm } from './types';
-import {
-  CAPABILITY_TYPE_LABELS,
-  CAPABILITY_TYPES,
-  TYPE_COLORS,
-} from './constants';
+import { CAPABILITY_TYPES } from './constants';
 import { CapabilityParamList } from './capability-param-list';
 
 const { Text } = Typography;
@@ -170,6 +166,55 @@ function useResourceOptions(
   return { options, loading };
 }
 
+// ---------- Auto-preview schema when a resource is picked ----------
+
+interface UseSchemaPreviewOptions {
+  type: string;
+  refId: string;
+  refSubId: string;
+  onSchema: (schema: CapabilitySchema | undefined) => void;
+}
+
+function useSchemaPreview({
+  type,
+  refId,
+  refSubId,
+  onSchema,
+}: UseSchemaPreviewOptions) {
+  const seqRef = useRef(0);
+
+  useEffect(() => {
+    // Only fetch for non-prompt types with a ref_id present
+    if (!refId || type === 'prompt') {
+      onSchema(undefined);
+      return;
+    }
+    const seq = ++seqRef.current;
+    strategyApi
+      .previewCapabilitySchema({
+        type,
+        ref_id: refId,
+        ref_sub_id: refSubId || undefined,
+      })
+      .then(resp => {
+        if (seq !== seqRef.current) {
+          return; // stale — discard
+        }
+        if ((resp.code === 0 || resp.code === null) && resp.schema) {
+          onSchema(resp.schema);
+        } else {
+          onSchema(undefined);
+        }
+      })
+      .catch(() => {
+        if (seq === seqRef.current) {
+          onSchema(undefined);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onSchema is a stable callback, intentionally omitted
+  }, [type, refId, refSubId]);
+}
+
 // ---------- Resource picker (workflow / knowledge) ----------
 
 interface CapabilityRefPickerProps {
@@ -297,6 +342,14 @@ export const AddCapabilityModal: React.FC<AddCapabilityModalProps> = ({
     form.type,
     visible,
   );
+
+  useSchemaPreview({
+    type: form.type,
+    refId: form.ref_id,
+    refSubId: form.ref_sub_id,
+    onSchema: schema => onFormChange({ schema }),
+  });
+
   const isOkDisabled = form.type !== 'prompt' && !form.ref_id.trim();
 
   return (
@@ -405,16 +458,12 @@ export const EditCapabilityModal: React.FC<EditCapabilityModalProps> = ({
     visible,
   );
 
-  // Resolve the display name for the bound resource (workflow / knowledge).
-  // Falls back to the raw ref_id if the resource list hasn't loaded yet or
-  // the id isn't found.
-  const boundName =
-    form.type !== 'prompt' && form.ref_id
-      ? (refOptions.find(o => o.res_id === form.ref_id)?.name ?? form.ref_id)
-      : null;
-
-  const typeLabel = CAPABILITY_TYPE_LABELS[form.type]?.() ?? form.type;
-  const typeColor = TYPE_COLORS[form.type] ?? 'default';
+  useSchemaPreview({
+    type: form.type,
+    refId: form.ref_id,
+    refSubId: form.ref_sub_id,
+    onSchema: schema => onFormChange({ schema }),
+  });
 
   return (
     <Modal
@@ -428,32 +477,55 @@ export const EditCapabilityModal: React.FC<EditCapabilityModalProps> = ({
       style={{ width: 520 }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Type (read-only) */}
+        {/* Type — editable select */}
         <div>
           <Text style={{ display: 'block', marginBottom: 4 }}>类型</Text>
-          <Tag color={typeColor}>{typeLabel}</Tag>
+          <Select
+            value={form.type}
+            onChange={v =>
+              onFormChange({
+                type: String(v),
+                ref_id: '',
+                ref_sub_id: '',
+                schema: undefined,
+              })
+            }
+            style={{ width: '100%' }}
+            optionList={CAPABILITY_TYPES.map(t => ({
+              label: t.label(),
+              value: t.value,
+            }))}
+          />
         </div>
 
-        {/* Bound resource name (workflow / knowledge / plugin) */}
-        {form.type !== 'prompt' && form.ref_id ? (
+        {/* Resource picker — same as Add modal */}
+        {form.type !== 'prompt' && (
+          <CapabilityRefPicker
+            type={form.type}
+            refId={form.ref_id}
+            refSubId={form.ref_sub_id}
+            options={refOptions}
+            resourceLoading={refLoading}
+            onFormChange={patch =>
+              onFormChange(patch as Partial<EditCapabilityForm>)
+            }
+          />
+        )}
+
+        {/* prompt_content — only for prompt type */}
+        {form.type === 'prompt' && (
           <div>
             <Text style={{ display: 'block', marginBottom: 4 }}>
-              {form.type === 'workflow'
-                ? '绑定工作流'
-                : form.type === 'knowledge'
-                  ? '绑定知识库'
-                  : '绑定插件工具'}
+              {I18n.t('strategy_prompt_content')}
             </Text>
-            {refLoading ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Spin size="small" />
-                <Text type="tertiary">加载中...</Text>
-              </div>
-            ) : (
-              <Text type="secondary">{boundName}</Text>
-            )}
+            <TextArea
+              value={form.prompt_content}
+              onChange={v => onFormChange({ prompt_content: v })}
+              placeholder={I18n.t('strategy_prompt_content')}
+              rows={4}
+            />
           </div>
-        ) : null}
+        )}
 
         {/* Schema / input params */}
         {form.schema ? <CapabilityParamList schema={form.schema} /> : null}
@@ -480,21 +552,6 @@ export const EditCapabilityModal: React.FC<EditCapabilityModalProps> = ({
             rows={2}
           />
         </div>
-
-        {/* prompt_content — only for prompt type */}
-        {form.type === 'prompt' && (
-          <div>
-            <Text style={{ display: 'block', marginBottom: 4 }}>
-              {I18n.t('strategy_prompt_content')}
-            </Text>
-            <TextArea
-              value={form.prompt_content}
-              onChange={v => onFormChange({ prompt_content: v })}
-              placeholder={I18n.t('strategy_prompt_content')}
-              rows={3}
-            />
-          </div>
-        )}
       </div>
     </Modal>
   );

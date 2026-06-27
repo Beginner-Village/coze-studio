@@ -183,12 +183,28 @@ export interface AddCapabilityResponse {
 
 export interface UpdateCapabilityRequest {
   id: string;
+  type?: string;
+  ref_id?: string;
+  ref_sub_id?: string;
   ref_version?: string;
   prompt_content?: string;
   retrieve_config?: string;
   alias_name?: string;
   alias_description?: string;
   sort_order?: number;
+}
+
+export interface PreviewCapabilitySchemaRequest {
+  type: string;
+  ref_id: string;
+  ref_sub_id?: string;
+  ref_version?: string;
+}
+
+export interface PreviewCapabilitySchemaResponse {
+  code: number;
+  msg: string;
+  schema?: CapabilitySchema;
 }
 
 export interface UpdateCapabilityResponse {
@@ -322,6 +338,20 @@ class StrategyApiService {
       headers: { 'Agw-Js-Conv': 'str' },
       ...config,
     });
+  }
+
+  async previewCapabilitySchema(
+    data: PreviewCapabilitySchemaRequest,
+    config?: BotAPIRequestConfig,
+  ): Promise<PreviewCapabilitySchemaResponse> {
+    return await axiosInstance.post(
+      '/api/strategy/capability/preview_schema',
+      data,
+      {
+        headers: { 'Agw-Js-Conv': 'str' },
+        ...config,
+      },
+    );
   }
 }
 
