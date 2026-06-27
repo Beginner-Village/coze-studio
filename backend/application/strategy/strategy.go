@@ -102,11 +102,42 @@ func (s *StrategyApplicationService) resolveWorkflowSpaceID(ctx context.Context,
 	return wf.GetBasic().SpaceID, true, nil
 }
 
+// resolvePluginSpaceID resolves the owning space of a plugin by id, mirroring
+// resolveWorkflowSpaceID. A capability stores the plugin id in ref_sub_id (and
+// the tool id in ref_id); this resolves the plugin's space via the plugin
+// cross-domain contract: MGetPluginLatestVersion → version, then
+// MGetVersionPlugins → PluginInfo.SpaceID (the only contract path that surfaces
+// SpaceID for an online plugin). Returns (spaceID, true, nil) when resolved;
+// (0, false, nil) when the plugin service is unavailable or the plugin cannot be
+// loaded so callers can decide policy; a non-nil error only for unexpected
+// failures.
+func (s *StrategyApplicationService) resolvePluginSpaceID(ctx context.Context, pluginID int64) (int64, bool, error) {
+	pluginSVC := crossplugin.DefaultSVC()
+	if pluginSVC == nil {
+		return 0, false, nil
+	}
+	latest, err := pluginSVC.MGetPluginLatestVersion(ctx, []int64{pluginID})
+	if err != nil || latest == nil {
+		logs.CtxWarnf(ctx, "resolvePluginSpaceID: get latest version for plugin %d failed: %v", pluginID, err)
+		return 0, false, nil
+	}
+	version, ok := latest.Versions[pluginID]
+	if !ok {
+		return 0, false, nil
+	}
+	plugins, err := pluginSVC.MGetVersionPlugins(ctx, []pluginModel.VersionPlugin{{PluginID: pluginID, Version: version}})
+	if err != nil || len(plugins) == 0 || plugins[0] == nil {
+		logs.CtxWarnf(ctx, "resolvePluginSpaceID: load plugin %d (version %q) failed: %v", pluginID, version, err)
+		return 0, false, nil
+	}
+	return plugins[0].SpaceID, true, nil
+}
+
 // validateCapabilityRefInSpace verifies the resource a capability points to
-// belongs to spaceID, guarding against cross-space repoint / reference. Only
-// the workflow type is verified here (the primary type with a clean space
-// resolver); plugin/knowledge per-resource checks are a follow-up — the
-// space-access gate on the strategy still applies for all types.
+// belongs to spaceID, guarding against cross-space repoint / reference. Workflow
+// (ref_id) and plugin (ref_sub_id) are verified here against their owning space;
+// knowledge per-resource checks remain a follow-up — the space-access gate on
+// the strategy still applies for all types.
 func (s *StrategyApplicationService) validateCapabilityRefInSpace(ctx context.Context, capType string, refID, refSubID, spaceID int64) error {
 	switch capType {
 	case strategyEntity.CapabilityTypeWorkflow:
@@ -123,10 +154,25 @@ func (s *StrategyApplicationService) validateCapabilityRefInSpace(ctx context.Co
 			return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "referenced workflow does not belong to this space"))
 		}
 		return nil
-	case strategyEntity.CapabilityTypePlugin, strategyEntity.CapabilityTypeKnowledge:
-		// TODO(sec): add per-resource space validation for plugin (ref_id tool +
-		// ref_sub_id plugin) and knowledge once a clean space resolver is wired.
-		// The strategy-level checkSpaceAccess gate still applies.
+	case strategyEntity.CapabilityTypePlugin:
+		// The plugin id lives in ref_sub_id (ref_id is the tool). Resolve the
+		// plugin's owning space and require it to match — mirrors the workflow
+		// path: unresolvable fails closed, mismatch is a permission error.
+		plSpaceID, ok, err := s.resolvePluginSpaceID(ctx, refSubID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errorx.New(errno.ErrMemoryInvalidParamCode, errorx.KV("msg", "referenced plugin not found or not accessible"))
+		}
+		if plSpaceID != spaceID {
+			return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "referenced plugin does not belong to this space"))
+		}
+		return nil
+	case strategyEntity.CapabilityTypeKnowledge:
+		// TODO(sec): add per-resource space validation for knowledge once a clean
+		// space resolver is wired. The strategy-level checkSpaceAccess gate still
+		// applies.
 		logs.CtxWarnf(ctx, "validateCapabilityRefInSpace: per-resource space check not implemented for type %s (refID=%d refSubID=%d)", capType, refID, refSubID)
 		return nil
 	default:
@@ -738,18 +784,28 @@ func (s *StrategyApplicationService) PreviewCapabilitySchema(ctx context.Context
 	}
 
 	// Defense-in-depth: verify the referenced resource actually lives in the
-	// stated space before deriving its schema. For workflow we resolve the
-	// owning space; mismatch / unresolvable → return schema:null rather than
-	// leaking another tenant's schema. Plugin/knowledge fall back to the space
-	// gate above (per-resource check is a follow-up — see
+	// stated space before deriving its schema. For workflow we resolve via
+	// ref_id, for plugin via ref_sub_id; mismatch / unresolvable → return
+	// schema:null rather than leaking another tenant's schema. Knowledge falls
+	// back to the space gate above (per-resource check is a follow-up — see
 	// validateCapabilityRefInSpace).
-	if req.Type == strategyEntity.CapabilityTypeWorkflow {
+	switch req.Type {
+	case strategyEntity.CapabilityTypeWorkflow:
 		wfSpaceID, ok, rerr := s.resolveWorkflowSpaceID(ctx, req.RefID, req.RefVersion)
 		if rerr != nil {
 			return nil, rerr
 		}
 		if !ok || wfSpaceID != req.SpaceID {
 			logs.CtxWarnf(ctx, "PreviewCapabilitySchema: workflow %d not in space %d (resolved=%v space=%d), refusing schema", req.RefID, req.SpaceID, ok, wfSpaceID)
+			return &apiModel.PreviewCapabilitySchemaResponse{Code: 0, Msg: "success"}, nil
+		}
+	case strategyEntity.CapabilityTypePlugin:
+		plSpaceID, ok, rerr := s.resolvePluginSpaceID(ctx, req.RefSubID)
+		if rerr != nil {
+			return nil, rerr
+		}
+		if !ok || plSpaceID != req.SpaceID {
+			logs.CtxWarnf(ctx, "PreviewCapabilitySchema: plugin %d not in space %d (resolved=%v space=%d), refusing schema", req.RefSubID, req.SpaceID, ok, plSpaceID)
 			return &apiModel.PreviewCapabilitySchemaResponse{Code: 0, Msg: "success"}, nil
 		}
 	}
