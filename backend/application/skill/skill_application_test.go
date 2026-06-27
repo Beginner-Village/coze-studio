@@ -321,8 +321,8 @@ func TestSkillApplicationServiceReviewRejectKeepsOutOfMarketplace(t *testing.T) 
 func TestSkillApplicationServiceReviewRequiresReviewerRole(t *testing.T) {
 	ctx := ctxcache.Init(context.Background())
 	ctxcache.Store(ctx, consts.SessionDataKeyInCtx, &userentity.Session{UserID: 42})
-	withReviewerPermission(t, false) // caller is NOT a space owner/admin
 	svc := newTestSkillApplicationService(t, 8000)
+	withReviewerPermission(t, false) // caller is a space member but NOT owner/admin
 	source, err := svc.CreateSkill(ctx, 1, "needs-review", "x", "prompt", "", map[string]string{
 		"SKILL.md": "---\nname: needs-review\ndescription: x\n---\n# X\n",
 	})
@@ -712,6 +712,14 @@ func withReviewerPermission(t *testing.T, canManage bool) {
 
 func newTestSkillApplicationService(t *testing.T, idOffset int64) *SkillApplicationService {
 	t.Helper()
+
+	// Space-scoped skill operations now gate on space membership (cross-tenant
+	// IDOR fix). Install a member-granting crossuser SVC by default so the
+	// resource owner is treated as a space member; tests that specifically
+	// exercise the manager gate override this via withReviewerPermission.
+	prevUserSVC := crossuser.DefaultSVC()
+	crossuser.SetDefaultSVC(&fakeReviewerUserSVC{canManage: true})
+	t.Cleanup(func() { crossuser.SetDefaultSVC(prevUserSVC) })
 
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)

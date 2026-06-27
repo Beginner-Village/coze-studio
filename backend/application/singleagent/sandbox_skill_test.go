@@ -29,6 +29,7 @@ import (
 	crossagent "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
 	"github.com/ynet-dev/ynet-studio/backend/application/skill"
 	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
+	crossuser "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/user"
 	agententity "github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 	openauthentity "github.com/ynet-dev/ynet-studio/backend/domain/openauth/openapiauth/entity"
 	skillentity "github.com/ynet-dev/ynet-studio/backend/domain/skill/entity"
@@ -158,9 +159,26 @@ func (f *fakeRuntimeSkillDomain) GetSkillVersion(context.Context, int64, int64) 
 	return nil, nil
 }
 
+// fakeMemberUserSVC reports the caller as a space member (and manager), so the
+// space-membership gate added to skill operations treats the resource owner as
+// authorized in tests.
+type fakeMemberUserSVC struct{}
+
+func (fakeMemberUserSVC) GetUserSpaceList(_ context.Context, _ int64) ([]*crossuser.EntitySpace, error) {
+	return nil, nil
+}
+
+func (fakeMemberUserSVC) CheckSpacePermission(_ context.Context, _, _ int64) (*crossuser.SpacePermission, error) {
+	return &crossuser.SpacePermission{IsMember: true, CanManage: true, CanEdit: true}, nil
+}
+
 func TestImportSuperAgentRuntimeSkillCreatesAndPublishesStandardSkill(t *testing.T) {
 	ctx := ctxcache.Init(context.Background())
 	ctxcache.Store(ctx, consts.OpenapiAuthKeyInCtx, &openauthentity.ApiKey{UserID: 77})
+
+	prevUserSVC := crossuser.DefaultSVC()
+	crossuser.SetDefaultSVC(fakeMemberUserSVC{})
+	defer crossuser.SetDefaultSVC(prevUserSVC)
 
 	fakeSandbox := &fakeRuntimeSkillSandboxManager{files: map[string][]byte{
 		"SKILL.md":            []byte("---\nname: report-kit\ndescription: Build polished reports\n---\n# Report Kit\nUse scripts/render.py.\n"),

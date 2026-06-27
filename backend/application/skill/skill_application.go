@@ -243,8 +243,8 @@ func (s *SkillApplicationService) ExportSkillPackage(ctx context.Context, skillI
 	if skillID <= 0 {
 		return nil, errorx.New(errno.ErrSkillInvalidParamCode, errorx.KV("msg", "skill_id is required"))
 	}
-	if spaceID <= 0 {
-		return nil, errorx.New(errno.ErrSkillInvalidParamCode, errorx.KV("msg", "space_id is required"))
+	if err := s.requireSpaceMember(ctx, spaceID); err != nil {
+		return nil, err
 	}
 
 	source, err := s.DomainSVC.GetSkill(ctx, skillID)
@@ -270,9 +270,17 @@ func (s *SkillApplicationService) ExportSkillPackage(ctx context.Context, skillI
 }
 
 // GetSkill gets a skill by ID.
+//
+// This is the shared entrypoint for the space-scoped skill read/write
+// operations (update, asset CRUD, delete, publish), so the cross-tenant IDOR
+// gate lives here: the request-supplied space_id is only trusted after the
+// caller is confirmed to be a member of that space.
 func (s *SkillApplicationService) GetSkill(ctx context.Context, skillID, spaceID int64) (*entity.Skill, error) {
 	if skillID <= 0 {
 		return nil, errorx.New(errno.ErrSkillInvalidParamCode, errorx.KV("msg", "skill_id is required"))
+	}
+	if err := s.requireSpaceMember(ctx, spaceID); err != nil {
+		return nil, err
 	}
 
 	skill, err := s.DomainSVC.GetSkill(ctx, skillID)
@@ -282,7 +290,7 @@ func (s *SkillApplicationService) GetSkill(ctx context.Context, skillID, spaceID
 	if skill == nil {
 		return nil, errorx.New(errno.ErrSkillNotFoundCode, errorx.KV("msg", "skill not found"))
 	}
-	if spaceID > 0 && skill.SpaceID != spaceID {
+	if skill.SpaceID != spaceID {
 		return nil, errorx.New(errno.ErrSkillPermissionCode, errorx.KV("msg", "skill does not belong to this space"))
 	}
 
@@ -604,8 +612,8 @@ func (s *SkillApplicationService) ListPendingReviews(ctx context.Context, spaceI
 
 // ListSkills lists skills in a space.
 func (s *SkillApplicationService) ListSkills(ctx context.Context, spaceID int64, page, pageSize int32, keyword string) ([]*entity.Skill, int32, error) {
-	if spaceID <= 0 {
-		return nil, 0, errorx.New(errno.ErrSkillInvalidParamCode, errorx.KV("msg", "space_id is required"))
+	if err := s.requireSpaceMember(ctx, spaceID); err != nil {
+		return nil, 0, err
 	}
 
 	resp, err := s.DomainSVC.ListSkills(ctx, &entity.ListRequest{
@@ -1210,6 +1218,30 @@ func (s *SkillApplicationService) requireSpaceManager(ctx context.Context, space
 	}
 	if perm == nil || !perm.CanManage {
 		return errorx.New(errno.ErrSkillPermissionCode, errorx.KV("msg", "space owner/admin role required to review skills"))
+	}
+	return nil
+}
+
+// requireSpaceMember asserts the caller belongs to the given space (any role).
+// SECURITY: skill read/write endpoints take a request-supplied space_id, so the
+// space_id alone is NOT authorization. This member-level gate (mirroring
+// requireSpaceManager but accepting normal members, not just owner/admin) closes
+// the cross-tenant IDOR: a caller can only operate on skills in a space they are
+// actually a member of.
+func (s *SkillApplicationService) requireSpaceMember(ctx context.Context, spaceID int64) error {
+	if spaceID <= 0 {
+		return errorx.New(errno.ErrSkillInvalidParamCode, errorx.KV("msg", "space_id is required"))
+	}
+	uid, err := currentSkillUserID(ctx)
+	if err != nil {
+		return err
+	}
+	perm, err := crossuser.DefaultSVC().CheckSpacePermission(ctx, spaceID, uid)
+	if err != nil {
+		return err
+	}
+	if perm == nil || !perm.IsMember {
+		return errorx.New(errno.ErrSkillPermissionCode, errorx.KV("msg", "you do not have access to this space"))
 	}
 	return nil
 }

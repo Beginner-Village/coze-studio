@@ -323,6 +323,14 @@ func SuperAgentResolveApproval(ctx context.Context, c *app.RequestContext) {
 	if runID == "" {
 		runID = strings.TrimPrefix(approvalID, superAgentApprovalRunPrefix)
 	}
+	// IDOR guard: an approval resolution can cancel the run and persist a
+	// decision file into the run owner's workspace. Resolve the run's owning
+	// conversation and enforce the same per-conversation owner gate before any
+	// cancel or persist happens.
+	if _, authErr := authorizeSuperAgentRunOwner(ctx, runID); authErr != nil {
+		internalServerErrorResponse(ctx, c, authErr)
+		return
+	}
 	cancelled := false
 	status := "approved"
 	switch decision {

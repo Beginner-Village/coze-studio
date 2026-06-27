@@ -739,9 +739,10 @@ func (s *SingleAgentApplicationService) ValidateAgentDraftAccess(ctx context.Con
 			uid = ptr.Of(apiAuth.UserID)
 		}
 	}
-	if uid == nil {
-		uid = ptr.Of(int64(888))
-		// return nil, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("msg", "session uid not found"))
+	if uid == nil || *uid == 0 {
+		// A missing authenticated principal must not pass an ownership-gated
+		// draft access. Reject instead of defaulting to a placeholder uid.
+		return nil, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("msg", "session uid not found"))
 	}
 
 	do, err := s.DomainSVC.GetSingleAgentDraft(ctx, agentID)
@@ -757,12 +758,8 @@ func (s *SingleAgentApplicationService) ValidateAgentDraftAccess(ctx context.Con
 		return do, nil
 	}
 
-	// 临时禁用权限检查 - 开发环境使用
-	// TODO: 正式环境需要恢复此检查
 	if do.CreatorID != *uid {
-		logs.CtxWarnf(ctx, "[DEV MODE] Permission check bypassed - user(%d) is not the creator(%d) of the agent draft", *uid, do.CreatorID)
-		// 暂时注释掉权限检查，允许任何用户访问
-		// return do, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("detail", "you are not the agent owner"))
+		return do, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("detail", "you are not the agent owner"))
 	}
 
 	return do, nil

@@ -1418,6 +1418,14 @@ func SuperAgentGetRun(ctx context.Context, c *app.RequestContext) {
 		invalidParamRequestResponse(c, "run_id is required")
 		return
 	}
+	// IDOR guard: resolve the run's owning conversation and enforce the same
+	// per-conversation owner gate used by runs/get-history and runs/list before
+	// returning any run status/agent_id/conversation_id.
+	runRecord, authErr := authorizeSuperAgentRunOwner(ctx, runID)
+	if authErr != nil {
+		internalServerErrorResponse(ctx, c, authErr)
+		return
+	}
 	data := superAgentGetRunData{
 		RunID:  runID,
 		Status: "not_active",
@@ -1428,18 +1436,8 @@ func SuperAgentGetRun(ctx context.Context, c *app.RequestContext) {
 		data.Active = true
 		data.CreatedAt = state.CreatedAt
 		data.UpdatedAt = state.UpdatedAt
-	} else if conversation.ConversationSVC.AgentRunDomainSVC != nil {
-		runRecordID, parseErr := strconv.ParseInt(runID, 10, 64)
-		if parseErr == nil && runRecordID > 0 {
-			runRecord, err := conversation.ConversationSVC.AgentRunDomainSVC.GetByID(ctx, runRecordID)
-			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-				internalServerErrorResponse(ctx, c, err)
-				return
-			}
-			if runRecord != nil {
-				data = buildSuperAgentGetRunData(runRecord)
-			}
-		}
+	} else if runRecord != nil {
+		data = buildSuperAgentGetRunData(runRecord)
 	}
 	c.JSON(http.StatusOK, &superAgentGetRunResponse{
 		Code: 0,
@@ -1464,6 +1462,51 @@ func buildSuperAgentGetRunData(runRecord *agentrunEntity.RunRecordMeta) superAge
 		CompletedAt:    runRecord.CompletedAt,
 		FailedAt:       runRecord.FailedAt,
 	}
+}
+
+// authorizeSuperAgentRunOwner resolves a run id string to its run record and
+// owning conversation, then enforces the per-conversation owner gate
+// (checkSuperAgentTracePermission). It mirrors how runs/get and runs/list
+// resolve ownership so the caller is guaranteed to be the conversation creator
+// before a run can be read, cancelled, or have an approval decision applied.
+//
+// Returns the resolved run record (which may be nil when the run id has no
+// persisted record yet, e.g. an in-memory-only active run) together with an
+// error when the caller is not the owner. A nil error means access is granted.
+func authorizeSuperAgentRunOwner(ctx context.Context, runID string) (*agentrunEntity.RunRecordMeta, error) {
+	if conversation.ConversationSVC.AgentRunDomainSVC == nil || conversation.ConversationSVC.ConversationDomainSVC == nil {
+		return nil, nil
+	}
+	runRecordID, parseErr := strconv.ParseInt(strings.TrimSpace(runID), 10, 64)
+	if parseErr != nil || runRecordID <= 0 {
+		// No resolvable run record (e.g. a synthetic/in-memory run id) — nothing
+		// to authorize against, leave the decision to the caller's other guards.
+		return nil, nil
+	}
+	runRecord, err := conversation.ConversationSVC.AgentRunDomainSVC.GetByID(ctx, runRecordID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if runRecord == nil {
+		return nil, nil
+	}
+	currentConversation, err := conversation.ConversationSVC.ConversationDomainSVC.GetByID(ctx, runRecord.ConversationID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return runRecord, errorx.New(errno.ErrConversationNotFound)
+		}
+		return nil, err
+	}
+	if currentConversation == nil {
+		return runRecord, errorx.New(errno.ErrConversationNotFound)
+	}
+	if err := checkSuperAgentTracePermission(ctx, currentConversation.CreatorID); err != nil {
+		return runRecord, err
+	}
+	return runRecord, nil
 }
 
 // SuperAgentListRuns returns lightweight App Server run history for a conversation.
@@ -1577,7 +1620,7 @@ func SuperAgentStreamRun(ctx context.Context, c *app.RequestContext) {
 
 // SuperAgentCancelRun cancels an active App Server super-agent run.
 // @router /api/super-agent/runs/cancel [POST]
-func SuperAgentCancelRun(_ context.Context, c *app.RequestContext) {
+func SuperAgentCancelRun(ctx context.Context, c *app.RequestContext) {
 	var req superAgentCancelRunRequest
 	if err := c.BindAndValidate(&req); err != nil {
 		invalidParamRequestResponse(c, err.Error())
@@ -1586,6 +1629,11 @@ func SuperAgentCancelRun(_ context.Context, c *app.RequestContext) {
 	runID := strings.TrimSpace(req.RunID)
 	if runID == "" {
 		invalidParamRequestResponse(c, "run_id is required")
+		return
+	}
+	// IDOR guard: only the owner of the run's conversation may cancel it.
+	if _, authErr := authorizeSuperAgentRunOwner(ctx, runID); authErr != nil {
+		internalServerErrorResponse(ctx, c, authErr)
 		return
 	}
 	cancelled := conversation.CancelActiveAgentRun(runID)

@@ -29,7 +29,10 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/api/model/playground"
 	agententity "github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 	agentservice "github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/service"
+	userentity "github.com/ynet-dev/ynet-studio/backend/domain/user/entity"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/ctxcache"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 )
 
 // fakeSingleAgentDomainForShadow implements agentservice.SingleAgent minimally.
@@ -69,7 +72,10 @@ func TestShadowUpdateRejectedWhenSourceProductIDNonZero(t *testing.T) {
 		},
 	}
 	svc := newTestSingleAgentSVC(draft)
-	ctx := context.Background()
+	// Authenticate as the draft owner so ValidateAgentDraftAccess passes and the
+	// request actually reaches the shadow guard under test.
+	ctx := ctxcache.Init(context.Background())
+	ctxcache.Store(ctx, consts.SessionDataKeyInCtx, &userentity.Session{UserID: 1})
 
 	req := &playground.UpdateDraftBotInfoAgwRequest{
 		BotInfo: &bot_common.BotInfoForUpdate{
@@ -77,8 +83,16 @@ func TestShadowUpdateRejectedWhenSourceProductIDNonZero(t *testing.T) {
 		},
 	}
 
-	_, err := svc.UpdateSingleAgentDraft(ctx, req)
-	assert.Error(t, err, "UpdateSingleAgentDraft must return error for shadow instance (SourceProductID!=0)")
+	// A shadow instance (SourceProductID!=0) is read-only: the guard silently
+	// ignores the update (returns success with HasChange=false, no persistence)
+	// rather than erroring, so the editor's auto-save does not surface a toast.
+	resp, err := svc.UpdateSingleAgentDraft(ctx, req)
+	assert.NoError(t, err)
+	if assert.NotNil(t, resp) && assert.NotNil(t, resp.Data) {
+		assert.False(t, resp.Data.GetHasChange(), "shadow instance update must be ignored (HasChange=false)")
+	}
+	// Confirm the shadow guard short-circuited before any persistence.
+	assert.Nil(t, svc.DomainSVC.(*fakeSingleAgentDomainForShadow).updated)
 }
 
 // TestShadowUpdateAllowedWhenSourceProductIDZero verifies that a normal agent
@@ -96,7 +110,13 @@ func TestShadowUpdateAllowedWhenSourceProductIDZero(t *testing.T) {
 		},
 	}
 	svc := newTestSingleAgentSVC(draft)
-	ctx := context.Background()
+	// Authenticate as the draft owner so the access check passes and the request
+	// reaches the shadow guard. A normal agent (SourceProductID==0) is not
+	// rejected by the guard and proceeds into the update path, which panics in
+	// this minimal test on the nil appContext — that downstream panic proves the
+	// shadow guard itself did NOT fire.
+	ctx := ctxcache.Init(context.Background())
+	ctxcache.Store(ctx, consts.SessionDataKeyInCtx, &userentity.Session{UserID: 1})
 
 	req := &playground.UpdateDraftBotInfoAgwRequest{
 		BotInfo: &bot_common.BotInfoForUpdate{
@@ -104,15 +124,12 @@ func TestShadowUpdateAllowedWhenSourceProductIDZero(t *testing.T) {
 		},
 	}
 
-	// The normal agent proceeds past the shadow guard and reaches MustGetUIDFromCtx
-	// which panics in test (no session). We catch that panic here to prove the
-	// guard itself did NOT fire.
 	var shadowErr error
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
-				// Panic from MustGetUIDFromCtx — expected in test env, not the shadow guard.
-				// Verify it is NOT a shadow-guard error.
+				// Downstream panic (nil appContext) — expected in test env, not the
+				// shadow guard. Verify it is NOT a shadow-guard rejection.
 				msg := fmt.Sprintf("%v", r)
 				if strings.Contains(msg, "read-only shadow") || strings.Contains(msg, "SourceProductID") {
 					shadowErr = fmt.Errorf("unexpected shadow rejection: %v", r)
