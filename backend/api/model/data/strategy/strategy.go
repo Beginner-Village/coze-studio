@@ -20,18 +20,19 @@ package strategy
 
 // CapabilityInfo mirrors entity.Capability for HTTP transport.
 type CapabilityInfo struct {
-	ID               int64  `json:"id,string"`
-	StrategyID       int64  `json:"strategy_id,string"`
-	ScenarioID       int64  `json:"scenario_id,string"`
-	Type             string `json:"type"`
-	RefID            int64  `json:"ref_id,string"`
-	RefSubID         int64  `json:"ref_sub_id,string,omitempty"`
-	RefVersion       string `json:"ref_version,omitempty"`
-	PromptContent    string `json:"prompt_content,omitempty"`
-	RetrieveConfig   string `json:"retrieve_config,omitempty"`
-	AliasName        string `json:"alias_name,omitempty"`
-	AliasDescription string `json:"alias_description,omitempty"`
-	SortOrder        int32  `json:"sort_order"`
+	ID               int64          `json:"id,string"`
+	StrategyID       int64          `json:"strategy_id,string"`
+	ScenarioID       int64          `json:"scenario_id,string"`
+	Type             string         `json:"type"`
+	RefID            int64          `json:"ref_id,string"`
+	RefSubID         int64          `json:"ref_sub_id,string,omitempty"`
+	RefVersion       string         `json:"ref_version,omitempty"`
+	PromptContent    string         `json:"prompt_content,omitempty"`
+	RetrieveConfig   string         `json:"retrieve_config,omitempty"`
+	AliasName        string         `json:"alias_name,omitempty"`
+	AliasDescription string         `json:"alias_description,omitempty"`
+	SortOrder        int32          `json:"sort_order"`
+	Schema           map[string]any `json:"schema,omitempty"`
 }
 
 // ScenarioInfo mirrors entity.Scenario for HTTP transport.

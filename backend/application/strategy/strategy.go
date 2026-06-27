@@ -18,18 +18,25 @@ package strategy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	resCommon "github.com/ynet-dev/ynet-studio/backend/api/model/resource/common"
 	apiModel "github.com/ynet-dev/ynet-studio/backend/api/model/data/strategy"
+	pluginModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
+	workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
 	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
 	"github.com/ynet-dev/ynet-studio/backend/application/search"
+	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
 	crossuser "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/user"
+	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
 	strategyEntity "github.com/ynet-dev/ynet-studio/backend/domain/strategy/entity"
 	strategyDomain "github.com/ynet-dev/ynet-studio/backend/domain/strategy/service"
 	searchEntity "github.com/ynet-dev/ynet-studio/backend/domain/search/entity"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
@@ -65,9 +72,136 @@ func (s *StrategyApplicationService) checkSpaceAccess(ctx context.Context, uid, 
 	return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "space id is invalid"))
 }
 
+// ---------- schema helpers (mirrors node_tool_strategy.go logic) ----------
+
+// capabilitySchemaForMgmt derives the input JSON schema for a capability so the
+// strategy editor can display "what params the model passes" for each capability.
+// Logic mirrors capabilityInputSchema in node_tool_strategy.go. Any failure is
+// best-effort: logged at debug level, nil returned (schema field omitted).
+func capabilitySchemaForMgmt(ctx context.Context, c *strategyEntity.Capability) map[string]any {
+	switch c.Type {
+	case strategyEntity.CapabilityTypePrompt:
+		return nil // prompt takes no inputs; omit schema entirely
+
+	case strategyEntity.CapabilityTypeKnowledge:
+		return map[string]any{
+			"type":     "object",
+			"required": []string{"query"},
+			"properties": map[string]any{
+				"query": map[string]any{"type": "string", "description": "Search query"},
+				"top_k": map[string]any{"type": "integer", "description": "Number of results to return"},
+			},
+		}
+
+	case strategyEntity.CapabilityTypeWorkflow:
+		wfSVC := crossworkflow.DefaultSVC()
+		if wfSVC == nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: workflow service unavailable for cap %d", c.ID)
+			return nil
+		}
+		policy := &vo.GetPolicy{
+			ID:    c.RefID,
+			QType: workflowModel.FromLatestVersion,
+		}
+		if c.RefVersion != "" {
+			policy.QType = workflowModel.FromSpecificVersion
+			policy.Version = c.RefVersion
+		}
+		wfTools, err := wfSVC.WorkflowAsModelTool(ctx, []*vo.GetPolicy{policy})
+		if err != nil || len(wfTools) == 0 {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: load workflow tool for cap %d failed: %v", c.ID, err)
+			return nil
+		}
+		info, err := wfTools[0].Info(ctx)
+		if err != nil || info == nil || info.ParamsOneOf == nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: workflow tool Info for cap %d failed: %v", c.ID, err)
+			return nil
+		}
+		js, err := info.ParamsOneOf.ToJSONSchema()
+		if err != nil || js == nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: ToJSONSchema for cap %d failed: %v", c.ID, err)
+			return nil
+		}
+		b, err := json.Marshal(js)
+		if err != nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: marshal schema for cap %d failed: %v", c.ID, err)
+			return nil
+		}
+		var m map[string]any
+		if err := json.Unmarshal(b, &m); err != nil || m == nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: unmarshal schema for cap %d failed: %v", c.ID, err)
+			return nil
+		}
+		if _, ok := m["type"]; !ok {
+			m["type"] = "object"
+		}
+		if _, ok := m["properties"]; !ok {
+			m["properties"] = map[string]any{}
+		}
+		return m
+
+	case strategyEntity.CapabilityTypePlugin:
+		pluginSVC := crossplugin.DefaultSVC()
+		if pluginSVC == nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: plugin service unavailable for cap %d", c.ID)
+			return nil
+		}
+		req := &pluginModel.ToolsInvokableRequest{
+			PluginEntity: pluginModel.PluginEntity{
+				PluginID:      c.RefSubID,
+				PluginVersion: ptr.Of(c.RefVersion),
+			},
+			ToolsInvokableInfo: map[int64]*pluginModel.ToolsInvokableInfo{
+				c.RefID: {ToolID: c.RefID},
+			},
+			IsDraft: false,
+		}
+		toolMap, err := pluginSVC.GetPluginInvokableTools(ctx, req)
+		if err != nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: load plugin tool for cap %d failed: %v", c.ID, err)
+			return nil
+		}
+		pt, ok := toolMap[c.RefID]
+		if !ok || pt == nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: plugin tool %d not found for cap %d", c.RefID, c.ID)
+			return nil
+		}
+		info, err := pt.Info(ctx)
+		if err != nil || info == nil || info.ParamsOneOf == nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: plugin tool Info for cap %d failed: %v", c.ID, err)
+			return nil
+		}
+		js, err := info.ParamsOneOf.ToJSONSchema()
+		if err != nil || js == nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: plugin ToJSONSchema for cap %d failed: %v", c.ID, err)
+			return nil
+		}
+		b, err := json.Marshal(js)
+		if err != nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: plugin marshal schema for cap %d failed: %v", c.ID, err)
+			return nil
+		}
+		var m map[string]any
+		if err := json.Unmarshal(b, &m); err != nil || m == nil {
+			logs.CtxDebugf(ctx, "capabilitySchemaForMgmt: plugin unmarshal schema for cap %d failed: %v", c.ID, err)
+			return nil
+		}
+		if _, ok := m["type"]; !ok {
+			m["type"] = "object"
+		}
+		if _, ok := m["properties"]; !ok {
+			m["properties"] = map[string]any{}
+		}
+		return m
+
+	default:
+		return nil
+	}
+}
+
 // ---------- converters ----------
 
-func toCapabilityInfo(c *strategyEntity.Capability) *apiModel.CapabilityInfo {
+func toCapabilityInfo(ctx context.Context, c *strategyEntity.Capability) *apiModel.CapabilityInfo {
 	if c == nil {
 		return nil
 	}
@@ -84,10 +218,11 @@ func toCapabilityInfo(c *strategyEntity.Capability) *apiModel.CapabilityInfo {
 		AliasName:        c.AliasName,
 		AliasDescription: c.AliasDescription,
 		SortOrder:        c.SortOrder,
+		Schema:           capabilitySchemaForMgmt(ctx, c),
 	}
 }
 
-func toScenarioInfo(sc *strategyEntity.Scenario) *apiModel.ScenarioInfo {
+func toScenarioInfo(ctx context.Context, sc *strategyEntity.Scenario) *apiModel.ScenarioInfo {
 	if sc == nil {
 		return nil
 	}
@@ -99,12 +234,12 @@ func toScenarioInfo(sc *strategyEntity.Scenario) *apiModel.ScenarioInfo {
 		SortOrder:   sc.SortOrder,
 	}
 	for _, cap := range sc.Capabilities {
-		info.Capabilities = append(info.Capabilities, toCapabilityInfo(cap))
+		info.Capabilities = append(info.Capabilities, toCapabilityInfo(ctx, cap))
 	}
 	return info
 }
 
-func toStrategyInfo(st *strategyEntity.Strategy) *apiModel.StrategyInfo {
+func toStrategyInfo(ctx context.Context, st *strategyEntity.Strategy) *apiModel.StrategyInfo {
 	if st == nil {
 		return nil
 	}
@@ -120,7 +255,7 @@ func toStrategyInfo(st *strategyEntity.Strategy) *apiModel.StrategyInfo {
 		Version:     st.Version,
 	}
 	for _, sc := range st.Scenarios {
-		info.Scenarios = append(info.Scenarios, toScenarioInfo(sc))
+		info.Scenarios = append(info.Scenarios, toScenarioInfo(ctx, sc))
 	}
 	return info
 }
@@ -175,7 +310,7 @@ func (s *StrategyApplicationService) CreateStrategy(ctx context.Context, req *ap
 	return &apiModel.CreateStrategyResponse{
 		Code: 0,
 		Msg:  "success",
-		Data: toStrategyInfo(created),
+		Data: toStrategyInfo(ctx, created),
 	}, nil
 }
 
@@ -196,7 +331,7 @@ func (s *StrategyApplicationService) GetStrategyDetail(ctx context.Context, req 
 	return &apiModel.GetStrategyDetailResponse{
 		Code: 0,
 		Msg:  "success",
-		Data: toStrategyInfo(detail),
+		Data: toStrategyInfo(ctx, detail),
 	}, nil
 }
 
