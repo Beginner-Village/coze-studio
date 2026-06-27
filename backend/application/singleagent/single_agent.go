@@ -36,9 +36,9 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
 	crossdomainSingleagent "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
-	"github.com/ynet-dev/ynet-studio/backend/api/model/skill"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/data/database/table"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/playground"
+	"github.com/ynet-dev/ynet-studio/backend/api/model/skill"
 	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
 	crossdatabase "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/database"
 	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
@@ -103,6 +103,20 @@ func (s *SingleAgentApplicationService) UpdateSingleAgentDraft(ctx context.Conte
 	currentAgentInfo, err := s.ValidateAgentDraftAccess(ctx, agentID)
 	if err != nil {
 		return nil, err
+	}
+
+	// 虚拟员工实例是产品模板的只读 shadow：不允许修改配置（防消费者扩权或改动
+	// 冻结的能力快照）。但前端编辑器在切换/失焦时会自动保存，若在此报错会弹出
+	// 「read-only shadow」错误 toast。故这里静默忽略更新——返回成功但不持久化
+	// （HasChange=false），既不改 shadow、也不打扰用户。
+	if currentAgentInfo.SourceProductID != 0 {
+		return &playground.UpdateDraftBotInfoAgwResponse{
+			Data: &playground.UpdateDraftBotInfoAgwData{
+				HasChange:    ptr.Of(false),
+				CheckNotPass: false,
+				Branch:       playground.BranchPtr(playground.Branch_PersonalDraft),
+			},
+		}, nil
 	}
 
 	userID := ctxutil.MustGetUIDFromCtx(ctx)
@@ -341,6 +355,17 @@ func (s *SingleAgentApplicationService) applyAgentUpdates(target *entity.SingleA
 		target.Workflow = patch.WorkflowInfoList
 	}
 
+	if patch.StrategyIdList != nil {
+		strategies := make([]int64, 0, len(patch.StrategyIdList))
+		for _, s := range patch.StrategyIdList {
+			id, err := strconv.ParseInt(s, 10, 64)
+			if err == nil {
+				strategies = append(strategies, id)
+			}
+		}
+		target.Strategies = strategies
+	}
+
 	if patch.PluginInfoList != nil {
 		target.Plugin = patch.PluginInfoList
 	}
@@ -429,6 +454,17 @@ func skillThriftToCrossdomain(refs []*skill.SkillReference) []*crossdomainSingle
 }
 
 // skillCrossdomainToThrift converts crossdomain SkillReference to thrift-generated SkillReference.
+func strategyIDsToStrings(ids []int64) []string {
+	if len(ids) == 0 {
+		return nil
+	}
+	out := make([]string, len(ids))
+	for i, id := range ids {
+		out[i] = strconv.FormatInt(id, 10)
+	}
+	return out
+}
+
 func skillCrossdomainToThrift(refs []*crossdomainSingleagent.SkillReference) []*skill.SkillReference {
 	if len(refs) == 0 {
 		return nil
@@ -454,6 +490,9 @@ func (s *SingleAgentApplicationService) DeleteAgentDraft(ctx context.Context, re
 	if err != nil {
 		return nil, err
 	}
+
+	// 连带清理该智能体名下「所有用户」的沙箱容器与宿主机持久化目录,避免成为孤儿。
+	purgeAgentSandboxes(ctx, req.GetBotID())
 
 	err = s.appContext.EventBus.PublishProject(ctx, &searchEntity.ProjectDomainEvent{
 		OpType: searchEntity.Deleted,
@@ -484,6 +523,7 @@ func (s *SingleAgentApplicationService) singleAgentDraftDo2Vo(ctx context.Contex
 		PluginInfoList:          do.Plugin,
 		Knowledge:               do.Knowledge,
 		WorkflowInfoList:        do.Workflow,
+		StrategyIdList:          strategyIDsToStrings(do.Strategies),
 		SuggestReplyInfo:        do.SuggestReply,
 		CreatorId:               do.CreatorID,
 		TaskInfo:                &bot_common.TaskInfo{},
@@ -501,6 +541,7 @@ func (s *SingleAgentApplicationService) singleAgentDraftDo2Vo(ctx context.Contex
 		BoundCards:              do.BoundCards,
 		SkillInfoList:           skillCrossdomainToThrift(do.SkillInfoList),
 		ForceToolReturn:         do.ForceToolReturn,
+		AgentType:               ptr.Of(do.AgentType),
 	}
 
 	if do.VariablesMetaID != nil {
@@ -693,6 +734,11 @@ func (s *SingleAgentApplicationService) GetAgentDraftDisplayInfo(ctx context.Con
 
 func (s *SingleAgentApplicationService) ValidateAgentDraftAccess(ctx context.Context, agentID int64) (*entity.SingleAgent, error) {
 	uid := ctxutil.GetUIDFromCtx(ctx)
+	if uid == nil {
+		if apiAuth := ctxutil.GetApiAuthFromCtx(ctx); apiAuth != nil && apiAuth.UserID != 0 {
+			uid = ptr.Of(apiAuth.UserID)
+		}
+	}
 	if uid == nil {
 		uid = ptr.Of(int64(888))
 		// return nil, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("msg", "session uid not found"))

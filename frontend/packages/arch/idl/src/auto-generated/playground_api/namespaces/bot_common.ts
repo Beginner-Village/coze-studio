@@ -645,6 +645,8 @@ export interface BotInfo {
   /** workflow模式的编排信息 */
   layout_info?: LayoutInfo;
   business_type?: BusinessType;
+  /** 智能体类型:''/normal=普通; super=超级智能体 */
+  agent_type?: string;
 }
 
 /** bot信息 for 更新 */

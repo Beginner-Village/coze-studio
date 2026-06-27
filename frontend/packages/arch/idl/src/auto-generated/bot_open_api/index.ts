@@ -322,6 +322,112 @@ export default class BotOpenApiService<T> {
     return this.request({ url, method, data, params }, options);
   }
 
+  /** GET /api/super-agent/manifest */
+  SuperAgentManifest(
+    options?: T,
+  ): Promise<bot_open_api.SuperAgentManifestResponse> {
+    const url = this.genBaseURL('/api/super-agent/manifest');
+    const method = 'GET';
+    return this.request({ url, method }, options);
+  }
+
+  /** POST /api/super-agent/runs/create */
+  SuperAgentCreateRun(
+    req: bot_open_api.SuperAgentRunRequest,
+    options?: T,
+  ): Promise<bot_open_api.SuperAgentRunResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/runs/create');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      conversation_id: _req['conversation_id'],
+      user_id: _req['user_id'],
+      additional_messages: _req['additional_messages'],
+      custom_variables: _req['custom_variables'],
+      meta_data: _req['meta_data'],
+      custom_config: _req['custom_config'],
+      extra_params: _req['extra_params'],
+      connector_id: _req['connector_id'],
+      shortcut_command: _req['shortcut_command'],
+      client_id: _req['client_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/runs/reply */
+  SuperAgentReplyRun(
+    req: bot_open_api.SuperAgentRunRequest,
+    options?: T,
+  ): Promise<bot_open_api.SuperAgentRunResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/runs/reply');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      conversation_id: _req['conversation_id'],
+      user_id: _req['user_id'],
+      additional_messages: _req['additional_messages'],
+      custom_variables: _req['custom_variables'],
+      meta_data: _req['meta_data'],
+      custom_config: _req['custom_config'],
+      extra_params: _req['extra_params'],
+      connector_id: _req['connector_id'],
+      shortcut_command: _req['shortcut_command'],
+      client_id: _req['client_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/runs/stream */
+  SuperAgentStreamRun(
+    req: bot_open_api.SuperAgentRunRequest,
+    options?: T,
+  ): Promise<bot_open_api.SuperAgentRunResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/runs/stream');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      conversation_id: _req['conversation_id'],
+      user_id: _req['user_id'],
+      additional_messages: _req['additional_messages'],
+      custom_variables: _req['custom_variables'],
+      meta_data: _req['meta_data'],
+      custom_config: _req['custom_config'],
+      extra_params: _req['extra_params'],
+      connector_id: _req['connector_id'],
+      shortcut_command: _req['shortcut_command'],
+      client_id: _req['client_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/runs/cancel */
+  SuperAgentCancelRun(
+    req: bot_open_api.SuperAgentCancelRunRequest,
+    options?: T,
+  ): Promise<bot_open_api.SuperAgentCancelRunResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/runs/cancel');
+    const method = 'POST';
+    const data = {
+      run_id: _req['run_id'],
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      user_id: _req['user_id'],
+      client_id: _req['client_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
   /** POST /v3/chat/submit_tool_outputs */
   SubmitToolOutputs(
     req: bot_open_api.SubmitToolOutputsRequest,

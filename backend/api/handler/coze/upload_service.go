@@ -63,14 +63,11 @@ func ApplyUploadAction(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 	resp := new(upload.ApplyUploadActionResponse)
-	// 使用配置的 SERVER_HOST，但需要去掉协议前缀
-	host := conf.GetServerHost()
-	// 去掉 http:// 或 https:// 前缀，只保留主机名
-	if strings.HasPrefix(host, "http://") {
-		host = strings.TrimPrefix(host, "http://")
-	} else if strings.HasPrefix(host, "https://") {
-		host = strings.TrimPrefix(host, "https://")
-	}
+	host := resolveUploadHost(
+		conf.GetServerHost(),
+		string(c.Host()),
+		string(c.Request.Header.Peek("X-Forwarded-Host")),
+	)
 	if ptr.From(req.Action) == "ApplyImageUpload" {
 		resp, err = uploadSVC.SVC.ApplyImageUpload(ctx, &req, host)
 		if err != nil {
@@ -86,4 +83,45 @@ func ApplyUploadAction(ctx context.Context, c *app.RequestContext) {
 	}
 
 	c.JSON(consts.StatusOK, resp)
+}
+
+func resolveUploadHost(configuredHost, requestHost, forwardedHost string) string {
+	configuredHost = normalizeUploadHost(configuredHost)
+	requestHost = normalizeUploadHost(requestHost)
+	forwardedHost = normalizeUploadHost(forwardedHost)
+
+	externalHost := requestHost
+	if forwardedHost != "" {
+		externalHost = forwardedHost
+	}
+
+	if isLoopbackOrEmptyHost(configuredHost) && externalHost != "" {
+		return externalHost
+	}
+
+	return configuredHost
+}
+
+func normalizeUploadHost(host string) string {
+	host = strings.TrimSpace(host)
+	if idx := strings.Index(host, ","); idx >= 0 {
+		host = strings.TrimSpace(host[:idx])
+	}
+	host = strings.TrimPrefix(host, "http://")
+	host = strings.TrimPrefix(host, "https://")
+	return strings.TrimRight(host, "/")
+}
+
+func isLoopbackOrEmptyHost(host string) bool {
+	if host == "" {
+		return true
+	}
+
+	lowerHost := strings.ToLower(host)
+	if idx := strings.LastIndex(lowerHost, ":"); idx > -1 && !strings.Contains(lowerHost[idx+1:], "]") {
+		lowerHost = lowerHost[:idx]
+	}
+	lowerHost = strings.Trim(lowerHost, "[]")
+
+	return lowerHost == "localhost" || lowerHost == "127.0.0.1" || lowerHost == "::1"
 }

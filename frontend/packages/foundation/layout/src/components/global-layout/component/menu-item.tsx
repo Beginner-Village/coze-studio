@@ -23,11 +23,11 @@ import { reportNavClick } from '../utils';
 import { type LayoutMenuItem } from '../types';
 
 const menuStyle = classNames(
-  'w-[60px] h-[58px]',
+  'w-[56px] py-[8px] pb-[6px]',
   'flex flex-col items-center justify-center',
-  'rounded-[6px]',
+  'rounded-[12px]',
   'transition-all',
-  'hover:coz-mg-primary-hovered',
+  'hover:bg-[var(--coz-bg-secondary)] hover:coz-fg-plus',
 );
 
 export const GLobalLayoutMenuItem: FC<LayoutMenuItem> = ({
@@ -69,17 +69,17 @@ export const GLobalLayoutMenuItem: FC<LayoutMenuItem> = ({
       <div
         className={classNames(
           menuStyle,
-          isActive ? 'coz-mg-primary coz-fg-plus' : 'coz-bg-max coz-fg-primary',
+          isActive
+            ? 'bg-[rgba(53,138,255,0.1)] text-[rgb(53,138,255)]'
+            : 'coz-bg-max coz-fg-secondary',
         )}
         id={navId}
       >
-        <div className="text-[20px] leading-none">
+        <div className="h-[21px] w-[21px] leading-none [&_svg]:h-[21px] [&_svg]:w-[21px] [&_svg]:stroke-current">
           {isActive ? activeIcon : icon}
         </div>
-        <div className="mt-[2px] h-[14px] font-[500] flex items-center justify-center overflow-hidden leading-none overflow-hidden w-full">
-          <span className="text-[20px] scale-50 whitespace-nowrap">
-            {title}
-          </span>
+        <div className="mt-[5px] h-[11px] font-[500] flex items-center justify-center overflow-hidden leading-none w-full text-[11px]">
+          <span className="whitespace-nowrap">{title}</span>
         </div>
       </div>
     </NavLink>

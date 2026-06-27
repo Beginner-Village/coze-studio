@@ -17,15 +17,8 @@
 import React, { type ComponentProps, Suspense, forwardRef, lazy } from 'react';
 
 import classNames from 'classnames';
-import { I18n } from '@coze-arch/i18n';
-import {
-  type BotSpace,
-  SpaceType,
-  type DraftBot,
-} from '@coze-arch/bot-api/developer_api';
 import { type UploadValue } from '@coze-common/biz-components/picture-upload';
-import { IconTeamDefault } from '@coze-arch/bot-icons';
-import { botInputLengthService } from '@coze-agent-ide/bot-input-length-limit';
+import { I18n } from '@coze-arch/i18n';
 import {
   FormTextArea,
   FormInput,
@@ -35,6 +28,13 @@ import {
   Avatar,
   Typography,
 } from '@coze-arch/coze-design';
+import { IconTeamDefault } from '@coze-arch/bot-icons';
+import {
+  type BotSpace,
+  SpaceType,
+  type DraftBot,
+} from '@coze-arch/bot-api/developer_api';
+import { botInputLengthService } from '@coze-agent-ide/bot-input-length-limit';
 
 import { FormSwitch } from './form-switch';
 
@@ -56,6 +56,7 @@ export type AgentInfoFormValue = Partial<{
   target: string;
   spaceId?: string;
   enableMonetize?: boolean;
+  agentType?: string;
 }>;
 
 export interface AgentInfoFormProps {
@@ -144,7 +145,7 @@ export const AgentInfoForm = forwardRef<
           initValue={
             hideOperation
               ? spacesList?.[0]?.id
-              : currentSpaceId ?? spacesList?.[0]?.id
+              : (currentSpaceId ?? spacesList?.[0]?.id)
           }
           placeholder={I18n.t('select_team')}
           noErrorMessage

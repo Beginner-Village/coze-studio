@@ -29,6 +29,7 @@ import { CozeLink } from '../../md-box-slots/link';
 import { CozeImage } from '../../md-box-slots/coze-image';
 import { LazyCozeMdBox } from '../../common/coze-md-box/lazy';
 import { isText } from '../../../utils/is-text';
+import { protectSandboxFilenames } from '../../../utils/file-name';
 import './index.less';
 
 export type IMessageContentProps = IBaseContentProps & {
@@ -62,7 +63,9 @@ export const TextContent: FC<IMessageContentProps> = props => {
   }
 
   const isStreaming = !message.is_finish;
-  const text = content.slice(0, message.broken_pos ?? Infinity);
+  const text = protectSandboxFilenames(
+    content.slice(0, message.broken_pos ?? Infinity),
+  );
 
   return (
     <div

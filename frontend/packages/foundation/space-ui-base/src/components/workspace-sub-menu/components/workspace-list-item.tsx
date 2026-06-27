@@ -24,6 +24,7 @@ import { localStorageService } from '@coze-foundation/local-storage';
 import { EVENT_NAMES, sendTeaEvent } from '@coze-arch/bot-tea';
 
 export interface IWorkspaceListItem {
+  type?: 'title';
   icon?: ReactNode;
   activeIcon?: ReactNode;
   title?: () => string;
@@ -53,8 +54,8 @@ export const WorkspaceListItem: FC<IWorkspaceListItemProps> = ({
 
   if (type === 'title') {
     return (
-      <div className="w-full flex items-start gap-[8px] mt-[16px] pl-[8px]">
-        <div className="coz-fg-secondary text-[12px] leading-[20px]">
+      <div className="w-full flex items-start gap-[8px] pt-[14px] pb-[6px] px-[12px]">
+        <div className="coz-fg-tertiary text-[11px] leading-[16px] font-[500]">
           {title?.()}
         </div>
       </div>
@@ -74,34 +75,34 @@ export const WorkspaceListItem: FC<IWorkspaceListItemProps> = ({
         navigate(`/space/${spaceId}/${path}`);
       }}
       className={classNames(
-        'flex items-center gap-[8px]',
+        'flex items-center gap-[11px]',
         'transition-colors',
         'rounded-[8px]',
-        'h-[32px] w-full',
-        'px-[8px]',
+        'h-[34px] w-full',
+        'px-[12px]',
         'cursor-pointer',
         'group',
         'hover:coz-mg-secondary-hovered',
         {
-          'coz-bg-primary': path === currentSubMenu,
-          'coz-fg-plus': path === currentSubMenu,
-          'coz-fg-primary': path !== currentSubMenu,
+          'bg-[rgba(53,138,255,0.1)] coz-fg-hglt font-[600]':
+            path === currentSubMenu,
+          'coz-fg-secondary': path !== currentSubMenu,
         },
       )}
       id={`workspace-submenu-${path}`}
       data-testid={dataTestId}
     >
-      <div className="text-[14px]">
-        <div className="w-[16px] h-[16px]">
+      <div className="h-[17px] w-[17px] flex-none text-[17px] leading-none [&_svg]:h-[17px] [&_svg]:w-[17px] [&_svg]:stroke-current">
+        <div className="h-[17px] w-[17px]">
           {path === currentSubMenu ? activeIcon : icon}
         </div>
       </div>
       <div
         className={classNames(
           'flex-1',
-          'text-[14px]',
+          'text-[13px]',
           'leading-[20px]',
-          'font-[500]',
+          path === currentSubMenu ? 'font-[600]' : 'font-[500]',
         )}
       >
         {title?.()}

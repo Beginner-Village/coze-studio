@@ -228,6 +228,198 @@ export interface ChatV3Response {
   msg: string;
 }
 
+export interface SuperAgentWorkspaceRoot {
+  path: string;
+  label: string;
+  readonly: boolean;
+}
+
+export interface SuperAgentManifestAuth {
+  type: string;
+  header: string;
+  scheme: string;
+}
+
+export interface SuperAgentManifestStream {
+  transport: string;
+  content_type: string;
+  events: Array<string>;
+  done_event: string;
+  error_event: string;
+}
+
+export interface SuperAgentRequestSchema {
+  required: Array<string>;
+  required_one_of?: Array<Array<string>>;
+  optional: Array<string>;
+  aliases?: Record<string, Array<string>>;
+}
+
+export interface SuperAgentManifestWorkspace {
+  identifier_fields: Array<string>;
+  readable_roots: Array<string>;
+  writable_roots: Array<string>;
+  read_max_bytes: number;
+  binary_encoding: string;
+  write_route: string;
+  move_route: string;
+  mkdir_route: string;
+  stat_route: string;
+  grep_route: string;
+  glob_route: string;
+  edit_route: string;
+  patch_route: string;
+  request_schemas: Record<string, SuperAgentRequestSchema>;
+}
+
+export interface SuperAgentManifestSandbox {
+  exec_route: string;
+  default_workdir: string;
+  max_timeout_sec: number;
+  output_max_bytes: number;
+  request_schemas: Record<string, SuperAgentRequestSchema>;
+}
+
+export interface SuperAgentManifestTrace {
+  events: Array<string>;
+  max_page_size: number;
+}
+
+export interface SuperAgentManifestArtifacts {
+  root: string;
+  list_route: string;
+  download_route: string;
+  delete_route: string;
+  move_route: string;
+  metadata_fields: Array<string>;
+  previewable_mimes: Array<string>;
+  max_list_items: number;
+  request_schemas: Record<string, SuperAgentRequestSchema>;
+}
+
+export interface SuperAgentManifestSkillAssets {
+  root: string;
+  list_route: string;
+  get_route: string;
+  upsert_route: string;
+  delete_route: string;
+  allowed_mimes: Array<string>;
+  content_encoding: string;
+}
+
+export interface SuperAgentManifestSkills {
+  entry_file: string;
+  file_roots: Array<string>;
+  publish_scopes: Record<string, number>;
+  routes: Record<string, string>;
+  request_schemas: Record<string, SuperAgentRequestSchema>;
+  assets: SuperAgentManifestSkillAssets;
+  agent_tool: {
+    name: string;
+    actions: Array<string>;
+  };
+}
+
+export interface SuperAgentManifestHarness {
+  deliverable_root: string;
+  plan_path: string;
+  tool_output_root: string;
+  state_route: string;
+  state_fields: Array<string>;
+  plan_update_route: string;
+  plan_route: string;
+  tool_outputs_route: string;
+  skill_runtime_root: string;
+  skill_entry_file: string;
+  skill_file_roots: Array<string>;
+  tools: Array<{
+    name: string;
+    category: string;
+    available: string;
+    mutates: boolean;
+  }>;
+}
+
+export interface SuperAgentExternalAPI {
+  base_path: string;
+  protocol_version: string;
+  auth: SuperAgentManifestAuth;
+  session_auth_supported: boolean;
+  transports: Array<string>;
+  identifier_fields: Array<string>;
+  capabilities: Array<string>;
+  entry_routes: Record<string, string>;
+  request_schemas: Record<string, SuperAgentRequestSchema>;
+  client_metadata: Record<string, string>;
+}
+
+export interface SuperAgentManifestData {
+  protocol_version: string;
+  capabilities: Array<string>;
+  auth: SuperAgentManifestAuth;
+  stream: SuperAgentManifestStream;
+  trace: SuperAgentManifestTrace;
+  artifacts: SuperAgentManifestArtifacts;
+  skills: SuperAgentManifestSkills;
+  skill_publish_scopes: Record<string, number>;
+  workspace_roots: Array<SuperAgentWorkspaceRoot>;
+  workspace: SuperAgentManifestWorkspace;
+  sandbox: SuperAgentManifestSandbox;
+  harness: SuperAgentManifestHarness;
+  external_api: SuperAgentExternalAPI;
+  routes: Record<string, string>;
+}
+
+export interface SuperAgentManifestResponse {
+  code: number;
+  msg: string;
+  data?: SuperAgentManifestData;
+}
+
+export interface SuperAgentRunRequest extends ChatV3Request {
+  space_id?: string;
+  agent_id?: string;
+  client_id?: string;
+}
+
+export interface SuperAgentRunUsage {
+  token_count?: number;
+  output_count?: number;
+  input_count?: number;
+}
+
+export interface SuperAgentRunResponse {
+  code: number;
+  msg: string;
+  conversation_id?: string;
+  bot_id?: string;
+  chat_id?: string;
+  status?: string;
+  messages?: Array<bot_common.ChatV3MessageDetail>;
+  usage?: SuperAgentRunUsage;
+}
+
+export interface SuperAgentCancelRunRequest {
+  run_id: string;
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  user_id?: string;
+  client_id?: string;
+}
+
+export interface SuperAgentCancelRunData {
+  run_id: string;
+  status: string;
+  cancelled: boolean;
+}
+
+export interface SuperAgentCancelRunResponse {
+  code: number;
+  msg: string;
+  data: SuperAgentCancelRunData;
+}
+
 export interface CommonKnowledge {
   /** 知识库信息 */
   knowledge_infos?: Array<KnowledgeInfo>;

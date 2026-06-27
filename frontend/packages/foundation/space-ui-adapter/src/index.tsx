@@ -18,3 +18,5 @@ export { WorkspaceSubMenu } from './components/workspace-sub-menu';
 export { SpaceSubModuleEnum } from './const';
 export { SpaceLayout } from './components/space-layout';
 export { useInitSpace } from './hooks/use-init-space';
+// 透出 space store，供 apps 内拿「当前空间」上下文（如技能市场审核队列兜底 space_id）。
+export { useSpaceStore } from '@coze-foundation/space-store';

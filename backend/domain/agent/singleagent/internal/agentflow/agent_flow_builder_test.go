@@ -22,7 +22,50 @@ import (
 	"testing"
 
 	"github.com/cloudwego/eino/schema"
+
+	crossentity "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
+	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 )
+
+// makeTestSingleAgent builds a minimal entity.SingleAgent for builder tests.
+func makeTestSingleAgent(sourceProductID int64, agentType string) *entity.SingleAgent {
+	return &entity.SingleAgent{
+		SingleAgent: &crossentity.SingleAgent{
+			SourceProductID: sourceProductID,
+			AgentType:       agentType,
+		},
+	}
+}
+
+// TestInstanceTemplateObjectKey verifies the template object key format for an
+// instance (SourceProductID != 0): "templates/agent_app/{productID}/{version}.tgz".
+func TestInstanceTemplateObjectKey(t *testing.T) {
+	key := instanceTemplateObjectKey(42, "1.0")
+	want := "templates/agent_app/42/1.0.tgz"
+	if key != want {
+		t.Fatalf("got %q, want %q", key, want)
+	}
+
+	// Zero product ID → empty (not an instance).
+	if k := instanceTemplateObjectKey(0, "1.0"); k != "" {
+		t.Fatalf("zero productID should return empty, got %q", k)
+	}
+}
+
+// TestIsInstanceAgent verifies SourceProductID != 0 detection.
+func TestIsInstanceAgent(t *testing.T) {
+	if isInstanceAgent(nil) {
+		t.Fatal("nil conf => false")
+	}
+	cfgNormal := &Config{Agent: makeTestSingleAgent(0, "super")}
+	if isInstanceAgent(cfgNormal) {
+		t.Fatal("SourceProductID=0 => false")
+	}
+	cfgInstance := &Config{Agent: makeTestSingleAgent(99, "super")}
+	if !isInstanceAgent(cfgInstance) {
+		t.Fatal("SourceProductID=99 => true")
+	}
+}
 
 func TestBuildAgent(t *testing.T) {
 	// TODO: fix me later

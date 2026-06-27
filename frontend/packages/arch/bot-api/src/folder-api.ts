@@ -27,7 +27,7 @@ export interface FolderInfo {
   creator_id: string;
   created_at: number;
   updated_at: number;
-  resource_ids?: string[];
+  resource_ids?: Array<string | number>;
   resource_count?: number;
 }
 
@@ -44,6 +44,7 @@ export interface GetFolderListResponse {
 
 export interface CreateFolderRequest {
   space_id: string;
+  parent_id?: string;
   name: string;
   description?: string;
 }

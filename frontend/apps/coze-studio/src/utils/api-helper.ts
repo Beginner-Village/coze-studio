@@ -41,8 +41,13 @@
  * }
  */
 
+import { getLocalizedErrorMessage } from '@coze-arch/bot-api';
+
 // 标准响应码
 const SUCCESS_CODES = [0, 200, '0', '200'];
+
+const getDisplayErrorMessage = (message: string | undefined) =>
+  getLocalizedErrorMessage(message) || message || '请求失败';
 
 /**
  * 检查响应码是否表示成功
@@ -55,7 +60,9 @@ export function isSuccessCode(code: unknown): boolean {
  * 检查错误对象是否实际上是成功响应
  */
 export function isSuccessResponse(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
 
   const err = error as Record<string, unknown>;
   return isSuccessCode(err.code);
@@ -65,7 +72,9 @@ export function isSuccessResponse(error: unknown): boolean {
  * 从错误对象中提取成功响应的数据
  */
 export function extractSuccessData<T>(error: unknown): T | null {
-  if (!isSuccessResponse(error)) return null;
+  if (!isSuccessResponse(error)) {
+    return null;
+  }
 
   const err = error as Record<string, unknown>;
 
@@ -109,7 +118,7 @@ export interface ApiResult<T> {
  * }
  */
 export async function callApi<T>(
-  apiCall: () => Promise<{ code?: number | string; data?: T; msg?: string }>
+  apiCall: () => Promise<{ code?: number | string; data?: T; msg?: string }>,
 ): Promise<ApiResult<T>> {
   try {
     const response = await apiCall();
@@ -126,7 +135,7 @@ export async function callApi<T>(
     return {
       success: false,
       data: null,
-      error: response.msg || '请求失败',
+      error: getDisplayErrorMessage(response.msg),
       code: response.code ?? null,
     };
   } catch (error: unknown) {
@@ -146,7 +155,9 @@ export async function callApi<T>(
     return {
       success: false,
       data: null,
-      error: (err.message as string) || (err.msg as string) || '请求失败',
+      error: getDisplayErrorMessage(
+        (err.message as string) || (err.msg as string),
+      ),
       code: (err.code as number | string) ?? null,
     };
   }
@@ -156,7 +167,13 @@ export async function callApi<T>(
  * 批量API调用，并行执行多个API请求
  */
 export async function callApisParallel<T extends readonly unknown[]>(
-  apiCalls: { [K in keyof T]: () => Promise<{ code?: number | string; data?: T[K]; msg?: string }> }
+  apiCalls: {
+    [K in keyof T]: () => Promise<{
+      code?: number | string;
+      data?: T[K];
+      msg?: string;
+    }>;
+  },
 ): Promise<{ [K in keyof T]: ApiResult<T[K]> }> {
   const results = await Promise.all(apiCalls.map(call => callApi(call)));
   return results as { [K in keyof T]: ApiResult<T[K]> };
@@ -171,7 +188,7 @@ export async function callApiWithRetry<T>(
     maxRetries?: number;
     retryDelay?: number;
     shouldRetry?: (result: ApiResult<T>) => boolean;
-  } = {}
+  } = {},
 ): Promise<ApiResult<T>> {
   const { maxRetries = 3, retryDelay = 1000, shouldRetry } = options;
 
@@ -195,5 +212,12 @@ export async function callApiWithRetry<T>(
     }
   }
 
-  return lastResult!;
+  return (
+    lastResult ?? {
+      success: false,
+      data: null,
+      error: '请求失败',
+      code: null,
+    }
+  );
 }

@@ -73,17 +73,12 @@ func (c *ConversationApplicationService) ClearHistory(ctx context.Context, req *
 		return resp, errorx.New(errno.ErrConversationNotFound, errorx.KV("msg", "user not match"))
 	}
 
-	// delete conversation
-	err = c.ConversationDomainSVC.Delete(ctx, conversationID)
-	if err != nil {
-		return resp, err
-	}
-	// create new conversation
-	convRes, err := c.ConversationDomainSVC.Create(ctx, &entity.CreateMeta{
-		AgentID:     currentRes.AgentID,
-		UserID:      currentRes.CreatorID,
-		Scene:       currentRes.Scene,
-		ConnectorID: consts.CozeConnectorID,
+	// 清除上下文 = 在「同一个会话」内开一个新分段(会话 ID 保持不变),而不是删掉会话再
+	// 另建一个新会话。原先 Delete+Create 的写法会把旧会话标记 Deleted,但只回传
+	// NewSectionID、不回传新会话 ID,前端仍持旧(已删)会话 ID → 之后所有发送/再清除都查
+	// 不到会话(status=Normal 过滤)而失败,智能体被彻底卡死。改为新分段后会话 ID 始终有效。
+	convRes, err := c.ConversationDomainSVC.NewConversationCtx(ctx, &entity.NewConversationCtxRequest{
+		ID: conversationID,
 	})
 	if err != nil {
 		return resp, err

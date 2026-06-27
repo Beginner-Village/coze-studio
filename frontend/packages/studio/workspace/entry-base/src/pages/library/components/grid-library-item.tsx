@@ -29,6 +29,7 @@ import placeholderImg from '../../../../../entry-adapter/src/pages/falcon/assets
 import { type LibraryEntityConfig } from '../types';
 import { getResTypeLabelFromConfigMap } from '../hooks/use-columns';
 import iconTime from '../assets/icon_time.svg';
+import s from '../index.module.less';
 
 export const GridLibraryItem: React.FC<{
   resourceInfo: ResourceInfo;
@@ -54,27 +55,27 @@ export const GridLibraryItem: React.FC<{
         )
       : undefined;
   return (
-    <div className="flex-col">
+    <div className={s['resource-card']}>
       <div
-        className="w-full h-[122px] px-[25px] py-[25px] bg-[#F9FAFD] rounded-[6px]"
+        className={s['resource-thumb']}
         style={{
           background: `#F9FAFD url("${placeholderImg}") no-repeat center center / 72px auto`,
         }}
       >
         <div
-          className="w-full h-full"
+          className={s['resource-icon']}
           style={{
             background: `url("${resourceInfo.icon || defaultIcon}") no-repeat center center / contain`,
             cursor: 'pointer',
           }}
         />
       </div>
-      <div className="flex flex-col gap-[2px] mt-[10px]">
+      <div className={s['resource-body']}>
         <div className="h-[20px] flex-shrink-0">
           <Space spacing={4} className="w-full">
             <Typography.Text
               data-testid="workspace.library.item.name"
-              className="h-[20px] text-[16px] coz-fg-primary leading-[20px]"
+              className="h-[20px] text-[15px] coz-fg-plus leading-[20px]"
               style={{
                 maxWidth: gridItemWidth ? `${gridItemWidth - 64}px` : '',
               }}
@@ -92,7 +93,7 @@ export const GridLibraryItem: React.FC<{
           </Space>
         </div>
         {tag || resourceInfo.desc ? (
-          <div className="flex-shrink leading-[0] mt-[12px] flex-1">
+          <div className="flex-shrink leading-[0] mt-[7px] flex-1">
             <Space spacing={4}>
               {tag}
               {resourceInfo.desc ? (
@@ -111,18 +112,18 @@ export const GridLibraryItem: React.FC<{
             </Space>
           </div>
         ) : (
-          <div className="mt-[12px] h-[16px]" />
+          <div className="mt-[7px] h-[16px]" />
         )}
-        <div className="flex items-center text-[12px] coz-fg-secondary mt-[8px]">
+        <div className={s['resource-footer']}>
           <img
             src={iconTime}
             alt=""
             className="w-[14px] h-[14px] mr-[4px] block"
           />
-          <div className="flex-1">
+          <div className={s['resource-time']}>
             {`${I18n.t('library_edited_time', {}, 'Edited time')}：${formatDate(Number(resourceInfo.edit_time), 'YYYY-MM-DD HH:mm')}`}
           </div>
-          <div className="px-[8px] py-[2px] rounded-[4px] bg-[#F2F5FA] text-[#4D5E77]">
+          <div className={s['resource-tag']}>
             {getResTypeLabelFromConfigMap(resourceInfo, entityConfigs)}
           </div>
         </div>
@@ -131,8 +132,8 @@ export const GridLibraryItem: React.FC<{
         data-testid="workspace.library.item.actions"
         style={{
           position: 'absolute',
-          top: '20px',
-          right: '20px',
+          top: '10px',
+          right: '10px',
         }}
         onClick={e => {
           e.stopPropagation();

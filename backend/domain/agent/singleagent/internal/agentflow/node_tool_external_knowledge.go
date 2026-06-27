@@ -95,7 +95,7 @@ func (e *externalKnowledgeInvokableTool) InvokableRun(ctx context.Context, argum
 		Question string `json:"question"`
 	}
 	if err := json.Unmarshal([]byte(argumentsInJSON), &args); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
+		return argParseErrMsg(err), nil
 	}
 
 	if args.Question == "" {

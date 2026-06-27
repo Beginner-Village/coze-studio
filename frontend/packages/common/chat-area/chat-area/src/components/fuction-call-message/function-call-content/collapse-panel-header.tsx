@@ -82,11 +82,14 @@ const getTopLevelOfTheNestedPanelHeaderConfig = ({
   isRelatedChatAllFunctionCallSuccess,
   isMessageFromOngoingChat,
   isFakeInterruptAnswer,
+  toolCount,
 }: CollapsePanelHeaderProps): THeaderConfig | undefined => {
+  // 工具数量后缀:让用户在外层一眼看到调用了几个工具。
+  const countSuffix = toolCount && toolCount > 0 ? ` · ${toolCount} 个工具` : '';
   if (isPanelOpen) {
     return {
       icon: <IconCozListDisorder />,
-      title: I18n.t('bot_preview_hide_running_process'),
+      title: `${I18n.t('bot_preview_hide_running_process')}${countSuffix}`,
       status: 'default',
     };
   }
@@ -94,12 +97,12 @@ const getTopLevelOfTheNestedPanelHeaderConfig = ({
     return isRelatedChatAllFunctionCallSuccess
       ? {
           icon: <IconCozCheckMarkCircle />,
-          title: I18n.t('bot_preview_run_completed'),
+          title: `${I18n.t('bot_preview_run_completed')}${countSuffix}`,
           status: 'success',
         }
       : {
           icon: <IconCozWarningCircle />,
-          title: I18n.t('bot_preview_run_completed'),
+          title: `${I18n.t('bot_preview_run_completed')}${countSuffix}`,
           status: 'fail',
         };
   } else {
@@ -223,22 +226,17 @@ const getLLMTime = (messageUnit: FunctionCallMessageUnit) => {
   if (messageUnit.role === MessageUnitRole.TOOL) {
     const llmTime = getMessageTimeCost(messageUnit.llmOutput.extra_info);
     const apiTime = getMessageTimeCost(messageUnit.apiResponse?.extra_info);
+    // 用「思考/执行」替代易误解的「模型/工具」:思考=大模型决策耗时,执行=工具实际运行耗时。
     const subTimeList = [
-      {
-        label: I18n.t('debug_area_time_label_model'),
-        value: llmTime,
-      },
-      {
-        label: I18n.t('debug_area_time_label_tool'),
-        value: apiTime,
-      },
+      { label: '思考', value: llmTime },
+      { label: '执行', value: apiTime },
     ].filter(t => t.value);
     const subTimeNode = (
-      <>{subTimeList.map(t => `${t.label}${t.value}s`).join('｜')}</>
+      <>{subTimeList.map(t => `${t.label} ${t.value}s`).join(' · ')}</>
     );
     return (
       <>
-        {messageUnit.time}s : {subTimeNode}
+        共 {messageUnit.time}s（{subTimeNode}）
       </>
     );
   }

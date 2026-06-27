@@ -50,6 +50,8 @@ export interface CreateAgentEntityProps {
   botInfoRef?: MutableRefObject<DraftBot | undefined>;
   mode: 'update' | 'add';
   showSpace?: boolean;
+  /** 固定智能体类型(超级智能体入口传 'super') */
+  agentType?: string;
   /**
    * Pass this parameter when you need to control externally which space to create the bot in
    * Only suitable for creating
@@ -85,6 +87,7 @@ export const useCreateOrUpdateAgent = ({
   showSpace = false, // Not displayed by default
   spaceId: outerSpaceId,
   bizCreateFrom,
+  agentType,
 }: CreateAgentEntityProps) => {
   const [visible, setVisible] = useState(false);
 
@@ -125,6 +128,7 @@ export const useCreateOrUpdateAgent = ({
     setErrMsg,
     bizCreateFrom,
     showSpace,
+    agentType,
   });
 
   useEffect(() => {
@@ -169,7 +173,9 @@ export const useCreateOrUpdateAgent = ({
           }}
           title={
             mode === 'add'
-              ? I18n.t('bot_list_create')
+              ? agentType === 'super'
+                ? '创建 FinMallClaw'
+                : I18n.t('bot_list_create')
               : I18n.t('bot_edit_title')
           }
           okText={I18n.t('Confirm')}

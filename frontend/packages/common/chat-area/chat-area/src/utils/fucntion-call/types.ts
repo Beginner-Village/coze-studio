@@ -62,6 +62,9 @@ export interface CollapsePanelHeaderProps {
   isTopLevelOfTheNestedPanel: boolean;
   isPanelOpen?: boolean;
 
+  /** 本轮调用的工具数量(顶层头部展示「· N 个工具」) */
+  toolCount?: number;
+
   /**
    * Whether all tools in the conversation corresponding to the message were called successfully
    */

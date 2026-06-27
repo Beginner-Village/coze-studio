@@ -37,6 +37,7 @@ const (
 	ResType_Database  ResType = 7
 	ResType_Variable  ResType = 8
 	ResType_Voice     ResType = 9
+	ResType_Strategy  ResType = 10
 )
 
 func (p ResType) String() string {
@@ -59,6 +60,8 @@ func (p ResType) String() string {
 		return "Variable"
 	case ResType_Voice:
 		return "Voice"
+	case ResType_Strategy:
+		return "Strategy"
 	}
 	return "<UNSET>"
 }
@@ -83,6 +86,8 @@ func ResTypeFromString(s string) (ResType, error) {
 		return ResType_Variable, nil
 	case "Voice":
 		return ResType_Voice, nil
+	case "Strategy":
+		return ResType_Strategy, nil
 	}
 	return ResType(0), fmt.Errorf("not a valid ResType string")
 }

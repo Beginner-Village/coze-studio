@@ -52,6 +52,7 @@ export const getDefaultBotInfoStore = (): BotInfoStore => ({
   publish_time: '',
   space_id: '',
   version: '',
+  agentType: '',
   raw: {},
 });
 
@@ -99,6 +100,8 @@ export interface BotInfoStore {
   appId?: string;
   /** Business Type, Default 0 Clone Business 1  */
   businessType?: BusinessType;
+  /** 智能体类型:''/normal=普通; super=超级智能体(决定编排页用哪套界面) */
+  agentType?: string;
 }
 
 export interface BotInfoAction {
@@ -140,6 +143,7 @@ export const useBotInfoStore = create<BotInfoStore & BotInfoAction>()(
           space_id: data.space_id ?? '',
           businessType: botInfo.business_type,
           appId: data.app_id ?? '',
+          agentType: botInfo.agent_type ?? '',
           raw: botInfo,
         };
       },

@@ -18,6 +18,8 @@ package agentflow
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -75,7 +77,7 @@ func (t *readSkillTool) Info(ctx context.Context) (*schema.ToolInfo, error) {
 func (t *readSkillTool) InvokableRun(ctx context.Context, argumentsInJSON string, opts ...tool.Option) (string, error) {
 	var req readSkillRequest
 	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
+		return argParseErrMsg(err), nil
 	}
 
 	if req.SkillName == "" {
@@ -105,8 +107,7 @@ func (t *readSkillTool) InvokableRun(ctx context.Context, argumentsInJSON string
 		return fmt.Sprintf("Error: skill '%s' has been deleted or is unavailable", req.SkillName), nil
 	}
 
-	// 解析技能内联脚本文件（<skill-file path="...">...</skill-file>）。
-	cleaned, files := parseSkillFiles(skill.Prompt)
+	instructions, files := prepareSkillRuntimeFiles(skill)
 
 	// 把脚本注入沙箱 /skills/<name>/，让模型可用 run_bash 执行（L3 可执行脚本）。
 	var injectNote string
@@ -125,10 +126,7 @@ func (t *readSkillTool) InvokableRun(ctx context.Context, argumentsInJSON string
 		}
 	}
 
-	// Resolve resource references in the prompt
-	resolvedPrompt := resolveResourceReferences(cleaned)
-
-	return fmt.Sprintf("=== Skill: %s ===\n%s%s", skill.Name, resolvedPrompt, injectNote), nil
+	return fmt.Sprintf("=== Skill: %s ===\n%s%s", skill.Name, instructions, injectNote), nil
 }
 
 // skillFileRegex 匹配技能 Prompt 内联脚本块：<skill-file path="scripts/run.py">...</skill-file>
@@ -150,6 +148,40 @@ func parseSkillFiles(prompt string) (string, map[string][]byte) {
 	}
 	cleaned := strings.TrimSpace(skillFileRegex.ReplaceAllString(prompt, ""))
 	return cleaned, files
+}
+
+func prepareSkillRuntimeFiles(skill *entity.Skill) (string, map[string][]byte) {
+	if len(skill.Files) > 0 {
+		files := make(map[string][]byte, len(skill.Files)+1)
+		for rel, content := range skill.Files {
+			if isSafeSkillRelativePath(rel) {
+				files[rel] = []byte(content)
+			}
+		}
+		instructions := skill.Prompt
+		if content, ok := files["SKILL.md"]; ok {
+			instructions = string(content)
+		}
+		instructions = resolveResourceReferences(strings.TrimSpace(instructions))
+		files["SKILL.md"] = []byte(instructions)
+		return instructions, files
+	}
+
+	cleaned, inlineFiles := parseSkillFiles(skill.Prompt)
+	instructions := resolveResourceReferences(strings.TrimSpace(cleaned))
+	if inlineFiles == nil {
+		inlineFiles = make(map[string][]byte, 1)
+	}
+	inlineFiles["SKILL.md"] = []byte(instructions)
+	return instructions, inlineFiles
+}
+
+func isSafeSkillRelativePath(path string) bool {
+	path = strings.TrimSpace(path)
+	return path != "" &&
+		!strings.HasPrefix(path, "/") &&
+		!strings.Contains(path, "..") &&
+		!strings.Contains(path, "\\")
 }
 
 func (t *readSkillTool) loadSkill(ctx context.Context, skillID int64) (*entity.Skill, error) {
@@ -232,6 +264,84 @@ func resolveResourceReferences(prompt string) string {
 			return match
 		}
 	})
+}
+
+// syncBoundSkillsToSandbox 把超级智能体绑定的技能 eager 落盘到沙箱 /skills/<name>/。
+// 每个技能写出 SKILL.md(技能正文)+ 其内联脚本(<skill-file path>),让 agent 用通用
+// list_files/read_file/run_bash 自己读取技能文件夹并执行 —— 标准的 Claude Code 式技能。
+// SyncSkill 自带内容 hash 去重,同版本跳过,因此每次会话调用代价很低。
+// skillManifestPath 记录「已同步的技能集合指纹」。只要绑定技能内容不变,
+// 后续每条消息只读一次该文件即跳过整段同步——等价于「容器创建时同步一次,
+// 之后不再同步,技能变更时才重新同步」。配合 /skills 持久化卷,容器重建也直接命中。
+const skillManifestPath = "/skills/.manifest"
+
+type boundSkillFiles struct {
+	name  string
+	files map[string][]byte
+}
+
+func syncBoundSkillsToSandbox(ctx context.Context, sandboxKey string, spaceID int64, skillInfoList []*singleagent.SkillReference) {
+	svc := crosssandbox.DefaultSVC()
+	skillSvc := crossskill.DefaultSVC()
+	if svc == nil || skillSvc == nil || sandboxKey == "" || len(skillInfoList) == 0 {
+		return
+	}
+
+	// 1) 收集技能文件并计算集合指纹(GetSkill 为 DB/缓存读,廉价;不涉及 docker)。
+	prepared := make([]boundSkillFiles, 0, len(skillInfoList))
+	for _, ref := range skillInfoList {
+		skill, err := skillSvc.GetSkill(ctx, ref.SkillID)
+		if err != nil || skill == nil || skill.SpaceID != spaceID {
+			continue // 跨空间技能不落盘(空间隔离)
+		}
+
+		_, files := prepareSkillRuntimeFiles(skill)
+		prepared = append(prepared, boundSkillFiles{name: skill.Name, files: files})
+	}
+	if len(prepared) == 0 {
+		return
+	}
+	manifest := computeSkillsManifest(prepared)
+
+	// 2) 指纹未变 → 整段跳过(只 1 次读,不写、不调 SyncSkill)。
+	if cur, err := svc.ReadFile(ctx, sandboxKey, skillManifestPath); err == nil &&
+		strings.TrimSpace(string(cur)) == manifest {
+		return
+	}
+
+	// 3) 首次或技能变更 → 全量同步后写入指纹。
+	for _, p := range prepared {
+		if err := svc.SyncSkill(ctx, sandboxKey, p.name, p.files); err != nil {
+			logs.CtxWarnf(ctx, "[syncBoundSkillsToSandbox] sync skill %s failed: %v", p.name, err)
+			return // 同步失败不落指纹,下条消息重试
+		}
+	}
+	if err := svc.WriteFile(ctx, sandboxKey, skillManifestPath, []byte(manifest)); err != nil {
+		logs.CtxWarnf(ctx, "[syncBoundSkillsToSandbox] write manifest failed: %v", err)
+	}
+}
+
+// computeSkillsManifest 对(技能名 + 文件名 + 文件内容)做稳定排序后求 sha256,
+// 任意技能内容变化都会改变指纹。
+func computeSkillsManifest(skills []boundSkillFiles) string {
+	sort.Slice(skills, func(i, j int) bool { return skills[i].name < skills[j].name })
+	h := sha256.New()
+	for _, s := range skills {
+		h.Write([]byte(s.name))
+		h.Write([]byte{0})
+		names := make([]string, 0, len(s.files))
+		for n := range s.files {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+		for _, n := range names {
+			h.Write([]byte(n))
+			h.Write([]byte{0})
+			h.Write(s.files[n])
+			h.Write([]byte{0})
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // newSkillTools creates the read_skill tool if skills are configured.

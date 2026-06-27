@@ -358,6 +358,9 @@ func (s *SearchApplicationService) packIntelligenceData(ctx context.Context, doc
 	}
 
 	intelligenceData.BasicInfo.Description = projInfo.desc
+	if projInfo.agentType != "" {
+		intelligenceData.BasicInfo.AgentType = &projInfo.agentType
+	}
 	intelligenceData.BasicInfo.IconURI = projInfo.iconURI
 	intelligenceData.BasicInfo.IconURL = s.getProjectIconURL(ctx, projInfo.iconURI, doc.Type)
 	intelligenceData.PermissionInfo = packer.GetPermissionInfo()

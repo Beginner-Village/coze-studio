@@ -43,6 +43,7 @@ import {
   useInitToast,
   SingleMode,
   WorkflowMode,
+  SuperMode,
 } from '@coze-agent-ide/bot-creator';
 
 import { WorkflowModeToolPaneList } from '../components/workflow-mode-tool-pane-list';
@@ -58,14 +59,16 @@ const BotEditor: React.FC = () => {
     })),
   );
 
-  const { mode, botId } = useBotInfoStore(
+  const { mode, botId, agentType } = useBotInfoStore(
     useShallow(state => ({
       botId: state.botId,
       mode: state.mode,
+      agentType: state.agentType,
     })),
   );
 
-  const isSingleLLM = mode === BotMode.SingleMode;
+  const isSuperAgent = agentType === 'super';
+  const isSingleLLM = mode === BotMode.SingleMode && !isSuperAgent;
   const isSingleWorkflow = mode === BotMode.WorkflowMode;
 
   const spaceId = useSpaceStore(store => store.getSpaceId());
@@ -109,6 +112,11 @@ const BotEditor: React.FC = () => {
             // table storage
             <TableMemory />
           }
+        />
+      ) : null}
+      {isSuperAgent ? (
+        <SuperMode
+          renderChatTitleNode={params => <SingleModeToolPaneList {...params} />}
         />
       ) : null}
       {isSingleWorkflow ? (

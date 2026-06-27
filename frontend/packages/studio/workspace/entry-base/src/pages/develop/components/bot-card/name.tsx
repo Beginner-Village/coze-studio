@@ -24,7 +24,7 @@ export interface NameProps {
 
 const Name: FC<NameProps> = ({ name }) => (
   <Typography.Text
-    className="text-[16px] font-[500] leading-[22px]"
+    className="text-[16px] font-[600] leading-[22px] coz-fg-plus"
     ellipsis={{
       showTooltip: {
         opts: {

@@ -40,13 +40,16 @@ import (
 func (c *ConversationApplicationService) GetMessageList(ctx context.Context, mr *message.GetMessageListRequest) (*message.GetMessageListResponse, error) {
 	// Get Conversation ID by agent id & userID & scene
 	userID := ctxutil.GetUIDFromCtx(ctx)
+	if userID == nil {
+		return nil, errorx.New(errno.ErrConversationPermissionCode, errorx.KV("msg", "permission denied"))
+	}
 
 	agentID, err := strconv.ParseInt(mr.BotID, 10, 64)
 	if err != nil {
 		return nil, err
 	}
 
-	currentConversation, isNewCreate, err := c.getCurrentConversation(ctx, *userID, agentID, *mr.Scene, nil)
+	currentConversation, isNewCreate, err := c.getMessageListConversation(ctx, *userID, agentID, *mr.Scene, mr.ConversationID)
 	if err != nil {
 		return nil, err
 	}
@@ -96,6 +99,34 @@ func (c *ConversationApplicationService) GetMessageList(ctx context.Context, mr 
 		resp.ParticipantInfoMap[aOne.ID] = aOne
 	}
 	return resp, err
+}
+
+func (c *ConversationApplicationService) getMessageListConversation(ctx context.Context, userID int64, agentID int64, scene common.Scene, conversationID string) (*convEntity.Conversation, bool, error) {
+	if conversationID == "" {
+		return c.getCurrentConversation(ctx, userID, agentID, scene, nil)
+	}
+
+	id, err := strconv.ParseInt(conversationID, 10, 64)
+	if err != nil || id <= 0 {
+		return nil, false, errorx.New(errno.ErrConversationInvalidParamCode, errorx.KV("msg", "conversation_id is invalid"))
+	}
+
+	currentConversation, err := c.ConversationDomainSVC.GetByID(ctx, id)
+	if err != nil {
+		return nil, false, err
+	}
+	// The referenced conversation no longer exists (e.g. it was deleted). Rather than
+	// hard-failing init with ErrConversationNotFound — which leaves the chat panel stuck
+	// on "初始化失败" — gracefully fall back to the user's current/new conversation so the
+	// UI self-heals onto a fresh session.
+	if currentConversation == nil {
+		return c.getCurrentConversation(ctx, userID, agentID, scene, nil)
+	}
+	if currentConversation.CreatorID != userID || currentConversation.AgentID != agentID {
+		return nil, false, errorx.New(errno.ErrConversationPermissionCode, errorx.KV("msg", "permission denied"))
+	}
+
+	return currentConversation, false, nil
 }
 
 func (c *ConversationApplicationService) buildAgentInfo(ctx context.Context, agentIDs []int64) ([]*message.MsgParticipantInfo, error) {
@@ -282,6 +313,7 @@ func buildDExt2ApiExt(extra map[string]string) *message.ExtraInfo {
 		PluginRequest:       extra["plugin_request"],
 		ToolName:            extra["tool_name"],
 		Plugin:              extra["plugin"],
+		CallID:              extra["call_id"],
 		MockHitInfo:         extra["mock_hit_info"],
 		MessageTitle:        extra["message_title"],
 		StreamPluginRunning: extra["stream_plugin_running"],

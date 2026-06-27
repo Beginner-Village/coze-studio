@@ -14,6 +14,7 @@ struct DraftBotCreateRequest {
     6: optional MonetizationConf monetization_conf
     7: optional string         create_from, // Create source navi: navbar space: space
     9: optional bot_common.BusinessType business_type
+    10: optional string agent_type, // "" or "normal" = 普通; "super" = 超级智能体
 }
 
 struct MonetizationConf {

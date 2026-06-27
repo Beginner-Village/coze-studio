@@ -38,6 +38,9 @@ var noNeedSessionCheckPath = map[string]bool{
 	// Admin 初始化相关 API 不需要认证（用于首次设置管理员）
 	"/api/admin/check": true,
 	"/api/admin/init":  true,
+	// App Server discovery contract; callers need this before choosing Bearer auth.
+	"/api/super-agent/manifest":     true,
+	"/api/super-agent/openapi.json": true,
 }
 
 func SessionAuthMW() app.HandlerFunc {

@@ -337,9 +337,16 @@ function ModelConfigForm({
 
         <div className="grid grid-cols-2 gap-4 mt-4">
           <Form.Input
-            label="最大token长度"
+            label="上下文窗口（输入 token 上限）"
+            field="contextWindow"
+            placeholder="选填，例如：128000；留空按模型名自动推断"
+            type="number"
+            extraText="模型可接收的最大输入 token。超级体在用量达到约 85% 时自动压缩上下文。留空则按模型名推断（GLM≈1M / Claude≈200K / DeepSeek≈128K）。"
+          />
+          <Form.Input
+            label="最大输出 token 长度"
             field="maxTokens"
-            placeholder="选填，例如：128000"
+            placeholder="选填，例如：8192"
             type="number"
           />
         </div>
@@ -657,10 +664,16 @@ export default function AddModelPage(_props: AddModelPageProps) {
           input_modal: ['text'],
           output_modal:
             values.modelType === 'embedding' ? ['embedding'] : ['text'],
-          input_tokens: values.maxTokens || DEFAULT_MAX_TOKENS,
+          // input_tokens = 上下文窗口(输入上限):优先用独立的 contextWindow 字段,
+          // 回退到旧的 maxTokens(兼容历史填写),仍为空则留 0 由后端按模型名推断。
+          input_tokens:
+            Number(values.contextWindow) ||
+            Number(values.maxTokens) ||
+            DEFAULT_MAX_TOKENS,
           output_tokens:
             values.modelType === 'text_generation' ? DEFAULT_OUTPUT_TOKENS : 0,
-          max_tokens: values.maxTokens || DEFAULT_MAX_TOKENS,
+          // max_tokens = 最大输出 token,与上下文窗口分离。
+          max_tokens: Number(values.maxTokens) || DEFAULT_OUTPUT_TOKENS,
         },
         conn_config: connConfig,
       },
@@ -728,6 +741,13 @@ export default function AddModelPage(_props: AddModelPageProps) {
                     ? values.functionCall || false
                     : false,
                 reasoning: values.enableThinking || false, // 同步更新 reasoning
+                // 上下文窗口(输入上限)与最大输出 token 随表单更新;为空保留原值。
+                ...(Number(values.contextWindow)
+                  ? { input_tokens: Number(values.contextWindow) }
+                  : {}),
+                ...(Number(values.maxTokens)
+                  ? { max_tokens: Number(values.maxTokens) }
+                  : {}),
               },
               conn_config: connConfig,
             },

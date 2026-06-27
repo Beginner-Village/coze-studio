@@ -37,26 +37,50 @@ import (
 const HeaderAuthorizationKey = "Authorization"
 
 var needAuthPath = map[string]bool{
-	"/v3/chat":                              true,
-	"/v1/conversations":                     true,
-	"/v1/conversation/create":               true,
-	"/v1/conversation/message/list":         true,
-	"/v1/files/upload":                      true,
-	"/v1/workflow/run":                      true,
-	"/v1/workflow/stream_run":               true,
-	"/v1/workflow/stream_resume":            true,
-	"/v1/workflow/get_run_history":          true,
-	"/v1/bot/get_online_info":               true,
-	"/v1/workflows/chat":                    true,
-	"/v1/workflow/conversation/create":      true,
-	"/api/bot/upload_file":                  true, // 支持 API Key 上传文件
-	"/api/playground/upload/auth_token":     true, // 支持 API Key 获取上传凭证
+	"/v3/chat":                               true,
+	"/v1/conversations":                      true,
+	"/v1/conversation/create":                true,
+	"/v1/conversation/message/list":          true,
+	"/v1/files/upload":                       true,
+	"/v1/workflow/run":                       true,
+	"/v1/workflow/stream_run":                true,
+	"/v1/workflow/stream_resume":             true,
+	"/v1/workflow/get_run_history":           true,
+	// 工作流画布 MCP 端点:外部 MCP 客户端(Claude Code/Codex)用 API Key(Bearer)鉴权连接。
+	// /mcp 仅供外部使用——前端走 browser_commands、内嵌超级体走 in-process MCP server,均不经此路由。
+	"/api/workflow_mcp/mcp": true,
+	"/v1/bot/get_online_info":                true,
+	"/v1/workflows/chat":                     true,
+	"/v1/workflow/conversation/create":       true,
+	"/api/bot/upload_file":                   true, // 支持 API Key 上传文件
+	"/api/playground/upload/auth_token":      true, // 支持 API Key 获取上传凭证
 	"/api/common/upload/apply_upload_action": true, // 支持 API Key 申请上传地址
+	"/api/super-agent/runs/create":           true,
+	"/api/super-agent/runs/reply":            true,
+	"/api/super-agent/runs/stream":           true,
+	"/api/super-agent/runs/cancel":           true,
+	"/api/super-agent/traces/get":            true,
+	"/api/super-agent/artifacts/list":        true,
+	"/api/super-agent/artifacts/download":    true,
+	"/api/super-agent/workspace/list":        true,
+	"/api/super-agent/workspace/read":        true,
+	"/api/super-agent/workspace/upload":      true,
+	"/api/super-agent/workspace/download":    true,
+	"/api/super-agent/workspace/delete":      true,
+	"/api/skill/create":                      true,
+	"/api/skill/get":                         true,
+	"/api/skill/update":                      true,
+	"/api/skill/delete":                      true,
+	"/api/skill/publish":                     true,
+	"/api/skill/list":                        true,
+	"/api/skill/marketplace/list":            true,
+	"/api/skill/marketplace/install":         true,
 }
 
 var needAuthFunc = map[string]bool{
 	"^/v1/conversations/[0-9]+/clear$": true, // v1/conversations/:conversation_id/clear
-	"^/api/common/upload/.*":            true, // api/common/upload/* 支持 API Key 通用上传
+	"^/api/common/upload/.*":           true, // api/common/upload/* 支持 API Key 通用上传
+	"^/api/super-agent/(runs|sessions|messages|harness|sandbox|traces|artifacts|workspace|skills|marketplace)/.*$": true,
 }
 
 func parseBearerAuthToken(authHeader string) string {

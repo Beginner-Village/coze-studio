@@ -23,6 +23,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
+	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -34,7 +37,6 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/agentrun"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/message"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
-	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
 	"github.com/ynet-dev/ynet-studio/backend/application/upload"
 	"github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/conversation"
 	saEntity "github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
@@ -45,7 +47,6 @@ import (
 	sseImpl "github.com/ynet-dev/ynet-studio/backend/infra/impl/sse"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
-	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
@@ -56,14 +57,15 @@ type ConversationExtData struct {
 
 func (a *OpenapiAgentRunApplication) OpenapiAgentRun(ctx context.Context, sseSender *sseImpl.SSenderImpl, ar *run.ChatV3Request) error {
 
-	apiKeyInfo := ctxutil.GetApiAuthFromCtx(ctx)
-	creatorID := apiKeyInfo.UserID
-	connectorID := apiKeyInfo.ConnectorID
-
-	if ptr.From(ar.ConnectorID) == consts.WebSDKConnectorID {
-		connectorID = ptr.From(ar.ConnectorID)
+	actor, actorErr := resolveOpenapiRunActor(ctx, ar.ConnectorID, ar.ExtraParams)
+	if actorErr != nil {
+		logs.CtxErrorf(ctx, "resolveOpenapiRunActor err:%v", actorErr)
+		return actorErr
 	}
-	agentInfo, caErr := a.checkAgent(ctx, ar, connectorID)
+	creatorID := actor.creatorID
+	connectorID := actor.connectorID
+
+	agentInfo, caErr := a.checkAgent(ctx, ar, connectorID, actor.isDraft)
 	if caErr != nil {
 		logs.CtxErrorf(ctx, "checkAgent err:%v", caErr)
 		return caErr
@@ -76,16 +78,18 @@ func (a *OpenapiAgentRunApplication) OpenapiAgentRun(ctx context.Context, sseSen
 	}
 
 	spaceID := agentInfo.SpaceID
-	arr, err := a.buildAgentRunRequest(ctx, ar, connectorID, spaceID, conversationData, agentInfo)
+	arr, err := a.buildAgentRunRequest(ctx, ar, connectorID, spaceID, conversationData, agentInfo, actor.isDraft)
 	if err != nil {
 		logs.CtxErrorf(ctx, "buildAgentRunRequest err:%v", err)
 		return err
 	}
-	streamer, err := ConversationSVC.AgentRunDomainSVC.AgentRun(ctx, arr)
+	runCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	streamer, err := ConversationSVC.AgentRunDomainSVC.AgentRun(runCtx, arr)
 	if err != nil {
 		return err
 	}
-	a.pullStream(ctx, sseSender, streamer)
+	a.pullStream(runCtx, sseSender, streamer, cancel)
 	return nil
 }
 
@@ -176,10 +180,10 @@ func (a *OpenapiAgentRunApplication) handleCustomVariablesPersistence(ctx contex
 	return nil
 }
 
-func (a *OpenapiAgentRunApplication) checkAgent(ctx context.Context, ar *run.ChatV3Request, connectorID int64) (*saEntity.SingleAgent, error) {
+func (a *OpenapiAgentRunApplication) checkAgent(ctx context.Context, ar *run.ChatV3Request, connectorID int64, isDraft bool) (*saEntity.SingleAgent, error) {
 	agentInfo, err := ConversationSVC.appContext.SingleAgentDomainSVC.ObtainAgentByIdentity(ctx, &singleagent.AgentIdentity{
 		AgentID:     ar.BotID,
-		IsDraft:     false,
+		IsDraft:     isDraft,
 		ConnectorID: connectorID,
 	})
 	if err != nil {
@@ -192,7 +196,7 @@ func (a *OpenapiAgentRunApplication) checkAgent(ctx context.Context, ar *run.Cha
 	return agentInfo, nil
 }
 
-func (a *OpenapiAgentRunApplication) buildAgentRunRequest(ctx context.Context, ar *run.ChatV3Request, connectorID int64, spaceID int64, conversationData *convEntity.Conversation, agentInfo *saEntity.SingleAgent) (*entity.AgentRunMeta, error) {
+func (a *OpenapiAgentRunApplication) buildAgentRunRequest(ctx context.Context, ar *run.ChatV3Request, connectorID int64, spaceID int64, conversationData *convEntity.Conversation, agentInfo *saEntity.SingleAgent, isDraft bool) (*entity.AgentRunMeta, error) {
 
 	shortcutCMDData, err := a.buildTools(ctx, ar.ShortcutCommand)
 	if err != nil {
@@ -212,7 +216,7 @@ func (a *OpenapiAgentRunApplication) buildAgentRunRequest(ctx context.Context, a
 		UserID:           ar.User,
 		SectionID:        conversationData.SectionID,
 		PreRetrieveTools: shortcutCMDData,
-		IsDraft:          false,
+		IsDraft:          isDraft,
 		ConnectorID:      connectorID,
 		ContentType:      contentType,
 		Ext:              ar.ExtraParams,
@@ -346,8 +350,7 @@ func (a *OpenapiAgentRunApplication) buildMultiContent(ctx context.Context, ar *
 				continue
 			}
 
-			// 🔥 关键修复：在处理之前，先把inputs中的base64上传转成URL
-			// 这样后续序列化到数据库时就是短URL，不会超长
+			modelURLs := make(map[*run.AdditionalContent]string)
 			contentModified := false
 			for _, one := range inputs {
 				if one == nil {
@@ -357,29 +360,16 @@ func (a *OpenapiAgentRunApplication) buildMultiContent(ctx context.Context, ar *
 				// 先处理图片类型，检测并上传base64
 				if message.InputType(one.Type) == message.InputTypeImage || message.InputType(one.Type) == message.InputTypeFile {
 					fileURL := one.GetFileURL()
-
-					// 检测是否是base64编码的数据
-					isBase64 := false
-					if strings.HasPrefix(fileURL, "data:image/") {
-						logs.CtxInfof(ctx, "Detected base64 image data (data: URI scheme)")
-						isBase64 = true
-					} else if strings.HasPrefix(fileURL, "/9j/") || strings.HasPrefix(fileURL, "iVBORw0KG") ||
-						strings.HasPrefix(fileURL, "R0lGODlh") || strings.HasPrefix(fileURL, "UklGR") {
-						logs.CtxInfof(ctx, "Detected raw base64 image data")
-						isBase64 = true
-						fileURL = "data:image/png;base64," + fileURL
-					}
-
-					// 如果是base64，先上传转成URL，并修改原始inputs
+					dataURL, isBase64 := normalizeImageDataURL(fileURL)
 					if isBase64 {
+						modelURLs[one] = dataURL
 						uploadedURL, uploadErr := a.uploadBase64ToStorage(ctx, fileURL)
 						if uploadErr != nil {
 							logs.CtxErrorf(ctx, "Failed to upload base64 image: %v", uploadErr)
-							continue // 跳过这个图片
+							continue
 						}
 						logs.CtxInfof(ctx, "Base64 uploaded successfully, replacing with URL: %s", uploadedURL)
 
-						// 🔥 关键：修改原始inputs中的file_url，这样后续序列化时就是短URL
 						one.FileURL = &uploadedURL
 						contentModified = true
 					}
@@ -430,12 +420,19 @@ func (a *OpenapiAgentRunApplication) buildMultiContent(ctx context.Context, ar *
 						logs.CtxInfof(ctx, "Using original file URL (no URI extraction needed): %s", fileURL)
 					}
 
+					// 入库只存对象存储 key（不内联 base64），避免 model_content 被几百KB的 base64 撑爆 DB；
+					// 调用模型前会在 parseMessageURI 处把 key 展开成 base64。提取不到 key 时退回普通 URL。
+					storedURL := uri
+					if storedURL == "" {
+						storedURL = fileURL
+					}
+
 					multiContents = append(multiContents, &message.InputMetaData{
 						Type: message.InputType(one.Type),
 						FileData: []*message.FileData{
 							{
-								Url: fileURL,
-								URI: uri,  // 保存URI以便后续使用
+								Url: storedURL,
+								URI: uri, // 保存URI以便后续使用
 							},
 						},
 					})
@@ -452,16 +449,53 @@ func (a *OpenapiAgentRunApplication) buildMultiContent(ctx context.Context, ar *
 
 // getUrlByUri 从URI重新生成带签名的访问URL（与Web接口保持一致）
 func (a *OpenapiAgentRunApplication) getUrlByUri(ctx context.Context, uri string) (string, error) {
-	if a.appContext == nil || a.appContext.ImageX == nil {
-		return "", errors.New("ImageX service not available")
+	if uri == "" {
+		return "", errors.New("empty uri")
 	}
 
-	url, err := a.appContext.ImageX.GetResourceURL(ctx, uri)
+	if a.appContext != nil && a.appContext.ImageX != nil {
+		url, err := a.appContext.ImageX.GetResourceURL(ctx, uri)
+		if err == nil && url != nil && url.URL != "" {
+			return url.URL, nil
+		}
+		if err != nil {
+			logs.CtxWarnf(ctx, "failed to get openapi resource url from ImageX, uri=%s, err=%v", uri, err)
+		}
+	}
+
+	if a.appContext != nil && a.appContext.TosClient != nil {
+		return a.appContext.TosClient.GetObjectUrl(ctx, uri)
+	}
+
+	return "", errors.New("resource url service not available")
+}
+
+func (a *OpenapiAgentRunApplication) toImageModelURL(ctx context.Context, uri, fallbackURL string) string {
+	if dataURL, ok := normalizeImageDataURL(fallbackURL); ok {
+		return dataURL
+	}
+	if a == nil || a.appContext == nil || a.appContext.TosClient == nil || uri == "" {
+		return fallbackURL
+	}
+
+	content, err := a.appContext.TosClient.GetObject(ctx, uri)
 	if err != nil {
-		return "", err
+		logs.CtxWarnf(ctx, "failed to read image object for openapi model input, uri=%s, err=%v", uri, err)
+		return fallbackURL
+	}
+	if len(content) == 0 {
+		return fallbackURL
 	}
 
-	return url.URL, nil
+	contentType := mime.TypeByExtension(filepath.Ext(uri))
+	if contentType == "" {
+		contentType = http.DetectContentType(content)
+	}
+	if contentType == "" {
+		contentType = "image/png"
+	}
+
+	return "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(content)
 }
 
 // extractURIFromURL 从完整URL中提取URI
@@ -498,7 +532,13 @@ func (a *OpenapiAgentRunApplication) extractURIFromURL(fileURL string) (string, 
 	return "", errors.New("cannot extract URI from URL: " + fileURL)
 }
 
-func (a *OpenapiAgentRunApplication) pullStream(ctx context.Context, sseSender *sseImpl.SSenderImpl, streamer *schema.StreamReader[*entity.AgentRunResponse]) {
+func (a *OpenapiAgentRunApplication) pullStream(ctx context.Context, sseSender *sseImpl.SSenderImpl, streamer *schema.StreamReader[*entity.AgentRunResponse], cancel context.CancelFunc) {
+	var unregisterActiveRun func()
+	defer func() {
+		if unregisterActiveRun != nil {
+			unregisterActiveRun()
+		}
+	}()
 	for {
 		chunk, recvErr := streamer.Recv()
 		if recvErr != nil {
@@ -516,6 +556,12 @@ func (a *OpenapiAgentRunApplication) pullStream(ctx context.Context, sseSender *
 		case entity.RunEventStreamDone:
 			sseSender.Send(ctx, buildDoneEvent(string(entity.RunEventStreamDone)))
 		case entity.RunEventAck:
+			if chunk.ChunkMessageItem != nil && chunk.ChunkMessageItem.RunID > 0 && cancel != nil {
+				if unregisterActiveRun != nil {
+					unregisterActiveRun()
+				}
+				unregisterActiveRun = RegisterActiveAgentRun(strconv.FormatInt(chunk.ChunkMessageItem.RunID, 10), cancel)
+			}
 			// 🔥 修复：添加对Ack事件的处理
 			sseSender.Send(ctx, buildMessageChunkEvent(string(chunk.Event), buildARSM2ApiMessage(chunk)))
 		case entity.RunEventCreated, entity.RunEventCancelled, entity.RunEventInProgress, entity.RunEventFailed, entity.RunEventCompleted:

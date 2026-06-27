@@ -122,6 +122,8 @@ const WorkflowPage = lazy(() =>
   })),
 );
 
+const StrategyEditorPage = lazy(() => import('./pages/strategy'));
+
 const PluginPageLayout = lazy(() => import('./pages/plugin/layout'));
 const PluginPage = lazy(() => import('./pages/plugin/page'));
 const PluginToolPage = lazy(() => import('./pages/plugin/tool/page'));
@@ -145,6 +147,7 @@ const AgentPublishPage = lazy(() =>
 );
 
 const AgentChatPage = lazy(() => import('./pages/agent-chat'));
+const EmployeeChatPage = lazy(() => import('./pages/employee-chat'));
 const DocsRedirect = lazy(() => import('./pages/docs'));
 
 const SpaceModelConfig = lazy(() => import('./pages/space-model-config'));
@@ -182,6 +185,14 @@ export const router: ReturnType<typeof createBrowserRouter> =
       loader: () => ({
         hasSider: false,
         requireAuth: false,
+      }),
+    },
+    {
+      path: '/employee-chat',
+      Component: EmployeeChatPage,
+      loader: () => ({
+        hasSider: false,
+        requireAuth: true,
       }),
     },
     {
@@ -483,6 +494,13 @@ export const router: ReturnType<typeof createBrowserRouter> =
                     showMobileTips: true,
                     requireBotEditorInit: true,
                     pageName: 'bot',
+                  }),
+                },
+                {
+                  path: 'strategy/:strategy_id',
+                  Component: StrategyEditorPage,
+                  loader: () => ({
+                    hasSider: false,
                   }),
                 },
                 {

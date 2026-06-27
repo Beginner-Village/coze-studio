@@ -17,10 +17,14 @@
 import { devtools } from 'zustand/middleware';
 import { create } from 'zustand';
 import { ProjectResourceGroupType } from '@coze-arch/bot-api/plugin_develop';
-import { PluginDevelopApi } from '@coze-arch/bot-api';
+import { folderApi, PluginDevelopApi } from '@coze-arch/bot-api';
 
 import { resTypeDTOToVO } from '@/utils';
 import { type BizResourceTree } from '@/resource-folder-coze/type';
+import {
+  createFolderedResourceTree,
+  WORKFLOW_FOLDER_RESOURCE_TYPE,
+} from '@/resource-folder-coze/folder-tree';
 
 export interface PrimarySidebarActions {
   updateGroupExpand: (
@@ -106,22 +110,37 @@ export const usePrimarySidebarStore = create<
           projectId,
           version,
         });
-        const res = await PluginDevelopApi.ProjectResourceList({
-          project_id: projectId ?? '',
-          space_id: spaceId,
-          project_version: version,
-        });
-        const resourceTree = res.resource_groups?.map<BizResourceTree>(
-          group => ({
-            groupType: group.group_type,
-            resourceList:
+        const [res, workflowFolderRes] = await Promise.all([
+          PluginDevelopApi.ProjectResourceList({
+            project_id: projectId ?? '',
+            space_id: spaceId,
+            project_version: version,
+          }),
+          folderApi.getFolderList({
+            space_id: spaceId,
+            resource_type: WORKFLOW_FOLDER_RESOURCE_TYPE,
+          }),
+        ]);
+        const resourceTree = (res.resource_groups || []).map<BizResourceTree>(
+          group => {
+            const resourceList =
               group.resource_list?.map(resourceInfo => ({
                 id: String(resourceInfo.res_id ?? ''),
                 type: resTypeDTOToVO(resourceInfo.res_type),
                 name: resourceInfo.name ?? '',
                 ...resourceInfo,
-              })) || [],
-          }),
+              })) || [];
+            return {
+              groupType: group.group_type,
+              resourceList:
+                group.group_type === ProjectResourceGroupType.Workflow
+                  ? createFolderedResourceTree({
+                      folders: workflowFolderRes.data || [],
+                      resources: resourceList,
+                    })
+                  : resourceList,
+            };
+          },
         );
         callback?.(resourceTree);
         set({

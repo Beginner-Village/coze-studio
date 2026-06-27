@@ -2728,6 +2728,579 @@ export interface DraftBotCreateRequest {
   app_id?: string;
   business_type?: bot_common.BusinessType;
   folder_id?: string;
+  agent_type?: string;
+}
+
+/** 超级智能体沙箱空间管理 */
+export interface SandboxFileInfo {
+  name: string;
+  path: string;
+  is_dir: boolean;
+  size: number;
+  mtime?: number;
+}
+
+export interface ListSandboxFilesRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  path?: string;
+  recursive?: boolean;
+  connector_id?: string;
+}
+
+export interface ListSandboxFilesResponse {
+  code?: Int64;
+  msg?: string;
+  data?: { path?: string; files?: Array<SandboxFileInfo> };
+}
+
+export interface ReadSandboxFileRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  path?: string;
+  connector_id?: string;
+}
+
+export interface ReadSandboxFileResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    path?: string;
+    content?: string;
+    is_binary?: boolean;
+    size?: number;
+    total_size?: number;
+    is_truncated?: boolean;
+  };
+}
+
+export interface UploadSandboxFileRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  path?: string;
+  content?: string;
+  is_base64?: boolean;
+  encoding?: string;
+  connector_id?: string;
+}
+
+export interface UploadSandboxFileResponse {
+  code?: Int64;
+  msg?: string;
+  data?: { path?: string };
+}
+
+export interface DeleteSandboxFileRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  path?: string;
+  connector_id?: string;
+}
+
+export interface DeleteSandboxFileResponse {
+  code?: Int64;
+  msg?: string;
+}
+
+export interface MoveSandboxFileRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  path?: string;
+  from_path?: string;
+  target_path?: string;
+  to_path?: string;
+  connector_id?: string;
+}
+
+export interface MoveSandboxFileResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    path?: string;
+    from_path?: string;
+  };
+}
+
+export interface CreateSandboxDirectoryRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  path?: string;
+  connector_id?: string;
+}
+
+export interface CreateSandboxDirectoryResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    path?: string;
+  };
+}
+
+export interface StatSandboxFileRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  path?: string;
+  connector_id?: string;
+}
+
+export interface StatSandboxFileResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    path?: string;
+    exists?: boolean;
+    file?: SandboxFileInfo;
+  };
+}
+
+export interface GrepSandboxFilesRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  path?: string;
+  pattern?: string;
+  case_sensitive?: boolean;
+  include?: string[];
+  exclude?: string[];
+  connector_id?: string;
+}
+
+export interface GrepSandboxFilesResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    path?: string;
+    pattern?: string;
+    output?: string;
+    is_truncated?: boolean;
+  };
+}
+
+export interface GlobSandboxFilesRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  path?: string;
+  pattern?: string;
+  limit?: Int32;
+  connector_id?: string;
+}
+
+export interface GlobSandboxFilesResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    path?: string;
+    pattern?: string;
+    matches?: string[];
+    is_truncated?: boolean;
+  };
+}
+
+export interface EditSandboxFileRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  path?: string;
+  old_string?: string;
+  new_string?: string;
+  replace_all?: boolean;
+  connector_id?: string;
+}
+
+export interface EditSandboxFileResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    path?: string;
+    replacements?: Int32;
+  };
+}
+
+export interface ApplySandboxPatchRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  workdir?: string;
+  work_dir?: string;
+  patch?: string;
+  connector_id?: string;
+}
+
+export interface ApplySandboxPatchResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    changed_files?: Int32;
+    paths?: string[];
+  };
+}
+
+export interface ExecSandboxCommandRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  command?: string;
+  workdir?: string;
+  work_dir?: string;
+  timeout_sec?: Int32;
+  connector_id?: string;
+}
+
+export interface ExecSandboxCommandResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    exit_code?: Int32;
+    stdout?: string;
+    stderr?: string;
+    is_truncated?: boolean;
+  };
+}
+
+export interface SuperAgentGetRunRequest {
+  run_id?: string;
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  user_id?: string;
+  client_id?: string;
+}
+
+export interface SuperAgentRunState {
+  run_id?: string;
+  conversation_id?: string;
+  agent_id?: string;
+  status?: string;
+  active?: boolean;
+  error?: {
+    code?: Int64;
+    msg?: string;
+  };
+  created_at?: Int64;
+  updated_at?: Int64;
+  completed_at?: Int64;
+  failed_at?: Int64;
+}
+
+export interface SuperAgentGetRunResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentRunState;
+}
+
+export interface SuperAgentListRunsRequest {
+  conversation_id?: Int64;
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  user_id?: string;
+  client_id?: string;
+  limit?: number;
+  order_by?: string;
+  before_id?: Int64;
+  after_id?: Int64;
+}
+
+export interface SuperAgentRunListItem {
+  run_id?: string;
+  conversation_id?: string;
+  agent_id?: string;
+  status?: string;
+  active?: boolean;
+  error?: {
+    code?: Int64;
+    msg?: string;
+  };
+  created_at?: Int64;
+  updated_at?: Int64;
+  completed_at?: Int64;
+  failed_at?: Int64;
+}
+
+export interface SuperAgentListRunsResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    conversation_id?: string;
+    runs?: Array<SuperAgentRunListItem>;
+  };
+}
+
+export interface SuperAgentListSessionsRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  connector_id?: string;
+  user_id?: string;
+  client_id?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface SuperAgentCreateSessionRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  connector_id?: string;
+  title?: string;
+  user_id?: string;
+  client_id?: string;
+}
+
+export interface SuperAgentSessionItem {
+  session_id?: string;
+  conversation_id?: string;
+  section_id?: string;
+  agent_id?: string;
+  connector_id?: string;
+  scene?: Int32;
+  title?: string;
+  renamable?: boolean;
+  created_at?: Int64;
+  updated_at?: Int64;
+}
+
+export interface SuperAgentListSessionsResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    sessions?: Array<SuperAgentSessionItem>;
+    has_more?: boolean;
+    page?: number;
+    page_size?: number;
+  };
+}
+
+export interface SuperAgentCreateSessionResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    session?: SuperAgentSessionItem;
+  };
+}
+
+export interface SuperAgentRenameSessionRequest {
+  conversation_id?: Int64;
+  title?: string;
+  user_id?: string;
+  client_id?: string;
+}
+
+export interface SuperAgentRenameSessionResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    session?: SuperAgentSessionItem;
+  };
+}
+
+export interface SuperAgentDeleteSessionRequest {
+  conversation_id?: Int64;
+  user_id?: string;
+  client_id?: string;
+}
+
+export interface SuperAgentDeleteSessionResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    session_id?: string;
+    conversation_id?: string;
+  };
+}
+
+export interface SuperAgentGetTraceRequest {
+  conversation_id?: Int64;
+  run_id?: Int64;
+  limit?: number;
+}
+
+export interface SuperAgentTraceRun {
+  run_id?: string;
+  conversation_id?: string;
+  agent_id?: string;
+  status?: string;
+  error?: {
+    code?: Int64;
+    msg?: string;
+  };
+  created_at?: Int64;
+  updated_at?: Int64;
+  completed_at?: Int64;
+  failed_at?: Int64;
+}
+
+export interface SuperAgentTraceEvent {
+  id?: string;
+  event?: string;
+  kind?: string;
+  run_id?: string;
+  message_id?: string;
+  conversation_id?: string;
+  agent_id?: string;
+  role?: string;
+  type?: string;
+  content?: string;
+  content_type?: string;
+  metadata?: Record<string, string>;
+  status?: string;
+  created_at?: Int64;
+  updated_at?: Int64;
+}
+
+export interface SuperAgentGetTraceResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    conversation_id?: string;
+    runs?: Array<SuperAgentTraceRun>;
+    events?: Array<SuperAgentTraceEvent>;
+  };
+}
+
+export interface SuperAgentHarnessStateRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  connector_id?: string;
+}
+
+export interface SuperAgentHarnessPlanStep {
+  content?: string;
+  status?: string;
+}
+
+export interface SuperAgentHarnessPlanUpdateRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  plan?: Array<SuperAgentHarnessPlanStep>;
+  items?: Array<SuperAgentHarnessPlanStep>;
+  connector_id?: string;
+}
+
+export interface SuperAgentHarnessPlanUpdateResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    path?: string;
+    steps?: Int32;
+    content?: string;
+  };
+}
+
+export interface SuperAgentHarnessPlanState {
+  path: string;
+  exists: boolean;
+  content?: string;
+  is_binary?: boolean;
+  size?: number;
+  total_size?: number;
+  is_truncated?: boolean;
+}
+
+export interface SuperAgentHarnessToolOutputsState {
+  root: string;
+  files?: Array<SandboxFileInfo>;
+}
+
+export interface SuperAgentHarnessRuntimeSkillSummary {
+  name: string;
+  path: string;
+  entry_path: string;
+  standard: boolean;
+  description?: string;
+  version?: string;
+  category?: string;
+  file_paths?: Array<string>;
+  asset_paths?: Array<string>;
+  image_paths?: Array<string>;
+}
+
+export interface SuperAgentHarnessRuntimeSkillsState {
+  root: string;
+  skills?: Array<SuperAgentHarnessRuntimeSkillSummary>;
+}
+
+export interface SuperAgentHarnessStateResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    plan?: SuperAgentHarnessPlanState;
+    tool_outputs?: SuperAgentHarnessToolOutputsState;
+    runtime_skills?: SuperAgentHarnessRuntimeSkillsState;
+  };
+}
+
+export interface SuperAgentArtifactMeta {
+  artifact_id: string;
+  name: string;
+  path: string;
+  size: number;
+  mtime?: number;
+  mime?: string;
+  sha256?: string;
+  previewable?: boolean;
+  downloadable?: boolean;
+  download_route?: string;
+}
+
+export interface SuperAgentListArtifactsRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  path?: string;
+  limit?: number;
+  connector_id?: string;
+}
+
+export interface SuperAgentListArtifactsResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    root?: string;
+    path?: string;
+    artifacts?: Array<SuperAgentArtifactMeta>;
+  };
+}
+
+export interface SuperAgentDownloadArtifactRequest {
+  space_id?: string;
+  agent_id?: string;
+  bot_id?: string;
+  artifact_id?: string;
+  path?: string;
+  connector_id?: string;
+}
+
+export type SuperAgentDeleteArtifactRequest = SuperAgentDownloadArtifactRequest;
+
+export interface SuperAgentDeleteArtifactResponse {
+  code?: Int64;
+  msg?: string;
+}
+
+export interface SuperAgentMoveArtifactRequest
+  extends SuperAgentDownloadArtifactRequest {
+  target_path?: string;
+}
+
+export interface SuperAgentMoveArtifactResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    artifact_id?: string;
+    path?: string;
+    from_path?: string;
+  };
 }
 
 export interface DraftBotCreateResponse {
@@ -6809,6 +7382,297 @@ export interface WorkFlowTestRunV2Response {
   code?: Int64;
   msg?: string;
   data?: WorkFlowTestRunDataV2;
+}
+
+export interface SuperAgentSkillMetadata {
+  version?: string;
+  category?: string;
+  tags?: Array<string>;
+  platforms?: Array<string>;
+}
+
+export interface SuperAgentSkillInfo {
+  skill_id?: string;
+  space_id?: string;
+  name?: string;
+  description?: string;
+  prompt?: string;
+  files?: Record<string, string>;
+  metadata?: SuperAgentSkillMetadata;
+  icon_uri?: string;
+  creator_id?: string;
+  version?: Int64;
+  publish_scope?: Int64;
+  published_version?: Int64;
+  published_at?: Int64;
+  published_by?: string;
+  created_at?: Int64;
+  updated_at?: Int64;
+}
+
+export interface SuperAgentCreateSkillRequest {
+  space_id?: string;
+  name?: string;
+  description?: string;
+  prompt?: string;
+  files?: Record<string, string>;
+  icon_uri?: string;
+}
+
+export interface SuperAgentSkillResponseData {
+  skill_info?: SuperAgentSkillInfo;
+}
+
+export interface SuperAgentCreateSkillResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillResponseData;
+}
+
+export interface SuperAgentImportSkillPackageRequest {
+  space_id?: string;
+  filename?: string;
+  content?: string;
+  icon_uri?: string;
+}
+
+export interface SuperAgentImportSkillPackageResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillResponseData;
+}
+
+export interface SuperAgentImportRuntimeSkillRequest {
+  agent_id?: string;
+  bot_id?: string;
+  connector_id?: string;
+  name?: string;
+  skill_id?: string;
+  icon_uri?: string;
+  publish_scope?: Int64;
+}
+
+export interface SuperAgentImportRuntimeSkillResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillResponseData;
+}
+
+export interface SuperAgentValidateSkillPackageRequest {
+  filename?: string;
+  content?: string;
+}
+
+export interface SuperAgentSkillPackageValidation {
+  valid?: boolean;
+  error?: string;
+  filename?: string;
+  name?: string;
+  description?: string;
+  metadata?: SuperAgentSkillMetadata;
+  file_count?: Int64;
+  file_paths?: Array<string>;
+  asset_paths?: Array<string>;
+  image_paths?: Array<string>;
+}
+
+export interface SuperAgentSkillPackageValidationData {
+  validation?: SuperAgentSkillPackageValidation;
+}
+
+export interface SuperAgentValidateSkillPackageResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillPackageValidationData;
+}
+
+export interface SuperAgentExportSkillPackageRequest {
+  skill_id?: string;
+  space_id?: string;
+}
+
+export interface SuperAgentSkillPackageExport {
+  filename?: string;
+  content?: string;
+  size?: Int64;
+  file_paths?: Array<string>;
+}
+
+export interface SuperAgentSkillPackageExportData {
+  package?: SuperAgentSkillPackageExport;
+}
+
+export interface SuperAgentExportSkillPackageResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillPackageExportData;
+}
+
+export interface SuperAgentGetSkillRequest {
+  skill_id?: string;
+  space_id?: string;
+}
+
+export interface SuperAgentGetSkillResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillResponseData;
+}
+
+export interface SuperAgentUpdateSkillRequest {
+  skill_id?: string;
+  space_id?: string;
+  name?: string;
+  description?: string;
+  prompt?: string;
+  files?: Record<string, string>;
+  icon_uri?: string;
+}
+
+export interface SuperAgentUpdateSkillResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillResponseData;
+}
+
+export interface SuperAgentSkillAssetInfo {
+  path?: string;
+  mime?: string;
+  size?: Int64;
+  is_image?: boolean;
+}
+
+export interface SuperAgentSkillAssetContent extends SuperAgentSkillAssetInfo {
+  content?: string;
+}
+
+export interface SuperAgentListSkillAssetsRequest {
+  skill_id?: string;
+  space_id?: string;
+}
+
+export interface SuperAgentListSkillAssetsResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    assets?: Array<SuperAgentSkillAssetInfo>;
+  };
+}
+
+export interface SuperAgentGetSkillAssetRequest {
+  skill_id?: string;
+  space_id?: string;
+  path?: string;
+}
+
+export interface SuperAgentGetSkillAssetResponse {
+  code?: Int64;
+  msg?: string;
+  data?: {
+    asset?: SuperAgentSkillAssetContent;
+  };
+}
+
+export interface SuperAgentUpsertSkillAssetRequest {
+  skill_id?: string;
+  space_id?: string;
+  path?: string;
+  content?: string;
+  mime?: string;
+}
+
+export interface SuperAgentUpsertSkillAssetResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillResponseData;
+}
+
+export interface SuperAgentDeleteSkillAssetRequest {
+  skill_id?: string;
+  space_id?: string;
+  path?: string;
+}
+
+export interface SuperAgentDeleteSkillAssetResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillResponseData;
+}
+
+export interface SuperAgentDeleteSkillRequest {
+  skill_id?: string;
+  space_id?: string;
+}
+
+export interface SuperAgentDeleteSkillResponse {
+  code?: Int64;
+  msg?: string;
+}
+
+export interface SuperAgentPublishSkillRequest {
+  skill_id?: string;
+  space_id?: string;
+  scope?: Int64;
+}
+
+export interface SuperAgentPublishSkillResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillResponseData;
+}
+
+export interface SuperAgentListSkillsRequest {
+  space_id?: string;
+  page?: Int64;
+  page_size?: Int64;
+  keyword?: string;
+}
+
+export interface SuperAgentListSkillsResponseData {
+  skill_list?: Array<SuperAgentSkillInfo>;
+  total?: Int64;
+}
+
+export interface SuperAgentListSkillsResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentListSkillsResponseData;
+}
+
+export interface SuperAgentMarketplaceListSkillsRequest {
+  space_id?: string;
+  scope?: Int64;
+  page?: Int64;
+  page_size?: Int64;
+  keyword?: string;
+}
+
+export interface SuperAgentMarketplaceListSkillsResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentListSkillsResponseData;
+}
+
+export interface SuperAgentMarketplaceGetSkillRequest {
+  skill_id?: string;
+  space_id?: string;
+}
+
+export interface SuperAgentMarketplaceGetSkillResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillResponseData;
+}
+
+export interface SuperAgentInstallMarketplaceSkillRequest {
+  skill_id?: string;
+  space_id?: string;
+}
+
+export interface SuperAgentInstallMarketplaceSkillResponse {
+  code?: Int64;
+  msg?: string;
+  data?: SuperAgentSkillResponseData;
 }
 
 export interface WorkflowV2 {

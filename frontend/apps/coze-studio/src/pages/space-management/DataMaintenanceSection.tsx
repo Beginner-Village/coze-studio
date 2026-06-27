@@ -16,17 +16,26 @@
 
 import { useState, type FC } from 'react';
 
-import { I18n } from '@coze-arch/i18n';
+import { I18n, type I18nKeysNoOptionsType } from '@coze-arch/i18n';
 import { Button, Modal, Toast } from '@coze-arch/coze-design';
-import { SpaceApi } from '@coze-arch/bot-api';
+import { getLocalizedErrorMessage, SpaceApi } from '@coze-arch/bot-api';
 
-import styles from './DataMaintenanceSection.module.less';
-import { DiagnoseCard } from './DiagnoseCard';
 import { ConfigureModelsCard } from './ConfigureModelsCard';
+import { DiagnoseCard } from './DiagnoseCard';
+import styles from './DataMaintenanceSection.module.less';
 
 interface Props {
   spaceId: string;
 }
+
+const getDisplayErrorMessage = (message?: string) =>
+  getLocalizedErrorMessage(message) || message || '未知错误';
+
+const t = (
+  key: string,
+  options: Record<string, unknown>,
+  fallbackText: string,
+) => I18n.t(key as I18nKeysNoOptionsType, options, fallbackText);
 
 export const DataMaintenanceSection: FC<Props> = ({ spaceId }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -37,7 +46,7 @@ export const DataMaintenanceSection: FC<Props> = ({ spaceId }) => {
     try {
       const resp = await SpaceApi.resyncES({ space_id: spaceId });
       if (resp.code !== 0) {
-        throw new Error(resp.msg || 'unknown error');
+        throw new Error(getDisplayErrorMessage(resp.msg));
       }
       const c = resp.counts ?? {
         project_draft: 0,
@@ -49,8 +58,8 @@ export const DataMaintenanceSection: FC<Props> = ({ spaceId }) => {
         `同步完成: 智能体 ${c.project_draft} / 资源 ${c.coze_resource} / ` +
         `知识库 ${c.kb_entries} / 切片重新索引中 ${c.slice_reindex_jobs}`;
       Toast.success(
-        I18n.t(
-          'space_resync_success',
+        t(
+'space_resync_success',
           {
             agents: c.project_draft,
             resources: c.coze_resource,
@@ -62,8 +71,9 @@ export const DataMaintenanceSection: FC<Props> = ({ spaceId }) => {
       );
       setConfirmOpen(false);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'unknown error';
-      Toast.error(I18n.t('space_resync_failed', { msg }, `同步失败: ${msg}`));
+      const msg =
+        e instanceof Error ? getDisplayErrorMessage(e.message) : '未知错误';
+      Toast.error(t('space_resync_failed', { msg }, `同步失败: ${msg}`));
     } finally {
       setLoading(false);
     }
@@ -72,16 +82,16 @@ export const DataMaintenanceSection: FC<Props> = ({ spaceId }) => {
   return (
     <section className={styles.section}>
       <h3 className={styles.title}>
-        {I18n.t('space_data_maintenance', {}, '数据维护')}
+        {t('space_data_maintenance', {}, '数据维护')}
       </h3>
       <DiagnoseCard spaceId={spaceId} />
-      <div className={styles.card} style={{ marginTop: 16 }}>
+      <div className={styles.card}>
         <div className={styles.cardTitle}>
-          {I18n.t('space_resync_es_title', {}, '重新同步 ES 索引')}
+          {t('space_resync_es_title', {}, '重新同步 ES 索引')}
         </div>
         <div className={styles.cardDesc}>
-          {I18n.t(
-            'space_resync_es_desc',
+          {t(
+'space_resync_es_desc',
             {},
             '清空本空间所有 ES 索引并从 MySQL 重写。适用于：列表数据展示不全、检索结果跟实际不符、从备份导入数据后等场景。',
           )}
@@ -92,13 +102,13 @@ export const DataMaintenanceSection: FC<Props> = ({ spaceId }) => {
           onClick={() => setConfirmOpen(true)}
           data-testid="space-resync-es-button"
         >
-          {I18n.t('space_resync_es_button', {}, '重新同步')}
+          {t('space_resync_es_button', {}, '重新同步')}
         </Button>
       </div>
       <Modal
         visible={confirmOpen}
-        title={I18n.t(
-          'space_resync_es_confirm_title',
+        title={t(
+'space_resync_es_confirm_title',
           {},
           '确认重新同步 ES 索引？',
         )}
@@ -109,8 +119,8 @@ export const DataMaintenanceSection: FC<Props> = ({ spaceId }) => {
         onCancel={() => setConfirmOpen(false)}
       >
         <p>
-          {I18n.t(
-            'space_resync_es_confirm_desc',
+          {t(
+'space_resync_es_confirm_desc',
             {},
             '将清空本空间所有 ES 索引并从 MySQL 重写。期间 1-5 分钟内列表查询可能为空，知识库检索结果可能不完整。仅 space owner 可执行。',
           )}

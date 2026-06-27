@@ -31,8 +31,9 @@ import (
 )
 
 type projectInfo struct {
-	iconURI string
-	desc    string
+	iconURI   string
+	desc      string
+	agentType string
 }
 
 type ProjectPacker interface {
@@ -98,8 +99,9 @@ func (a *agentPacker) GetProjectInfo(ctx context.Context) (*projectInfo, error) 
 		return nil, fmt.Errorf("agent info is nil")
 	}
 	return &projectInfo{
-		iconURI: agent.IconURI,
-		desc:    agent.Desc,
+		iconURI:   agent.IconURI,
+		desc:      agent.Desc,
+		agentType: agent.AgentType,
 	}, nil
 }
 

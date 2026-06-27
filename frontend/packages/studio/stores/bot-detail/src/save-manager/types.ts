@@ -31,6 +31,8 @@ export enum ItemTypeExtra {
   MEMORY_TOOL_CONFIG = 1033,
   BoundCards = 1034,
   FORCE_TOOL_RETURN = 1035,
+  AgentSkills = 1036,
+  Strategies = 1037,
 }
 
 export type BizKey = ItemType | ItemTypeExtra | undefined;

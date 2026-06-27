@@ -14,22 +14,27 @@
  * limitations under the License.
  */
 
+/* eslint-disable @coze-arch/max-line-per-function, complexity -- folder card bundles rename/delete/batch-add UI plus active/disabled state branching in one component */
+
 import { useState } from 'react';
 
+import classNames from 'classnames';
 import { I18n } from '@coze-arch/i18n';
 import {
   IconCozMore,
   IconCozEdit,
   IconCozTrashCan,
+  IconCozFolder,
+  IconCozPlus,
 } from '@coze-arch/coze-design/icons';
 import {
-  Space,
   Typography,
   Menu,
   IconButton,
   Modal,
   Input,
   Toast,
+  Tooltip,
 } from '@coze-arch/coze-design';
 
 import { type FolderInfo } from '../hooks/use-folder-management';
@@ -37,10 +42,22 @@ import { type FolderInfo } from '../hooks/use-folder-management';
 export const FolderCard: React.FC<{
   folder: FolderInfo;
   gridItemWidth?: number;
+  active?: boolean;
+  disabled?: boolean;
   onClick: (folder: FolderInfo) => void;
+  onBatchAdd?: (folder: FolderInfo) => void;
   onRename?: (folder: FolderInfo, name: string) => Promise<void> | void;
   onDelete?: (folder: FolderInfo) => Promise<void> | void;
-}> = ({ folder, gridItemWidth, onClick, onRename, onDelete }) => {
+}> = ({
+  folder,
+  gridItemWidth,
+  active = false,
+  disabled = false,
+  onClick,
+  onBatchAdd,
+  onRename,
+  onDelete,
+}) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(folder.name);
@@ -85,78 +102,105 @@ export const FolderCard: React.FC<{
   return (
     <>
       <div
-        className="flex-col cursor-pointer relative group"
+        className={classNames('flex flex-col relative group', {
+          'cursor-pointer': !disabled,
+          'opacity-40': disabled && !active,
+        })}
         data-testid="workspace.library.folder.card"
-        onClick={() => onClick(folder)}
+        onClick={() => {
+          if (disabled) {
+            return;
+          }
+          onClick(folder);
+        }}
       >
-        {showMenu ? (
+        {!disabled && (showMenu || onBatchAdd) ? (
           <div
-            className="absolute top-[8px] right-[8px] z-10 opacity-0 group-hover:opacity-100"
+            className="absolute top-[8px] right-[8px] z-10 flex items-center gap-[4px] opacity-0 group-hover:opacity-100"
             onClick={stop}
           >
-            <Menu
-              trigger="click"
-              position="bottomRight"
-              visible={menuVisible}
-              onVisibleChange={setMenuVisible}
-              render={
-                <Menu.SubMenu mode="menu">
-                  {onRename ? (
-                    <Menu.Item
-                      icon={<IconCozEdit />}
-                      data-testid="workspace.library.folder.rename"
-                      onClick={() => {
-                        setRenameValue(folder.name);
-                        setRenameOpen(true);
-                        setMenuVisible(false);
-                      }}
-                    >
-                      {I18n.t('workspace_library_folder_rename') || '重命名'}
-                    </Menu.Item>
-                  ) : null}
-                  {onDelete ? (
-                    <Menu.Item
-                      icon={<IconCozTrashCan />}
-                      data-testid="workspace.library.folder.delete"
-                      onClick={() => {
-                        setMenuVisible(false);
-                        handleDelete();
-                      }}
-                    >
-                      {I18n.t('Delete') || '删除'}
-                    </Menu.Item>
-                  ) : null}
-                </Menu.SubMenu>
-              }
-            >
-              <IconButton
-                size="small"
-                color="secondary"
-                icon={<IconCozMore />}
-                data-testid="workspace.library.folder.more"
-              />
-            </Menu>
+            {onBatchAdd ? (
+              <Tooltip content="批量加入工作流">
+                <IconButton
+                  size="small"
+                  color="secondary"
+                  icon={<IconCozPlus />}
+                  data-testid="workspace.library.folder.batch-add"
+                  onClick={() => onBatchAdd(folder)}
+                />
+              </Tooltip>
+            ) : null}
+            {showMenu ? (
+              <Menu
+                trigger="click"
+                position="bottomRight"
+                visible={menuVisible}
+                onVisibleChange={setMenuVisible}
+                render={
+                  <Menu.SubMenu mode="menu">
+                    {onRename ? (
+                      <Menu.Item
+                        icon={<IconCozEdit />}
+                        data-testid="workspace.library.folder.rename"
+                        onClick={() => {
+                          setRenameValue(folder.name);
+                          setRenameOpen(true);
+                          setMenuVisible(false);
+                        }}
+                      >
+                        {I18n.t('workspace_library_folder_rename') || '重命名'}
+                      </Menu.Item>
+                    ) : null}
+                    {onDelete ? (
+                      <Menu.Item
+                        icon={<IconCozTrashCan />}
+                        data-testid="workspace.library.folder.delete"
+                        onClick={() => {
+                          setMenuVisible(false);
+                          handleDelete();
+                        }}
+                      >
+                        {I18n.t('Delete') || '删除'}
+                      </Menu.Item>
+                    ) : null}
+                  </Menu.SubMenu>
+                }
+              >
+                <IconButton
+                  size="small"
+                  color="secondary"
+                  icon={<IconCozMore />}
+                  data-testid="workspace.library.folder.more"
+                />
+              </Menu>
+            ) : null}
           </div>
         ) : null}
-        <div className="w-full h-[122px] flex items-center justify-center bg-[#F9FAFD] rounded-[6px]">
-          <div className="text-[56px] leading-none">📁</div>
+        <div
+          className="relative grid place-items-center h-[142px]"
+          style={{
+            backgroundColor: 'var(--coz-bg-secondary, #f0f0f7)',
+            borderBottom:
+              '1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 0.13))',
+            ...(active
+              ? { boxShadow: 'inset 0 0 0 2px var(--coz-stroke-hglt, #5a6bff)' }
+              : {}),
+          }}
+        >
+          <IconCozFolder className="text-[56px] coz-fg-secondary" />
         </div>
-        <div className="flex flex-col gap-[2px] mt-[10px]">
-          <div className="h-[20px] flex-shrink-0">
-            <Space spacing={4} className="w-full">
-              <Typography.Text
-                data-testid="workspace.library.folder.name"
-                className="h-[20px] text-[16px] coz-fg-primary leading-[20px]"
-                style={{
-                  maxWidth: gridItemWidth ? `${gridItemWidth - 64}px` : '',
-                }}
-                ellipsis={{ showTooltip: true }}
-              >
-                <span className="font-[600]">{folder.name}</span>
-              </Typography.Text>
-            </Space>
-          </div>
-          <div className="mt-[12px] h-[16px] text-[12px] coz-fg-secondary leading-[16px]">
+        <div className="flex flex-1 flex-col items-center justify-center gap-[6px] px-[16px] py-[14px] text-center">
+          <Typography.Text
+            data-testid="workspace.library.folder.name"
+            className="w-full text-[16px] font-[600] coz-fg-primary leading-[20px]"
+            style={{
+              maxWidth: gridItemWidth ? `${gridItemWidth - 32}px` : undefined,
+            }}
+            ellipsis={{ showTooltip: true }}
+          >
+            {folder.name}
+          </Typography.Text>
+          <div className="text-[12px] coz-fg-secondary leading-[16px]">
             {I18n.t('workspace_library_folder_count', {
               count: folder.resource_count ?? folder.resource_ids?.length ?? 0,
             }) ||

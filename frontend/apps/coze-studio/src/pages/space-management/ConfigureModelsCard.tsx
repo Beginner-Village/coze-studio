@@ -16,9 +16,9 @@
 
 import { useState, type FC } from 'react';
 
-import { I18n } from '@coze-arch/i18n';
+import { I18n, type I18nKeysNoOptionsType } from '@coze-arch/i18n';
 import { Button, Input, InputNumber, Toast } from '@coze-arch/coze-design';
-import { SpaceApi } from '@coze-arch/bot-api';
+import { getLocalizedErrorMessage, SpaceApi } from '@coze-arch/bot-api';
 
 import styles from './DataMaintenanceSection.module.less';
 
@@ -34,6 +34,15 @@ interface ConfigureForm {
   rerankAPIKey: string;
   rerankModel: string;
 }
+
+const getDisplayErrorMessage = (message?: string) =>
+  getLocalizedErrorMessage(message) || message || '未知错误';
+
+const t = (
+  key: string,
+  options: Record<string, unknown>,
+  fallbackText: string,
+) => I18n.t(key as I18nKeysNoOptionsType, options, fallbackText);
 
 const emptyForm = (): ConfigureForm => ({
   chatBaseURL: '',
@@ -179,8 +188,8 @@ export const ConfigureModelsCard: FC<Props> = ({ spaceId }) => {
 
     if (!chat && !embedder && !rerank) {
       Toast.warning(
-        I18n.t(
-          'space_configure_models_empty',
+        t(
+'space_configure_models_empty',
           {},
           '请至少填写一组完整的模型配置（chat / embedder / rerank 三选一）',
         ),
@@ -197,15 +206,15 @@ export const ConfigureModelsCard: FC<Props> = ({ spaceId }) => {
         rerank,
       });
       if (resp.code !== 0) {
-        throw new Error(resp.msg || 'unknown error');
+        throw new Error(getDisplayErrorMessage(resp.msg));
       }
       const d = resp.data;
       const summaryDetail = d
         ? ` (model_meta=${d.model_meta_updated} / space_embedding=${d.space_embedding_updated} / space_rerank=${d.space_rerank_updated} / redis_del=${d.redis_keys_deleted})`
         : '';
       Toast.success(
-        I18n.t(
-          'space_configure_models_success',
+        t(
+'space_configure_models_success',
           {},
           `配置已保存，缓存已清空，下次对话生效${summaryDetail}`,
         ),
@@ -214,9 +223,10 @@ export const ConfigureModelsCard: FC<Props> = ({ spaceId }) => {
         Toast.warning(d.warnings.join('; '));
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'unknown error';
+      const msg =
+        e instanceof Error ? getDisplayErrorMessage(e.message) : '未知错误';
       Toast.error(
-        I18n.t('space_configure_models_failed', { msg }, `配置失败: ${msg}`),
+        t('space_configure_models_failed', { msg }, `配置失败: ${msg}`),
       );
     } finally {
       setLoading(false);
@@ -224,13 +234,13 @@ export const ConfigureModelsCard: FC<Props> = ({ spaceId }) => {
   };
 
   return (
-    <div className={styles.card} style={{ marginTop: 16 }}>
+    <div className={styles.card}>
       <div className={styles.cardTitle}>
-        {I18n.t('space_configure_models_title', {}, '一键配置模型 + 同步')}
+        {t('space_configure_models_title', {}, '一键配置模型 + 同步')}
       </div>
       <div className={styles.cardDesc}>
-        {I18n.t(
-          'space_configure_models_desc',
+        {t(
+'space_configure_models_desc',
           {},
           '一次性写入 chat / embedder / rerank 三组模型配置并清空空间级模型缓存，下次对话立即生效。任意一组留空表示跳过。仅 space owner 可执行。',
         )}
@@ -246,7 +256,7 @@ export const ConfigureModelsCard: FC<Props> = ({ spaceId }) => {
         onClick={handleSubmit}
         data-testid="space-configure-models-button"
       >
-        {I18n.t('space_configure_models_submit', {}, '保存并应用')}
+        {t('space_configure_models_submit', {}, '保存并应用')}
       </Button>
     </div>
   );

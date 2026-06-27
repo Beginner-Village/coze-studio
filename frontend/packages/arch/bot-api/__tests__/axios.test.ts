@@ -42,14 +42,23 @@ vi.mock('@coze-arch/bot-http', () => {
       },
     },
     isApiError: vi.fn(),
-    ApiError: vi
+    ApiError: vi.fn().mockImplementation(function (
+      this: any,
+      code: string,
+      msg: string,
+    ) {
+      this.code = code;
+      this.msg = msg;
+      this.config = {};
+      this.name = 'ApiError';
+    }),
+    getLocalizedErrorMessage: vi
       .fn()
-      .mockImplementation(function (this: any, code: string, msg: string) {
-        this.code = code;
-        this.msg = msg;
-        this.config = {};
-        this.name = 'ApiError';
-      }),
+      .mockImplementation((message: string) =>
+        message === 'must contain at least one uppercase letter'
+          ? '密码必须包含至少一个大写字母'
+          : message,
+      ),
   };
 });
 
@@ -78,7 +87,7 @@ describe('axios configuration', () => {
   describe('response interceptor', () => {
     it('should return response data directly on success', () => {
       const mockData = { foo: 'bar' };
-      const mockResponse = { data: mockData };
+      const mockResponse = { config: {}, data: mockData };
 
       const result = onFulfilled(mockResponse);
 
@@ -100,6 +109,26 @@ describe('axios configuration', () => {
         expect(isApiError).toHaveBeenCalledWith(apiError);
         expect(Toast.error).toHaveBeenCalledWith({
           content: apiError.msg,
+          showClose: false,
+        });
+        expect(error).toBe(apiError);
+      }
+    });
+
+    it('should show localized error toast for known backend messages', () => {
+      const apiError = new (ApiError as any)(
+        '700000009',
+        'must contain at least one uppercase letter',
+      );
+
+      (isApiError as any).mockReturnValue(true);
+
+      try {
+        onRejected(apiError);
+        expect(true).toBe(false);
+      } catch (error) {
+        expect(Toast.error).toHaveBeenCalledWith({
+          content: '密码必须包含至少一个大写字母',
           showClose: false,
         });
         expect(error).toBe(apiError);

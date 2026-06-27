@@ -423,24 +423,25 @@ export class PreSendLocalMessageFactory {
             file_name: item.file.name,
             file_type: fileType,
             file_size: item.file.size,
-            file_url: '',
+            file_url: item.url ?? '',
           },
         };
       }
       if (type === ContentType.Image) {
         const blobUrl = URL.createObjectURL(item.file);
+        const imageUrl = item.url || blobUrl;
 
         return {
           type,
           image: {
             key: item.uri,
             image_thumb: {
-              url: blobUrl,
+              url: imageUrl,
               width: item.width,
               height: item.height,
             },
             image_ori: {
-              url: blobUrl,
+              url: imageUrl,
               width: item.width,
               height: item.height,
             },

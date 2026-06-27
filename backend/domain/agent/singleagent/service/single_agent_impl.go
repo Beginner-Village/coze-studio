@@ -54,8 +54,8 @@ type Components struct {
 	PublishInfoRepo  *jsoncache.JsonCache[entity.PublishInfo]
 	CounterRepo      repository.CounterRepository
 
-	CPStore compose.CheckPointStore
-	Embedder              embedding.Embedder
+	CPStore  compose.CheckPointStore
+	Embedder embedding.Embedder
 }
 
 func NewService(c *Components) SingleAgent {
@@ -107,13 +107,14 @@ func (s *singleAgentImpl) StreamExecute(ctx context.Context, req *entity.Execute
 	}
 
 	conf := &agentflow.Config{
-		Agent:                   ae,
-		UserID:                  req.UserID,
-		Identity:                req.Identity,
-		ModelMgr:                s.ModelMgr,
-		ModelFactory:            s.ModelFactory,
-		CPStore:                 s.CPStore,
-		Embedder:                s.Embedder,
+		Agent:        ae,
+		UserID:       req.UserID,
+		Identity:     req.Identity,
+		ModelMgr:     s.ModelMgr,
+		ModelFactory: s.ModelFactory,
+		CPStore:      s.CPStore,
+		Embedder:     s.Embedder,
+		Ext:          req.Ext,
 	}
 	rn, err := agentflow.BuildAgent(ctx, conf)
 	if err != nil {
@@ -121,16 +122,43 @@ func (s *singleAgentImpl) StreamExecute(ctx context.Context, req *entity.Execute
 	}
 
 	exeReq := &agentflow.AgentRequest{
-		UserID:   req.UserID,
-		Input:    req.Input,
-		History:  req.History,
-		Identity: req.Identity,
+		UserID:         req.UserID,
+		ConversationID: req.ConversationID,
+		Input:          req.Input,
+		History:        req.History,
+		Identity:       req.Identity,
 
 		ResumeInfo:   req.ResumeInfo,
 		PreCallTools: req.PreCallTools,
 		Variables:    req.Variables, // 传递会话自定义变量，用于覆盖智能体预设变量
 	}
 	return rn.StreamExecute(ctx, rn.PreHandlerReq(ctx, exeReq))
+}
+
+// PostRunReview builds the same agent config as a run and delegates to the
+// agentflow review fork. agentflow.RunPostRunReview itself no-ops for non-super
+// agents, so the original single-agent flow is never touched.
+func (s *singleAgentImpl) PostRunReview(ctx context.Context, identity *entity.AgentIdentity, userID string, transcript []*schema.Message) (string, error) {
+	if identity == nil || len(transcript) == 0 {
+		return "", nil
+	}
+	ae, err := s.ObtainAgentByIdentity(ctx, identity)
+	if err != nil {
+		return "", err
+	}
+	if identity.Version == "" {
+		identity.Version = ae.Version
+	}
+	conf := &agentflow.Config{
+		Agent:        ae,
+		UserID:       userID,
+		Identity:     identity,
+		ModelMgr:     s.ModelMgr,
+		ModelFactory: s.ModelFactory,
+		CPStore:      s.CPStore,
+		Embedder:     s.Embedder,
+	}
+	return agentflow.RunPostRunReview(ctx, conf, transcript)
 }
 
 func (s *singleAgentImpl) GetSingleAgent(ctx context.Context, agentID int64, version string) (botInfo *entity.SingleAgent, err error) {
@@ -170,6 +198,10 @@ func (s *singleAgentImpl) CreateSingleAgentDraft(ctx context.Context, creatorID 
 
 func (s *singleAgentImpl) GetSingleAgentDraft(ctx context.Context, agentID int64) (*entity.SingleAgent, error) {
 	return s.AgentDraftRepo.Get(ctx, agentID)
+}
+
+func (s *singleAgentImpl) GetDraftBySourceProduct(ctx context.Context, creatorID, sourceProductID int64) (*entity.SingleAgent, error) {
+	return s.AgentDraftRepo.GetBySourceProduct(ctx, creatorID, sourceProductID)
 }
 
 func (s *singleAgentImpl) ObtainAgentByIdentity(ctx context.Context, identity *entity.AgentIdentity) (*entity.SingleAgent, error) {

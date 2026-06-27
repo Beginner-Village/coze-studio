@@ -28,27 +28,29 @@ import (
 	embeddingHandler "github.com/ynet-dev/ynet-studio/backend/api/handler/embedding"
 	rerankHandler "github.com/ynet-dev/ynet-studio/backend/api/handler/rerank"
 	embeddingApp "github.com/ynet-dev/ynet-studio/backend/application/embedding"
-	rerankApp "github.com/ynet-dev/ynet-studio/backend/application/rerank"
 	"github.com/ynet-dev/ynet-studio/backend/application/openauth"
+	rerankApp "github.com/ynet-dev/ynet-studio/backend/application/rerank"
 	"github.com/ynet-dev/ynet-studio/backend/application/template"
 	crosssearch "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/search"
 	agentrepository "github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/repository"
 	apprepository "github.com/ynet-dev/ynet-studio/backend/domain/app/repository"
 	knowledgerepository "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/repository"
 	knowledgesvc "github.com/ynet-dev/ynet-studio/backend/domain/knowledge/service"
-	oplogsvc "github.com/ynet-dev/ynet-studio/backend/domain/operationlog/service"
-	searchService "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
 	modelrepository "github.com/ynet-dev/ynet-studio/backend/domain/model/repository"
 	modelservice "github.com/ynet-dev/ynet-studio/backend/domain/model/service"
+	oplogsvc "github.com/ynet-dev/ynet-studio/backend/domain/operationlog/service"
+	searchService "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
 
+	"github.com/ynet-dev/ynet-studio/backend/application/admin"
+	aiProductApp "github.com/ynet-dev/ynet-studio/backend/application/aiproduct"
 	"github.com/ynet-dev/ynet-studio/backend/application/app"
+	strategyApp "github.com/ynet-dev/ynet-studio/backend/application/strategy"
 	"github.com/ynet-dev/ynet-studio/backend/application/base/appinfra"
 	"github.com/ynet-dev/ynet-studio/backend/application/connector"
 	"github.com/ynet-dev/ynet-studio/backend/application/conversation"
 	"github.com/ynet-dev/ynet-studio/backend/application/external_knowledge"
 	"github.com/ynet-dev/ynet-studio/backend/application/knowledge"
 	"github.com/ynet-dev/ynet-studio/backend/application/memory"
-	"github.com/ynet-dev/ynet-studio/backend/application/admin"
 	"github.com/ynet-dev/ynet-studio/backend/application/modelmgr"
 	"github.com/ynet-dev/ynet-studio/backend/application/operationlog"
 	"github.com/ynet-dev/ynet-studio/backend/application/plugin"
@@ -71,13 +73,13 @@ import (
 	crossdatacopy "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/datacopy"
 	crossknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
 	crossmessage "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/message"
-	"github.com/ynet-dev/ynet-studio/backend/domain/ynet_agent"
-	ynet_agent_repo "github.com/ynet-dev/ynet-studio/backend/infra/repository/ynet_agent"
 	crossmodelmgr "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/modelmgr"
 	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
 	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
 	crossskill "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/skill"
+	crossstrategy "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/strategy"
 	crossuser "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/user"
+	crossusermemory "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/usermemory"
 	crossvariables "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/variables"
 	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
 	agentrunImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/agentrun"
@@ -90,15 +92,19 @@ import (
 	messageImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/message"
 	modelmgrImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/modelmgr"
 	pluginImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/plugin"
-	skillImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/skill"
 	searchImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/search"
 	singleagentImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/singleagent"
+	skillImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/skill"
+	strategyImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/strategy"
 	variablesImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/variables"
 	workflowImpl "github.com/ynet-dev/ynet-studio/backend/crossdomain/impl/workflow"
+	adminrepo "github.com/ynet-dev/ynet-studio/backend/domain/admin/repository"
+	strategyservice "github.com/ynet-dev/ynet-studio/backend/domain/strategy/service"
+	"github.com/ynet-dev/ynet-studio/backend/domain/ynet_agent"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/eventbus"
 	"github.com/ynet-dev/ynet-studio/backend/infra/impl/checkpoint"
 	implEventbus "github.com/ynet-dev/ynet-studio/backend/infra/impl/eventbus"
-	adminrepo "github.com/ynet-dev/ynet-studio/backend/domain/admin/repository"
+	ynet_agent_repo "github.com/ynet-dev/ynet-studio/backend/infra/repository/ynet_agent"
 )
 
 type eventbusImpl struct {
@@ -122,11 +128,12 @@ type primaryServices struct {
 	basicServices *basicServices
 	infra         *appinfra.AppDependencies
 
-	pluginSVC    *plugin.PluginApplicationService
-	memorySVC    *memory.MemoryApplicationServices
-	knowledgeSVC *knowledge.KnowledgeApplicationService
-	workflowSVC  *workflow.ApplicationService
-	shortcutSVC  *shortcutcmd.ShortcutCmdApplicationService
+	pluginSVC         *plugin.PluginApplicationService
+	memorySVC         *memory.MemoryApplicationServices
+	knowledgeSVC      *knowledge.KnowledgeApplicationService
+	workflowSVC       *workflow.ApplicationService
+	shortcutSVC       *shortcutcmd.ShortcutCmdApplicationService
+	strategyDomainSVC strategyservice.Strategy
 }
 
 type complexServices struct {
@@ -163,6 +170,18 @@ func Init(ctx context.Context) (err error) {
 		return fmt.Errorf("Init - initVitalServices failed, err: %v", err)
 	}
 
+	// Wire AgentAppSVC: publish/recruit orchestrator for virtual-employee agent_app
+	// products. Constructed here because it needs both the aiproduct domain service
+	// (initialised in initBasicServices) and the singleagent application service
+	// (initialised in initComplexServices).
+	aiProductApp.AgentAppSVC = &aiProductApp.AgentAppApplication{
+		DomainSVC:    aiProductApp.ProductApplicationSVC.DomainSVC,
+		AgentReader:  complexServices.singleAgentSVC,
+		ShadowWriter: complexServices.singleAgentSVC,
+		Sandbox:      aiProductApp.NewSandboxAdapter(),
+		ObjectPrefix: "templates/agent_app",
+	}
+
 	crossconnector.SetDefaultSVC(connectorImpl.InitDomainService(basicServices.connectorSVC.DomainSVC))
 	crossdatabase.SetDefaultSVC(databaseImpl.InitDomainService(primaryServices.memorySVC.DatabaseDomainSVC))
 	crossknowledge.SetDefaultSVC(knowledgeImpl.InitDomainService(primaryServices.knowledgeSVC.DomainSVC))
@@ -177,6 +196,9 @@ func Init(ctx context.Context) (err error) {
 	crossdatacopy.SetDefaultSVC(dataCopyImpl.InitDomainService(basicServices.infra))
 	crosssearch.SetDefaultSVC(searchImpl.InitDomainService(complexServices.searchSVC.DomainSVC))
 	crossmodelmgr.SetDefaultSVC(modelmgrImpl.InitDomainService(infra.ModelMgr, nil))
+
+	// Wire strategy domain service for progressive-disclosure runtime tools.
+	crossstrategy.SetDefaultSVC(strategyImpl.InitDomainService(primaryServices.strategyDomainSVC))
 
 	// Initialize Model Service
 	modelService := initModelService(infra)
@@ -319,12 +341,22 @@ func initBasicServices(ctx context.Context, infra *appinfra.AppDependencies, e *
 		IDGen: infra.IDGenSVC,
 		DB:    infra.DB,
 	})
+	aiProductSVC := aiProductApp.InitService(&aiProductApp.ServiceComponents{
+		IDGen:    infra.IDGenSVC,
+		DB:       infra.DB,
+		SkillSVC: skillSVC.DomainSVC,
+	})
+	skillSVC.ProductSyncer = aiProductSVC
 	crossskill.SetDefaultSVC(skillImpl.InitDomainService(skillSVC.DomainSVC))
 
 	// Wire sandbox manager for agent runtime tools (run_bash/read_file/write_file/list_files)
 	if infra.SandboxManager != nil {
 		crosssandbox.SetDefaultSVC(infra.SandboxManager)
 	}
+
+	// Wire per-user, DB-backed long-term memory for super-agent memory tools
+	// (memory_save / memory_recall). Scope is per user_id ("grows with you").
+	crossusermemory.SetDefaultSVC(agentrepository.NewUserMemoryManager(infra.DB))
 
 	// Initialize HiAgent repository
 	hiAgentRepo := ynet_agent_repo.NewHiAgentRepository(infra.DB)
@@ -366,14 +398,21 @@ func initPrimaryServices(ctx context.Context, basicServices *basicServices) (*pr
 
 	shortcutSVC := shortcutcmd.InitService(basicServices.infra.DB, basicServices.infra.IDGenSVC)
 
+	strategyDomainSVC := strategyservice.NewStrategyServiceWithDB(basicServices.infra.DB, basicServices.infra.IDGenSVC)
+
+	// Wire the strategy application service singleton.
+	strategyApp.StrategyApplicationSVC.DomainSVC = strategyDomainSVC
+	strategyApp.StrategyApplicationSVC.Eventbus = basicServices.eventbus.resourceEventBus
+
 	return &primaryServices{
-		basicServices: basicServices,
-		pluginSVC:     pluginSVC,
-		memorySVC:     memorySVC,
-		knowledgeSVC:  knowledgeSVC,
-		workflowSVC:   workflowDomainSVC,
-		shortcutSVC:   shortcutSVC,
-		infra:         basicServices.infra,
+		basicServices:     basicServices,
+		pluginSVC:         pluginSVC,
+		memorySVC:         memorySVC,
+		knowledgeSVC:      knowledgeSVC,
+		workflowSVC:       workflowDomainSVC,
+		shortcutSVC:       shortcutSVC,
+		infra:             basicServices.infra,
+		strategyDomainSVC: strategyDomainSVC,
 	}, nil
 }
 
@@ -497,6 +536,7 @@ func (p *primaryServices) toSearchServiceComponents(singleAgentSVC *singleagent.
 		ConnectorDomainSVC:   p.basicServices.connectorSVC.DomainSVC,
 		PromptDomainSVC:      p.basicServices.promptSVC.DomainSVC,
 		DatabaseDomainSVC:    p.memorySVC.DatabaseDomainSVC,
+		StrategyDomainSVC:    p.strategyDomainSVC,
 	}
 }
 

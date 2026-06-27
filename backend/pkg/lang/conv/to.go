@@ -49,7 +49,7 @@ func DebugJsonToStr(v interface{}) string {
 	if err != nil {
 		return ""
 	}
-	return string(b)
+	return redactBase64DataURLs(string(b))
 }
 
 func BoolToInt(p bool) int {

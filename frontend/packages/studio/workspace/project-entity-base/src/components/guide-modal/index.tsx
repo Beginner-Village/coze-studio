@@ -35,7 +35,7 @@ import AgentImgOversea from '../../assets/agent-img-oversea.png';
 
 import styles from './index.module.less';
 
-export type CreateType = 'project' | 'agent';
+export type CreateType = 'project' | 'agent' | 'superAgent';
 
 export interface GuideModalProps
   extends Omit<ModalProps, 'size' | 'footer' | 'header' | 'onCancel'> {
@@ -149,6 +149,17 @@ export const GuideModal: React.FC<GuideModalProps> = ({
         title={I18n.t('creat_project_creat_agent')}
         description={I18n.t('creat_project_agent_describe')}
         tip={!IS_OPEN_SOURCE ? I18n.t('agent_creat_tips') : null}
+      />
+      <GuideButton
+        onClick={() => onChange('superAgent')}
+        assetSrc={AgentAsset}
+        title={
+          <span className="flex gap-x-4px items-center">
+            FinMallClaw
+            <Badge count="Beta" type="alt" />
+          </span>
+        }
+        description="自主规划任务·绑定技能与 MCP 工具·独立沙箱空间"
       />
       {/* TODO: 应用功能尚未完成，暂时隐藏入口 */}
       {false && <GuideButton

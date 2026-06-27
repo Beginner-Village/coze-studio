@@ -197,6 +197,20 @@ describe('normal text message', () => {
     expect(waiting).toStrictEqual(expectedWaiting);
   });
 
+  it('does not write debug logs during waiting transitions', () => {
+    const { startWaiting, updateResponding, clearUnsettledByReplyId } =
+      useWaitingStore.getState();
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    startWaiting(sentMessage);
+    updateResponding(llmMessage);
+    clearUnsettledByReplyId(llmMessage.reply_id);
+
+    expect(logSpy).not.toHaveBeenCalled();
+
+    logSpy.mockRestore();
+  });
+
   it('update responding is correct', () => {
     // Detection of responding presence
     const { updateResponding } = useWaitingStore.getState();
@@ -230,7 +244,11 @@ describe('normal text message', () => {
 
     const { responding } = useWaitingStore.getState();
 
-    expect(responding).toBeNull();
+    expect(responding).toStrictEqual({
+      replyId: llmMessage.reply_id,
+      // @ts-expect-error -- single test
+      response: [getResponse(allFinishedMessage)],
+    });
   });
 
   it('not responding, only has tool_response', () => {
@@ -298,7 +316,11 @@ describe('normal text message', () => {
 
     const { responding } = useWaitingStore.getState();
 
-    expect(responding).toBeNull();
+    expect(responding).toStrictEqual({
+      replyId: llmMessage.reply_id,
+      // @ts-expect-error -- test
+      response: [getResponse(verboseMessage)],
+    });
   });
 
   it('has responding, normal message finished', () => {
@@ -400,6 +422,31 @@ describe('normal text message', () => {
     expect(waiting).toBeNull();
     expect(responding).toBeNull();
     expect(sending).toBeNull();
+  });
+
+  it('ignores orphan tool response without console error', () => {
+    const { updateResponding } = useWaitingStore.getState();
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+
+    const respondingMessage = {
+      ...llmMessage,
+      type: 'tool_response',
+      index: -1,
+    };
+
+    // @ts-expect-error -- test
+    updateResponding(respondingMessage);
+
+    const { responding } = useWaitingStore.getState();
+
+    expect(responding).toBeNull();
+    expect(errorSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('cannot find related function call'),
+    );
+
+    errorSpy.mockRestore();
   });
 
   it('function call index not correct', () => {

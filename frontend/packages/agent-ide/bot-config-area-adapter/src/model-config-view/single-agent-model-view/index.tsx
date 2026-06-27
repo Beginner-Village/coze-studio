@@ -28,10 +28,12 @@ import { Button, Tag } from '@coze-arch/coze-design';
 const itemKey = Symbol.for('SingleAgentModelView');
 
 export function SingleAgentModelView(props: SingleAgentModelViewProps) {
+  const { triggerRender, ...restProps } = props;
+
   return (
     <SingleAgentModelViewBase
-      {...props}
-      triggerRender={m => (
+      {...restProps}
+      triggerRender={triggerRender ?? (m => (
         // Forced full display of Advent prompts during model Advent
         <Collapsible
           itemKey={itemKey}
@@ -70,7 +72,7 @@ export function SingleAgentModelView(props: SingleAgentModelViewProps) {
           }
           collapsedTooltip={m?.name}
         />
-      )}
+      ))}
     />
   );
 }

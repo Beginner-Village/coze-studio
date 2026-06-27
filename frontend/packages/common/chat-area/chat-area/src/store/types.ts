@@ -271,6 +271,7 @@ export interface BaseFileData {
   status: FileStatus;
   percent: number;
   uri: string | null;
+  url: string | null;
   file: File;
 }
 

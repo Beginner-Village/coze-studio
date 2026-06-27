@@ -19,6 +19,8 @@ import { type ReactNode } from 'react';
 
 // #region I18nOptionsMap
 export interface I18nOptionsMap {
+  // custom key added manually (not produced by `pnpm dl-i18n`) — folder feature
+  workspace_library_folder_count: { count: ReactNode };
   '10k_point_resource_coze_token': { num: ReactNode /* string */ };
   AddSuccessToast: { name: ReactNode /* string */ };
   Coze_model_cost_coze_token: { count: ReactNode /* string */ };
@@ -16288,7 +16290,49 @@ export type I18nKeysNoOptionsType =
   | 'data_request_request_failed'
   | 'data_request_requesting'
   | 'other_knowledge'
-  | 'recall_knowledge_empty';
+  | 'recall_knowledge_empty'
+  // ---- custom keys added manually (NOT produced by `pnpm dl-i18n`) ----
+  // These keys live in src/locales/*.json but the generated type was out of
+  // sync. Re-add after running dl-i18n if they disappear. (folder + members)
+  | 'failed_to_add_members'
+  | 'failed_to_fetch_members'
+  | 'failed_to_remove_member'
+  | 'failed_to_search_members'
+  | 'failed_to_update_role'
+  | 'member_action_add'
+  | 'member_action_remove'
+  | 'member_add_modal_title'
+  | 'member_add_search_placeholder'
+  | 'member_column_actions'
+  | 'member_column_join_date'
+  | 'member_column_role'
+  | 'member_column_user'
+  | 'member_filter_all'
+  | 'member_remove_confirm_content'
+  | 'member_remove_confirm_title'
+  | 'member_removed_successfully'
+  | 'member_role_admin'
+  | 'member_role_member'
+  | 'member_role_owner'
+  | 'member_search_placeholder'
+  | 'members_added_successfully'
+  | 'members_no_found'
+  | 'navigation_workspace_members'
+  | 'please_select_members_to_add'
+  | 'role_updated_successfully'
+  | 'workspace_library_folder_add'
+  | 'workspace_library_folder_all'
+  | 'workspace_library_folder_create_failed'
+  | 'workspace_library_folder_delete_tip'
+  | 'workspace_library_folder_delete_title'
+  | 'workspace_library_folder_empty'
+  | 'workspace_library_folder_move_failed'
+  | 'workspace_library_folder_move_into'
+  | 'workspace_library_folder_move_out'
+  | 'workspace_library_folder_name_duplicate'
+  | 'workspace_library_folder_name_placeholder'
+  | 'workspace_library_folder_name_required'
+  | 'workspace_library_folder_rename';
 // #endregion
 
 // #region LocaleData

@@ -51,6 +51,7 @@ import {
   type TimeCapsuleConfig,
   type TTSInfo,
   type AgentSkillItem,
+  type StrategyBindItem,
   type VariableItem,
   type WorkFlowItemType,
 } from '../../types/skill';
@@ -72,6 +73,7 @@ export const getDefaultBotSkillStore = (): BotSkillStore => ({
   workflows: [],
   boundCards: [],
   agentSkills: [],
+  strategies: [],
   knowledge: {
     dataSetList: [],
     dataSetInfo: DEFAULT_KNOWLEDGE_CONFIG(),
@@ -115,6 +117,8 @@ export interface BotSkillStore {
   boundCards: BoundCardInfo[];
   /** Agent skills (progressive disclosure) */
   agentSkills: AgentSkillItem[];
+  /** Bound strategies */
+  strategies: StrategyBindItem[];
   /** Knowledge Allocation */
   knowledge: KnowledgeConfig;
   // endregion
@@ -178,6 +182,7 @@ export interface BotSkillAction {
   updateSkillWorkflows: (workflows: WorkFlowItemType[]) => void;
   updateBoundCards: (boundCards: BoundCardInfo[]) => void;
   updateAgentSkills: (agentSkills: AgentSkillItem[]) => void;
+  updateSkillStrategies: (strategies: StrategyBindItem[]) => void;
   updateSkillKnowledgeDatasetList: (
     dataSetList: KnowledgeConfig['dataSetList'],
   ) => void;
@@ -221,6 +226,7 @@ export const useBotSkillStore = create<BotSkillStore & BotSkillAction>()(
       updateSkillWorkflows: workflows => set(s => ({ ...s, workflows })),
       updateBoundCards: boundCards => set(s => ({ ...s, boundCards })),
       updateAgentSkills: agentSkills => set(s => ({ ...s, agentSkills })),
+      updateSkillStrategies: strategies => set(s => ({ ...s, strategies })),
       updateSkillKnowledgeDatasetList: dataSetList =>
         set(
           produce<BotSkillStore>(s => {
@@ -308,6 +314,11 @@ export const useBotSkillStore = create<BotSkillStore & BotSkillAction>()(
           ),
           boundCards: transformDto2Vo.boundCards(botInfo?.bound_cards),
           agentSkills: transformDto2Vo.agentSkills(botInfo?.skill_info_list),
+          strategies: transformDto2Vo.strategies(
+            (botInfo as Record<string, unknown>)?.strategy_id_list as
+              | string[]
+              | undefined,
+          ),
           knowledge: transformDto2Vo.knowledge(
             botInfo?.knowledge,
             optionData?.knowledge_detail_map,

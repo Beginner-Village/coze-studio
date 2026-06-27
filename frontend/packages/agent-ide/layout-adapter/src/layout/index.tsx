@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Outlet } from 'react-router-dom';
+import { Outlet, useSearchParams } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 
 import { useBotRouteConfig } from '@coze-agent-ide/space-bot/hook';
@@ -32,13 +32,20 @@ const Layout = lazy(() =>
 
 export const BotEditorLayout = () => {
   const { requireBotEditorInit, pageName, hasHeader } = useBotRouteConfig();
+  // 虚拟员工「对话」入口(?employeeChat=1)隐藏整个 bot 编辑器顶栏
+  // (编排/统计 tab、发布、草稿自动保存、名称),让它成为纯粹的员工对话界面。
+  const [searchParams] = useSearchParams();
+  const employeeChat = searchParams.get('employeeChat') === '1';
 
   return (
     <BotCreatorProvider value={{ scene: BotCreatorScene.Bot }}>
       <BotEditorLoggerContextProvider>
         {requireBotEditorInit ? (
           <Suspense>
-            <Layout pageName={pageName} hasHeader={hasHeader}>
+            <Layout
+              pageName={pageName}
+              hasHeader={employeeChat ? false : hasHeader}
+            >
               <Suspense>
                 <Outlet />
               </Suspense>

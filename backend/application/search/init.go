@@ -30,6 +30,7 @@ import (
 	database "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
 	"github.com/ynet-dev/ynet-studio/backend/domain/plugin/service"
 	prompt "github.com/ynet-dev/ynet-studio/backend/domain/prompt/service"
+	strategyservice "github.com/ynet-dev/ynet-studio/backend/domain/strategy/service"
 	search "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
 	user "github.com/ynet-dev/ynet-studio/backend/domain/user/service"
 	"github.com/ynet-dev/ynet-studio/backend/domain/workflow"
@@ -57,6 +58,7 @@ type ServiceComponents struct {
 	ConnectorDomainSVC   connector.Connector
 	PromptDomainSVC      prompt.Prompt
 	DatabaseDomainSVC    database.Database
+	StrategyDomainSVC    strategyservice.Strategy
 }
 
 func InitService(ctx context.Context, s *ServiceComponents) (*SearchApplicationService, error) {

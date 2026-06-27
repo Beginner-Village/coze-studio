@@ -142,9 +142,15 @@ export type ResourceFolderCozeProps = {
    * Hide more menu button
    */
   hideMoreBtn?: boolean;
+  /**
+   * Enable folder/category operations for this resource group.
+   */
+  enableFolder?: boolean;
 } & Pick<
   ResourceFolderProps,
   | 'id'
+  | 'onCreate'
+  | 'onDrag'
   | 'onChangeName'
   | 'onDelete'
   | 'iconRender'

@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 
+	"gorm.io/gen/field"
 	"gorm.io/gorm"
 
 	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_common"
@@ -31,6 +32,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
@@ -95,6 +97,33 @@ func (sa *SingleAgentDraftDAO) Get(ctx context.Context, agentID int64) (*entity.
 	do := sa.singleAgentDraftPo2Do(singleAgent)
 
 	return do, nil
+}
+
+// GetBySourceProduct returns the most recently updated draft instance that the
+// given creator materialised from the given source agent_app product, or
+// (nil, nil) when none exists. It is used to make virtual-employee recruitment
+// idempotent: re-recruiting the same product reuses the existing instance agent
+// instead of leaking a fresh sandbox-backed draft each time.
+func (sa *SingleAgentDraftDAO) GetBySourceProduct(ctx context.Context, creatorID, sourceProductID int64) (*entity.SingleAgent, error) {
+	m := sa.dbQuery.SingleAgentDraft
+	// source_product_id is not part of the generated query struct, so build an
+	// ad-hoc field expression for it (table name matches the gen model).
+	sourceProductIDField := field.NewInt64(m.TableName(), "source_product_id")
+
+	singleAgent, err := m.WithContext(ctx).
+		Where(m.CreatorID.Eq(creatorID), sourceProductIDField.Eq(sourceProductID)).
+		Order(m.UpdatedAt.Desc()).
+		First()
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrAgentGetCode)
+	}
+
+	return sa.singleAgentDraftPo2Do(singleAgent), nil
 }
 
 func (sa *SingleAgentDraftDAO) MGet(ctx context.Context, agentIDs []int64) ([]*entity.SingleAgent, error) {
@@ -179,6 +208,11 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftPo2Do(po *model.SingleAgentDraft)
 			BoundCards:              po.BoundCards,
 			SkillInfoList:           skillPOsToSkillDOs(po.SkillInfoList),
 			ForceToolReturn:         po.ForceToolReturn,
+			AgentType:               ptr.From(po.AgentType),
+			SuperAgentToolConfig:    po.SuperAgentToolConfig,
+			SourceProductID:         po.SourceProductID,
+			SourceProductVersion:    po.SourceProductVersion,
+			Strategies:              po.StrategyConfig,
 		},
 	}
 }
@@ -213,6 +247,11 @@ func (sa *SingleAgentDraftDAO) singleAgentDraftDo2Po(do *entity.SingleAgent) *mo
 		BoundCards:              do.BoundCards,
 		SkillInfoList:           skillDOsToPOs(do.SkillInfoList),
 		ForceToolReturn:         do.ForceToolReturn,
+		AgentType:               ptr.Of(do.AgentType),
+		SuperAgentToolConfig:    do.SuperAgentToolConfig,
+		SourceProductID:         do.SourceProductID,
+		SourceProductVersion:    do.SourceProductVersion,
+		StrategyConfig:          do.Strategies,
 	}
 }
 

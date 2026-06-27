@@ -248,18 +248,20 @@ export const formatFileDataListToMessagePayload = (
       throw new Error('failed to get file uri');
     }
     if (data.fileType === FileType.File) {
-      const filePayload: TextAndFileMixMessagePropsFilePayload = {
-        type: ContentType.File,
+      const filePayload = {
+        type: ContentType.File as const,
         file: data.file,
         uri,
+        url: data.url ?? undefined,
       };
       return filePayload;
     }
     const { meta } = data;
-    const imagePayload: TextAndFileMixMessagePropsImagePayload = {
-      type: ContentType.Image,
+    const imagePayload = {
+      type: ContentType.Image as const,
       file: data.file,
       uri,
+      url: data.url ?? undefined,
       width: meta?.width ?? 0,
       height: meta?.height ?? 0,
     };
@@ -340,7 +342,7 @@ export const createNormalizedFilePayload = (
         file_key: finalFile.uri,
         file_name: finalFile.file.name,
         file_size: finalFile.file.size,
-        file_url: '',
+        file_url: finalFile.url ?? '',
         file_type: finalFile.fileTypeConfig.fileType,
       })),
     },
@@ -371,19 +373,22 @@ export const createNormalizedImagePayload = (
   const payload: NormalizedMessagePropsPayload<ContentType.Image> = {
     contentType: ContentType.Image,
     contentObj: {
-      image_list: finalFileList.map(finalFile => ({
-        key: finalFile.uri,
-        image_thumb: {
-          url: finalFile.blobUrl,
-          width: finalFile.meta?.width ?? 0,
-          height: finalFile.meta?.height ?? 0,
-        },
-        image_ori: {
-          url: finalFile.blobUrl,
-          width: finalFile.meta?.width ?? 0,
-          height: finalFile.meta?.height ?? 0,
-        },
-      })),
+      image_list: finalFileList.map(finalFile => {
+        const url = finalFile.url || finalFile.blobUrl;
+        return {
+          key: finalFile.uri,
+          image_thumb: {
+            url,
+            width: finalFile.meta?.width ?? 0,
+            height: finalFile.meta?.height ?? 0,
+          },
+          image_ori: {
+            url,
+            width: finalFile.meta?.width ?? 0,
+            height: finalFile.meta?.height ?? 0,
+          },
+        };
+      }),
     },
     mention_list: mentionList,
   };

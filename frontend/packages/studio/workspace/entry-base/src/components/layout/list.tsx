@@ -27,10 +27,10 @@ export const Layout = forwardRef<HTMLDivElement, LayoutBaseProps>(
       ref={ref}
       className={classNames(
         restProps.className,
-        'min-h-[100%]',
-        'flex flex-col gap-[16px]',
+        'h-full min-h-[100%]',
+        'flex flex-col',
         'overflow-hidden',
-        'px-[24px] pt-[24px]',
+        'bg-[rgb(244,246,251)]',
       )}
     >
       {children}
@@ -46,8 +46,10 @@ export const Header = forwardRef<HTMLDivElement, LayoutBaseProps>(
       className={classNames(
         restProps.className,
         'flex-shrink-0',
-        'w-full h-[32px]',
-        'flex items-center justify-between',
+        'w-full',
+        'flex items-start justify-between gap-[16px]',
+        'px-[32px] pt-[26px] pb-[18px]',
+        'bg-[var(--coz-bg-max)]',
       )}
     >
       {children}
@@ -62,7 +64,8 @@ export const HeaderTitle = forwardRef<HTMLDivElement, LayoutBaseProps>(
       ref={ref}
       className={classNames(
         restProps.className,
-        'text-[20px] font-[500]',
+        'text-[24px] font-[600] leading-[32px]',
+        'coz-fg-plus',
         'flex items-center gap-[8px]',
       )}
     >
@@ -78,7 +81,7 @@ export const HeaderActions = forwardRef<HTMLDivElement, LayoutBaseProps>(
       ref={ref}
       className={classNames(
         restProps.className,
-        'flex items-center gap-[8px] ml-[32px]',
+        'flex items-center gap-[12px] ml-[32px] pt-[2px]',
       )}
     >
       {children}
@@ -94,8 +97,11 @@ export const SubHeader = forwardRef<HTMLDivElement, LayoutBaseProps>(
       className={classNames(
         restProps.className,
         'flex-shrink-0',
-        'w-full h-[32px]',
-        'flex items-center justify-between',
+        'w-full',
+        'flex items-center justify-between gap-[12px]',
+        'px-[32px] py-[18px]',
+        'border-0 border-t-[1px] border-b-[1px] border-solid coz-stroke-primary',
+        'bg-[rgb(244,246,251)]',
       )}
     >
       {children}
@@ -108,7 +114,10 @@ export const SubHeaderFilters = forwardRef<HTMLDivElement, LayoutBaseProps>(
     <div
       {...restProps}
       ref={ref}
-      className={classNames(restProps.className, 'flex items-center gap-[8px]')}
+      className={classNames(
+        restProps.className,
+        'flex items-center gap-[12px] flex-wrap',
+      )}
     >
       {children}
     </div>
@@ -117,7 +126,11 @@ export const SubHeaderFilters = forwardRef<HTMLDivElement, LayoutBaseProps>(
 
 export const SubHeaderSearch = forwardRef<HTMLDivElement, LayoutBaseProps>(
   ({ children, ...restProps }, ref) => (
-    <div {...restProps} ref={ref} className={classNames(restProps.className)}>
+    <div
+      {...restProps}
+      ref={ref}
+      className={classNames(restProps.className, 'flex-shrink-0')}
+    >
       {children}
     </div>
   ),
@@ -132,6 +145,7 @@ export const Content = forwardRef<HTMLDivElement, LayoutBaseProps>(
         restProps.className,
         'flex-grow',
         'overflow-x-hidden overflow-y-auto',
+        'px-[32px] pt-[6px] pb-[40px]',
       )}
     >
       {children}

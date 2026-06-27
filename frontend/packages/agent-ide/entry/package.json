@@ -63,7 +63,11 @@
     "classnames": "^2.3.2",
     "immer": "^10.0.3",
     "query-string": "^8.1.0",
-    "zustand": "^4.4.7"
+    "zustand": "^4.4.7",
+    "xlsx": "0.18.5",
+    "docx-preview": "0.3.7",
+    "highlight.js": "11.11.1",
+    "@aiden0z/pptx-renderer": "1.2.0"
   },
   "devDependencies": {
     "@coze-arch/bot-typings": "workspace:*",
@@ -97,4 +101,3 @@
   },
   "// deps": "immer@^10.0.3 为脚本自动补齐，请勿改动"
 }
-

@@ -30,6 +30,7 @@ import (
 	reflect "reflect"
 
 	database "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	service "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -173,6 +174,50 @@ func (m *MockDatabase) MGetDatabase(ctx context.Context, req *database.MGetDatab
 func (mr *MockDatabaseMockRecorder) MGetDatabase(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MGetDatabase", reflect.TypeOf((*MockDatabase)(nil).MGetDatabase), ctx, req)
+}
+
+// ListDatabase mocks base method.
+func (m *MockDatabase) ListDatabase(ctx context.Context, req *service.ListDatabaseRequest) (*service.ListDatabaseResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListDatabase", ctx, req)
+	ret0, _ := ret[0].(*service.ListDatabaseResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListDatabase indicates an expected call of ListDatabase.
+func (mr *MockDatabaseMockRecorder) ListDatabase(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDatabase", reflect.TypeOf((*MockDatabase)(nil).ListDatabase), ctx, req)
+}
+
+// CreateDatabase mocks base method.
+func (m *MockDatabase) CreateDatabase(ctx context.Context, req *service.CreateDatabaseRequest) (*service.CreateDatabaseResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDatabase", ctx, req)
+	ret0, _ := ret[0].(*service.CreateDatabaseResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateDatabase indicates an expected call of CreateDatabase.
+func (mr *MockDatabaseMockRecorder) CreateDatabase(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDatabase", reflect.TypeOf((*MockDatabase)(nil).CreateDatabase), ctx, req)
+}
+
+// AddDatabaseRecord mocks base method.
+func (m *MockDatabase) AddDatabaseRecord(ctx context.Context, req *service.AddDatabaseRecordRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddDatabaseRecord", ctx, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddDatabaseRecord indicates an expected call of AddDatabaseRecord.
+func (mr *MockDatabaseMockRecorder) AddDatabaseRecord(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddDatabaseRecord", reflect.TypeOf((*MockDatabase)(nil).AddDatabaseRecord), ctx, req)
 }
 
 // PublishDatabase mocks base method.

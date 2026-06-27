@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `skill_version` (
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
   `prompt` mediumtext DEFAULT NULL,
+  `files` json NULL COMMENT 'standard skill folder files snapshot',
   `icon_uri` varchar(1024) NOT NULL DEFAULT '',
   `content_hash` varchar(64) NOT NULL DEFAULT '',
   `created_at` bigint(20) NOT NULL DEFAULT '0',

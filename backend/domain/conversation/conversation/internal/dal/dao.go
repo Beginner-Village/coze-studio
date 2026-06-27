@@ -148,7 +148,9 @@ func (dao *ConversationDAO) List(ctx context.Context, userID int64, agentID int6
 	do = do.Where(dao.query.Conversation.CreatorID.Eq(userID)).
 		Where(dao.query.Conversation.AgentID.Eq(agentID)).
 		Where(dao.query.Conversation.Scene.Eq(scene)).
-		Where(dao.query.Conversation.ConnectorID.Eq(connectorID))
+		Where(dao.query.Conversation.ConnectorID.Eq(connectorID)).
+		// 过滤已删除会话，否则删除后刷新又会重新列出
+		Where(dao.query.Conversation.Status.Eq(int32(conversation.ConversationStatusNormal)))
 
 	do = do.Offset((page - 1) * limit)
 

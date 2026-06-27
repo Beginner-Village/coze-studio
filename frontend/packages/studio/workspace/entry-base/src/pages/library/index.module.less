@@ -4,10 +4,12 @@
 }
 
 .layout-content {
-  height: calc(100%);
+  height: 100%;
+  overflow: hidden;
+  background: rgb(244, 246, 251);
 
   :global(.coz-layout-header) {
-    padding-bottom: 16px;
+    padding: 0;
   }
 }
 
@@ -36,6 +38,11 @@
 }
 
 .layout-header {
+  flex: none;
+  padding: 26px 32px 18px !important;
+  background: var(--coz-bg-max, #fff);
+  border-bottom: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 0.13));
+
   .select {
     @apply shrink-0 !important;
 
@@ -49,25 +56,37 @@
   }
 }
 
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 18px;
+}
+
+.search {
+  min-width: 300px !important;
+}
+
 .filterSwitch {
   display: flex;
-  gap: 8px;
+  gap: 2px;
 
-  padding: 4px;
+  padding: 3px;
 
-  background-color: #fff;
-  border: 1px solid rgba(var(--coze-stroke-6), var(--coze-stroke-6-alpha));
-  border-radius: 6px;
+  background-color: var(--coz-bg-secondary, #f0f0f7);
+  border-radius: 9px;
 }
 
 .filterItem {
   cursor: pointer;
 
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 28px;
 
   background: url('./assets/icon_view_grid.svg') no-repeat center center / 20px auto;
-  border-radius: 4px;
+  border-radius: 7px;
+  transition: background 0.14s ease-out, box-shadow 0.14s ease-out;
 
   &.list {
     background: url('./assets/icon_view_list.svg') no-repeat center center / 20px auto;
@@ -75,11 +94,113 @@
 
   &.active {
     &.grid {
-      background:  #F0F5FF url('./assets/icon_view_grid_active.svg') no-repeat center center / 20px auto;
+      background: var(--coz-bg-max, #fff) url('./assets/icon_view_grid_active.svg') no-repeat center center / 20px auto;
+      box-shadow: 0 2px 6px rgb(29 28 35 / 4%), 0 4px 12px rgb(29 28 35 / 2%);
     }
 
     &.list {
-      background:  #F0F5FF url('./assets/icon_view_list_active.svg') no-repeat center center / 20px auto;
+      background: var(--coz-bg-max, #fff) url('./assets/icon_view_list_active.svg') no-repeat center center / 20px auto;
+      box-shadow: 0 2px 6px rgb(29 28 35 / 4%), 0 4px 12px rgb(29 28 35 / 2%);
     }
   }
+}
+
+.grid-scroll {
+  flex: 1;
+  padding: 22px 32px 40px;
+  overflow-y: auto;
+}
+
+.grid-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.grid-scroll::-webkit-scrollbar-thumb {
+  background: var(--coz-stroke-primary, rgba(82, 100, 154, 0.13));
+  background-clip: padding-box;
+  border: 3px solid rgb(244, 246, 251);
+  border-radius: 8px;
+}
+
+.resource-grid {
+  margin-bottom: 18px;
+}
+
+.resource-grid-item {
+  overflow: hidden;
+  background: var(--coz-bg-max, #fff) !important;
+  border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 0.13)) !important;
+  border-radius: 14px !important;
+  transition:
+    border-color 0.18s ease-out,
+    box-shadow 0.18s ease-out,
+    transform 0.18s ease-out !important;
+}
+
+.resource-grid-item:hover {
+  border-color: var(--coz-stroke-plus, rgba(68, 83, 130, 0.25)) !important;
+  box-shadow:
+    0 4px 12px rgb(29 28 35 / 8%),
+    0 8px 24px rgb(29 28 35 / 4%) !important;
+  transform: translateY(-2px);
+}
+
+.resource-grid-inner {
+  height: 100%;
+  padding: 0;
+  cursor: pointer;
+}
+
+.resource-card {
+  display: flex;
+  min-height: 238px;
+  flex-direction: column;
+}
+
+.resource-thumb {
+  position: relative;
+  display: grid;
+  height: 142px;
+  padding: 32px;
+  place-items: center;
+  background-color: var(--coz-bg-secondary, #f0f0f7) !important;
+  border-bottom: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 0.13));
+}
+
+.resource-icon {
+  width: 60px;
+  height: 60px;
+}
+
+.resource-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 14px 16px 16px;
+}
+
+.resource-footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 16px;
+  color: var(--coz-fg-dim, rgba(55, 67, 106, 0.38));
+  font-size: 12px;
+}
+
+.resource-time {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resource-tag {
+  flex: none;
+  padding: 3px 9px;
+  color: var(--coz-fg-secondary, rgba(32, 41, 69, 0.62));
+  font-size: 11px;
+  line-height: 16px;
+  background: var(--coz-bg-secondary, #f0f0f7);
+  border-radius: 6px;
 }

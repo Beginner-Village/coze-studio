@@ -18,11 +18,12 @@ package agentflow
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
 	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
-	sbx "github.com/ynet-dev/ynet-studio/backend/infra/contract/sandbox"
+	sbx "github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox/contract"
 )
 
 type fakeSandboxMgr struct {
@@ -35,6 +36,30 @@ type fakeSandboxMgr struct {
 
 func (m *fakeSandboxMgr) Exec(_ context.Context, key, cmd string, _ int) (*sbx.ExecResponse, error) {
 	m.lastKey, m.lastCmd = key, cmd
+	if strings.HasPrefix(cmd, "cd '/skills/") && strings.Contains(cmd, "' 2>/dev/null && find . -type f") {
+		skillPath := strings.TrimSuffix(strings.TrimPrefix(strings.Split(cmd, " 2>/dev/null && find . -type f")[0], "cd '"), "'")
+		prefix := skillPath + "/"
+		var files []string
+		for p := range m.files {
+			if strings.HasPrefix(p, prefix) {
+				files = append(files, strings.TrimPrefix(p, prefix))
+			}
+		}
+		return &sbx.ExecResponse{Stdout: strings.Join(files, "\n") + "\n", Stderr: "", ExitCode: 0}, nil
+	}
+	if strings.HasPrefix(cmd, "rm -f -- '") && strings.HasSuffix(cmd, "'") {
+		delete(m.files, strings.TrimSuffix(strings.TrimPrefix(cmd, "rm -f -- '"), "'"))
+		return &sbx.ExecResponse{Stdout: "", Stderr: "", ExitCode: 0}, nil
+	}
+	if strings.HasPrefix(cmd, "rm -rf -- '") && strings.HasSuffix(cmd, "'") {
+		prefix := strings.TrimSuffix(strings.TrimPrefix(cmd, "rm -rf -- '"), "'") + "/"
+		for p := range m.files {
+			if strings.HasPrefix(p, prefix) {
+				delete(m.files, p)
+			}
+		}
+		return &sbx.ExecResponse{Stdout: "", Stderr: "", ExitCode: 0}, nil
+	}
 	return &sbx.ExecResponse{Stdout: "hello\n", Stderr: "", ExitCode: 0}, nil
 }
 func (m *fakeSandboxMgr) ReadFile(_ context.Context, key, path string) ([]byte, error) {
@@ -53,6 +78,28 @@ func (m *fakeSandboxMgr) ListFiles(_ context.Context, key, path string) ([]strin
 	m.lastKey, m.lastPath = key, path
 	return []string{"a.txt", "b.py"}, nil
 }
+func (m *fakeSandboxMgr) EditFile(_ context.Context, key, path, oldStr, newStr string, replaceAll bool) (int, error) {
+	m.lastKey, m.lastPath = key, path
+	cur := string(m.files[path])
+	n := strings.Count(cur, oldStr)
+	if n == 0 {
+		return 0, fmt.Errorf("old_string not found")
+	}
+	if replaceAll {
+		m.files[path] = []byte(strings.ReplaceAll(cur, oldStr, newStr))
+		return n, nil
+	}
+	m.files[path] = []byte(strings.Replace(cur, oldStr, newStr, 1))
+	return 1, nil
+}
+func (m *fakeSandboxMgr) Grep(_ context.Context, key, pattern, path string) (string, error) {
+	m.lastKey = key
+	return "(no matches)", nil
+}
+func (m *fakeSandboxMgr) Glob(_ context.Context, key, pattern string) (string, error) {
+	m.lastKey = key
+	return "(no files matched)", nil
+}
 func (m *fakeSandboxMgr) SyncSkill(_ context.Context, key, name string, files map[string][]byte) error {
 	m.lastKey = key
 	if m.files == nil {
@@ -61,6 +108,18 @@ func (m *fakeSandboxMgr) SyncSkill(_ context.Context, key, name string, files ma
 	for rel, c := range files {
 		m.files["/skills/"+name+"/"+rel] = c
 	}
+	return nil
+}
+
+func (m *fakeSandboxMgr) CheckpointTo(_ context.Context, _, _ string) (string, error) {
+	return "", nil
+}
+
+func (m *fakeSandboxMgr) RestoreFrom(_ context.Context, _, _ string) error {
+	return nil
+}
+
+func (m *fakeSandboxMgr) EnsureSandboxWithTemplate(_ context.Context, _, _ string, _ bool) error {
 	return nil
 }
 
@@ -74,7 +133,7 @@ func TestSandboxKeyStableAndSafe(t *testing.T) {
 	if k1 == k3 {
 		t.Fatal("key must differ for different user")
 	}
-	if !strings.HasPrefix(k1, "u") || strings.ContainsAny(k1, "@/ ") {
+	if !strings.HasPrefix(k1, "a2-u") || strings.ContainsAny(k1, "@/ ") {
 		t.Fatalf("key not container-safe: %q", k1)
 	}
 }
@@ -97,9 +156,9 @@ func TestSandboxToolsInvoke(t *testing.T) {
 	defer crosssandbox.SetDefaultSVC(nil)
 
 	ctx := context.Background()
-	tools := newSandboxTools("ukey")
-	if len(tools) != 5 {
-		t.Fatalf("want 5 tools, got %d", len(tools))
+	tools := newSandboxTools("ukey", false)
+	if len(tools) != 8 {
+		t.Fatalf("want 8 tools, got %d", len(tools))
 	}
 
 	// run_bash
@@ -160,9 +219,28 @@ func TestUpdatePlanTool(t *testing.T) {
 	}
 }
 
+func TestUpdatePlanToolAcceptsCompletedStatus(t *testing.T) {
+	fm := &fakeSandboxMgr{}
+	crosssandbox.SetDefaultSVC(fm)
+	defer crosssandbox.SetDefaultSVC(nil)
+
+	up := &updatePlanTool{key: "ukey"}
+	out, err := up.InvokableRun(context.Background(),
+		`{"plan":[{"content":"read input","status":"completed"},{"content":"write output","status":"pending"}]}`)
+	if err != nil {
+		t.Fatalf("update_plan err=%v", err)
+	}
+	if !strings.Contains(out, "1/2 done") {
+		t.Fatalf("completed status should count as done: %q", out)
+	}
+	if !strings.Contains(out, "[x] read input") {
+		t.Fatalf("completed status should render as checked: %q", out)
+	}
+}
+
 func TestSandboxToolsNilWhenNoSVC(t *testing.T) {
 	crosssandbox.SetDefaultSVC(nil)
-	if newSandboxTools("k") != nil {
+	if newSandboxTools("k", false) != nil {
 		t.Fatal("expected nil tools when sandbox svc not set")
 	}
 }
@@ -194,5 +272,106 @@ func TestSandboxToolsEnabled(t *testing.T) {
 	t.Setenv("SANDBOX_TOOLS_ENABLED", "true")
 	if !sandboxToolsEnabled(0) {
 		t.Fatal("env force -> enabled")
+	}
+}
+
+func TestSkillsPathGuardBlocksInstanceWrites(t *testing.T) {
+	if !pathIsUnderSkills("/skills/pdf/SKILL.md") {
+		t.Fatal("should detect /skills path")
+	}
+	if pathIsUnderSkills("/workspace/out.txt") {
+		t.Fatal("should not flag /workspace path")
+	}
+	if err := guardSkillWrite(true, "/skills/pdf/x.py"); err == nil {
+		t.Fatal("write under /skills must be rejected for instances")
+	}
+	if err := guardSkillWrite(false, "/skills/pdf/x.py"); err != nil {
+		t.Fatal("non-instance writes must be allowed")
+	}
+}
+
+func TestSkillsPathGuardResistsTraversalBypass(t *testing.T) {
+	// Traversal paths that land inside /skills must be detected.
+	if !pathIsUnderSkills("/workspace/../skills/evil.py") {
+		t.Fatal("path /workspace/../skills/evil.py resolves to /skills/evil.py — must be blocked")
+	}
+	if !pathIsUnderSkills("../skills/evil.py") {
+		t.Fatal("path ../skills/evil.py resolves to /skills/evil.py — must be blocked")
+	}
+
+	// Traversal path that escapes /skills must NOT be flagged as skills.
+	if pathIsUnderSkills("/skills/../etc/passwd") {
+		t.Fatal("path /skills/../etc/passwd resolves to /etc/passwd — must not be blocked as /skills")
+	}
+
+	// guardSkillWrite must reject the traversal bypass for instances.
+	if err := guardSkillWrite(true, "/workspace/../skills/evil.py"); err == nil {
+		t.Fatal("guardSkillWrite must block /workspace/../skills/evil.py for readonly instance")
+	}
+}
+
+// TestInstanceReadonlySkillsFlag verifies that newSandboxTools(key, true) wires
+// readonlySkills=true into the write tools, so /skills writes are rejected.
+func TestInstanceReadonlySkillsFlag(t *testing.T) {
+	fm := &fakeSandboxMgr{}
+	crosssandbox.SetDefaultSVC(fm)
+	defer crosssandbox.SetDefaultSVC(nil)
+
+	ctx := context.Background()
+
+	// readonlySkills=true: write to /skills must fail.
+	tools := newSandboxTools("k", true)
+	if len(tools) != 8 {
+		t.Fatalf("want 8 tools, got %d", len(tools))
+	}
+
+	wf := &writeFileTool{key: "k", readonlySkills: true}
+	out, _ := wf.InvokableRun(ctx, `{"path":"/skills/foo/SKILL.md","content":"x"}`)
+	if !strings.Contains(out, "permission denied") && !strings.Contains(out, "read-only") {
+		t.Fatalf("instance write to /skills must be denied, got: %q", out)
+	}
+
+	// readonlySkills=false (default agent): same path must succeed.
+	wfNormal := &writeFileTool{key: "k", readonlySkills: false}
+	out2, err := wfNormal.InvokableRun(ctx, `{"path":"/skills/foo/SKILL.md","content":"x"}`)
+	if err != nil || strings.Contains(out2, "permission denied") {
+		t.Fatalf("normal agent write to /skills must be allowed, got: %q err=%v", out2, err)
+	}
+}
+
+// TestNewSandboxToolsReadonlyFlag verifies that the readonlySkills bool param
+// is threaded into the tool structs returned by newSandboxTools.
+func TestNewSandboxToolsReadonlyFlag(t *testing.T) {
+	fm := &fakeSandboxMgr{}
+	crosssandbox.SetDefaultSVC(fm)
+	defer crosssandbox.SetDefaultSVC(nil)
+
+	toolsNormal := newSandboxTools("k", false)
+	toolsInstance := newSandboxTools("k", true)
+	if len(toolsNormal) != 8 || len(toolsInstance) != 8 {
+		t.Fatalf("want 8 tools each, got normal=%d instance=%d", len(toolsNormal), len(toolsInstance))
+	}
+
+	// The run_bash, write_file, edit_file tools from the instance set must carry
+	// readonlySkills=true. We can verify indirectly: bash write to /skills should
+	// produce an error for instance but succeed for normal agent.
+	ctx := context.Background()
+	for _, tt := range toolsInstance {
+		info, _ := tt.Info(ctx)
+		if info.Name == "run_bash" {
+			out, _ := tt.InvokableRun(ctx, `{"command":"cp /workspace/a.txt /skills/a.txt"}`)
+			if !strings.Contains(out, "permission denied") && !strings.Contains(out, "read-only") {
+				t.Fatalf("instance run_bash writing to /skills must be denied: %q", out)
+			}
+		}
+	}
+	for _, tt := range toolsNormal {
+		info, _ := tt.Info(ctx)
+		if info.Name == "run_bash" {
+			out, err := tt.InvokableRun(ctx, `{"command":"cp /workspace/a.txt /skills/a.txt"}`)
+			if err != nil || strings.Contains(out, "permission denied") {
+				t.Fatalf("normal agent run_bash writing to /skills must be allowed: %q err=%v", out, err)
+			}
+		}
 	}
 }

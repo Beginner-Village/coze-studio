@@ -33,7 +33,11 @@ type SkillRepository interface {
 	GetByName(ctx context.Context, spaceID int64, name string) (*entity.Skill, error)
 	Update(ctx context.Context, skill *entity.Skill) error
 	Delete(ctx context.Context, skillID int64) error
+	Publish(ctx context.Context, skillID int64, scope, reviewStatus int8, version, publisherID, publishedAt int64) error
+	SetReviewStatus(ctx context.Context, skillID int64, reviewStatus int8, note string, reviewerID, reviewedAt int64) error
+	ListPendingReviews(ctx context.Context, req *entity.PendingReviewListRequest) (*entity.ListResponse, error)
 	List(ctx context.Context, req *entity.ListRequest) (*entity.ListResponse, error)
+	ListMarketplace(ctx context.Context, req *entity.MarketplaceListRequest) (*entity.ListResponse, error)
 	MGet(ctx context.Context, skillIDs []int64) ([]*entity.Skill, error)
 
 	// CreateVersion persists an immutable snapshot of a skill version.

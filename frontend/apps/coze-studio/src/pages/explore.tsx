@@ -18,41 +18,21 @@ import { Navigate, type RouteObject } from 'react-router-dom';
 import { lazy } from 'react';
 
 import { BaseEnum } from '@coze-arch/web-context';
-import { MicroAppWrapper } from '../apps/MicroAppWrapper'
 
-const subMenu = lazy(() =>
+const SkillMarketplacePage = lazy(() => import('./skill-marketplace'));
+const ExploreSubMenu = lazy(() =>
   import('@coze-community/explore').then(exps => ({
     default: exps.ExploreSubMenu,
   })),
 );
-const ProjectPage = lazy(() =>
-  import('@coze-community/explore').then(exps => ({
-    default: exps.ProjectPage,
-  })),
-);
-const ExternalAppPage = lazy(() =>
-  import('@coze-community/explore').then(exps => ({
-    default: exps.ExternalAppPage,
-  })),
-);
-const PluginPage = lazy(() =>
-  import('@coze-community/explore').then(exps => ({
-    default: exps.PluginPage,
-  })),
-);
 
-const ProjectStorePage = lazy(() =>
-  import('@coze-agent-ide/agent-publish').then(exps => ({
-    default: exps.TemplateStorePage,
-  })),
-);
 export const exploreRouter: RouteObject = {
   path: 'explore',
   Component: null,
   loader: () => ({
     hasSider: true,
     requireAuth: true,
-    subMenu,
+    subMenu: ExploreSubMenu,
     menuKey: BaseEnum.Explore,
   }),
   children: [
@@ -62,28 +42,22 @@ export const exploreRouter: RouteObject = {
     },
     {
       path: 'project/tools',
-      element: <ExternalAppPage />,
-      loader: () => ({
-        type: 'project-tools',
-      }),
+      element: <Navigate to="/explore/project/latest" replace />,
     },
     {
       path: 'plugin',
-      element: <PluginPage />,
-      loader: () => ({
-        type: 'plugin',
-      }),
+      element: <Navigate to="/explore/project/latest" replace />,
     },
     {
       path: 'project/:sub_route_id',
-      element: <ProjectPage />,
+      element: <SkillMarketplacePage />,
       loader: () => ({
-        type: 'project',
+        type: 'project-latest',
       }),
     },
     {
       path: 'agent/*',
-      element: <MicroAppWrapper appName="agent" />,
+      element: <Navigate to="/explore/project/latest" replace />,
     },
   ],
 };

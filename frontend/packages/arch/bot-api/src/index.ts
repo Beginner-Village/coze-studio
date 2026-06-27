@@ -46,6 +46,7 @@ export { marketInteractionApi } from './market-interaction-api';
 export { debuggerApi } from './debugger-api';
 export { connectorApi } from './connector-api';
 export { type BotAPIRequestConfig } from './axios';
+export { axiosInstance } from './axios';
 export { xMemoryApi } from './xmemory-api';
 export { obQueryApi } from './ob-query-api';
 export { fulfillApi } from './fulfill-api';
@@ -64,6 +65,7 @@ export {
   addGlobalRequestInterceptor,
   removeGlobalRequestInterceptor,
   addGlobalResponseInterceptor,
+  getLocalizedErrorMessage,
 } from '@coze-arch/bot-http';
 export { AgentInstanceInfo, AgentInfo } from './idl/card';
 
@@ -119,3 +121,31 @@ export type {
   DeleteTemplateRequest,
   DeleteTemplateResponse,
 } from './template-api';
+export { strategyApi } from './strategy-api';
+export type {
+  CapabilityInfo,
+  ScenarioInfo,
+  StrategyInfo,
+  CreateStrategyRequest,
+  CreateStrategyResponse,
+  GetStrategyDetailRequest,
+  GetStrategyDetailResponse,
+  UpdateStrategyRequest,
+  UpdateStrategyResponse,
+  DeleteStrategyRequest,
+  DeleteStrategyResponse,
+  PublishStrategyRequest,
+  PublishStrategyResponse,
+  CreateScenarioRequest,
+  CreateScenarioResponse,
+  UpdateScenarioRequest,
+  UpdateScenarioResponse,
+  DeleteScenarioRequest,
+  DeleteScenarioResponse,
+  AddCapabilityRequest,
+  AddCapabilityResponse,
+  UpdateCapabilityRequest,
+  UpdateCapabilityResponse,
+  DeleteCapabilityRequest,
+  DeleteCapabilityResponse,
+} from './strategy-api';

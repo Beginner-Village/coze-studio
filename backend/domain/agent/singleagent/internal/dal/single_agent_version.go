@@ -28,6 +28,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/internal/dal/query"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/idgen"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
@@ -110,6 +111,8 @@ func (sa *SingleAgentVersionDAO) singleAgentVersionPo2Do(po *model.SingleAgentVe
 			BoundCards:        po.BoundCards,
 			SkillInfoList:     skillPOsToSkillDOs(po.SkillInfoList),
 			ForceToolReturn:   po.ForceToolReturn,
+			AgentType:         ptr.From(po.AgentType),
+			Strategies:        po.StrategyConfig,
 		},
 	}
 }
@@ -141,5 +144,7 @@ func (sa *SingleAgentVersionDAO) singleAgentVersionDo2Po(do *entity.SingleAgent)
 		BoundCards:        do.BoundCards,
 		SkillInfoList:     skillDOsToPOs(do.SkillInfoList),
 		ForceToolReturn:   do.ForceToolReturn,
+		AgentType:         ptr.Of(do.AgentType),
+		StrategyConfig:    do.Strategies,
 	}
 }

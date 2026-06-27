@@ -123,6 +123,7 @@ export enum ResType {
   Database = 7,
   Variable = 8,
   Voice = 9,
+  Strategy = 10,
 }
 
 export enum SyncOperation {

@@ -29,7 +29,11 @@ type SkillService interface {
 	GetSkillByName(ctx context.Context, spaceID int64, name string) (*entity.Skill, error)
 	UpdateSkill(ctx context.Context, skill *entity.Skill) error
 	DeleteSkill(ctx context.Context, skillID int64) error
+	PublishSkill(ctx context.Context, skillID int64, scope, reviewStatus int8, version, publisherID, publishedAt int64) error
+	ReviewSkill(ctx context.Context, skillID int64, reviewStatus int8, note string, reviewerID, reviewedAt int64) error
+	ListPendingReviews(ctx context.Context, req *entity.PendingReviewListRequest) (*entity.ListResponse, error)
 	ListSkills(ctx context.Context, req *entity.ListRequest) (*entity.ListResponse, error)
+	ListMarketplaceSkills(ctx context.Context, req *entity.MarketplaceListRequest) (*entity.ListResponse, error)
 	MGetSkills(ctx context.Context, skillIDs []int64) ([]*entity.Skill, error)
 	// GetSkillVersion returns an immutable snapshot of a skill at a given version.
 	GetSkillVersion(ctx context.Context, skillID, version int64) (*entity.SkillVersion, error)

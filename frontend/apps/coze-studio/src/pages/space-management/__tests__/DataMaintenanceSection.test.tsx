@@ -24,6 +24,7 @@ import { DataMaintenanceSection } from '../DataMaintenanceSection';
 
 vi.mock('@coze-arch/bot-api', () => ({
   SpaceApi: { resyncES: vi.fn() },
+  getLocalizedErrorMessage: vi.fn((message?: string) => message || ''),
 }));
 
 vi.mock('@coze-arch/i18n', () => ({
@@ -45,6 +46,23 @@ vi.mock('@coze-arch/coze-design', () => ({
     >
       {children}
     </button>
+  ),
+  // eslint-disable-next-line @typescript-eslint/naming-convention -- mock a React component re-exported from third-party lib
+  Input: ({ value, onChange, placeholder }: any) => (
+    <input
+      value={value || ''}
+      onChange={event => onChange?.(event.target.value)}
+      placeholder={placeholder}
+    />
+  ),
+  // eslint-disable-next-line @typescript-eslint/naming-convention -- mock a React component re-exported from third-party lib
+  InputNumber: ({ value, onChange, placeholder }: any) => (
+    <input
+      type="number"
+      value={value ?? ''}
+      onChange={event => onChange?.(Number(event.target.value))}
+      placeholder={placeholder}
+    />
   ),
   // eslint-disable-next-line @typescript-eslint/naming-convention -- mock a React component re-exported from third-party lib
   Modal: ({

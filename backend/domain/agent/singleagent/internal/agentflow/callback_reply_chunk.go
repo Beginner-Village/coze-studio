@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"strings"
 
 	"github.com/cloudwego/eino/callbacks"
 	"github.com/cloudwego/eino/components"
@@ -381,6 +382,7 @@ func (r *replyChunkCallback) concatToolsNodeOutput(ctx context.Context, output *
 			if msg == nil {
 				continue
 			}
+			// Existing build-time returnDirectly path (native workflow tools).
 			if len(r.returnDirectlyTools) > 0 {
 				if isReturnDirectToolsFirstCheck {
 					isReturnDirectToolsFirstCheck = false
@@ -400,6 +402,23 @@ func (r *replyChunkCallback) concatToolsNodeOutput(ctx context.Context, output *
 					}
 					sw.Send(msg, nil)
 				}
+			}
+			// Per-invocation returnDirectly path for the strategy "run" tool:
+			// if the result is prefixed with StrategyReturnDirectlyMarker, strip the
+			// marker and route directly to the user, bypassing the model. This is
+			// purely additive — the existing returnDirectlyTools path above is
+			// completely unchanged.
+			if msg.ToolName == "run" && msg.Content != "" && strings.HasPrefix(msg.Content, StrategyReturnDirectlyMarker) {
+				msg.Content = strings.TrimPrefix(msg.Content, StrategyReturnDirectlyMarker)
+				if !streamInitialized {
+					sr, sw = schema.Pipe[*schema.Message](5)
+					r.sw.Send(&entity.AgentEvent{
+						EventType:             singleagent.EventTypeOfToolsAsChatModelStream,
+						ToolAsChatModelAnswer: sr,
+					}, nil)
+					streamInitialized = true
+				}
+				sw.Send(msg, nil)
 			}
 			if toolsMsgChunks[mIndex] == nil {
 				toolsMsgChunks[mIndex] = []*schema.Message{msg}

@@ -17,11 +17,15 @@
 import { useEffect, useState } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
+import classNames from 'classnames';
 import { useModelStore } from '@coze-studio/bot-detail-store/model';
 import { useBotDetailIsReadonly } from '@coze-studio/bot-detail-store';
 import { useSpaceStore } from '@coze-arch/bot-studio-store';
 import { type Model } from '@coze-arch/bot-api/developer_api';
-import { ModelSelect } from '@coze-agent-ide/model-manager/model-select-v2';
+import {
+  ModelSelect,
+  type ModelSelectProps,
+} from '@coze-agent-ide/model-manager/model-select-v2';
 import {
   useModelCapabilityCheckModal,
   useGetSingleAgentCurrentModel,
@@ -36,10 +40,21 @@ import {
 export interface SingleAgentModelViewProps {
   modelListExtraHeaderSlot?: React.ReactNode;
   triggerRender?: (model?: Model, popoverVisible?: boolean) => React.ReactNode;
+  popoverPosition?: ModelSelectProps['popoverPosition'];
+  popoverClassName?: string;
+  zIndex?: number;
+  clickToHide?: boolean;
 }
 
 export function SingleAgentModelView(props: SingleAgentModelViewProps) {
-  const { modelListExtraHeaderSlot, triggerRender } = props;
+  const {
+    modelListExtraHeaderSlot,
+    triggerRender,
+    popoverPosition,
+    popoverClassName,
+    zIndex,
+    clickToHide,
+  } = props;
   const spaceId = useSpaceStore(store => store.space.id);
   const { scene } = useBotCreatorContext();
   const currentModel = useGetSingleAgentCurrentModel();
@@ -107,7 +122,13 @@ export function SingleAgentModelView(props: SingleAgentModelViewProps) {
   return effectiveModelId ? (
     <>
       <ModelSelect
-        popoverClassName="h-auto !max-h-[70vh]"
+        popoverClassName={classNames(
+          'h-auto !max-h-[70vh]',
+          popoverClassName,
+        )}
+        popoverPosition={popoverPosition}
+        zIndex={zIndex}
+        clickToHide={clickToHide}
         disabled={isReadonly}
         enableJumpDetail={
           scene === BotCreatorScene.Bot && spaceId && !IS_OPEN_SOURCE

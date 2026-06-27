@@ -15,7 +15,7 @@
  */
 
 import React, { useState } from 'react';
-import { Button, Input, Table, Space, message, Modal, Form, Select, Tag } from 'antd';
+import { Button, Input, InputNumber, Table, Space, message, Modal, Form, Select, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { modelmgr } from '@coze-studio/api-schema';
 import { useModelList } from '../../hooks/useSpaceModels';
@@ -67,6 +67,9 @@ export const ModelManagementPage: React.FC<ModelManagementPageProps> = ({ spaceI
           capability: {
             function_call: values.function_call,
             input_modal: values.input_modal || ['text'],
+            // 上下文窗口(输入 token 上限):供超级体自动压缩按窗口比例触发。
+            // 留空则后端按模型名推断(GLM→1M、Claude→200K…),仍无法识别才走字节兜底。
+            input_tokens: values.input_tokens || 0,
             max_tokens: values.max_tokens || 4096,
             json_mode: values.json_mode,
           },
@@ -367,6 +370,18 @@ export const ModelManagementPage: React.FC<ModelManagementPageProps> = ({ spaceI
             label="API密钥"
           >
             <Input.Password placeholder="请输入API密钥" />
+          </Form.Item>
+          <Form.Item
+            name="input_tokens"
+            label="上下文窗口(输入 token 上限)"
+            tooltip="模型可接收的最大输入 token 数。超级体会在用量达到该窗口的约 85% 时自动压缩上下文。留空则按模型名自动推断(GLM≈1M / Claude≈200K / DeepSeek≈128K)。"
+          >
+            <InputNumber
+              style={{ width: '100%' }}
+              min={0}
+              step={1000}
+              placeholder="如 128000;留空自动推断"
+            />
           </Form.Item>
         </Form>
       </Modal>

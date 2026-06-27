@@ -1774,6 +1774,885 @@ export default class DeveloperApiService<T> {
       app_id: _req['app_id'],
       business_type: _req['business_type'],
       folder_id: _req['folder_id'],
+      agent_type: _req['agent_type'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/draftbot/sandbox/list 超级智能体沙箱:列目录 */
+  ListSandboxFiles(
+    req: developer_api.ListSandboxFilesRequest,
+    options?: T,
+  ): Promise<developer_api.ListSandboxFilesResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/draftbot/sandbox/list');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      recursive: _req['recursive'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/draftbot/sandbox/read 超级智能体沙箱:读文件 */
+  ReadSandboxFile(
+    req: developer_api.ReadSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.ReadSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/draftbot/sandbox/read');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/draftbot/sandbox/upload 超级智能体沙箱:上传/写文件 */
+  UploadSandboxFile(
+    req: developer_api.UploadSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.UploadSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/draftbot/sandbox/upload');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      content: _req['content'],
+      is_base64: _req['is_base64'],
+      encoding: _req['encoding'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/draftbot/sandbox/delete 超级智能体沙箱:删除文件 */
+  DeleteSandboxFile(
+    req: developer_api.DeleteSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.DeleteSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/draftbot/sandbox/delete');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/runs/get Super agent app-server runs: get active run state */
+  SuperAgentGetRun(
+    req: developer_api.SuperAgentGetRunRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentGetRunResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/runs/get');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      run_id: _req['run_id'],
+      user_id: _req['user_id'],
+      client_id: _req['client_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/runs/list Super agent app-server runs: list conversation run history */
+  SuperAgentListRuns(
+    req: developer_api.SuperAgentListRunsRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentListRunsResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/runs/list');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      conversation_id: _req['conversation_id'],
+      limit: _req['limit'],
+      order_by: _req['order_by'],
+      before_id: _req['before_id'],
+      after_id: _req['after_id'],
+      user_id: _req['user_id'],
+      client_id: _req['client_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/sessions/create Super agent app-server sessions: create a durable work session */
+  SuperAgentCreateSession(
+    req: developer_api.SuperAgentCreateSessionRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentCreateSessionResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/sessions/create');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      connector_id: _req['connector_id'],
+      title: _req['title'],
+      user_id: _req['user_id'],
+      client_id: _req['client_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/sessions/list Super agent app-server sessions: list durable work sessions */
+  SuperAgentListSessions(
+    req: developer_api.SuperAgentListSessionsRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentListSessionsResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/sessions/list');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      connector_id: _req['connector_id'],
+      user_id: _req['user_id'],
+      client_id: _req['client_id'],
+      page: _req['page'],
+      page_size: _req['page_size'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/sessions/rename Super agent app-server sessions: rename a work session */
+  SuperAgentRenameSession(
+    req: developer_api.SuperAgentRenameSessionRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentRenameSessionResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/sessions/rename');
+    const method = 'POST';
+    const data = {
+      conversation_id: _req['conversation_id'],
+      title: _req['title'],
+      user_id: _req['user_id'],
+      client_id: _req['client_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/sessions/delete Super agent app-server sessions: delete a work session */
+  SuperAgentDeleteSession(
+    req: developer_api.SuperAgentDeleteSessionRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentDeleteSessionResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/sessions/delete');
+    const method = 'POST';
+    const data = {
+      conversation_id: _req['conversation_id'],
+      user_id: _req['user_id'],
+      client_id: _req['client_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/traces/get Super agent app-server traces: replay conversation tool calls */
+  SuperAgentGetTrace(
+    req: developer_api.SuperAgentGetTraceRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentGetTraceResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/traces/get');
+    const method = 'POST';
+    const data = {
+      conversation_id: _req['conversation_id'],
+      run_id: _req['run_id'],
+      limit: _req['limit'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/list Super agent app-server workspace: list files */
+  SuperAgentListWorkspaceFiles(
+    req: developer_api.ListSandboxFilesRequest,
+    options?: T,
+  ): Promise<developer_api.ListSandboxFilesResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/list');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      recursive: _req['recursive'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/read Super agent app-server workspace: read file */
+  SuperAgentReadWorkspaceFile(
+    req: developer_api.ReadSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.ReadSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/read');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/download Super agent app-server workspace: download file */
+  SuperAgentDownloadWorkspaceFile(
+    req: developer_api.ReadSandboxFileRequest,
+    options?: T,
+  ): Promise<unknown> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/download');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/upload Super agent app-server workspace: upload/write file */
+  SuperAgentUploadWorkspaceFile(
+    req: developer_api.UploadSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.UploadSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/upload');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      content: _req['content'],
+      is_base64: _req['is_base64'],
+      encoding: _req['encoding'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/write Super agent app-server workspace: write file content */
+  SuperAgentWriteWorkspaceFile(
+    req: developer_api.UploadSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.UploadSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/write');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      content: _req['content'],
+      is_base64: _req['is_base64'],
+      encoding: _req['encoding'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/delete Super agent app-server workspace: delete file */
+  SuperAgentDeleteWorkspaceFile(
+    req: developer_api.DeleteSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.DeleteSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/delete');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/move Super agent app-server workspace: move or rename file */
+  SuperAgentMoveWorkspaceFile(
+    req: developer_api.MoveSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.MoveSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/move');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      from_path: _req['from_path'],
+      target_path: _req['target_path'],
+      to_path: _req['to_path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/mkdir Super agent app-server workspace: create directory */
+  SuperAgentCreateWorkspaceDirectory(
+    req: developer_api.CreateSandboxDirectoryRequest,
+    options?: T,
+  ): Promise<developer_api.CreateSandboxDirectoryResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/mkdir');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/stat Super agent app-server workspace: stat file or directory */
+  SuperAgentStatWorkspacePath(
+    req: developer_api.StatSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.StatSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/stat');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/grep Super agent app-server workspace: search file contents */
+  SuperAgentGrepWorkspace(
+    req: developer_api.GrepSandboxFilesRequest,
+    options?: T,
+  ): Promise<developer_api.GrepSandboxFilesResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/grep');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      pattern: _req['pattern'],
+      case_sensitive: _req['case_sensitive'],
+      include: _req['include'],
+      exclude: _req['exclude'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/glob Super agent app-server workspace: find files by name pattern */
+  SuperAgentGlobWorkspace(
+    req: developer_api.GlobSandboxFilesRequest,
+    options?: T,
+  ): Promise<developer_api.GlobSandboxFilesResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/glob');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      pattern: _req['pattern'],
+      limit: _req['limit'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/edit Super agent app-server workspace: exact search-replace edit */
+  SuperAgentEditWorkspaceFile(
+    req: developer_api.EditSandboxFileRequest,
+    options?: T,
+  ): Promise<developer_api.EditSandboxFileResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/edit');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      old_string: _req['old_string'],
+      new_string: _req['new_string'],
+      replace_all: _req['replace_all'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/workspace/patch Super agent app-server workspace: apply Codex-style patch */
+  SuperAgentApplyWorkspacePatch(
+    req: developer_api.ApplySandboxPatchRequest,
+    options?: T,
+  ): Promise<developer_api.ApplySandboxPatchResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/workspace/patch');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      workdir: _req['workdir'],
+      work_dir: _req['work_dir'],
+      patch: _req['patch'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/sandbox/exec Super agent app-server sandbox: execute a command */
+  SuperAgentExecSandbox(
+    req: developer_api.ExecSandboxCommandRequest,
+    options?: T,
+  ): Promise<developer_api.ExecSandboxCommandResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/sandbox/exec');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      command: _req['command'],
+      workdir: _req['workdir'],
+      work_dir: _req['work_dir'],
+      timeout_sec: _req['timeout_sec'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/harness/state Super agent app-server harness: read plan and tool output index */
+  SuperAgentGetHarnessState(
+    req: developer_api.SuperAgentHarnessStateRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentHarnessStateResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/harness/state');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/harness/plan Super agent app-server harness: update persisted plan */
+  SuperAgentUpdateHarnessPlan(
+    req: developer_api.SuperAgentHarnessPlanUpdateRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentHarnessPlanUpdateResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/harness/plan');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      plan: _req['plan'],
+      items: _req['items'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/artifacts/list Super agent app-server artifacts: list generated deliverables */
+  SuperAgentListArtifacts(
+    req: developer_api.SuperAgentListArtifactsRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentListArtifactsResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/artifacts/list');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      path: _req['path'],
+      limit: _req['limit'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/artifacts/download Super agent app-server artifacts: download generated deliverable */
+  SuperAgentDownloadArtifact(
+    req: developer_api.SuperAgentDownloadArtifactRequest,
+    options?: T,
+  ): Promise<unknown> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/artifacts/download');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      artifact_id: _req['artifact_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/artifacts/delete Super agent app-server artifacts: delete generated deliverable */
+  SuperAgentDeleteArtifact(
+    req: developer_api.SuperAgentDeleteArtifactRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentDeleteArtifactResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/artifacts/delete');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      artifact_id: _req['artifact_id'],
+      path: _req['path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/artifacts/move Super agent app-server artifacts: move or rename generated deliverable */
+  SuperAgentMoveArtifact(
+    req: developer_api.SuperAgentMoveArtifactRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentMoveArtifactResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/artifacts/move');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      artifact_id: _req['artifact_id'],
+      path: _req['path'],
+      target_path: _req['target_path'],
+      connector_id: _req['connector_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/skills/create Super agent app-server skills: create standard skill */
+  SuperAgentCreateSkill(
+    req: developer_api.SuperAgentCreateSkillRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentCreateSkillResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/create');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      name: _req['name'],
+      description: _req['description'],
+      prompt: _req['prompt'],
+      files: _req['files'],
+      icon_uri: _req['icon_uri'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/skills/import Super agent app-server skills: import standard skill package */
+  SuperAgentImportSkillPackage(
+    req: developer_api.SuperAgentImportSkillPackageRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentImportSkillPackageResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/import');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      filename: _req['filename'],
+      content: _req['content'],
+      icon_uri: _req['icon_uri'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/skills/import-runtime Super agent app-server skills: import runtime skill folder */
+  SuperAgentImportRuntimeSkill(
+    req: developer_api.SuperAgentImportRuntimeSkillRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentImportRuntimeSkillResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/import-runtime');
+    const method = 'POST';
+    const data = {
+      agent_id: _req['agent_id'],
+      bot_id: _req['bot_id'],
+      connector_id: _req['connector_id'],
+      name: _req['name'],
+      skill_id: _req['skill_id'],
+      icon_uri: _req['icon_uri'],
+      publish_scope: _req['publish_scope'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/skills/validate-package Super agent app-server skills: validate standard skill package */
+  SuperAgentValidateSkillPackage(
+    req: developer_api.SuperAgentValidateSkillPackageRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentValidateSkillPackageResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/validate-package');
+    const method = 'POST';
+    const data = {
+      filename: _req['filename'],
+      content: _req['content'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/skills/export Super agent app-server skills: export standard skill package */
+  SuperAgentExportSkillPackage(
+    req: developer_api.SuperAgentExportSkillPackageRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentExportSkillPackageResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/export');
+    const method = 'POST';
+    const data = {
+      space_id: _req['space_id'],
+      skill_id: _req['skill_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** GET /api/super-agent/skills/get Super agent app-server skills: get skill */
+  SuperAgentGetSkill(
+    req: developer_api.SuperAgentGetSkillRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentGetSkillResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/get');
+    const method = 'GET';
+    const params = {
+      skill_id: _req['skill_id'],
+      space_id: _req['space_id'],
+    };
+    return this.request({ url, method, params }, options);
+  }
+
+  /** POST /api/super-agent/skills/update Super agent app-server skills: update skill */
+  SuperAgentUpdateSkill(
+    req: developer_api.SuperAgentUpdateSkillRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentUpdateSkillResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/update');
+    const method = 'POST';
+    const data = {
+      skill_id: _req['skill_id'],
+      space_id: _req['space_id'],
+      name: _req['name'],
+      description: _req['description'],
+      prompt: _req['prompt'],
+      files: _req['files'],
+      icon_uri: _req['icon_uri'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** GET /api/super-agent/skills/assets/list Super agent app-server skills: list standard skill assets */
+  SuperAgentListSkillAssets(
+    req: developer_api.SuperAgentListSkillAssetsRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentListSkillAssetsResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/assets/list');
+    const method = 'GET';
+    const params = {
+      skill_id: _req['skill_id'],
+      space_id: _req['space_id'],
+    };
+    return this.request({ url, method, params }, options);
+  }
+
+  /** GET /api/super-agent/skills/assets/get Super agent app-server skills: get standard skill asset */
+  SuperAgentGetSkillAsset(
+    req: developer_api.SuperAgentGetSkillAssetRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentGetSkillAssetResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/assets/get');
+    const method = 'GET';
+    const params = {
+      skill_id: _req['skill_id'],
+      space_id: _req['space_id'],
+      path: _req['path'],
+    };
+    return this.request({ url, method, params }, options);
+  }
+
+  /** POST /api/super-agent/skills/assets/upsert Super agent app-server skills: upsert standard skill asset */
+  SuperAgentUpsertSkillAsset(
+    req: developer_api.SuperAgentUpsertSkillAssetRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentUpsertSkillAssetResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/assets/upsert');
+    const method = 'POST';
+    const data = {
+      skill_id: _req['skill_id'],
+      space_id: _req['space_id'],
+      path: _req['path'],
+      content: _req['content'],
+      mime: _req['mime'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/skills/assets/delete Super agent app-server skills: delete standard skill asset */
+  SuperAgentDeleteSkillAsset(
+    req: developer_api.SuperAgentDeleteSkillAssetRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentDeleteSkillAssetResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/assets/delete');
+    const method = 'POST';
+    const data = {
+      skill_id: _req['skill_id'],
+      space_id: _req['space_id'],
+      path: _req['path'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/skills/delete Super agent app-server skills: delete skill */
+  SuperAgentDeleteSkill(
+    req: developer_api.SuperAgentDeleteSkillRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentDeleteSkillResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/delete');
+    const method = 'POST';
+    const data = {
+      skill_id: _req['skill_id'],
+      space_id: _req['space_id'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** POST /api/super-agent/skills/publish Super agent app-server skills: publish skill */
+  SuperAgentPublishSkill(
+    req: developer_api.SuperAgentPublishSkillRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentPublishSkillResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/publish');
+    const method = 'POST';
+    const data = {
+      skill_id: _req['skill_id'],
+      space_id: _req['space_id'],
+      scope: _req['scope'],
+    };
+    return this.request({ url, method, data }, options);
+  }
+
+  /** GET /api/super-agent/skills/list Super agent app-server skills: list skills */
+  SuperAgentListSkills(
+    req: developer_api.SuperAgentListSkillsRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentListSkillsResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/skills/list');
+    const method = 'GET';
+    const params = {
+      space_id: _req['space_id'],
+      page: _req['page'],
+      page_size: _req['page_size'],
+      keyword: _req['keyword'],
+    };
+    return this.request({ url, method, params }, options);
+  }
+
+  /** GET /api/super-agent/marketplace/list Super agent app-server skills: list marketplace skills */
+  SuperAgentMarketplaceListSkills(
+    req: developer_api.SuperAgentMarketplaceListSkillsRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentMarketplaceListSkillsResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/marketplace/list');
+    const method = 'GET';
+    const params = {
+      space_id: _req['space_id'],
+      scope: _req['scope'],
+      page: _req['page'],
+      page_size: _req['page_size'],
+      keyword: _req['keyword'],
+    };
+    return this.request({ url, method, params }, options);
+  }
+
+  /** GET /api/super-agent/marketplace/get Super agent app-server skills: get marketplace skill */
+  SuperAgentMarketplaceGetSkill(
+    req: developer_api.SuperAgentMarketplaceGetSkillRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentMarketplaceGetSkillResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/marketplace/get');
+    const method = 'GET';
+    const params = {
+      skill_id: _req['skill_id'],
+      space_id: _req['space_id'],
+    };
+    return this.request({ url, method, params }, options);
+  }
+
+  /** POST /api/super-agent/marketplace/install Super agent app-server skills: install marketplace skill */
+  SuperAgentInstallMarketplaceSkill(
+    req: developer_api.SuperAgentInstallMarketplaceSkillRequest,
+    options?: T,
+  ): Promise<developer_api.SuperAgentInstallMarketplaceSkillResponse> {
+    const _req = req;
+    const url = this.genBaseURL('/api/super-agent/marketplace/install');
+    const method = 'POST';
+    const data = {
+      skill_id: _req['skill_id'],
+      space_id: _req['space_id'],
     };
     return this.request({ url, method, data }, options);
   }

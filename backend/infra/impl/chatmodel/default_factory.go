@@ -19,6 +19,11 @@ package chatmodel
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
 
 	"github.com/cloudwego/eino-ext/components/model/ark"
 	"github.com/cloudwego/eino-ext/components/model/claude"
@@ -89,6 +94,7 @@ func openAIBuilder(ctx context.Context, config *chatmodel.Config) (chatmodel.Too
 	cfg := &openai.ChatModelConfig{
 		APIKey:           config.APIKey,
 		Timeout:          config.Timeout,
+		HTTPClient:       modelHTTPClient(config.BaseURL, config.Timeout),
 		BaseURL:          config.BaseURL,
 		Model:            config.Model,
 		MaxTokens:        config.MaxTokens,
@@ -237,6 +243,7 @@ func qwenBuilder(ctx context.Context, config *chatmodel.Config) (chatmodel.ToolC
 	cfg := &qwen.ChatModelConfig{
 		APIKey:           config.APIKey,
 		Timeout:          config.Timeout,
+		HTTPClient:       modelHTTPClient(config.BaseURL, config.Timeout),
 		BaseURL:          config.BaseURL,
 		Model:            config.Model,
 		MaxTokens:        config.MaxTokens,
@@ -251,6 +258,33 @@ func qwenBuilder(ctx context.Context, config *chatmodel.Config) (chatmodel.ToolC
 		cfg.ResponseFormat = config.Qwen.ResponseFormat
 	}
 	return qwen.NewChatModel(ctx, cfg)
+}
+
+func modelHTTPClient(baseURL string, timeout time.Duration) *http.Client {
+	if !shouldForceIPv4(baseURL) {
+		return nil
+	}
+
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	dialer := &net.Dialer{}
+	transport.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+		return dialer.DialContext(ctx, "tcp4", address)
+	}
+
+	return &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+	}
+}
+
+func shouldForceIPv4(baseURL string) bool {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return false
+	}
+
+	host := strings.ToLower(u.Hostname())
+	return host == "dashscope.aliyuncs.com"
 }
 
 func geminiBuilder(ctx context.Context, config *chatmodel.Config) (chatmodel.ToolCallingChatModel, error) {

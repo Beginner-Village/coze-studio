@@ -61,6 +61,8 @@ export const ResourceList = ({
     onCustomCreate: createWorkflow,
     onDelete: deleteWorkflow,
     onChangeName: changeNameWorkflow,
+    onCreate: createWorkflowFolder,
+    onDrag: moveWorkflowToFolder,
     onAction: handleWorkflowAction,
     createResourceConfig: workflowCreateConfig,
     iconRender: workflowIconRender,
@@ -121,12 +123,15 @@ export const ResourceList = ({
         canCreate={canCreate}
         initLoaded={initLoaded}
         onChangeName={changeNameWorkflow}
+        onCreate={createWorkflowFolder}
+        onDrag={moveWorkflowToFolder}
         onCustomCreate={createWorkflow}
         onDelete={deleteWorkflow}
         onAction={handleWorkflowAction}
         createResourceConfig={workflowCreateConfig}
         iconRender={workflowIconRender}
         hideMoreBtn={hideMoreBtn}
+        enableFolder={true}
       />
       <ResourceFolderCoze
         id={`${idPrefix}_${ProjectResourceGroupType.Plugin}`}

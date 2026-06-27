@@ -24,6 +24,7 @@ import { voicesInfoConfig } from './voices-info';
 import { variablesConfig } from './variables';
 import { taskInfoConfig } from './task-info';
 import { suggestionConfig } from './suggestion-config';
+import { strategiesConfig } from './strategies';
 import { pluginConfig } from './plugin';
 import { onboardingConfig } from './onboarding-content';
 import { memoryToolConfig } from './memory-tool-config';
@@ -32,6 +33,7 @@ import { knowledgeConfig } from './knowledge';
 import { forceToolReturnConfig } from './force-tool-return';
 import { chatBackgroundConfig } from './chat-background';
 import { boundCardsConfig } from './bound-cards';
+import { agentSkillsConfig } from './agent-skills';
 
 export const registers: HostedObserverConfig<
   BotSkillStore,
@@ -51,4 +53,6 @@ export const registers: HostedObserverConfig<
   memoryToolConfig,
   boundCardsConfig,
   forceToolReturnConfig,
+  agentSkillsConfig,
+  strategiesConfig,
 ];

@@ -20,7 +20,6 @@ import { produce } from 'immer';
 
 import {
   isAnswerFinishVerboseMessage,
-  isAllFinishVerboseMessage,
 } from '../utils/verbose';
 import { type MessageIdStruct, type Message } from './types';
 
@@ -137,10 +136,6 @@ export const createWaitingStore = (mark: string) => {
           return waiting?.phase === WaitingPhase.Suggestion;
         },
         startWaiting: message => {
-          console.log('[ChatFlow Debug] startWaiting called:', {
-            message_id: message.message_id,
-            local_message_id: message.extra_info?.local_message_id,
-          });
           set(
             {
               waiting: {
@@ -189,25 +184,17 @@ export const createWaitingStore = (mark: string) => {
           );
         },
         clearUnsettledByReplyId: replyId => {
-          const currentState = get();
-          console.log('[ChatFlow Debug] clearUnsettledByReplyId called with:', {
-            replyId,
-            currentWaiting: currentState.waiting,
-            currentResponding: currentState.responding,
-            waitingReplyId: currentState.waiting?.replyId,
-            respondingReplyId: currentState.responding?.replyId,
-          });
           set(
             produce<WaitingState>(state => {
               // Clear waiting if the replyId matches OR if we have responding with this replyId
               // This handles the case where waiting has the question ID but responding has the answer ID
-              if (state.waiting?.replyId === replyId || 
-                  (state.responding?.replyId === replyId && state.waiting)) {
-                console.log('[ChatFlow Debug] Clearing waiting state');
+              if (
+                state.waiting?.replyId === replyId ||
+                (state.responding?.replyId === replyId && state.waiting)
+              ) {
                 state.waiting = null;
               }
               if (state.responding?.replyId === replyId) {
-                console.log('[ChatFlow Debug] Clearing responding state');
                 state.responding = null;
               }
             }),
@@ -267,25 +254,7 @@ const isAnswerMessageFinish = (message: Message) =>
   message.type === 'answer' && message.is_finish;
 
 const updateRespondingInImmer = (state: WaitingState, message: Message) => {
-  console.log('[ChatFlow Debug] updateRespondingInImmer called:', {
-    message_type: message.type,
-    message_id: message.message_id,
-    reply_id: message.reply_id,
-    is_finish: message.is_finish,
-    currentWaiting: state.waiting,
-    currentResponding: state.responding,
-  });
-  
   const { responding } = state;
-  const isAllFinish = isAllFinishVerboseMessage(message);
-  
-  // Debug: Check if this is really a generate_answer_finish verbose message
-  if (message.type === 'verbose') {
-    console.log('[ChatFlow Debug] Verbose message content check:', {
-      isAllFinish,
-      message_content_preview: message.content?.substring(0, 100),
-    });
-  }
 
   // Don't clear waiting state for verbose messages in the middle of ChatFlow
   // Only the final success event should clear it
@@ -415,9 +384,6 @@ const handleNormalPluginMessage = ({
     responding.response,
   );
   if (functionCallIndex < 0) {
-    console.error(
-      `updateRespondingInImmer: cannot find related function call , expect index ${targetIndex}`,
-    );
     return;
   }
   responding.response.splice(functionCallIndex, 1);

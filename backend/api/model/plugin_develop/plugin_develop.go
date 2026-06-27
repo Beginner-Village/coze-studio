@@ -34348,7 +34348,7 @@ type FolderInfo struct {
 	CreatorID   int64  `json:"creator_id,string"`
 	CreatedAt   int64  `json:"created_at"`
 	UpdatedAt   int64  `json:"updated_at"`
-	ResourceIDs []int64 `json:"resource_ids,omitempty"`
+	ResourceIDs []string `json:"resource_ids,omitempty"`
 	ResourceCount int64 `json:"resource_count"`
 }
 

@@ -49,6 +49,7 @@ import (
 	msgEntity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/message/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/cache"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
@@ -87,7 +88,8 @@ type runtimeDependence struct {
 type Components struct {
 	RunRecordRepo repository.RunRecordRepo
 	ImagexSVC     imagex.ImageX
-	Cache         cache.Cmdable // 可为 nil；用于同会话单活跃 run 的幂等防重
+	TosClient     storage.Storage // 用于将存储 key 在调用模型前展开为 base64
+	Cache         cache.Cmdable   // 可为 nil；用于同会话单活跃 run 的幂等防重
 }
 
 func NewService(c *Components) Run {
@@ -281,6 +283,7 @@ func (c *runImpl) handlerStreamExecute(ctx context.Context, sw *schema.StreamWri
 			RunProcess:    c.runProcess,
 			RunRecordRepo: c.Components.RunRecordRepo,
 			ImagexClient:  c.Components.ImagexSVC,
+			StorageClient: c.Components.TosClient,
 			MessageEvent:  c.runEvent,
 		}
 
@@ -308,16 +311,15 @@ func (c *runImpl) handlerStreamExecute(ctx context.Context, sw *schema.StreamWri
 			continue
 		}
 
-		schemaMsg := buildSchemaMessage(msg)
+		schemaMsg := buildSchemaMessage(ctx, msg, c.Components.ImagexSVC, c.Components.TosClient)
 		if schemaMsg != nil {
 			historySchema = append(historySchema, schemaMsg)
 		}
 	}
 
-	// 按 token 预算裁剪历史，防止长会话撑爆上下文/成本失控（最旧优先丢弃）。
-	historySchema = trimHistoryByTokenBudget(historySchema, historyTokenBudget())
+	historySchema = buildAgentHistorySchema(historySchema, rtDependence.agentInfo, rtDependence.runMeta.Ext)
 
-	inputSchema := buildSchemaMessage(input)
+	inputSchema := buildSchemaMessage(ctx, input, c.Components.ImagexSVC, c.Components.TosClient)
 	if inputSchema == nil {
 		inputSchema = &schema.Message{
 			Role:    input.Role,
@@ -328,6 +330,7 @@ func (c *runImpl) handlerStreamExecute(ctx context.Context, sw *schema.StreamWri
 	ar := &crossagent.AgentRuntime{
 		AgentVersion:     rtDependence.runMeta.Version,
 		UserID:           rtDependence.runMeta.UserID,
+		ConversationID:   rtDependence.runMeta.ConversationID,
 		AgentID:          rtDependence.runMeta.AgentID,
 		SpaceID:          rtDependence.runMeta.SpaceID,
 		IsDraft:          rtDependence.runMeta.IsDraft,
@@ -336,6 +339,7 @@ func (c *runImpl) handlerStreamExecute(ctx context.Context, sw *schema.StreamWri
 		HistoryMsg:       historySchema,
 		Input:            inputSchema,
 		Variables:        rtDependence.runMeta.CustomVariables, // 传递会话自定义变量
+		Ext:              rtDependence.runMeta.Ext,
 	}
 
 	streamer, err := crossagent.DefaultSVC().StreamExecute(ctx, ar)
@@ -371,6 +375,35 @@ func historyTokenBudget() int {
 		}
 	}
 	return defaultHistoryTokenBudget
+}
+
+func historyTokenBudgetForAgent(agentInfo *singleagent.SingleAgent) int {
+	if agentInfo != nil && strings.EqualFold(strings.TrimSpace(agentInfo.AgentType), "super") {
+		return 0
+	}
+	return historyTokenBudget()
+}
+
+func workflowCanvasModeEnabled(ext map[string]string) bool {
+	if len(ext) == 0 {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(ext["workflow_canvas_mode"])) {
+	case "true", "1", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func buildAgentHistorySchema(history []*schema.Message, agentInfo *singleagent.SingleAgent, ext map[string]string) []*schema.Message {
+	if workflowCanvasModeEnabled(ext) {
+		return nil
+	}
+
+	// 普通智能体仍按 token 预算裁剪；超级智能体交给 harness context compaction
+	// 生成 summary + recent tail，避免旧上下文在摘要前被直接丢弃。
+	return trimHistoryByTokenBudget(history, historyTokenBudgetForAgent(agentInfo))
 }
 
 // estimateMessageTokens 粗略估算一条 schema.Message 的 token 数（CJK 友好的保守估计：约 3 字节/token）。
@@ -442,7 +475,7 @@ func buildHistorySummary(history []*msgEntity.Message) string {
 	return sb.String()
 }
 
-func buildSchemaMessage(msg *msgEntity.Message) *schema.Message {
+func buildSchemaMessage(ctx context.Context, msg *msgEntity.Message, imagexClient imagex.ImageX, storageClient storage.Storage) *schema.Message {
 	if msg == nil {
 		return nil
 	}
@@ -453,7 +486,9 @@ func buildSchemaMessage(msg *msgEntity.Message) *schema.Message {
 			if modelMsg.Role == "" {
 				modelMsg.Role = msg.Role
 			}
-			return &modelMsg
+			// 入库时 model_content 的图片只存了 key/URI（不再内联 base64），
+			// 调用模型前在此把 URI 展开成自包含的 base64 data URL。
+			return internal.ParseMessageURI(ctx, &modelMsg, imagexClient, storageClient)
 		}
 	}
 
@@ -611,6 +646,9 @@ func (c *runImpl) buildAgentMessage2Create(ctx context.Context, chunk *entity.Ag
 		msg.ContentType = message.ContentTypeText
 		msg.Content = chunk.ToolsMessage[0].Content
 
+		// 回填与对应 function_call 相同的 call_id,供前端按 ID 配对(支持并行工具调用收尾)。
+		buildExt[string(msgEntity.MessageExtKeyCallID)] = chunk.ToolsMessage[0].ToolCallID
+
 		// 🔥 计算工具执行时间 = 当前时间 - function_call 发送时间
 		toolTimeCost := timeCost // 默认使用累计时间
 		if !rtDependence.lastFuncCallTime.IsZero() {
@@ -659,6 +697,10 @@ func (c *runImpl) buildAgentMessage2Create(ctx context.Context, chunk *entity.Ag
 			}
 			buildExt[string(msgEntity.MessageExtKeyPlugin)] = toolCall.Function.Name
 			buildExt[string(msgEntity.MessageExtKeyToolName)] = toolCall.Function.Name
+			// 回填 call_id:前端按 call_id 配对 function_call 与 tool_response。缺失时会退化为
+			// 「索引相邻配对」,并行工具调用(消息序为 fc,fc,fc,fc,tr,tr,tr,tr)下只有边界一个能配上,
+			// 其余工具永远停在「正在调用」且不单独计时。设置后每个并行调用都能正确收尾。
+			buildExt[string(msgEntity.MessageExtKeyCallID)] = toolCall.ID
 			// 🔥 使用 LLM 思考时间，而不是累计时间
 			buildExt[string(msgEntity.MessageExtKeyTimeCost)] = llmTimeCost
 
@@ -1693,6 +1735,33 @@ func (c *runImpl) Delete(ctx context.Context, runID []int64) error {
 
 func (c *runImpl) Create(ctx context.Context, runRecord *entity.AgentRunMeta) (*entity.RunRecordMeta, error) {
 	return c.RunRecordRepo.Create(ctx, runRecord)
+}
+
+func (c *runImpl) GetByID(ctx context.Context, runID int64) (*entity.RunRecordMeta, error) {
+	runRecord, err := c.RunRecordRepo.GetByID(ctx, runID)
+	if err != nil {
+		return nil, err
+	}
+	meta := &entity.RunRecordMeta{
+		ID:             runRecord.ID,
+		ConversationID: runRecord.ConversationID,
+		SectionID:      runRecord.SectionID,
+		AgentID:        runRecord.AgentID,
+		Status:         entity.RunStatus(runRecord.Status),
+		Usage:          runRecord.Usage,
+		Ext:            runRecord.Ext,
+		CreatedAt:      runRecord.CreatedAt,
+		UpdatedAt:      runRecord.UpdatedAt,
+		CompletedAt:    runRecord.CompletedAt,
+		FailedAt:       runRecord.FailedAt,
+	}
+	if runRecord.LastError != "" {
+		var runErr entity.RunError
+		if err := json.Unmarshal([]byte(runRecord.LastError), &runErr); err == nil {
+			meta.Error = &runErr
+		}
+	}
+	return meta, nil
 }
 
 func (c *runImpl) List(ctx context.Context, listMeta *entity.ListRunRecordMeta) ([]*entity.RunRecordMeta, error) {

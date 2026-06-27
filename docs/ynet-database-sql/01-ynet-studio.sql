@@ -1564,6 +1564,8 @@ CREATE TABLE IF NOT EXISTS `single_agent_draft` (
   `bound_cards` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Bound Cards for Prompt Injection',
   `skill_info_list` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Skill references bound to this agent',
   `force_tool_return` tinyint(1) DEFAULT NULL COMMENT 'Force all tool results to return to model',
+  `agent_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Agent Type for Runtime Routing',
+  `strategy_config` json DEFAULT NULL COMMENT 'Bound Strategy IDs',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_agent_id` (`agent_id`),
   KEY `idx_creator_id` (`creator_id`)
@@ -1620,6 +1622,8 @@ CREATE TABLE IF NOT EXISTS `single_agent_version` (
   `bound_cards` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Bound Cards for Prompt Injection',
   `skill_info_list` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Skill references bound to this agent',
   `force_tool_return` tinyint(1) DEFAULT NULL COMMENT 'Force all tool results to return to model',
+  `agent_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Agent Type for Runtime Routing',
+  `strategy_config` json DEFAULT NULL COMMENT 'Bound Strategy IDs',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_agent_id_and_version_connector_id` (`agent_id`,`version`,`connector_id`),
   KEY `idx_creator_id` (`creator_id`)
@@ -2168,3 +2172,54 @@ CREATE TABLE IF NOT EXISTS `user_plugin_favorites` (
   UNIQUE KEY `uk_user_plugin` (`user_id`, `marketplace_id`),
   KEY `idx_marketplace_id` (`marketplace_id`)
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `strategy` (
+  `id` bigint unsigned NOT NULL COMMENT 'ID',
+  `space_id` bigint unsigned NOT NULL COMMENT 'Space ID',
+  `app_id` bigint unsigned DEFAULT NULL COMMENT 'App ID',
+  `creator_id` bigint NOT NULL DEFAULT '0' COMMENT 'Creator ID',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Strategy name',
+  `description` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Description / L1 hint',
+  `icon_uri` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Icon Uri',
+  `status` tinyint NOT NULL DEFAULT '0' COMMENT '0 draft 1 published',
+  `version` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Published version',
+  `created_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Create Time ms',
+  `updated_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Update Time ms',
+  `deleted_at` datetime DEFAULT NULL COMMENT 'Delete Time',
+  PRIMARY KEY (`id`),
+  KEY `idx_space_app_creator_deleted` (`space_id`,`app_id`,`creator_id`,`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='strategy';
+
+CREATE TABLE IF NOT EXISTS `strategy_scenario` (
+  `id` bigint unsigned NOT NULL COMMENT 'ID',
+  `strategy_id` bigint unsigned NOT NULL COMMENT 'Strategy ID',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Scenario name',
+  `description` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Model-facing description',
+  `sort_order` int NOT NULL DEFAULT '0' COMMENT 'Sort order',
+  `created_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Create Time ms',
+  `updated_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Update Time ms',
+  `deleted_at` datetime DEFAULT NULL COMMENT 'Delete Time',
+  PRIMARY KEY (`id`),
+  KEY `idx_strategy_deleted` (`strategy_id`,`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='strategy scenario';
+
+CREATE TABLE IF NOT EXISTS `strategy_capability` (
+  `id` bigint unsigned NOT NULL COMMENT 'ID',
+  `strategy_id` bigint unsigned NOT NULL COMMENT 'Strategy ID',
+  `scenario_id` bigint unsigned NOT NULL COMMENT 'Scenario ID',
+  `type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'workflow/plugin/knowledge/prompt',
+  `ref_id` bigint unsigned DEFAULT NULL COMMENT 'workflow_id / plugin_tool_id / knowledge_id',
+  `ref_sub_id` bigint unsigned DEFAULT NULL COMMENT 'plugin_id (for plugin type)',
+  `ref_version` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'workflow/plugin version',
+  `prompt_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT 'inline prompt (prompt type)',
+  `retrieve_config` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT 'json: top_k/min_score (knowledge type)',
+  `alias_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Model-facing name override',
+  `alias_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT 'Model-facing curated description',
+  `sort_order` int NOT NULL DEFAULT '0' COMMENT 'Sort order',
+  `created_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Create Time ms',
+  `updated_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Update Time ms',
+  `deleted_at` datetime DEFAULT NULL COMMENT 'Delete Time',
+  PRIMARY KEY (`id`),
+  KEY `idx_scenario_deleted` (`scenario_id`,`deleted_at`),
+  KEY `idx_strategy_deleted` (`strategy_id`,`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='strategy capability';

@@ -24,7 +24,7 @@ export interface DescriptionProps {
 
 const Description: FC<DescriptionProps> = ({ description }) => (
   <Typography.Text
-    className="coz-fg-secondary text-[14px] leading-[20px] break-words"
+    className="coz-fg-secondary text-[12.5px] leading-[18px] break-words"
     ellipsis={{
       showTooltip: {
         opts: {

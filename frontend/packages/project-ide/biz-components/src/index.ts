@@ -24,6 +24,11 @@ export {
   type BizResourceTree,
   VARIABLE_RESOURCE_ID,
   CustomResourceFolderShortcutService,
+  createFolderedResourceTree,
+  getBackendFolderId,
+  getResourceFolderId,
+  ROOT_FOLDER_ID,
+  WORKFLOW_FOLDER_RESOURCE_TYPE,
 } from './resource-folder-coze';
 export { usePrimarySidebarStore } from './stores';
 export * from './hooks';

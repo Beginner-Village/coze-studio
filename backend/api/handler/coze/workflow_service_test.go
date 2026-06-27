@@ -82,6 +82,7 @@ import (
 	search "github.com/ynet-dev/ynet-studio/backend/domain/search/entity"
 	userentity "github.com/ynet-dev/ynet-studio/backend/domain/user/entity"
 	workflow2 "github.com/ynet-dev/ynet-studio/backend/domain/workflow"
+	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/crossdomain/search/searchmock"
 	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity"
 	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
 	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/service"
@@ -114,18 +115,18 @@ func TestMain(m *testing.M) {
 }
 
 type wfTestRunner struct {
-	t             *testing.T
-	h             *server.Hertz
-	ctrl          *gomock.Controller
-	idGen         *mock.MockIDGenerator
-	search        *searchmock.MockNotifier
+	t      *testing.T
+	h      *server.Hertz
+	ctrl   *gomock.Controller
+	idGen  *mock.MockIDGenerator
+	search *searchmock.MockNotifier
 
-	appVarS       *mockvar.MockStore
-	userVarS      *mockvar.MockStore
-	varGetter     *mockvar.MockVariablesMetaGetter
-	modelManage   *mockmodel.MockManager
-	plugin        *mockPlugin.MockPluginService
-	tos           *storageMock.MockStorage
+	appVarS     *mockvar.MockStore
+	userVarS    *mockvar.MockStore
+	varGetter   *mockvar.MockVariablesMetaGetter
+	modelManage *mockmodel.MockManager
+	plugin      *mockPlugin.MockPluginService
+	tos         *storageMock.MockStorage
 
 	knowledge     *knowledgemock.MockKnowledge
 	database      *databasemock.MockDatabase
@@ -238,7 +239,12 @@ func newWfTestRunner(t *testing.T) *wfTestRunner {
 		dsn = strings.ReplaceAll(dsn, "127.0.0.1", "mysql")
 	}
 	db, err := gorm.Open(mysql.Open(dsn))
-	assert.NoError(t, err)
+	if err != nil {
+		if os.Getenv("CI_JOB_NAME") == "" {
+			t.Skipf("skip workflow handler integration test: mysql is unavailable at %s: %v", dsn, err)
+		}
+		require.NoError(t, err)
+	}
 
 	s, err := miniredis.Run()
 	if err != nil {

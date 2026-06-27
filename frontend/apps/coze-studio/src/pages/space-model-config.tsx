@@ -31,6 +31,10 @@ import {
   Search,
 } from '@coze-arch/coze-design';
 import { listModels, type ModelDetailOutput } from '@coze-arch/bot-space-api';
+import { getLocalizedErrorMessage } from '@coze-arch/bot-api';
+
+const getDisplayErrorMessage = (message?: string) =>
+  getLocalizedErrorMessage(message) || message || '未知错误';
 
 // 基于新的API定义的模型类型，使用字符串ID避免大整数精度丢失
 interface SpaceModel {
@@ -370,7 +374,11 @@ function useModelData(spaceId: string) {
         }
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setError(
+          err instanceof Error
+            ? getDisplayErrorMessage(err.message)
+            : '未知错误',
+        );
       } finally {
         setLoading(false);
       }

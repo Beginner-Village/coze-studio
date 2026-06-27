@@ -83,6 +83,14 @@ export class WorkflowLinesService {
     return this.linesManager.createLine(options);
   }
 
+  deleteLine(line: WorkflowLineEntity): boolean {
+    if (!this.linesManager.canRemove(line)) {
+      return false;
+    }
+    line.dispose();
+    return true;
+  }
+
   isError(fromId?: string, toId?: string): boolean {
     if (!fromId) {
       // No input port allowed

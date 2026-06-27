@@ -32,6 +32,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/entity"
 	msgEntity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/message/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
@@ -39,7 +40,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
-func (art *AgentRuntime) AgentStreamExecute(ctx context.Context, imagex imagex.ImageX) (err error) {
+func (art *AgentRuntime) AgentStreamExecute(ctx context.Context, imagex imagex.ImageX, storageClient storage.Storage) (err error) {
 	mainChan := make(chan *entity.AgentRespEvent, 100)
 
 	ar := &crossagent.AgentRuntime{
@@ -48,11 +49,13 @@ func (art *AgentRuntime) AgentStreamExecute(ctx context.Context, imagex imagex.I
 		AgentID:          art.GetRunMeta().AgentID,
 		IsDraft:          art.GetRunMeta().IsDraft,
 		UserID:           art.GetRunMeta().UserID,
+		ConversationID:   art.GetRunMeta().ConversationID,
 		ConnectorID:      art.GetRunMeta().ConnectorID,
 		PreRetrieveTools: art.GetRunMeta().PreRetrieveTools,
-		Input:            transMessageToSchemaMessage(ctx, []*msgEntity.Message{art.GetInput()}, imagex)[0],
-		HistoryMsg:       transMessageToSchemaMessage(ctx, historyPairs(art.GetHistory()), imagex),
+		Input:            transMessageToSchemaMessage(ctx, []*msgEntity.Message{art.GetInput()}, imagex, storageClient)[0],
+		HistoryMsg:       transMessageToSchemaMessage(ctx, historyPairs(art.GetHistory()), imagex, storageClient),
 		ResumeInfo:       parseResumeInfo(ctx, art.GetHistory()),
+		Ext:              art.GetRunMeta().Ext,
 	}
 
 	streamer, err := crossagent.DefaultSVC().StreamExecute(ctx, ar)

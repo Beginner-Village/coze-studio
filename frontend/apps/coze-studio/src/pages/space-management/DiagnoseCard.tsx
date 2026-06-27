@@ -16,9 +16,10 @@
 
 import { useState, type FC } from 'react';
 
-import { I18n } from '@coze-arch/i18n';
+import { I18n, type I18nKeysNoOptionsType } from '@coze-arch/i18n';
 import { Button, Toast } from '@coze-arch/coze-design';
 import {
+  getLocalizedErrorMessage,
   SpaceApi,
   type DiagnoseData,
   type DiagnoseESIndex,
@@ -32,6 +33,15 @@ import styles from './DiagnoseCard.module.less';
 interface Props {
   spaceId: string;
 }
+
+const getDisplayErrorMessage = (message?: string) =>
+  getLocalizedErrorMessage(message) || message || '未知错误';
+
+const t = (
+  key: string,
+  options: Record<string, unknown>,
+  fallbackText: string,
+) => I18n.t(key as I18nKeysNoOptionsType, options, fallbackText);
 
 // formatTimestamp renders Date to a HH:mm:ss / YYYY-MM-DD HH:mm:ss string
 // without pulling in a date library — we only need a "last run at" stamp.
@@ -54,18 +64,18 @@ const ProbeMiniCard: FC<{ label: string; probe: DiagnoseModelProbe }> = ({
   let dotClass = styles.statusDotMuted;
   let statusText: string;
   if (!probe.configured) {
-    statusText = I18n.t('space_diagnose_probe_not_configured', {}, '未配置');
+    statusText = t('space_diagnose_probe_not_configured', {}, '未配置');
   } else if (probe.reachable) {
     dotClass = styles.statusDotOk;
-    statusText = I18n.t(
-      'space_diagnose_probe_ok',
+    statusText = t(
+'space_diagnose_probe_ok',
       { latency: probe.latency_ms },
       `正常 (${probe.latency_ms}ms)`,
     );
   } else {
     dotClass = styles.statusDotBad;
-    statusText = I18n.t(
-      'space_diagnose_probe_unreachable',
+    statusText = t(
+'space_diagnose_probe_unreachable',
       { status: probe.http_status },
       `异常${probe.http_status ? ` (HTTP ${probe.http_status})` : ''}`,
     );
@@ -102,7 +112,7 @@ const ModelProbesSection: FC<{ data: DiagnoseData['model_probes'] }> = ({
 }) => (
   <div className={styles.section}>
     <div className={styles.sectionTitle}>
-      {I18n.t('space_diagnose_section_probes', {}, '模型探活')}
+      {t('space_diagnose_section_probes', {}, '模型探活')}
     </div>
     <div className={styles.probesGrid}>
       <ProbeMiniCard label="Chat" probe={data.chat} />
@@ -115,18 +125,18 @@ const ModelProbesSection: FC<{ data: DiagnoseData['model_probes'] }> = ({
 const MySQLTablesSection: FC<{ rows: DiagnoseMySQLTable[] }> = ({ rows }) => (
   <div className={styles.section}>
     <div className={styles.sectionTitle}>
-      {I18n.t('space_diagnose_section_mysql', {}, 'MySQL 数据')}
+      {t('space_diagnose_section_mysql', {}, 'MySQL 数据')}
     </div>
     {rows.length === 0 ? (
       <div className={styles.emptyHint}>
-        {I18n.t('space_diagnose_empty', {}, '无数据')}
+        {t('space_diagnose_empty', {}, '无数据')}
       </div>
     ) : (
       <table className={styles.table}>
         <thead>
           <tr>
-            <th>{I18n.t('space_diagnose_th_table', {}, '表名')}</th>
-            <th>{I18n.t('space_diagnose_th_rows', {}, '行数')}</th>
+            <th>{t('space_diagnose_th_table', {}, '表名')}</th>
+            <th>{t('space_diagnose_th_rows', {}, '行数')}</th>
           </tr>
         </thead>
         <tbody>
@@ -153,18 +163,18 @@ const MySQLTablesSection: FC<{ rows: DiagnoseMySQLTable[] }> = ({ rows }) => (
 const ESIndicesSection: FC<{ rows: DiagnoseESIndex[] }> = ({ rows }) => (
   <div className={styles.section}>
     <div className={styles.sectionTitle}>
-      {I18n.t('space_diagnose_section_es', {}, 'ES 索引')}
+      {t('space_diagnose_section_es', {}, 'ES 索引')}
     </div>
     {rows.length === 0 ? (
       <div className={styles.emptyHint}>
-        {I18n.t('space_diagnose_empty', {}, '无数据')}
+        {t('space_diagnose_empty', {}, '无数据')}
       </div>
     ) : (
       <table className={styles.table}>
         <thead>
           <tr>
-            <th>{I18n.t('space_diagnose_th_index', {}, '索引名')}</th>
-            <th>{I18n.t('space_diagnose_th_doc_count', {}, '文档数')}</th>
+            <th>{t('space_diagnose_th_index', {}, '索引名')}</th>
+            <th>{t('space_diagnose_th_doc_count', {}, '文档数')}</th>
           </tr>
         </thead>
         <tbody>
@@ -178,7 +188,7 @@ const ESIndicesSection: FC<{ rows: DiagnoseESIndex[] }> = ({ rows }) => (
                   r.doc_count
                 ) : (
                   <span>
-                    {I18n.t('space_diagnose_missing', {}, '缺失')}
+                    {t('space_diagnose_missing', {}, '缺失')}
                     {r.error ? (
                       <span className={styles.tableInlineError}>
                         {' '}
@@ -199,12 +209,12 @@ const ESIndicesSection: FC<{ rows: DiagnoseESIndex[] }> = ({ rows }) => (
 const MilvusSection: FC<{ rows: DiagnoseMilvusCollection[] }> = ({ rows }) => (
   <div className={styles.section}>
     <div className={styles.sectionTitle}>
-      {I18n.t('space_diagnose_section_milvus', {}, 'Milvus Collection')}
+      {t('space_diagnose_section_milvus', {}, 'Milvus Collection')}
     </div>
     {rows.length === 0 ? (
       <div className={styles.emptyHint}>
-        {I18n.t(
-          'space_diagnose_no_kbs',
+        {t(
+'space_diagnose_no_kbs',
           {},
           '本空间暂无知识库（无需检查向量库 collection）',
         )}
@@ -213,9 +223,9 @@ const MilvusSection: FC<{ rows: DiagnoseMilvusCollection[] }> = ({ rows }) => (
       <table className={styles.table}>
         <thead>
           <tr>
-            <th>{I18n.t('space_diagnose_th_kb', {}, '知识库')}</th>
-            <th>{I18n.t('space_diagnose_th_collection', {}, 'Collection')}</th>
-            <th>{I18n.t('space_diagnose_th_status', {}, '状态')}</th>
+            <th>{t('space_diagnose_th_kb', {}, '知识库')}</th>
+            <th>{t('space_diagnose_th_collection', {}, 'Collection')}</th>
+            <th>{t('space_diagnose_th_status', {}, '状态')}</th>
           </tr>
         </thead>
         <tbody>
@@ -230,8 +240,8 @@ const MilvusSection: FC<{ rows: DiagnoseMilvusCollection[] }> = ({ rows }) => (
               </td>
               <td>
                 {r.exists
-                  ? I18n.t('space_diagnose_milvus_ok', {}, '✓ 已存在')
-                  : I18n.t('space_diagnose_milvus_missing', {}, '✗ 缺失')}
+                  ? t('space_diagnose_milvus_ok', {}, '✓ 已存在')
+                  : t('space_diagnose_milvus_missing', {}, '✗ 缺失')}
                 {r.error ? (
                   <span className={styles.tableInlineError}> {r.error}</span>
                 ) : null}
@@ -254,14 +264,15 @@ export const DiagnoseCard: FC<Props> = ({ spaceId }) => {
     try {
       const resp = await SpaceApi.diagnose({ space_id: spaceId });
       if (resp.code !== 0) {
-        throw new Error(resp.msg || 'unknown error');
+        throw new Error(getDisplayErrorMessage(resp.msg));
       }
       setData(resp.data);
       setRanAt(new Date());
-      Toast.success(I18n.t('space_diagnose_done', {}, '诊断完成'));
+      Toast.success(t('space_diagnose_done', {}, '诊断完成'));
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'unknown error';
-      Toast.error(I18n.t('space_diagnose_failed', { msg }, `诊断失败: ${msg}`));
+      const msg =
+        e instanceof Error ? getDisplayErrorMessage(e.message) : '未知错误';
+      Toast.error(t('space_diagnose_failed', { msg }, `诊断失败: ${msg}`));
     } finally {
       setLoading(false);
     }
@@ -272,18 +283,18 @@ export const DiagnoseCard: FC<Props> = ({ spaceId }) => {
       <div className={styles.header}>
         <div className={styles.headerText}>
           <div className={styles.title}>
-            {I18n.t('space_diagnose_title', {}, '数据完整性诊断')}
+            {t('space_diagnose_title', {}, '数据完整性诊断')}
           </div>
           <div className={styles.desc}>
-            {I18n.t(
-              'space_diagnose_desc',
+            {t(
+'space_diagnose_desc',
               {},
               '一次性检查本空间的模型可达性、MySQL 关键表行数、ES 索引文档数、Milvus collection 状态。只读，不写入任何数据。仅 space owner 可执行。',
             )}
             {ranAt ? (
               <span className={styles.timestamp}>
-                {I18n.t(
-                  'space_diagnose_last_run',
+                {t(
+'space_diagnose_last_run',
                   { ts: formatTimestamp(ranAt) },
                   `上次运行：${formatTimestamp(ranAt)}`,
                 )}
@@ -297,7 +308,7 @@ export const DiagnoseCard: FC<Props> = ({ spaceId }) => {
           onClick={handleRun}
           data-testid="space-diagnose-button"
         >
-          {I18n.t('space_diagnose_run', {}, '开始诊断')}
+          {t('space_diagnose_run', {}, '开始诊断')}
         </Button>
       </div>
 

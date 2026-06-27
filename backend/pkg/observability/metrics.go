@@ -85,4 +85,30 @@ var (
 		},
 		[]string{"result"}, // success | error
 	)
+
+	// Super-agent run observability (P1 hardening): so production can see run volume,
+	// latency and error rate, and whether the per-user sandbox concurrency limit is firing.
+	SuperAgentRunsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "studio_super_agent_runs_total",
+			Help: "Super-agent runs by transport (stream|sync) and result (success|error)",
+		},
+		[]string{"transport", "result"},
+	)
+
+	SuperAgentRunDuration = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "studio_super_agent_run_duration_seconds",
+			Help:    "Super-agent run latency by transport and result",
+			Buckets: []float64{0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300},
+		},
+		[]string{"transport", "result"},
+	)
+
+	SandboxExecRejectedTotal = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Name: "studio_sandbox_exec_rejected_total",
+			Help: "Sandbox exec calls rejected by the per-user concurrency limit",
+		},
+	)
 )

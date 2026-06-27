@@ -18,7 +18,10 @@ export * from './components';
 export * from './utils';
 export { FullWidthAligner } from './components/common/full-width-aligner';
 export { ToNewestTipUI } from './components/common/to-newest-tip';
-export { getFileExtensionAndName } from './utils/file-name';
+export {
+  getFileExtensionAndName,
+  protectSandboxFilenames,
+} from './utils/file-name';
 export { MessageBoxTheme } from './components/common/message-box/type';
 
 export { useStateWithLocalCache } from './hooks/use-state-with-local-cache';

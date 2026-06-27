@@ -85,6 +85,7 @@ func (s *SingleAgentApplicationService) draftBotCreateRequestToSingleAgent(ctx c
 	sa.Name = req.GetName()
 	sa.Desc = req.GetDescription()
 	sa.IconURI = req.GetIconURI()
+	sa.AgentType = req.GetAgentType()
 
 	return sa, nil
 }

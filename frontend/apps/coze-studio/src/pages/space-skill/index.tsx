@@ -14,152 +14,129 @@
  * limitations under the License.
  */
 
+/* eslint-disable @coze-arch/max-line-per-function */
 import { useParams, useNavigate } from 'react-router-dom';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
-import type { SkillInfo } from '@coze-studio/api-schema/idl/skill/skill';
-import {
-  IconCozPlus,
-  IconCozMore,
-  IconCozDelete,
-  IconCozEdit,
-} from '@coze-arch/coze-design/icons';
-import {
-  Button,
-  Search,
-  Spin,
-  Empty,
-  Modal,
-  Dropdown,
-  IconButton,
-} from '@coze-arch/coze-design';
+import { Modal } from '@coze-arch/coze-design';
 
+import type { SkillInfo } from './types';
+import { SkillPageView } from './SkillPageView';
 import { useSkillManagement } from './hooks/use-skill-management';
+import {
+  MARKETPLACE_VIEW_CONFIG,
+  SKILL_PUBLISH_SCOPE,
+  type SkillView,
+} from './constants';
+import { agentAppApi } from './agent-app-api';
 
-const SkillCard: React.FC<{
-  skill: SkillInfo;
-  onEdit: (skill: SkillInfo) => void;
-  onDelete: (skill: SkillInfo) => void;
-  isHovered: boolean;
-  onHover: (id: string | null) => void;
-}> = ({ skill, onEdit, onDelete, isHovered, onHover }) => (
-  <div
-    className="flex-grow h-[158px] min-w-[280px] rounded-[6px] border-solid border-[1px] relative overflow-hidden transition duration-150 ease-out hover:shadow-[0_6px_8px_0_rgba(28,31,35,6%)] coz-stroke-primary coz-mg-card"
-    onMouseEnter={() => onHover(skill.skill_id)}
-    onMouseLeave={() => onHover(null)}
-  >
-    <div
-      className="h-full w-full cursor-pointer flex flex-col gap-[8px] px-[16px] py-[16px]"
-      onClick={() => onEdit(skill)}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-[12px] flex-1 min-w-0">
-          <div
-            className="w-[40px] h-[40px] flex items-center justify-center rounded-[8px] flex-shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            }}
-          >
-            <span className="text-white text-[16px] font-bold">S</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3
-              className="text-[14px] font-medium coz-fg-primary truncate"
-              title={skill.name}
-            >
-              {skill.name}
-            </h3>
-            <p
-              className="text-[12px] coz-fg-secondary line-clamp-2 mt-[2px]"
-              title={skill.description}
-            >
-              {skill.description || '暂无描述'}
-            </p>
-          </div>
-        </div>
-      </div>
+const readFileAsDataURL = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 
-      {skill.prompt ? (
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <p
-            className="text-[12px] coz-fg-tertiary line-clamp-2 font-mono"
-            title={skill.prompt}
-          >
-            {skill.prompt}
-          </p>
-        </div>
-      ) : null}
-
-      <div className="flex items-center gap-[4px] text-[12px]">
-        <span className="coz-fg-tertiary">创建时间</span>
-        <span className="coz-fg-secondary">
-          {skill.created_at
-            ? new Date(skill.created_at).toLocaleDateString('zh-CN')
-            : '-'}
-        </span>
-        {skill.updated_at ? (
-          <>
-            <span className="coz-fg-tertiary ml-[8px]">更新时间</span>
-            <span className="coz-fg-secondary">
-              {new Date(skill.updated_at).toLocaleDateString('zh-CN')}
-            </span>
-          </>
-        ) : null}
-      </div>
-
-      {isHovered ? (
-        <>
-          <div
-            className="absolute bottom-[16px] right-[16px] w-[100px] h-[16px]"
-            style={{
-              background:
-                'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 21.38%)',
-            }}
-          />
-          <div
-            className="absolute bottom-[16px] right-[16px] flex gap-[4px]"
-            onClick={e => e.stopPropagation()}
-          >
-            <Dropdown
-              trigger="click"
-              position="bottomRight"
-              render={
-                <Dropdown.Menu>
-                  <Dropdown.Item
-                    icon={<IconCozEdit />}
-                    onClick={() => onEdit(skill)}
-                  >
-                    编辑
-                  </Dropdown.Item>
-                  <Dropdown.Item
-                    icon={<IconCozDelete />}
-                    type="danger"
-                    onClick={() => onDelete(skill)}
-                  >
-                    删除
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              }
-            >
-              <IconButton icon={<IconCozMore />} />
-            </Dropdown>
-          </div>
-        </>
-      ) : null}
-    </div>
-  </div>
-);
+const downloadDataURL = (filename: string, content: string) => {
+  const link = document.createElement('a');
+  link.href = content;
+  link.download = filename || 'skill-package.zip';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
 
 const SpaceSkillPage: React.FC = () => {
   const { space_id } = useParams<{ space_id: string }>();
   const navigate = useNavigate();
-  const { skillList, loading, total, keyword, setKeyword, deleteSkill } =
-    useSkillManagement(space_id || '');
+  const {
+    skillList,
+    marketplaceList,
+    loading,
+    marketplaceLoading,
+    total,
+    marketplaceTotal,
+    keyword,
+    setKeyword,
+    fetchMarketplaceSkills,
+    deleteSkill,
+    publishSkill,
+    installMarketplaceSkill,
+    importSkillPackage,
+    validateSkillPackage,
+    exportSkillPackage,
+  } = useSkillManagement(space_id || '');
 
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<SkillView>('mine');
+  const [reviewCount, setReviewCount] = useState(0);
+  const [importing, setImporting] = useState(false);
+  const [exportingSkillId, setExportingSkillId] = useState('');
+  const [importError, setImportError] = useState('');
+  const zipInputRef = useRef<HTMLInputElement | null>(null);
+
+  const marketplaceScope =
+    activeView === 'space-market' || activeView === 'global-market'
+      ? MARKETPLACE_VIEW_CONFIG[activeView].scope
+      : undefined;
+
+  useEffect(() => {
+    if (activeView === 'space-market' || activeView === 'global-market') {
+      fetchMarketplaceSkills(marketplaceScope);
+    }
+  }, [activeView, fetchMarketplaceSkills, marketplaceScope]);
+
+  const currentList = activeView === 'mine' ? skillList : marketplaceList;
+  const currentLoading = activeView === 'mine' ? loading : marketplaceLoading;
+  const currentTotal =
+    activeView === 'mine'
+      ? total
+      : activeView === 'review'
+        ? reviewCount
+        : marketplaceTotal;
 
   const handleCreate = () => {
     navigate(`/space/${space_id}/skill-detail/create`);
+  };
+
+  const handleImportClick = () => {
+    setImportError('');
+    zipInputRef.current?.click();
+  };
+
+  const handleZipInputChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) {
+      return;
+    }
+    if (!file.name.toLowerCase().endsWith('.zip')) {
+      setImportError('请上传标准技能 ZIP 包');
+      return;
+    }
+    try {
+      setImporting(true);
+      setImportError('');
+      const content = await readFileAsDataURL(file);
+      const validation = await validateSkillPackage({
+        filename: file.name,
+        content,
+      });
+      if (validation && !validation.valid) {
+        setImportError(validation.error || '标准技能 ZIP 包校验失败');
+        return;
+      }
+      await importSkillPackage({ filename: file.name, content });
+      setActiveView('mine');
+    } catch (error) {
+      setImportError(
+        error instanceof Error ? error.message : '标准技能 ZIP 包上传失败',
+      );
+    } finally {
+      setImporting(false);
+    }
   };
 
   const handleEdit = (skillItem: SkillInfo) => {
@@ -185,69 +162,110 @@ const SpaceSkillPage: React.FC = () => {
     });
   };
 
+  const handlePublish = (skillItem: SkillInfo, scope: number) => {
+    const scopeLabel =
+      scope === SKILL_PUBLISH_SCOPE.GLOBAL
+        ? '全局商城'
+        : scope === SKILL_PUBLISH_SCOPE.SPACE
+          ? '空间商城'
+          : '私有';
+    Modal.confirm({
+      title: scope === SKILL_PUBLISH_SCOPE.PRIVATE ? '确认下架' : '确认发布',
+      content:
+        scope === SKILL_PUBLISH_SCOPE.PRIVATE
+          ? `确定将技能「${skillItem.name}」下架为私有吗？`
+          : `确定将技能「${skillItem.name}」发布到${scopeLabel}吗？`,
+      okText: scope === SKILL_PUBLISH_SCOPE.PRIVATE ? '下架' : '发布',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await publishSkill(skillItem.skill_id, scope);
+        } catch (error) {
+          console.error('发布失败:', error);
+        }
+      },
+    });
+  };
+
+  const handleInstall = (skillItem: SkillInfo) => {
+    Modal.confirm({
+      title: '安装技能',
+      content: `将技能「${skillItem.name}」安装到当前空间。安装后会生成一份私有副本，可继续编辑。`,
+      okText: '安装',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await installMarketplaceSkill(skillItem.skill_id);
+          setActiveView('mine');
+        } catch (error) {
+          console.error('安装失败:', error);
+        }
+      },
+    });
+  };
+
+  const handleRecruit = async (skillItem: SkillInfo) => {
+    try {
+      const result = await agentAppApi.recruit({
+        product_id: skillItem.product_id || skillItem.skill_id,
+        space_id: space_id || '',
+      });
+      const shadowAgentId = result?.data?.shadow_agent_id;
+      if (shadowAgentId) {
+        navigate(`/space/${space_id}/bot/${shadowAgentId}/arrange`);
+      }
+    } catch (error) {
+      console.error('招聘失败:', error);
+    }
+  };
+
+  const handleExport = async (skillItem: SkillInfo) => {
+    try {
+      setImportError('');
+      setExportingSkillId(skillItem.skill_id);
+      const pkg = await exportSkillPackage(skillItem.skill_id);
+      if (!pkg?.content) {
+        throw new Error('标准技能 ZIP 包下载失败');
+      }
+      downloadDataURL(
+        pkg.filename || `${skillItem.name || 'skill'}.zip`,
+        pkg.content,
+      );
+    } catch (error) {
+      setImportError(
+        error instanceof Error ? error.message : '标准技能 ZIP 包下载失败',
+      );
+    } finally {
+      setExportingSkillId('');
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full">
-      {/* 顶部标题栏 */}
-      <div className="flex items-center justify-between px-[24px] py-[16px] border-b coz-stroke-secondary">
-        <div>
-          <h1 className="text-[18px] font-medium coz-fg-primary">技能管理</h1>
-          <p className="text-[12px] coz-fg-tertiary mt-[4px]">
-            场景化能力包，Agent 按需加载完整指令，节省 token 开销
-          </p>
-        </div>
-        <Button type="primary" icon={<IconCozPlus />} onClick={handleCreate}>
-          创建技能
-        </Button>
-      </div>
-
-      {/* 筛选栏 */}
-      <div className="flex items-center justify-between px-[24px] py-[12px] border-b coz-stroke-secondary">
-        <div className="flex items-center gap-[8px]">
-          <span className="text-[14px] coz-fg-secondary">
-            共 {total} 个技能
-          </span>
-        </div>
-        <Search
-          showClear
-          className="w-[200px]"
-          placeholder="搜索技能"
-          value={keyword}
-          onChange={val => setKeyword(val)}
-        />
-      </div>
-
-      {/* 内容区域 */}
-      <div className="flex-1 overflow-y-auto px-[24px] py-[20px]">
-        {loading ? (
-          <div className="flex justify-center items-center py-[60px]">
-            <Spin size="large" />
-          </div>
-        ) : skillList.length === 0 ? (
-          <div className="flex justify-center items-center py-[60px]">
-            <Empty
-              description={
-                keyword
-                  ? '没有找到匹配的技能'
-                  : '暂无技能，创建你的第一个技能吧'
-              }
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 auto-rows-min gap-[20px] [@media(min-width:1600px)]:grid-cols-4">
-            {skillList.map(skillItem => (
-              <SkillCard
-                key={skillItem.skill_id}
-                skill={skillItem}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                isHovered={hoveredId === skillItem.skill_id}
-                onHover={setHoveredId}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+    <SkillPageView
+      spaceId={space_id || ''}
+      skillList={skillList}
+      currentList={currentList}
+      currentLoading={currentLoading}
+      currentTotal={currentTotal}
+      activeView={activeView}
+      keyword={keyword}
+      importing={importing}
+      importError={importError}
+      exportingSkillId={exportingSkillId}
+      zipInputRef={zipInputRef}
+      setActiveView={setActiveView}
+      setKeyword={setKeyword}
+      onCreate={handleCreate}
+      onImportClick={handleImportClick}
+      onZipInputChange={handleZipInputChange}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
+      onPublish={handlePublish}
+      onInstall={handleInstall}
+      onExport={handleExport}
+      onRecruit={handleRecruit}
+      onReviewCountChange={setReviewCount}
+    />
   );
 };
 

@@ -18,11 +18,10 @@ package agentflow
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
@@ -30,13 +29,13 @@ import (
 	"github.com/cloudwego/eino/schema"
 
 	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/agentsandbox"
 )
 
 // sandboxKeyFor 由 connector/agent/user_id 组合出稳定且容器名安全的沙箱 key。
+// 委托到 agentsandbox.SandboxKeyFor,与沙箱空间管理 API 共用同一算法。
 func sandboxKeyFor(connectorID, agentID int64, userID string) string {
-	raw := fmt.Sprintf("%d_%d_%s", connectorID, agentID, userID)
-	sum := sha256.Sum256([]byte(raw))
-	return "u" + hex.EncodeToString(sum[:])[:24]
+	return agentsandbox.SandboxKeyFor(connectorID, agentID, userID)
 }
 
 // defaultMaxToolOutputBytes 是回灌给模型的工具输出上限（约几千 token）。
@@ -57,10 +56,12 @@ func maxToolOutputBytes() int {
 func truncateForModel(s string) string {
 	max := maxToolOutputBytes()
 	if len(s) <= max {
-		return s
+		// 清洗非法 UTF-8,避免入库 message 表报 MySQL 1366。
+		return strings.ToValidUTF8(s, "")
 	}
-	head := s[:max*7/10]
-	tail := s[len(s)-max*3/10:]
+	// 按字节切会把多字节字符切成两半 → 非法 UTF-8,ToValidUTF8 去掉边界碎片。
+	head := strings.ToValidUTF8(s[:max*7/10], "")
+	tail := strings.ToValidUTF8(s[len(s)-max*3/10:], "")
 	return head + fmt.Sprintf("\n\n...[truncated %d bytes]...\n\n", len(s)-len(head)-len(tail)) + tail
 }
 
@@ -76,9 +77,61 @@ func resolvePath(p string) string {
 	return "/workspace/" + p
 }
 
+// pathIsUnderSkills reports whether p refers to a path inside the /skills tree.
+// It normalises Windows-style backslashes and leading "./" before checking,
+// then resolves ".." segments with path.Clean to prevent traversal bypasses
+// such as "/workspace/../skills/evil.py".
+func pathIsUnderSkills(p string) bool {
+	cleaned := strings.TrimPrefix(strings.ReplaceAll(p, "\\", "/"), "./")
+	if !strings.HasPrefix(cleaned, "/") {
+		cleaned = "/" + cleaned
+	}
+	cleaned = path.Clean(cleaned)
+	return cleaned == "/skills" || strings.HasPrefix(cleaned, "/skills/")
+}
+
+// guardSkillWrite returns an error when readonlySkills is true and target falls
+// under /skills. Non-instance callers (readonlySkills=false) are always allowed.
+func guardSkillWrite(readonlySkills bool, target string) error {
+	if readonlySkills && pathIsUnderSkills(target) {
+		return fmt.Errorf("permission denied: /skills is read-only for a virtual employee instance")
+	}
+	return nil
+}
+
+// bashCommandWritesSkills is a best-effort heuristic that returns true when a
+// bash command appears to write into the /skills tree. It checks for shell
+// redirects (> /skills/…, >> /skills/…) and common write commands (tee, cp,
+// mv). It cannot catch every possible construct; the read-only mount (Task 8)
+// is the hard enforcement layer.
+func bashCommandWritesSkills(cmd string) bool {
+	// Patterns: redirect targets and explicit write commands
+	writePatterns := []string{
+		"> /skills/",
+		">> /skills/",
+		"tee /skills/",
+		"tee -a /skills/",
+		"cp ", // checked below with target
+		"mv ", // checked below with target
+	}
+	for _, pat := range writePatterns {
+		if strings.Contains(cmd, pat) {
+			// For cp/mv we need the destination to be /skills
+			if (pat == "cp " || pat == "mv ") && !strings.Contains(cmd, "/skills/") {
+				continue
+			}
+			return true
+		}
+	}
+	return false
+}
+
 // ---- run_bash ----
 
-type runBashTool struct{ key string }
+type runBashTool struct {
+	key            string
+	readonlySkills bool
+}
 
 type runBashRequest struct {
 	Command    string `json:"command" jsonschema:"description=The bash command to run inside the sandbox /workspace directory"`
@@ -103,16 +156,31 @@ func (t *runBashTool) InvokableRun(ctx context.Context, argumentsInJSON string, 
 	}
 	var req runBashRequest
 	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
+		return argParseErrMsg(err), nil
 	}
 	if strings.TrimSpace(req.Command) == "" {
 		return "Error: command is required", nil
+	}
+	// Best-effort guard: detect common shell write patterns targeting /skills
+	// (redirect >, tee, cp, mv). Cannot catch every shell construct; the
+	// read-only mount in Task 8 is the hard enforcement layer.
+	if t.readonlySkills && bashCommandWritesSkills(req.Command) {
+		return "Error: permission denied: /skills is read-only for a virtual employee instance", nil
+	}
+	if isMutatingCommand(req.Command) {
+		if ok, reason := checkMutationAllowed("running a command that writes or deletes files"); !ok {
+			return reason, nil
+		}
 	}
 	res, err := svc.Exec(ctx, t.key, req.Command, req.TimeoutSec)
 	if err != nil {
 		return fmt.Sprintf("Error running command: %v", err), nil
 	}
-	return fmt.Sprintf("exit_code: %d\nstdout:\n%s\nstderr:\n%s", res.ExitCode, truncateForModel(res.Stdout), truncateForModel(res.Stderr)), nil
+	stdout := offloadToolResultOrTruncate(ctx, svc, t.key, toolOutputOffloadMeta{
+		Tool:      "run_bash",
+		Arguments: req,
+	}, res.Stdout)
+	return fmt.Sprintf("exit_code: %d\nstdout:\n%s\nstderr:\n%s", res.ExitCode, stdout, truncateForModel(res.Stderr)), nil
 }
 
 // ---- read_file ----
@@ -140,18 +208,24 @@ func (t *readFileTool) InvokableRun(ctx context.Context, argumentsInJSON string,
 	}
 	var req readFileRequest
 	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
+		return argParseErrMsg(err), nil
 	}
 	b, err := svc.ReadFile(ctx, t.key, resolvePath(req.Path))
 	if err != nil {
 		return fmt.Sprintf("Error reading file: %v", err), nil
 	}
-	return truncateForModel(string(b)), nil
+	return offloadToolResultOrTruncate(ctx, svc, t.key, toolOutputOffloadMeta{
+		Tool:      "read_file",
+		Arguments: req,
+	}, string(b)), nil
 }
 
 // ---- write_file ----
 
-type writeFileTool struct{ key string }
+type writeFileTool struct {
+	key            string
+	readonlySkills bool
+}
 
 type writeFileRequest struct {
 	Path    string `json:"path" jsonschema:"description=File path; relative paths resolve under /workspace"`
@@ -176,12 +250,22 @@ func (t *writeFileTool) InvokableRun(ctx context.Context, argumentsInJSON string
 	}
 	var req writeFileRequest
 	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
+		return argParseErrMsg(err), nil
 	}
 	if strings.TrimSpace(req.Path) == "" {
 		return "Error: path is required", nil
 	}
-	if err := svc.WriteFile(ctx, t.key, resolvePath(req.Path), []byte(req.Content)); err != nil {
+	if err := guardSkillWrite(t.readonlySkills, resolvePath(req.Path)); err != nil {
+		return fmt.Sprintf("Error: %v", err), nil
+	}
+	if ok, reason := checkMutationAllowed("write_file"); !ok {
+		return reason, nil
+	}
+	wp := resolvePath(req.Path)
+	unlock := lockSandboxFile(t.key, wp)
+	err := svc.WriteFile(ctx, t.key, wp, []byte(req.Content))
+	unlock()
+	if err != nil {
 		return fmt.Sprintf("Error writing file: %v", err), nil
 	}
 	return fmt.Sprintf("Wrote %d bytes to %s", len(req.Content), resolvePath(req.Path)), nil
@@ -212,7 +296,7 @@ func (t *listFilesTool) InvokableRun(ctx context.Context, argumentsInJSON string
 	}
 	var req listFilesRequest
 	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
+		return argParseErrMsg(err), nil
 	}
 	files, err := svc.ListFiles(ctx, t.key, resolvePath(req.Path))
 	if err != nil {
@@ -221,11 +305,31 @@ func (t *listFilesTool) InvokableRun(ctx context.Context, argumentsInJSON string
 	return strings.Join(files, "\n"), nil
 }
 
-// defaultAgentMaxStep 是 ReAct 的默认最大步数（约 15 轮工具往返）。
+// defaultAgentMaxStep 是普通单 Agent 的 ReAct 默认最大步数（约 15 轮工具往返）。
 const defaultAgentMaxStep = 30
 
-// agentMaxStep 返回 ReAct 最大步数，可经环境变量 AGENT_MAX_STEP 覆盖（用于复杂任务放宽）。
-func agentMaxStep() int {
+// superAgentMaxStep:超级体(harness 智能体)不设实际可达的步数上限。
+// 超级体对标 Claude Code / Codex —— 长程任务可能需要任意多轮工具往返,绝不能在中途
+// 因为「步数用完」被打断。eino 的 cyclic graph 不支持真正的「无限」(maxRunSteps==0
+// 会被改成更小的默认值,步数检查也是硬性的),且 react 会按 MaxStep+1 预分配 slice,
+// 因此这里取一个实际永远到不了的高值(10 万步 ≈ 5 万轮工具往返,预分配仅 ~800KB)。
+// 真正的运行兜底交给 context(用户主动停止 / 请求超时),而不是固定步数。
+const superAgentMaxStep = 100000
+
+// agentMaxStep 返回 ReAct 最大步数。
+//   - 普通单 Agent 默认 30,可经 AGENT_MAX_STEP 覆盖。
+//   - 超级体取 superAgentMaxStep(实际不限制),可经 SUPER_AGENT_MAX_STEP 覆盖。
+//
+// super 仅影响超级体,绝不改变原生单 Agent 行为。
+func agentMaxStep(super bool) int {
+	if super {
+		if v := os.Getenv("SUPER_AGENT_MAX_STEP"); v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n > 0 {
+				return n
+			}
+		}
+		return superAgentMaxStep
+	}
 	if v := os.Getenv("AGENT_MAX_STEP"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			return n
@@ -249,7 +353,7 @@ type updatePlanTool struct{ key string }
 
 type planStep struct {
 	Content string `json:"content" jsonschema:"description=The step description"`
-	Status  string `json:"status" jsonschema:"description=One of: pending, in_progress, done"`
+	Status  string `json:"status" jsonschema:"description=One of: pending, in_progress, completed (done is accepted as a compatibility alias)"`
 }
 
 type updatePlanRequest struct {
@@ -261,7 +365,7 @@ const planFilePath = "/workspace/.plan.json"
 func (t *updatePlanTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: "update_plan",
-		Desc: "Maintain an explicit, ordered plan (todo list) for a complex task and track progress. Call it first to decompose the task into steps, then call it again to update step statuses as you complete them. The plan is persisted across the conversation. Each step has a status: pending, in_progress, or done.",
+		Desc: "Maintain an explicit, ordered plan (todo list) for a complex task and track progress. Call it first to decompose the task into steps, then call it again to update step statuses as you complete them. The plan is persisted across the conversation. Each step has a status: pending, in_progress, or completed (done is accepted as a compatibility alias).",
 		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
 			"plan": {
 				Type:     schema.Array,
@@ -271,7 +375,7 @@ func (t *updatePlanTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 					Type: schema.Object,
 					SubParams: map[string]*schema.ParameterInfo{
 						"content": {Type: schema.String, Desc: "The step description", Required: true},
-						"status":  {Type: schema.String, Desc: "One of: pending, in_progress, done", Required: true},
+						"status":  {Type: schema.String, Desc: "One of: pending, in_progress, completed (done is accepted as a compatibility alias)", Required: true},
 					},
 				},
 			},
@@ -286,13 +390,16 @@ func (t *updatePlanTool) InvokableRun(ctx context.Context, argumentsInJSON strin
 	}
 	var req updatePlanRequest
 	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
-		return "", fmt.Errorf("failed to parse arguments: %w", err)
+		return argParseErrMsg(err), nil
 	}
 	if len(req.Plan) == 0 {
 		return "Error: plan must contain at least one step", nil
 	}
 	blob, _ := json.MarshalIndent(req.Plan, "", "  ")
-	if err := svc.WriteFile(ctx, t.key, planFilePath, blob); err != nil {
+	unlock := lockSandboxFile(t.key, planFilePath)
+	err := svc.WriteFile(ctx, t.key, planFilePath, blob)
+	unlock()
+	if err != nil {
 		return fmt.Sprintf("Error persisting plan: %v", err), nil
 	}
 	return renderPlan(req.Plan), nil
@@ -304,7 +411,7 @@ func renderPlan(steps []planStep) string {
 	for _, s := range steps {
 		mark := "[ ]"
 		switch s.Status {
-		case "done":
+		case "done", "completed":
 			mark = "[x]"
 			done++
 		case "in_progress":
@@ -315,16 +422,156 @@ func renderPlan(steps []planStep) string {
 	return fmt.Sprintf("Plan updated (%d/%d done):\n%s", done, len(steps), b.String())
 }
 
+// ---- edit_file ----
+
+type editFileTool struct {
+	key            string
+	readonlySkills bool
+}
+
+type editFileRequest struct {
+	Path       string `json:"path" jsonschema:"description=File path; relative paths resolve under /workspace"`
+	OldString  string `json:"old_string" jsonschema:"description=The exact text to replace (must match verbatim, including indentation)"`
+	NewString  string `json:"new_string" jsonschema:"description=The replacement text"`
+	ReplaceAll bool   `json:"replace_all,omitempty" jsonschema:"description=Replace every occurrence; default false (old_string must be unique)"`
+}
+
+func (t *editFileTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "edit_file",
+		Desc: "Edit a file in the sandbox by exact string replacement (search-replace). Read the file first. old_string must match verbatim and be unique unless replace_all=true. Prefer this over write_file for modifying existing files.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"path":        {Type: schema.String, Desc: "File path to edit", Required: true},
+			"old_string":  {Type: schema.String, Desc: "Exact text to replace", Required: true},
+			"new_string":  {Type: schema.String, Desc: "Replacement text", Required: true},
+			"replace_all": {Type: schema.Boolean, Desc: "Replace all occurrences (default false)", Required: false},
+		}),
+	}, nil
+}
+
+func (t *editFileTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req editFileRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return argParseErrMsg(err), nil
+	}
+	if strings.TrimSpace(req.Path) == "" {
+		return "Error: path is required", nil
+	}
+	if err := guardSkillWrite(t.readonlySkills, resolvePath(req.Path)); err != nil {
+		return fmt.Sprintf("Error: %v", err), nil
+	}
+	if ok, reason := checkMutationAllowed("edit_file"); !ok {
+		return reason, nil
+	}
+	ep := resolvePath(req.Path)
+	unlock := lockSandboxFile(t.key, ep)
+	n, err := svc.EditFile(ctx, t.key, ep, req.OldString, req.NewString, req.ReplaceAll)
+	unlock()
+	if err != nil {
+		return fmt.Sprintf("Error editing file: %v", err), nil
+	}
+	return fmt.Sprintf("Edited %s (%d replacement(s))", resolvePath(req.Path), n), nil
+}
+
+// ---- grep ----
+
+type grepTool struct{ key string }
+
+type grepRequest struct {
+	Pattern string `json:"pattern" jsonschema:"description=Regex pattern to search for"`
+	Path    string `json:"path,omitempty" jsonschema:"description=Directory or file to search; default /workspace"`
+}
+
+func (t *grepTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "grep",
+		Desc: "Search file contents in the sandbox by regex (ripgrep, falls back to grep). Returns matching lines with file:line. Relative paths resolve under /workspace.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"pattern": {Type: schema.String, Desc: "Regex to search for", Required: true},
+			"path":    {Type: schema.String, Desc: "Directory or file to search (default /workspace)", Required: false},
+		}),
+	}, nil
+}
+
+func (t *grepTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req grepRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return argParseErrMsg(err), nil
+	}
+	path := ""
+	if strings.TrimSpace(req.Path) != "" {
+		path = resolvePath(req.Path)
+	}
+	out, err := svc.Grep(ctx, t.key, req.Pattern, path)
+	if err != nil {
+		return fmt.Sprintf("Error running grep: %v", err), nil
+	}
+	return offloadToolResultOrTruncate(ctx, svc, t.key, toolOutputOffloadMeta{
+		Tool:      "grep",
+		Arguments: req,
+	}, out), nil
+}
+
+// ---- glob ----
+
+type globTool struct{ key string }
+
+type globRequest struct {
+	Pattern string `json:"pattern" jsonschema:"description=Filename glob pattern, e.g. *.go"`
+}
+
+func (t *globTool) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "glob",
+		Desc: "Find files in the sandbox /workspace by filename pattern (e.g. *.go). Returns matching file paths.",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"pattern": {Type: schema.String, Desc: "Filename glob pattern", Required: true},
+		}),
+	}, nil
+}
+
+func (t *globTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
+	svc := crosssandbox.DefaultSVC()
+	if svc == nil {
+		return "Error: sandbox is not available", nil
+	}
+	var req globRequest
+	if err := json.Unmarshal([]byte(argumentsInJSON), &req); err != nil {
+		return argParseErrMsg(err), nil
+	}
+	out, err := svc.Glob(ctx, t.key, req.Pattern)
+	if err != nil {
+		return fmt.Sprintf("Error running glob: %v", err), nil
+	}
+	return offloadToolResultOrTruncate(ctx, svc, t.key, toolOutputOffloadMeta{
+		Tool:      "glob",
+		Arguments: req,
+	}, out), nil
+}
+
 // newSandboxTools 构造沙箱工具。沙箱服务未初始化时返回 nil。
-func newSandboxTools(key string) []tool.InvokableTool {
+// readonlySkills=true 时，write_file / edit_file / run_bash 工具会拒绝写入 /skills 树
+// （虚拟员工实例使用此标志，普通 agent 传 false）。
+func newSandboxTools(key string, readonlySkills bool) []tool.InvokableTool {
 	if crosssandbox.DefaultSVC() == nil {
 		return nil
 	}
 	return []tool.InvokableTool{
-		&runBashTool{key: key},
+		&runBashTool{key: key, readonlySkills: readonlySkills},
 		&readFileTool{key: key},
-		&writeFileTool{key: key},
+		&writeFileTool{key: key, readonlySkills: readonlySkills},
+		&editFileTool{key: key, readonlySkills: readonlySkills},
 		&listFilesTool{key: key},
+		&grepTool{key: key},
+		&globTool{key: key},
 		&updatePlanTool{key: key},
 	}
 }

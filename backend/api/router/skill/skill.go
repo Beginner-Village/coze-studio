@@ -33,7 +33,13 @@ func Register(r *server.Hertz) {
 			skillGroup.GET("/get", skillHandler.GetSkill)
 			skillGroup.POST("/update", skillHandler.UpdateSkill)
 			skillGroup.POST("/delete", skillHandler.DeleteSkill)
+			skillGroup.POST("/publish", skillHandler.PublishSkill)
+			skillGroup.POST("/review", skillHandler.ReviewSkill)
+			skillGroup.GET("/review/pending", skillHandler.ListPendingReviews)
 			skillGroup.GET("/list", skillHandler.ListSkills)
+			skillGroup.GET("/marketplace/list", skillHandler.ListMarketplaceSkills)
+			skillGroup.GET("/marketplace/get", skillHandler.GetMarketplaceSkill)
+			skillGroup.POST("/marketplace/install", skillHandler.InstallMarketplaceSkill)
 		}
 	}
 }

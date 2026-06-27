@@ -16,7 +16,6 @@
 
 
 import axios, { type AxiosResponse, isAxiosError } from 'axios';
-import { redirect } from '@coze-arch/web-context';
 import { logger } from '@coze-arch/logger';
 
 const serverPath = '/aop-web/'
