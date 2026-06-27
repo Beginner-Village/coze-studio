@@ -150,7 +150,7 @@ function useResourceOptions(
     PluginDevelopApi.LibraryResourceList({
       space_id: spaceId,
       res_type_filter: [resType],
-      size: 200,
+      size: 100,
     })
       .then(resp => {
         if (resp.code === 0 || resp.code === null || resp.code === undefined) {
