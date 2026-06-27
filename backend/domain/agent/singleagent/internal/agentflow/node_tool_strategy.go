@@ -528,14 +528,16 @@ func (t *invokeCapabilityTool) InvokableRun(ctx context.Context, argumentsInJSON
 			// agent has no statically-configured ToolReturnDirectly tools.
 			// "return variable" workflows (ReturnVariables) skip this and keep looping,
 			// which is what lets multi-intent chains (查余额→转账) continue.
-			// NOTE: SetReturnDirectly sets state.ReturnDirectlyToolCallID with a valid
-			// tool-call-id, but in this codebase the react agent is ExportGraph()'d and
-			// recomposed, so the state write from inside the tool does NOT propagate to
-			// the post-tools buildReturnDirectly branch (a state-scope limitation of the
-			// embedded subgraph). The loop therefore does not yet terminate here; the
-			// workflow text is relayed by the model. Kept as the correct intent + the
-			// hook for a future fix (restructure to avoid ExportGraph, or carry the
-			// signal via the tool output message + a custom post-tools state handler).
+			// react.SetReturnDirectly is the native eino dynamic returnDirectly hook: it
+			// records THIS run call's id in the react state. eino state lookup is lexical
+			// with a parent chain, and the ExportGraph()-recomposed agent installs the
+			// react *state once at entry, so the write from inside the tool IS visible to
+			// the post-tools buildReturnDirectly branch — the loop terminates and this
+			// workflow's text becomes the final reply (直出), mirroring a directly-bound
+			// "返回文本" workflow tool. ReturnVariables workflows skip this and keep
+			// looping (so multi-intent chains like 查余额[返回变量]→转账[返回文本] work),
+			// and forceToolReturn=true also skips it (global off-switch → relay to model).
+			// Verified end-to-end on 226 + by graph-level tests (strategy_returndirectly_*).
 			if rdErr := react.SetReturnDirectly(ctx); rdErr != nil {
 				logs.CtxWarnf(ctx, "strategy run: SetReturnDirectly failed: %v", rdErr)
 			}
