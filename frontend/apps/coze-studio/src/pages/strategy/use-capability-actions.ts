@@ -45,6 +45,8 @@ export const useCapabilityActions = ({
     alias_name: '',
     alias_description: '',
     prompt_content: '',
+    type: '',
+    ref_id: '',
   });
   const [editingCap, setEditingCap] = useState(false);
 
@@ -136,6 +138,9 @@ export const useCapabilityActions = ({
       alias_name: cap.alias_name || '',
       alias_description: cap.alias_description || '',
       prompt_content: cap.prompt_content || '',
+      type: cap.type,
+      ref_id: cap.ref_id,
+      schema: cap.schema,
     });
   };
 

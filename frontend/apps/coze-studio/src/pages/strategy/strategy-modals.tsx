@@ -23,13 +23,19 @@ import {
   Modal,
   Select,
   Spin,
+  Tag,
   TextArea,
   Typography,
 } from '@coze-arch/coze-design';
 import { PluginDevelopApi } from '@coze-arch/bot-api';
 
 import type { AddCapabilityForm, EditCapabilityForm } from './types';
-import { CAPABILITY_TYPES } from './constants';
+import {
+  CAPABILITY_TYPE_LABELS,
+  CAPABILITY_TYPES,
+  TYPE_COLORS,
+} from './constants';
+import { CapabilityParamList } from './capability-param-list';
 
 const { Text } = Typography;
 
@@ -345,6 +351,8 @@ export const AddCapabilityModal: React.FC<AddCapabilityModalProps> = ({
           </div>
         )}
 
+        {form.schema ? <CapabilityParamList schema={form.schema} /> : null}
+
         <div>
           <Text style={{ display: 'block', marginBottom: 4 }}>别名</Text>
           <Input
@@ -376,6 +384,7 @@ interface EditCapabilityModalProps {
   visible: boolean;
   form: EditCapabilityForm;
   loading: boolean;
+  spaceId: string;
   onOk: () => void;
   onCancel: () => void;
   onFormChange: (patch: Partial<EditCapabilityForm>) => void;
@@ -385,51 +394,108 @@ export const EditCapabilityModal: React.FC<EditCapabilityModalProps> = ({
   visible,
   form,
   loading,
+  spaceId,
   onOk,
   onCancel,
   onFormChange,
-}) => (
-  <Modal
-    visible={visible}
-    title="编辑能力项"
-    okText="确定"
-    cancelText="取消"
-    onOk={onOk}
-    onCancel={onCancel}
-    okButtonProps={{ loading }}
-    style={{ width: 480 }}
-  >
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div>
-        <Text style={{ display: 'block', marginBottom: 4 }}>别名</Text>
-        <Input
-          value={form.alias_name}
-          onChange={v => onFormChange({ alias_name: v })}
-          placeholder="面向模型的能力名称"
-        />
+}) => {
+  const { options: refOptions, loading: refLoading } = useResourceOptions(
+    spaceId,
+    form.type,
+    visible,
+  );
+
+  // Resolve the display name for the bound resource (workflow / knowledge).
+  // Falls back to the raw ref_id if the resource list hasn't loaded yet or
+  // the id isn't found.
+  const boundName =
+    form.type !== 'prompt' && form.ref_id
+      ? (refOptions.find(o => o.res_id === form.ref_id)?.name ?? form.ref_id)
+      : null;
+
+  const typeLabel = CAPABILITY_TYPE_LABELS[form.type]?.() ?? form.type;
+  const typeColor = TYPE_COLORS[form.type] ?? 'default';
+
+  return (
+    <Modal
+      visible={visible}
+      title="编辑能力项"
+      okText="确定"
+      cancelText="取消"
+      onOk={onOk}
+      onCancel={onCancel}
+      okButtonProps={{ loading }}
+      style={{ width: 520 }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Type (read-only) */}
+        <div>
+          <Text style={{ display: 'block', marginBottom: 4 }}>类型</Text>
+          <Tag color={typeColor}>{typeLabel}</Tag>
+        </div>
+
+        {/* Bound resource name (workflow / knowledge / plugin) */}
+        {form.type !== 'prompt' && form.ref_id ? (
+          <div>
+            <Text style={{ display: 'block', marginBottom: 4 }}>
+              {form.type === 'workflow'
+                ? '绑定工作流'
+                : form.type === 'knowledge'
+                  ? '绑定知识库'
+                  : '绑定插件工具'}
+            </Text>
+            {refLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Spin size="small" />
+                <Text type="tertiary">加载中...</Text>
+              </div>
+            ) : (
+              <Text type="secondary">{boundName}</Text>
+            )}
+          </div>
+        ) : null}
+
+        {/* Schema / input params */}
+        {form.schema ? <CapabilityParamList schema={form.schema} /> : null}
+
+        {/* alias_name */}
+        <div>
+          <Text style={{ display: 'block', marginBottom: 4 }}>别名</Text>
+          <Input
+            value={form.alias_name}
+            onChange={v => onFormChange({ alias_name: v })}
+            placeholder="面向模型的能力名称"
+          />
+        </div>
+
+        {/* alias_description */}
+        <div>
+          <Text style={{ display: 'block', marginBottom: 4 }}>
+            {I18n.t('strategy_model_facing_desc')}
+          </Text>
+          <TextArea
+            value={form.alias_description}
+            onChange={v => onFormChange({ alias_description: v })}
+            placeholder={I18n.t('strategy_model_facing_desc')}
+            rows={2}
+          />
+        </div>
+
+        {/* prompt_content — only for prompt type */}
+        {form.type === 'prompt' && (
+          <div>
+            <Text style={{ display: 'block', marginBottom: 4 }}>
+              {I18n.t('strategy_prompt_content')}
+            </Text>
+            <TextArea
+              value={form.prompt_content}
+              onChange={v => onFormChange({ prompt_content: v })}
+              placeholder={I18n.t('strategy_prompt_content')}
+              rows={3}
+            />
+          </div>
+        )}
       </div>
-      <div>
-        <Text style={{ display: 'block', marginBottom: 4 }}>
-          {I18n.t('strategy_model_facing_desc')}
-        </Text>
-        <TextArea
-          value={form.alias_description}
-          onChange={v => onFormChange({ alias_description: v })}
-          placeholder={I18n.t('strategy_model_facing_desc')}
-          rows={2}
-        />
-      </div>
-      <div>
-        <Text style={{ display: 'block', marginBottom: 4 }}>
-          {I18n.t('strategy_prompt_content')}
-        </Text>
-        <TextArea
-          value={form.prompt_content}
-          onChange={v => onFormChange({ prompt_content: v })}
-          placeholder={I18n.t('strategy_prompt_content')}
-          rows={3}
-        />
-      </div>
-    </div>
-  </Modal>
-);
+    </Modal>
+  );
+};

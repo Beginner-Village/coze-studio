@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import type { CapabilitySchema } from '@coze-arch/bot-api';
+
 export interface AddCapabilityForm {
   type: string;
   ref_id: string;
@@ -21,10 +23,15 @@ export interface AddCapabilityForm {
   prompt_content: string;
   alias_name: string;
   alias_description: string;
+  schema?: CapabilitySchema;
 }
 
 export interface EditCapabilityForm {
   alias_name: string;
   alias_description: string;
   prompt_content: string;
+  /** read-only context carried into the modal */
+  type: string;
+  ref_id: string;
+  schema?: CapabilitySchema;
 }

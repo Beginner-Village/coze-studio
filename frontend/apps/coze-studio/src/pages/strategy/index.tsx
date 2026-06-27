@@ -150,6 +150,7 @@ const StrategyEditorPage: React.FC = () => {
         visible={editor.editCapId !== null}
         form={editor.editCapForm}
         loading={editor.editingCap}
+        spaceId={space_id ?? ''}
         onOk={editor.handleUpdateCapability}
         onCancel={() => editor.setEditCapId(null)}
         onFormChange={patch => editor.setEditCapForm(f => ({ ...f, ...patch }))}

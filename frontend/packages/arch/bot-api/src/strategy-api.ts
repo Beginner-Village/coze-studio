@@ -23,6 +23,12 @@ import { axiosInstance, type BotAPIRequestConfig } from './axios';
 // NOTE: id fields are int64 on the backend (>2^53), sent as JSON strings via
 // `json:"...,string"` tags. All id-type fields MUST be string here.
 
+export interface CapabilitySchema {
+  type?: string;
+  properties?: Record<string, { type?: string; description?: string }>;
+  required?: string[];
+}
+
 export interface CapabilityInfo {
   id: string;
   strategy_id: string;
@@ -36,6 +42,7 @@ export interface CapabilityInfo {
   alias_name?: string;
   alias_description?: string;
   sort_order: number;
+  schema?: CapabilitySchema;
 }
 
 export interface ScenarioInfo {
