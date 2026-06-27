@@ -31,6 +31,7 @@ import (
 	"strings"
 
 	"github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/flow/agent/react"
 	"github.com/cloudwego/eino/schema"
 
 	knowledgeModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
@@ -520,6 +521,26 @@ func (t *invokeCapabilityTool) InvokableRun(ctx context.Context, argumentsInJSON
 		// not set, prefix the result with the sentinel so the callback can route it
 		// directly to the user (bypass the model).
 		if !t.conf.forceToolReturn && wfTools[0].TerminatePlan() != vo.ReturnVariables {
+			// Native eino dynamic returnDirectly: signal the react loop to TERMINATE
+			// after this run call so the workflow's answer-content becomes the final
+			// reply (mirrors how a directly-bound "return text" workflow behaves).
+			// buildReturnDirectly is wired unconditionally, so this works even when the
+			// agent has no statically-configured ToolReturnDirectly tools.
+			// "return variable" workflows (ReturnVariables) skip this and keep looping,
+			// which is what lets multi-intent chains (查余额→转账) continue.
+			// NOTE: SetReturnDirectly sets state.ReturnDirectlyToolCallID with a valid
+			// tool-call-id, but in this codebase the react agent is ExportGraph()'d and
+			// recomposed, so the state write from inside the tool does NOT propagate to
+			// the post-tools buildReturnDirectly branch (a state-scope limitation of the
+			// embedded subgraph). The loop therefore does not yet terminate here; the
+			// workflow text is relayed by the model. Kept as the correct intent + the
+			// hook for a future fix (restructure to avoid ExportGraph, or carry the
+			// signal via the tool output message + a custom post-tools state handler).
+			if rdErr := react.SetReturnDirectly(ctx); rdErr != nil {
+				logs.CtxWarnf(ctx, "strategy run: SetReturnDirectly failed: %v", rdErr)
+			}
+			// Keep the marker so the callback layer renders this result directly to the
+			// user via EventTypeOfToolsAsChatModelStream (the rendering half of returnDirectly).
 			return StrategyReturnDirectlyMarker + wfResult, nil
 		}
 		return wfResult, nil
