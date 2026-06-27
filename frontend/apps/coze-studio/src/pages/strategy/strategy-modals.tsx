@@ -169,6 +169,7 @@ function useResourceOptions(
 // ---------- Auto-preview schema when a resource is picked ----------
 
 interface UseSchemaPreviewOptions {
+  spaceId: string;
   type: string;
   refId: string;
   refSubId: string;
@@ -176,6 +177,7 @@ interface UseSchemaPreviewOptions {
 }
 
 function useSchemaPreview({
+  spaceId,
   type,
   refId,
   refSubId,
@@ -185,13 +187,14 @@ function useSchemaPreview({
 
   useEffect(() => {
     // Only fetch for non-prompt types with a ref_id present
-    if (!refId || type === 'prompt') {
+    if (!spaceId || !refId || type === 'prompt') {
       onSchema(undefined);
       return;
     }
     const seq = ++seqRef.current;
     strategyApi
       .previewCapabilitySchema({
+        space_id: spaceId,
         type,
         ref_id: refId,
         ref_sub_id: refSubId || undefined,
@@ -212,7 +215,7 @@ function useSchemaPreview({
         }
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- onSchema is a stable callback, intentionally omitted
-  }, [type, refId, refSubId]);
+  }, [spaceId, type, refId, refSubId]);
 }
 
 // ---------- Resource picker (workflow / knowledge) ----------
@@ -344,6 +347,7 @@ export const AddCapabilityModal: React.FC<AddCapabilityModalProps> = ({
   );
 
   useSchemaPreview({
+    spaceId,
     type: form.type,
     refId: form.ref_id,
     refSubId: form.ref_sub_id,
@@ -459,6 +463,7 @@ export const EditCapabilityModal: React.FC<EditCapabilityModalProps> = ({
   );
 
   useSchemaPreview({
+    spaceId,
     type: form.type,
     refId: form.ref_id,
     refSubId: form.ref_sub_id,

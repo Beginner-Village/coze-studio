@@ -195,6 +195,7 @@ export interface UpdateCapabilityRequest {
 }
 
 export interface PreviewCapabilitySchemaRequest {
+  space_id: string;
   type: string;
   ref_id: string;
   ref_sub_id?: string;
