@@ -446,6 +446,120 @@ func TestStrategy_OrdinalResolution_Cap2(t *testing.T) {
 	}
 }
 
+// fakeWorkflowWithParams is a workflow tool whose Info carries a real ParamsOneOf,
+// used to verify caps now surfaces the workflow's REAL input schema (not empty).
+type fakeWorkflowWithParams struct{}
+
+func (f *fakeWorkflowWithParams) Info(_ context.Context) (*schema.ToolInfo, error) {
+	return &schema.ToolInfo{
+		Name: "wf_with_params",
+		Desc: "a workflow that takes params",
+		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
+			"account": {Type: schema.String, Desc: "account number", Required: true},
+			"amount":  {Type: schema.Number, Desc: "transfer amount"},
+		}),
+	}, nil
+}
+func (f *fakeWorkflowWithParams) InvokableRun(_ context.Context, _ string, _ ...tool.Option) (string, error) {
+	return "ok", nil
+}
+func (f *fakeWorkflowWithParams) TerminatePlan() vo.TerminatePlan { return vo.ReturnVariables }
+func (f *fakeWorkflowWithParams) GetWorkflow() *workflowEntity.Workflow {
+	return &workflowEntity.Workflow{}
+}
+
+var _ workflowDomain.ToolFromWorkflow = (*fakeWorkflowWithParams)(nil)
+
+// TestStrategy_CapsWorkflowSchema_HasRealProperties verifies that caps now returns
+// the workflow capability's REAL input schema (derived from the workflow-as-model-tool's
+// declared parameters) instead of an empty {"type":"object","properties":{}}.
+func TestStrategy_CapsWorkflowSchema_HasRealProperties(t *testing.T) {
+	fakeSVC := &crossworkflowStub{
+		tools: []workflowDomain.ToolFromWorkflow{&fakeWorkflowWithParams{}},
+	}
+	origWorkflow := crossworkflow.DefaultSVC()
+	crossworkflow.SetDefaultSVC(fakeSVC)
+	defer crossworkflow.SetDefaultSVC(origWorkflow)
+
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         &fakeStrategySvc{},
+	})
+
+	// scene=2 → ScenarioB, which has the single workflow capability.
+	out, err := tools[1].InvokableRun(context.Background(), `{"scene":2}`)
+	if err != nil {
+		t.Fatalf("caps scene=2 err=%v", err)
+	}
+
+	var rows []map[string]any
+	if jsonErr := json.Unmarshal([]byte(out), &rows); jsonErr != nil {
+		t.Fatalf("caps output not valid JSON: %v\noutput: %s", jsonErr, out)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 workflow capability, got %d: %s", len(rows), out)
+	}
+	if rows[0]["type"] != "workflow" {
+		t.Fatalf("expected workflow capability, got: %v", rows[0]["type"])
+	}
+
+	schemaMap, ok := rows[0]["schema"].(map[string]any)
+	if !ok {
+		t.Fatalf("workflow schema is not an object: %v", rows[0]["schema"])
+	}
+	props, ok := schemaMap["properties"].(map[string]any)
+	if !ok || len(props) == 0 {
+		t.Fatalf("workflow schema must have non-empty properties, got: %v", schemaMap)
+	}
+	// The declared params (account, amount) must surface.
+	if _, ok := props["account"]; !ok {
+		t.Fatalf("workflow schema missing 'account' property, got: %v", props)
+	}
+	if _, ok := props["amount"]; !ok {
+		t.Fatalf("workflow schema missing 'amount' property, got: %v", props)
+	}
+	// "account" is required → must appear in the required list.
+	reqRaw, _ := json.Marshal(schemaMap["required"])
+	if !strings.Contains(string(reqRaw), "account") {
+		t.Fatalf("workflow schema 'required' must contain 'account', got: %s", reqRaw)
+	}
+}
+
+// TestStrategy_CapsWorkflowSchema_DeletedFallsBackToEmpty verifies that when the
+// workflow can't be loaded (deleted/unpublished → WorkflowAsModelTool errors), caps
+// degrades to the empty schema instead of erroring the whole call.
+func TestStrategy_CapsWorkflowSchema_DeletedFallsBackToEmpty(t *testing.T) {
+	fakeSVC := &crossworkflowStub{wfErr: fmt.Errorf("workflow not found")}
+	origWorkflow := crossworkflow.DefaultSVC()
+	crossworkflow.SetDefaultSVC(fakeSVC)
+	defer crossworkflow.SetDefaultSVC(origWorkflow)
+
+	tools, _ := newStrategyTools(context.Background(), &strategyConfig{
+		strategyIDs: []int64{1},
+		svc:         &fakeStrategySvc{},
+	})
+
+	out, err := tools[1].InvokableRun(context.Background(), `{"scene":2}`)
+	if err != nil {
+		t.Fatalf("caps scene=2 (deleted wf) err=%v", err)
+	}
+	var rows []map[string]any
+	if jsonErr := json.Unmarshal([]byte(out), &rows); jsonErr != nil {
+		t.Fatalf("caps output not valid JSON: %v\noutput: %s", jsonErr, out)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 row, got %d: %s", len(rows), out)
+	}
+	schemaMap, _ := rows[0]["schema"].(map[string]any)
+	props, _ := schemaMap["properties"].(map[string]any)
+	if len(props) != 0 {
+		t.Fatalf("deleted workflow should fall back to empty properties, got: %v", schemaMap)
+	}
+	if schemaMap["type"] != "object" {
+		t.Fatalf("fallback schema must keep type=object, got: %v", schemaMap)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // BE9b: execution routing tests (plugin / workflow / knowledge)
 // ---------------------------------------------------------------------------

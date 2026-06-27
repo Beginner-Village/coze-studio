@@ -44,6 +44,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 	strategyEntity "github.com/ynet-dev/ynet-studio/backend/domain/strategy/entity"
 	"github.com/ynet-dev/ynet-studio/backend/domain/workflow/entity/vo"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
@@ -274,14 +275,65 @@ type capabilityRow struct {
 	Schema map[string]any `json:"schema"`
 }
 
-// capabilityInputSchema returns a minimal JSON schema for each capability type.
-func capabilityInputSchema(cap *strategyEntity.Capability) map[string]any {
+// emptyInputSchema is the fallback returned when a capability takes no inputs
+// or when the real schema cannot be derived (deleted / unpublished resource).
+func emptyInputSchema() map[string]any {
+	return map[string]any{
+		"type":       "object",
+		"properties": map[string]any{},
+	}
+}
+
+// toolInfoToInputSchema converts a tool's ParamsOneOf into a JSON-schema
+// map[string]any of shape {"type":"object","properties":{...},"required":[...]}.
+// It uses eino's ParamsOneOf.ToJSONSchema() (schema/tool.go) and coerces the
+// resulting *jsonschema.Schema to a map via json round-trip. Returns the empty
+// fallback when the tool has no parameters or conversion fails.
+func toolInfoToInputSchema(ctx context.Context, info *schema.ToolInfo) map[string]any {
+	if info == nil || info.ParamsOneOf == nil {
+		return emptyInputSchema()
+	}
+	js, err := info.ParamsOneOf.ToJSONSchema()
+	if err != nil || js == nil {
+		logs.CtxDebugf(ctx, "capabilityInputSchema: ToJSONSchema failed: %v", err)
+		return emptyInputSchema()
+	}
+	b, err := json.Marshal(js)
+	if err != nil {
+		logs.CtxDebugf(ctx, "capabilityInputSchema: marshal json schema failed: %v", err)
+		return emptyInputSchema()
+	}
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil || m == nil {
+		logs.CtxDebugf(ctx, "capabilityInputSchema: unmarshal json schema failed: %v", err)
+		return emptyInputSchema()
+	}
+	// Guarantee the "type":"object" envelope even if the underlying schema omitted it.
+	if _, ok := m["type"]; !ok {
+		m["type"] = "object"
+	}
+	if _, ok := m["properties"]; !ok {
+		m["properties"] = map[string]any{}
+	}
+	return m
+}
+
+// capabilityInputSchema returns the REAL input JSON schema for each capability
+// type so the model knows exactly which params run(args) expects:
+//   - prompt:    no inputs (empty object).
+//   - knowledge: {query (required), top_k} — matches the run tool's args parsing.
+//   - workflow:  derived from the workflow-as-model-tool's declared parameters,
+//     loaded the same way the run tool loads it (WorkflowAsModelTool by RefID/RefVersion).
+//   - plugin:    derived from the plugin tool's declared parameters via
+//     GetPluginInvokableTools (RefSubID=plugin_id, RefID=tool_id).
+//
+// Loading the workflow/plugin tool is best-effort: any failure (deleted /
+// unpublished / service unavailable) degrades to the empty fallback and is
+// logged at debug — it never errors the whole caps call.
+func capabilityInputSchema(ctx context.Context, cap *strategyEntity.Capability, conf *strategyConfig) map[string]any {
 	switch cap.Type {
 	case strategyEntity.CapabilityTypePrompt:
-		return map[string]any{
-			"type":       "object",
-			"properties": map[string]any{},
-		}
+		return emptyInputSchema()
 	case strategyEntity.CapabilityTypeKnowledge:
 		return map[string]any{
 			"type":     "object",
@@ -291,17 +343,84 @@ func capabilityInputSchema(cap *strategyEntity.Capability) map[string]any {
 				"top_k": map[string]any{"type": "integer", "description": "Number of results to return"},
 			},
 		}
-	case strategyEntity.CapabilityTypeWorkflow, strategyEntity.CapabilityTypePlugin:
-		return map[string]any{
-			"type":       "object",
-			"properties": map[string]any{},
-		}
+	case strategyEntity.CapabilityTypeWorkflow:
+		return workflowCapabilityInputSchema(ctx, cap)
+	case strategyEntity.CapabilityTypePlugin:
+		return pluginCapabilityInputSchema(ctx, cap, conf)
 	default:
-		return map[string]any{
-			"type":       "object",
-			"properties": map[string]any{},
-		}
+		return emptyInputSchema()
 	}
+}
+
+// workflowCapabilityInputSchema loads the workflow as a model tool (mirroring the
+// run tool's WorkflowAsModelTool call) and converts its declared parameters into a
+// JSON schema. Degrades to the empty fallback on any failure.
+func workflowCapabilityInputSchema(ctx context.Context, cap *strategyEntity.Capability) map[string]any {
+	wfSVC := crossworkflow.DefaultSVC()
+	if wfSVC == nil {
+		logs.CtxDebugf(ctx, "capabilityInputSchema: workflow service unavailable for cap %d", cap.ID)
+		return emptyInputSchema()
+	}
+	policy := &vo.GetPolicy{
+		ID:    cap.RefID,
+		QType: workflowModel.FromLatestVersion,
+	}
+	if cap.RefVersion != "" {
+		policy.QType = workflowModel.FromSpecificVersion
+		policy.Version = cap.RefVersion
+	}
+	wfTools, err := wfSVC.WorkflowAsModelTool(ctx, []*vo.GetPolicy{policy})
+	if err != nil || len(wfTools) == 0 {
+		logs.CtxDebugf(ctx, "capabilityInputSchema: load workflow tool for cap %d failed: %v", cap.ID, err)
+		return emptyInputSchema()
+	}
+	info, err := wfTools[0].Info(ctx)
+	if err != nil {
+		logs.CtxDebugf(ctx, "capabilityInputSchema: workflow tool Info for cap %d failed: %v", cap.ID, err)
+		return emptyInputSchema()
+	}
+	return toolInfoToInputSchema(ctx, info)
+}
+
+// pluginCapabilityInputSchema loads the plugin tool via GetPluginInvokableTools
+// (RefSubID=plugin_id, RefID=tool_id) and converts its declared parameters into a
+// JSON schema. The InvokableTool's Info() carries the real ParamsOneOf. Degrades
+// to the empty fallback on any failure.
+func pluginCapabilityInputSchema(ctx context.Context, cap *strategyEntity.Capability, conf *strategyConfig) map[string]any {
+	pluginSVC := crossplugin.DefaultSVC()
+	if pluginSVC == nil {
+		logs.CtxDebugf(ctx, "capabilityInputSchema: plugin service unavailable for cap %d", cap.ID)
+		return emptyInputSchema()
+	}
+	isDraft := conf != nil && conf.agentIdentity != nil && conf.agentIdentity.IsDraft
+	// PluginVersion "" => latest/online; specific version is honoured when pinned.
+	// (nil/"0" would mean draft, but draft is signalled via IsDraft instead.)
+	req := &pluginModel.ToolsInvokableRequest{
+		PluginEntity: pluginModel.PluginEntity{
+			PluginID:      cap.RefSubID,
+			PluginVersion: ptr.Of(cap.RefVersion),
+		},
+		ToolsInvokableInfo: map[int64]*pluginModel.ToolsInvokableInfo{
+			cap.RefID: {ToolID: cap.RefID},
+		},
+		IsDraft: isDraft,
+	}
+	toolMap, err := pluginSVC.GetPluginInvokableTools(ctx, req)
+	if err != nil {
+		logs.CtxDebugf(ctx, "capabilityInputSchema: load plugin tool for cap %d failed: %v", cap.ID, err)
+		return emptyInputSchema()
+	}
+	pt, ok := toolMap[cap.RefID]
+	if !ok || pt == nil {
+		logs.CtxDebugf(ctx, "capabilityInputSchema: plugin tool %d not found for cap %d", cap.RefID, cap.ID)
+		return emptyInputSchema()
+	}
+	info, err := pt.Info(ctx)
+	if err != nil {
+		logs.CtxDebugf(ctx, "capabilityInputSchema: plugin tool Info for cap %d failed: %v", cap.ID, err)
+		return emptyInputSchema()
+	}
+	return toolInfoToInputSchema(ctx, info)
 }
 
 func (t *listCapabilitiesTool) InvokableRun(ctx context.Context, argumentsInJSON string, _ ...tool.Option) (string, error) {
@@ -353,7 +472,7 @@ func (t *listCapabilitiesTool) InvokableRun(ctx context.Context, argumentsInJSON
 			Type:   cap.Type,
 			Name:   name,
 			Desc:   desc,
-			Schema: capabilityInputSchema(cap),
+			Schema: capabilityInputSchema(ctx, cap, t.conf),
 		})
 	}
 
