@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
-import { ResType } from '@coze-arch/idl/plugin_develop';
 import { I18n } from '@coze-arch/i18n';
 import {
   Input,
   Modal,
   Select,
-  Spin,
   TextArea,
   Typography,
 } from '@coze-arch/coze-design';
-import { PluginDevelopApi, strategyApi } from '@coze-arch/bot-api';
+import { strategyApi } from '@coze-arch/bot-api';
 import type { CapabilitySchema } from '@coze-arch/bot-api';
 
 import type { AddCapabilityForm, EditCapabilityForm } from './types';
 import { CAPABILITY_TYPES } from './constants';
+import {
+  CapabilityRefPicker,
+  useResourceOptions,
+} from './capability-ref-picker';
 import { CapabilityParamList } from './capability-param-list';
 
 const { Text } = Typography;
@@ -120,52 +122,6 @@ export const RenameScenarioModal: React.FC<RenameScenarioModalProps> = ({
   </Modal>
 );
 
-// ---------- Add Capability ----------
-
-interface ResourceOption {
-  res_id: string;
-  name: string;
-  description?: string;
-}
-
-function useResourceOptions(
-  spaceId: string,
-  type: string,
-  visible: boolean,
-): { options: ResourceOption[]; loading: boolean } {
-  const [options, setOptions] = useState<ResourceOption[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!visible || !spaceId || type === 'prompt' || type === 'plugin') {
-      setOptions([]);
-      return;
-    }
-    const resType = type === 'workflow' ? ResType.Workflow : ResType.Knowledge;
-    setLoading(true);
-    PluginDevelopApi.LibraryResourceList({
-      space_id: spaceId,
-      res_type_filter: [resType],
-      size: 100,
-    })
-      .then(resp => {
-        if (resp.code === 0 || resp.code === null || resp.code === undefined) {
-          setOptions(
-            (resp.resource_list ?? []).map(r => ({
-              res_id: r.res_id ?? '',
-              name: r.name ?? r.res_id ?? '',
-              description: r.description,
-            })),
-          );
-        }
-      })
-      .catch(() => setOptions([]))
-      .finally(() => setLoading(false));
-  }, [spaceId, type, visible]);
-
-  return { options, loading };
-}
-
 // ---------- Auto-preview schema when a resource is picked ----------
 
 interface UseSchemaPreviewOptions {
@@ -217,107 +173,6 @@ function useSchemaPreview({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- onSchema is a stable callback, intentionally omitted
   }, [spaceId, type, refId, refSubId]);
 }
-
-// ---------- Resource picker (workflow / knowledge) ----------
-
-interface CapabilityRefPickerProps {
-  type: string;
-  refId: string;
-  refSubId: string;
-  options: ResourceOption[];
-  resourceLoading: boolean;
-  onFormChange: (patch: Partial<AddCapabilityForm>) => void;
-}
-
-const CapabilityRefPicker: React.FC<CapabilityRefPickerProps> = ({
-  type,
-  refId,
-  refSubId,
-  options,
-  resourceLoading,
-  onFormChange,
-}) => {
-  const emptyLabel =
-    type === 'workflow' ? '该空间暂无可用工作流' : '该空间暂无可用知识库';
-  const kindLabel = type === 'workflow' ? '工作流' : '知识库';
-
-  if (type === 'workflow' || type === 'knowledge') {
-    return (
-      <div>
-        <Text style={{ display: 'block', marginBottom: 4 }}>
-          {type === 'workflow' ? '选择工作流' : '选择知识库'}
-        </Text>
-        {resourceLoading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Spin size="small" />
-            <Text type="tertiary">加载中...</Text>
-          </div>
-        ) : (
-          <Select
-            value={refId || undefined}
-            onChange={v => {
-              const selected = options.find(o => o.res_id === String(v));
-              onFormChange({
-                ref_id: String(v),
-                alias_name: selected?.name ?? '',
-                alias_description: selected?.description ?? '',
-              });
-            }}
-            style={{ width: '100%' }}
-            filter
-            showClear
-            placeholder={
-              options.length === 0 ? emptyLabel : `搜索并选择${kindLabel}...`
-            }
-            emptyContent={emptyLabel}
-            optionList={options.map(o => ({
-              label: o.name,
-              value: o.res_id,
-              showTick: true,
-            }))}
-          />
-        )}
-      </div>
-    );
-  }
-
-  if (type === 'plugin') {
-    return (
-      <>
-        <div>
-          <Text style={{ display: 'block', marginBottom: 4 }}>
-            Tool ID (ref_id)
-          </Text>
-          <Input
-            value={refId}
-            onChange={v => onFormChange({ ref_id: v })}
-            placeholder="工具 ID（数字）"
-            type="number"
-          />
-        </div>
-        <div>
-          <Text style={{ display: 'block', marginBottom: 4 }}>
-            Plugin ID (ref_sub_id)
-          </Text>
-          <Input
-            value={refSubId}
-            onChange={v => onFormChange({ ref_sub_id: v })}
-            placeholder="插件 ID（数字）"
-            type="number"
-          />
-          <Text
-            type="tertiary"
-            style={{ display: 'block', marginTop: 4, fontSize: 12 }}
-          >
-            提示：可在插件管理页面查看对应的 Tool ID 和 Plugin ID
-          </Text>
-        </div>
-      </>
-    );
-  }
-
-  return null;
-};
 
 // ---------- AddCapabilityModal ----------
 
@@ -388,6 +243,8 @@ export const AddCapabilityModal: React.FC<AddCapabilityModalProps> = ({
             type={form.type}
             refId={form.ref_id}
             refSubId={form.ref_sub_id}
+            spaceId={spaceId}
+            visible={visible}
             options={options}
             resourceLoading={resourceLoading}
             onFormChange={onFormChange}
@@ -509,6 +366,8 @@ export const EditCapabilityModal: React.FC<EditCapabilityModalProps> = ({
             type={form.type}
             refId={form.ref_id}
             refSubId={form.ref_sub_id}
+            spaceId={spaceId}
+            visible={visible}
             options={refOptions}
             resourceLoading={refLoading}
             onFormChange={patch =>
