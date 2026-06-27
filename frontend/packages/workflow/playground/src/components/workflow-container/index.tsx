@@ -23,6 +23,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
   type DragEventHandler,
 } from 'react';
 
@@ -76,6 +77,7 @@ import {
   WORKFLOW_PLAYGROUND_CONTENT_ID,
 } from '../../constants';
 import { WorkflowFloatLayout } from './workflow-float-layout';
+import { WorkflowAgentPanel, PANEL_WIDTH } from '../workflow-agent-panel';
 import { useNodesMount } from './use-nodes-mount';
 import { useDataCompensation } from './use-data-compensation';
 
@@ -135,6 +137,8 @@ const WorkflowContainer = forwardRef<
   const dragService = useService<WorkflowCustomDragService>(
     WorkflowCustomDragService,
   );
+
+  const [agentPanelOpen, setAgentPanelOpen] = useState(false);
 
   const [, drop] = useDrop(() => ({
     accept: DND_ACCEPT_KEY,
@@ -218,7 +222,14 @@ const WorkflowContainer = forwardRef<
     const showTemplatePreview = !isBindDouyin;
     playgroundContent = (
       <QueryClientProvider client={workflowQueryClient}>
-        <div className="flex flex-1 h-full">
+        <div
+          className="flex flex-1 h-full"
+          style={{
+            marginRight: agentPanelOpen ? PANEL_WIDTH : 0,
+            minWidth: 0,
+            transition: 'margin-right .2s ease',
+          }}
+        >
           <div className="flex flex-1 flex-col">
             {props.renderHeader ? (
               props.renderHeader({ handleTestRun })
@@ -234,6 +245,7 @@ const WorkflowContainer = forwardRef<
                 <div
                   id={WORKFLOW_PLAYGROUND_CONTENT_ID}
                   className={styles.workflowPlayground}
+                  style={{ position: 'relative' }}
                 >
                   <div
                     ref={drop}
@@ -270,6 +282,17 @@ const WorkflowContainer = forwardRef<
           </div>
           <WorkflowOuterSideSheetHolder />
         </div>
+        {/*
+          Keep the agent panel mounted during a test run. `readonly` flips to
+          true while executing (readonly = preview || isExecuting), so guarding
+          on `readonly` alone unmounts the panel mid-run and destroys its chat
+          session. Hide it only for genuinely read-only workflows
+          (preview/history/no-permission), i.e. readonly that is NOT caused by
+          the transient executing state.
+        */}
+        {readonly && !workflowState.isExecuting ? null : (
+          <WorkflowAgentPanel onOpenChange={setAgentPanelOpen} />
+        )}
         <ChatTestRunPauseSideSheet />
       </QueryClientProvider>
     );

@@ -62,6 +62,14 @@ func (i *impl) SyncExecuteWorkflow(ctx context.Context, config workflowModel.Exe
 	return i.DomainSVC.SyncExecute(ctx, config, input)
 }
 
+func (i *impl) AsyncExecute(ctx context.Context, config workflowModel.ExecuteConfig, input map[string]any) (int64, error) {
+	return i.DomainSVC.AsyncExecute(ctx, config, input)
+}
+
+func (i *impl) GetExecution(ctx context.Context, wfExe *workflowEntity.WorkflowExecution, includeNodes bool) (*workflowEntity.WorkflowExecution, error) {
+	return i.DomainSVC.GetExecution(ctx, wfExe, includeNodes)
+}
+
 func (i *impl) WithExecuteConfig(cfg workflowModel.ExecuteConfig) einoCompose.Option {
 	return i.DomainSVC.WithExecuteConfig(cfg)
 }

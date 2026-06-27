@@ -16,7 +16,10 @@
 
 import { it, expect } from 'vitest';
 
-import { getFileExtensionAndName } from '../../src/utils/file-name';
+import {
+  getFileExtensionAndName,
+  protectSandboxFilenames,
+} from '../../src/utils/file-name';
 
 it('should get file extension by xxx.extension case', () => {
   const fileName = '《史蒂夫·乔布斯传》官方正式中文版电子书.pdf';
@@ -30,4 +33,29 @@ it('not get file extension by xxx case', () => {
   const { nameWithoutExtension, extension } = getFileExtensionAndName(fileName);
   expect(extension).toBe('');
   expect(nameWithoutExtension).toBe('Visual Studio Code');
+});
+
+it('should protect sandbox filenames before markdown render', () => {
+  const text = [
+    'create_excel.py',
+    'generate_glm52_doc.js',
+    'hello.txt',
+    'package-lock.json',
+  ].join('\n');
+
+  expect(protectSandboxFilenames(text)).toBe(
+    [
+      '`create_excel.py`',
+      '`generate_glm52_doc.js`',
+      '`hello.txt`',
+      '`package-lock.json`',
+    ].join('\n'),
+  );
+});
+
+it('should keep explicit markdown links and urls unchanged', () => {
+  const text =
+    '[hello.txt](https://example.com/hello.txt) https://example.com/create_excel.py';
+
+  expect(protectSandboxFilenames(text)).toBe(text);
 });

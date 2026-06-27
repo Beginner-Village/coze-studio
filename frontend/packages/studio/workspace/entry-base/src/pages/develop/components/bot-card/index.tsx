@@ -178,15 +178,16 @@ export const BotCard: React.FC<BotCardProps> = ({
     <>
       <div
         className={classNames([
-          'flex-grow h-[158px] min-w-[280px]',
-          'rounded-[6px] border-solid	border-[1px] ',
+          'min-h-[190px] min-w-[248px]',
+          'rounded-[14px] border-solid border-[1px]',
           'relative',
-          'overflow-hidden transition duration-150 ease-out hover:shadow-[0_6px_8px_0_rgba(28,31,35,6%)]',
-          'coz-stroke-primary coz-mg-card',
+          'overflow-hidden transition duration-150 ease-out',
+          'hover:translate-y-[-2px] hover:shadow-[0_4px_12px_0_rgba(29,28,35,8%),0_8px_24px_0_rgba(29,28,35,4%)]',
+          'coz-stroke-primary bg-[var(--coz-bg-max)]',
         ])}
       >
         <div
-          className="h-full w-full cursor-pointer flex flex-col gap-[12px] px-[16px] py-[16px]"
+          className="h-full w-full cursor-pointer flex flex-col px-[18px] py-[18px]"
           onClick={() => {
             if (onClick?.()) {
               return;
@@ -215,8 +216,8 @@ export const BotCard: React.FC<BotCardProps> = ({
           {statusExtra}
 
           {/* Bot basic information */}
-          <div className="flex justify-between">
-            <div className="flex flex-col gap-[4px] w-[calc(100%-76px)]">
+          <div className="flex items-start justify-between gap-[12px]">
+            <div className="flex flex-col gap-[6px] flex-1 min-w-0">
               <div className="flex items-center gap-[4px]">
                 <Name name={name} />
                 {isBanned ? (
@@ -234,33 +235,41 @@ export const BotCard: React.FC<BotCardProps> = ({
               <Description description={description} />
             </div>
             <Avatar
-              className="w-[64px] h-[64px] rounded-[10px] flex-shrink-0 ml-[12px]"
+              className="w-[44px] h-[44px] rounded-[12px] flex-shrink-0"
               shape="square"
               src={icon_url}
             />
           </div>
 
           {/* Projects/Agents */}
-          <IntelligenceTag
-            intelligenceType={type}
-            agentType={basic_info?.agent_type}
-          />
+          <div className="mt-[14px]">
+            <IntelligenceTag
+              intelligenceType={type}
+              agentType={basic_info?.agent_type}
+            />
+          </div>
 
           {/* Bot author information */}
-          {!!owner_info && (
-            <Creator
-              avatar={owner_info.avatar_url}
-              name={owner_info.nickname}
-              extra={`${timePrefix} ${time}`}
-            />
-          )}
+          <div className="mt-auto pt-[14px] border-0 border-t-[1px] border-solid coz-stroke-primary">
+            {!!owner_info ? (
+              <Creator
+                avatar={owner_info.avatar_url}
+                name={owner_info.nickname}
+                extra={`${timePrefix} ${time}`}
+              />
+            ) : (
+              <div className="coz-fg-dim text-[12px] leading-[18px]">
+                {`${timePrefix ?? ''} ${time ?? ''}`}
+              </div>
+            )}
+          </div>
 
           {/* Actions Floating layer action When the floating layer appears, there is a white mask below */}
           {!hideOperation ? (
             <>
               {showActions && actionsMenuVisible ? (
                 <div
-                  className="absolute bottom-[16px] right-[16px] w-[100px] h-[16px] "
+                  className="absolute bottom-[18px] right-[18px] w-[112px] h-[24px]"
                   style={{
                     background:
                       'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 21.38%)',
@@ -268,7 +277,7 @@ export const BotCard: React.FC<BotCardProps> = ({
                 ></div>
               ) : null}
               <div
-                className="absolute bottom-[16px] right-[16px] flex gap-[4px]"
+                className="absolute bottom-[14px] right-[18px] flex gap-[4px]"
                 onClick={e => {
                   // Prevent click events from bubbling to the outermost layer of the card
                   e.stopPropagation();

@@ -29,13 +29,13 @@ import { GlobalLayoutActionBtn } from './action-btn';
 const siderStyle = classNames(
   'relative',
   'h-full',
-  'border-[1px] border-solid coz-stroke-primary',
+  'border-0 border-r-[1px] border-solid coz-stroke-primary',
   'coz-bg-max',
   'flex flex-row items-stretch',
 );
 
 const mainMenuStyle = classNames(
-  'px-[6px] py-[16px]',
+  'w-[72px] px-[8px] py-[14px]',
   'flex flex-col h-full items-center',
 );
 

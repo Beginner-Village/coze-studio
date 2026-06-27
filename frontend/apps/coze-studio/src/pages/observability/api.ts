@@ -22,6 +22,7 @@ import type {
   GetTracesMetaInfoRequest,
   GetTracesMetaInfoResponse,
 } from '@coze-arch/idl/stone_cozeloop_observability_api';
+import { getLocalizedErrorMessage } from '@coze-arch/bot-api';
 
 const BASE = '/loop/api/observability/v1';
 
@@ -37,12 +38,13 @@ async function request<T>(
     ...options,
   });
   if (!resp.ok) {
-    throw new Error(`API error: ${resp.status} ${resp.statusText}`);
+    throw new Error(`请求失败：${resp.status}`);
   }
   const json = await resp.json();
   // CozeLoop API wraps response in { code, msg, data }
   if (json.code !== undefined && json.code !== 0) {
-    throw new Error(json.msg || `API error code: ${json.code}`);
+    const message = json.msg || `接口返回错误码：${json.code}`;
+    throw new Error(getLocalizedErrorMessage(message) ?? message);
   }
   return json.data ?? json;
 }

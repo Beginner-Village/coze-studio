@@ -1,5 +1,6 @@
 /* eslint-disable max-lines-per-function */
 /* eslint-disable complexity */
+/* eslint-disable max-lines -- large library page: folder sections + batch-add UI layered on top of the existing filters/grid */
 /*
  * Copyright 2025 ynet-dev Authors
  *
@@ -40,6 +41,8 @@ import {
   Layout,
   Space,
   Spin,
+  Toast,
+  Checkbox,
 } from '@coze-arch/coze-design';
 import { renderHtmlTitle } from '@coze-arch/bot-utils';
 import { EVENT_NAMES, sendTeaEvent } from '@coze-arch/bot-tea';
@@ -69,6 +72,7 @@ import {
 } from './consts';
 import { LibraryHeader } from './components/library-header';
 import { FolderCard } from './components/folder-card';
+import { FolderBatchBar } from './components/folder-batch-bar';
 
 import s from './index.module.less';
 
@@ -98,9 +102,8 @@ export const BaseLibraryPage = forwardRef<
 
     const [layoutType, setLayoutType] = useState('grid');
     const scrollRef = useRef<HTMLDivElement>(null);
-    const defaultGridItemWidth = 276;
+    const defaultGridItemWidth = 318;
     const [gridItemWidth, setGridItemWidth] = useState(defaultGridItemWidth);
-    const [gridItemCount, setGridItemCount] = useState(9);
 
     const resType = Number(sourceType);
     // const restTypeFilter =
@@ -130,7 +133,7 @@ export const BaseLibraryPage = forwardRef<
                   : [typeFilter],
               cursor: prev?.nextCursorId,
               space_id: spaceId,
-              size: layoutType === 'grid' ? gridItemCount : LIBRARY_PAGE_SIZE,
+              size: LIBRARY_PAGE_SIZE,
             },
           ),
         );
@@ -157,6 +160,7 @@ export const BaseLibraryPage = forwardRef<
       createFolder,
       renameFolder,
       deleteFolder,
+      moveResourcesToFolder,
     } = useFolderManagement({
       spaceId,
       resourceType: FOLDER_WORKFLOW_RESOURCE_TYPE,
@@ -165,11 +169,50 @@ export const BaseLibraryPage = forwardRef<
       },
     });
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+    const [batchFolderId, setBatchFolderId] = useState<string | null>(null);
+    const [selectedResIds, setSelectedResIds] = useState<Set<string>>(
+      new Set(),
+    );
+    const [moving, setMoving] = useState(false);
+    const batchMode = batchFolderId !== null;
 
-    // Reset drill-in state when switching tabs
+    const exitBatch = useCallback(() => {
+      setBatchFolderId(null);
+      setSelectedResIds(new Set());
+    }, []);
+
+    const startBatch = useCallback((folderId: string) => {
+      setBatchFolderId(folderId);
+      setSelectedResIds(new Set());
+    }, []);
+
+    const toggleSelect = useCallback((resId?: string) => {
+      if (!resId) {
+        return;
+      }
+      setSelectedResIds(prev => {
+        const next = new Set(prev);
+        if (next.has(resId)) {
+          next.delete(resId);
+        } else {
+          next.add(resId);
+        }
+        return next;
+      });
+    }, []);
+
+    // Reset drill-in + batch state when switching tabs
     useEffect(() => {
       setCurrentFolderId(null);
-    }, [sourceType]);
+      exitBatch();
+    }, [sourceType, exitBatch]);
+
+    // Drilling into a folder cancels any in-progress batch add
+    useEffect(() => {
+      if (currentFolderId) {
+        exitBatch();
+      }
+    }, [currentFolderId, exitBatch]);
 
     // Keep folder resource grouping in sync after any list reload (e.g. after a move)
     useEffect(() => {
@@ -184,12 +227,37 @@ export const BaseLibraryPage = forwardRef<
       [folders, currentFolderId],
     );
 
+    const batchFolder = useMemo(
+      () => folders.find(f => f.id === batchFolderId) ?? null,
+      [folders, batchFolderId],
+    );
+
+    const handleConfirmBatch = useCallback(async () => {
+      if (!batchFolderId || selectedResIds.size === 0) {
+        return;
+      }
+      setMoving(true);
+      try {
+        await moveResourcesToFolder(
+          batchFolderId,
+          Array.from(selectedResIds),
+          FOLDER_WORKFLOW_RESOURCE_TYPE,
+        );
+        Toast.success('已加入分类');
+        exitBatch();
+      } catch (error) {
+        Toast.error('加入分类失败');
+      } finally {
+        setMoving(false);
+      }
+    }, [batchFolderId, selectedResIds, moveResourcesToFolder, exitBatch]);
+
     // Map of resource id -> owning folder, used for grouping / filtering
     const resourceFolderMap = useMemo(() => {
       const map = new Map<string, FolderInfo>();
       folders.forEach(folder => {
         (folder.resource_ids ?? []).forEach(resId => {
-          map.set(resId, folder);
+          map.set(resId as string, folder);
         });
       });
       return map;
@@ -247,6 +315,24 @@ export const BaseLibraryPage = forwardRef<
       }
     }, [listResp]);
 
+    // Grid view only loads more on scroll. If the first page doesn't fill the
+    // viewport the user can never trigger a scroll, so keep loading until the
+    // container overflows or there's nothing more to fetch.
+    useEffect(() => {
+      if (
+        layoutType !== 'grid' ||
+        listResp.loading ||
+        !listResp.data?.hasMore
+      ) {
+        return;
+      }
+      const el = scrollRef.current;
+      if (el && el.scrollHeight <= el.clientHeight) {
+        listResp.loadMore();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- re-check fill after each load
+    }, [layoutType, listResp.loading, listResp.data]);
+
     const onRowClick = (record?: ResourceInfo) => {
       if (!record || record.res_type === undefined || record.detail_disable) {
         return {};
@@ -269,6 +355,45 @@ export const BaseLibraryPage = forwardRef<
       };
     };
 
+    const renderWorkflowItem = (record: ResourceInfo) => {
+      const resId = record.res_id;
+      const selected = resId !== undefined && selectedResIds.has(resId);
+      return (
+        <GridItem key={resId} className={s['resource-grid-item']}>
+          <div
+            className={classNames(s['resource-grid-inner'], 'relative')}
+            onClick={
+              batchMode ? undefined : () => onRowClick(record)?.onClick?.()
+            }
+          >
+            <GridLibraryItem
+              resourceInfo={record}
+              entityConfigs={entityConfigs}
+              reloadList={listResp.reload}
+              gridItemWidth={gridItemWidth}
+            />
+            {batchMode ? (
+              <>
+                <div
+                  className="absolute inset-0 z-[5] cursor-pointer"
+                  onClick={() => toggleSelect(resId)}
+                />
+                <div
+                  className="absolute top-[10px] left-[10px] z-[6]"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={selected}
+                    onChange={() => toggleSelect(resId)}
+                  />
+                </div>
+              </>
+            ) : null}
+          </div>
+        </GridItem>
+      );
+    };
+
     return (
       <Layout
         className={classNames(s['layout-content'], {
@@ -276,7 +401,7 @@ export const BaseLibraryPage = forwardRef<
         })}
         title={renderHtmlTitle(I18n.t('navigation_workspace_library'))}
       >
-        <Layout.Header className={classNames(s['layout-header'], 'pb-0')}>
+        <Layout.Header className={s['layout-header']}>
           <div className="w-full">
             <LibraryHeader
               entityConfigs={entityConfigs}
@@ -289,7 +414,7 @@ export const BaseLibraryPage = forwardRef<
                 await createFolder(name);
               }}
             />
-            <div className="flex items-center justify-between">
+            <div className={s['filter-bar']}>
               <Space>
                 {/* <Cascader
                   data-testid="workspace.library.filter.type"
@@ -408,10 +533,10 @@ export const BaseLibraryPage = forwardRef<
                 </div>
                 <Search
                   data-testid="workspace.library.filter.name"
-                  className="!min-w-min"
+                  className={s.search}
                   style={params.name ? highlightFilterStyle : {}}
                   showClear={true}
-                  width={200}
+                  width={300}
                   loading={listResp.loading}
                   placeholder={I18n.t('workspace_library_search')}
                   value={params.name}
@@ -453,80 +578,115 @@ export const BaseLibraryPage = forwardRef<
             />
           </Layout.Content>
         ) : (
-          <div
-            ref={scrollRef}
-            onScroll={handleScroll}
-            className="flex-1 overflow-y-auto mx-[24px]"
-          >
-            {folderEnabled && currentFolder ? (
-              <div
-                data-testid="workspace.library.folder.breadcrumb"
-                className="flex items-center gap-[4px] text-[14px] coz-fg-secondary mb-[12px] mt-[4px]"
-              >
-                <span
-                  className="cursor-pointer hover:coz-fg-primary"
-                  onClick={() => setCurrentFolderId(null)}
-                >
-                  {`← ${I18n.t('workspace_library_folder_all') || '全部'}`}
-                </span>
-                <span>/</span>
-                <span className="coz-fg-primary">{currentFolder.name}</span>
-              </div>
-            ) : null}
-            <GridList
-              averageItemWidth={defaultGridItemWidth}
-              onResize={(width, count) => {
-                const calcCount =
-                  count *
-                  Math.round(document.documentElement.clientHeight / 240);
-                setGridItemWidth(width);
-                setGridItemCount(
-                  calcCount > LIBRARY_PAGE_SIZE ? calcCount : LIBRARY_PAGE_SIZE,
-                );
-              }}
+          <>
+            <div
+              ref={scrollRef}
+              onScroll={handleScroll}
+              className={s['grid-scroll']}
             >
-              {showFolderCards
-                ? folders.map(folder => (
-                    <GridItem key={`folder-${folder.id}`}>
-                      <div className="grid-item p-[12px]">
-                        <FolderCard
-                          folder={folder}
-                          gridItemWidth={gridItemWidth}
-                          onClick={f => setCurrentFolderId(f.id)}
-                          onRename={(f, name) => renameFolder(f.id, name)}
-                          onDelete={f => deleteFolder(f.id)}
-                        />
-                      </div>
-                    </GridItem>
-                  ))
-                : null}
-              {visibleList.map(record => (
-                <GridItem key={record.res_id}>
-                  <div
-                    className="grid-item p-[12px] cursor-pointer"
-                    onClick={() => onRowClick(record)?.onClick()}
+              {folderEnabled && currentFolder ? (
+                <div
+                  data-testid="workspace.library.folder.breadcrumb"
+                  className="flex items-center gap-[4px] text-[14px] coz-fg-secondary mb-[12px] mt-[4px]"
+                >
+                  <span
+                    className="cursor-pointer hover:coz-fg-primary"
+                    onClick={() => setCurrentFolderId(null)}
                   >
-                    <GridLibraryItem
-                      resourceInfo={record}
-                      entityConfigs={entityConfigs}
-                      reloadList={listResp.reload}
-                      gridItemWidth={gridItemWidth}
-                    />
+                    {`← ${I18n.t('workspace_library_folder_all') || '全部'}`}
+                  </span>
+                  <span>/</span>
+                  <span className="coz-fg-primary">{currentFolder.name}</span>
+                </div>
+              ) : null}
+              {showFolderCards ? (
+                <>
+                  <div className="text-[16px] font-[600] coz-fg-primary mb-[12px]">
+                    分类
                   </div>
-                </GridItem>
-              ))}
-            </GridList>
-            {listResp.loading ? (
-              <Spin>
-                <div className="w-full h-[100px] flex items-center justify-center" />
-              </Spin>
+                  <GridList
+                    averageItemWidth={defaultGridItemWidth}
+                    gap={18}
+                    className={s['resource-grid']}
+                    onResize={(width: number) => {
+                      setGridItemWidth(width);
+                    }}
+                  >
+                    {folders.map(folder => (
+                      <GridItem
+                        key={`folder-${folder.id}`}
+                        className={s['resource-grid-item']}
+                      >
+                        <div className={s['resource-grid-inner']}>
+                          <FolderCard
+                            folder={folder}
+                            gridItemWidth={gridItemWidth}
+                            active={batchFolderId === folder.id}
+                            disabled={batchMode}
+                            onClick={f => setCurrentFolderId(f.id)}
+                            onBatchAdd={f => startBatch(f.id)}
+                            onRename={(f, name) => renameFolder(f.id, name)}
+                            onDelete={f => deleteFolder(f.id)}
+                          />
+                        </div>
+                      </GridItem>
+                    ))}
+                  </GridList>
+                  {visibleList.length > 0 ? (
+                    <>
+                      <div className="text-[16px] font-[600] coz-fg-primary mb-[12px] mt-[20px]">
+                        未分类工作流
+                      </div>
+                      <GridList
+                        averageItemWidth={defaultGridItemWidth}
+                        gap={18}
+                        className={s['resource-grid']}
+                        onResize={(width: number) => {
+                          setGridItemWidth(width);
+                        }}
+                      >
+                        {visibleList.map(renderWorkflowItem)}
+                      </GridList>
+                    </>
+                  ) : (
+                    <div className="text-[13px] coz-fg-secondary py-[24px]">
+                      暂无未分类工作流
+                    </div>
+                  )}
+                </>
+              ) : (
+                <GridList
+                  averageItemWidth={defaultGridItemWidth}
+                  gap={18}
+                  className={s['resource-grid']}
+                  onResize={(width: number) => {
+                    setGridItemWidth(width);
+                  }}
+                >
+                  {visibleList.map(renderWorkflowItem)}
+                </GridList>
+              )}
+              {listResp.loading ? (
+                <Spin>
+                  <div className="w-full h-[100px] flex items-center justify-center" />
+                </Spin>
+              ) : null}
+              {!visibleList.length && !showFolderCards ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <WorkspaceEmpty onClear={resetParams} hasFilter={hasFilter} />
+                </div>
+              ) : null}
+            </div>
+            {batchMode && batchFolder ? (
+              <FolderBatchBar
+                selectedCount={selectedResIds.size}
+                folderName={batchFolder.name}
+                loading={moving}
+                onCancel={exitBatch}
+                onConfirm={handleConfirmBatch}
+              />
             ) : null}
-            {!visibleList.length && !showFolderCards ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <WorkspaceEmpty onClear={resetParams} hasFilter={hasFilter} />
-              </div>
-            ) : null}
-          </div>
+          </>
         )}
       </Layout>
     );

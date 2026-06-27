@@ -18,12 +18,19 @@ package conversation
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"mime"
+	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/cloudwego/eino/schema"
+	"github.com/hertz-contrib/sse"
 
 	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/message"
 
@@ -99,23 +106,43 @@ func (c *ConversationApplicationService) Run(ctx context.Context, sseSender *sse
 		logs.CtxErrorf(ctx, "buildAgentRunRequest err:%v", err)
 		return err
 	}
-	streamer, err := c.AgentRunDomainSVC.AgentRun(ctx, arr)
+	// 可取消的执行上下文:当客户端断开(点"停止响应"/关闭页面导致 SSE 写失败)时,
+	// 取消该 ctx 会向下传播到 eino 图的模型/工具调用,使后端 run 真正停手并退出,
+	// 进而触发会话级 run 锁的释放,避免"停止后再发消息发不出去"。
+	runCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	streamer, err := c.AgentRunDomainSVC.AgentRun(runCtx, arr)
 	if err != nil {
 		return err
 	}
-	c.pullStream(ctx, sseSender, streamer, ar)
+	c.pullStream(runCtx, sseSender, streamer, ar, cancel)
 	return nil
 }
 
-func (c *ConversationApplicationService) pullStream(ctx context.Context, sseSender *sseImpl.SSenderImpl, arStream *schema.StreamReader[*entity.AgentRunResponse], req *run.AgentRunRequest) {
+func (c *ConversationApplicationService) pullStream(ctx context.Context, sseSender *sseImpl.SSenderImpl, arStream *schema.StreamReader[*entity.AgentRunResponse], req *run.AgentRunRequest, cancel context.CancelFunc) {
 	var ackMessageInfo *entity.ChunkMessageItem
+	// clientGone:客户端已断开。一旦探测到,就取消后端 run 并停止向已死连接写,
+	// 但继续 drain 流直到 EOF,让执行 goroutine 收尾(关闭 writer、释放会话 run 锁)。
+	clientGone := false
+	send := func(ev *sse.Event) {
+		if clientGone || ev == nil {
+			return
+		}
+		if err := sseSender.Send(ctx, ev); err != nil {
+			logs.CtxWarnf(ctx, "sse send failed, client gone, cancel agent run: %v", err)
+			clientGone = true
+			if cancel != nil {
+				cancel()
+			}
+		}
+	}
 	for {
 		chunk, recvErr := arStream.Recv()
 		if recvErr != nil {
 			if errors.Is(recvErr, io.EOF) {
 				return
 			}
-			sseSender.Send(ctx, buildErrorEvent(errno.ErrConversationAgentRunError, recvErr.Error()))
+			send(buildErrorEvent(errno.ErrConversationAgentRunError, recvErr.Error()))
 			return
 		}
 
@@ -124,18 +151,18 @@ func (c *ConversationApplicationService) pullStream(ctx context.Context, sseSend
 		case entity.RunEventError:
 			id, err := c.GenID(ctx)
 			if err != nil {
-				sseSender.Send(ctx, buildErrorEvent(errno.ErrConversationAgentRunError, err.Error()))
+				send(buildErrorEvent(errno.ErrConversationAgentRunError, err.Error()))
 
 			} else {
-				sseSender.Send(ctx, buildMessageChunkEvent(run.RunEventMessage, buildErrMsg(ackMessageInfo, chunk.Error, id)))
+				send(buildMessageChunkEvent(run.RunEventMessage, buildErrMsg(ackMessageInfo, chunk.Error, id)))
 			}
 		case entity.RunEventStreamDone:
-			sseSender.Send(ctx, buildDoneEvent(run.RunEventDone))
+			send(buildDoneEvent(run.RunEventDone))
 		case entity.RunEventAck:
 			ackMessageInfo = chunk.ChunkMessageItem
-			sseSender.Send(ctx, buildMessageChunkEvent(run.RunEventMessage, buildARSM2Message(chunk, req)))
+			send(buildMessageChunkEvent(run.RunEventMessage, buildARSM2Message(chunk, req)))
 		case entity.RunEventMessageDelta, entity.RunEventMessageCompleted:
-			sseSender.Send(ctx, buildMessageChunkEvent(run.RunEventMessage, buildARSM2Message(chunk, req)))
+			send(buildMessageChunkEvent(run.RunEventMessage, buildARSM2Message(chunk, req)))
 		default:
 			logs.CtxErrorf(ctx, "unknown handler event:%v", chunk.Event)
 		}
@@ -198,16 +225,20 @@ func buildExt(extra map[string]string) *message.ExtraInfo {
 	}
 
 	return &message.ExtraInfo{
-		InputTokens:         extra["input_tokens"],
-		OutputTokens:        extra["output_tokens"],
-		Token:               extra["token"],
-		PluginStatus:        extra["plugin_status"],
-		TimeCost:            extra["time_cost"],
-		WorkflowTokens:      extra["workflow_tokens"],
-		BotState:            extra["bot_state"],
-		PluginRequest:       extra["plugin_request"],
-		ToolName:            extra["tool_name"],
-		Plugin:              extra["plugin"],
+		InputTokens:    extra["input_tokens"],
+		OutputTokens:   extra["output_tokens"],
+		Token:          extra["token"],
+		PluginStatus:   extra["plugin_status"],
+		TimeCost:       extra["time_cost"],
+		WorkflowTokens: extra["workflow_tokens"],
+		BotState:       extra["bot_state"],
+		PluginRequest:  extra["plugin_request"],
+		ToolName:       extra["tool_name"],
+		Plugin:         extra["plugin"],
+		// 透传 call_id:前端按 call_id 配对 function_call 与 tool_response。
+		// 缺失时并行工具调用(fc,fc,fc,fc,tr,tr,tr,tr)会退化为索引相邻配对,只有边界一个能收尾,
+		// 其余永远停在「正在调用」。ExtraInfo.CallID 的 json tag 即为 "call_id",前端直接消费。
+		CallID:              extra["call_id"],
 		MockHitInfo:         extra["mock_hit_info"],
 		MessageTitle:        extra["message_title"],
 		StreamPluginRunning: extra["stream_plugin_running"],
@@ -230,6 +261,12 @@ func buildExt(extra map[string]string) *message.ExtraInfo {
 	}
 }
 func buildErrMsg(ackChunk *entity.ChunkMessageItem, err *entity.RunError, id int64) []byte {
+	// 防御:若 run 在收到 Ack 之前就出错(重启打断、模型/多模态立即报错等),
+	// ackChunk 为 nil,直接解引用会 panic → 整个请求 500、前端永远转圈。
+	// 用零值占位,改为优雅返回错误消息。
+	if ackChunk == nil {
+		ackChunk = &entity.ChunkMessageItem{}
+	}
 
 	chunkMessage := &run.RunStreamResponse{
 		IsFinish:       ptr.Of(true),
@@ -445,27 +482,17 @@ func (c *ConversationApplicationService) parseMultiContent(ctx context.Context, 
 				Text: item.Text,
 			})
 		case run.ContentTypeImage:
-			// 总是重新生成URL以确保签名有效
-			resourceUrl, err := c.getUrlByUri(ctx, item.Image.Key)
-			if err != nil {
-				// 如果生成失败，尝试使用前端提供的URL作为备选
-				logs.CtxErrorf(ctx, "failed to generate resource url, err is %v, will try to use existing URL", err)
+			if item.Image == nil {
+				continue
+			}
 
-				var existingUrl string
-				if item.Image != nil {
-					if item.Image.ImageOri != nil && item.Image.ImageOri.URL != "" {
-						existingUrl = item.Image.ImageOri.URL
-					} else if item.Image.ImageThumb != nil && item.Image.ImageThumb.URL != "" {
-						existingUrl = item.Image.ImageThumb.URL
-					}
-				}
-
-				if existingUrl != "" {
-					resourceUrl = existingUrl
-					logs.CtxInfof(ctx, "Using existing URL as fallback: %s", resourceUrl)
-				} else {
-					logs.CtxErrorf(ctx, "no fallback URL available, skipping image")
-					continue
+			resourceUrl := getImageItemExistingURL(item.Image)
+			if item.Image.Key != "" {
+				signedURL, err := c.getUrlByUri(ctx, item.Image.Key)
+				if err != nil {
+					logs.CtxErrorf(ctx, "failed to generate resource url, err is %v, will try to use existing URL", err)
+				} else if signedURL != "" {
+					resourceUrl = signedURL
 				}
 			}
 
@@ -473,17 +500,26 @@ func (c *ConversationApplicationService) parseMultiContent(ctx context.Context, 
 				logs.CtxErrorf(ctx, "failed to get resource url, uri is %v", item.Image.Key)
 				continue
 			}
+			if dataURL, ok := normalizeImageDataURL(resourceUrl); ok {
+				resourceUrl = dataURL
+			}
 
-			// 更新URL到最新的
+			if mc[index].Image.ImageThumb == nil {
+				mc[index].Image.ImageThumb = &run.ImageDetail{}
+			}
+			if mc[index].Image.ImageOri == nil {
+				mc[index].Image.ImageOri = &run.ImageDetail{}
+			}
 			mc[index].Image.ImageThumb.URL = resourceUrl
 			mc[index].Image.ImageOri.URL = resourceUrl
-			logs.CtxInfof(ctx, "Using resource URL: %s", resourceUrl)
 
+			// 入库只存对象存储 key（不内联 base64），避免 model_content 被几百KB的 base64 撑爆 DB；
+			// 调用模型前会在 parseMessageURI 处把 key 展开成 base64。
 			multiContents = append(multiContents, &crossDomainMessage.InputMetaData{
 				Type: crossDomainMessage.InputTypeImage,
 				FileData: []*crossDomainMessage.FileData{
 					{
-						Url: resourceUrl,
+						Url: item.Image.Key,
 						URI: item.Image.Key,
 					},
 				},
@@ -523,11 +559,85 @@ func (c *ConversationApplicationService) getType(fileType string) crossDomainMes
 }
 
 func (c *ConversationApplicationService) getUrlByUri(ctx context.Context, uri string) (string, error) {
-
-	url, err := c.appContext.ImageX.GetResourceURL(ctx, uri)
-	if err != nil {
-		return "", err
+	if uri == "" {
+		return "", fmt.Errorf("empty uri")
 	}
 
-	return url.URL, nil
+	if c != nil && c.appContext != nil && c.appContext.ImageX != nil {
+		url, err := c.appContext.ImageX.GetResourceURL(ctx, uri)
+		if err == nil && url != nil && url.URL != "" {
+			return url.URL, nil
+		}
+		if err != nil {
+			logs.CtxWarnf(ctx, "failed to get resource url from ImageX, uri=%s, err=%v", uri, err)
+		}
+	}
+
+	if c != nil && c.appContext != nil && c.appContext.TosClient != nil {
+		return c.appContext.TosClient.GetObjectUrl(ctx, uri)
+	}
+
+	return "", fmt.Errorf("resource url service not available")
+}
+
+func (c *ConversationApplicationService) toImageModelURL(ctx context.Context, uri, fallbackURL string) string {
+	if dataURL, ok := normalizeImageDataURL(fallbackURL); ok {
+		return dataURL
+	}
+	if c == nil || c.appContext == nil || c.appContext.TosClient == nil || uri == "" {
+		return fallbackURL
+	}
+
+	content, err := c.appContext.TosClient.GetObject(ctx, uri)
+	if err != nil {
+		logs.CtxWarnf(ctx, "failed to read image object for model input, uri=%s, err=%v", uri, err)
+		return fallbackURL
+	}
+	if len(content) == 0 {
+		return fallbackURL
+	}
+
+	contentType := mime.TypeByExtension(filepath.Ext(uri))
+	if contentType == "" {
+		contentType = http.DetectContentType(content)
+	}
+	if contentType == "" {
+		contentType = "image/png"
+	}
+
+	return "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(content)
+}
+
+func getImageItemExistingURL(image *run.Image) string {
+	if image == nil {
+		return ""
+	}
+	if image.ImageOri != nil && image.ImageOri.URL != "" {
+		return image.ImageOri.URL
+	}
+	if image.ImageThumb != nil && image.ImageThumb.URL != "" {
+		return image.ImageThumb.URL
+	}
+	return ""
+}
+
+func isImageDataURL(value string) bool {
+	return strings.HasPrefix(value, "data:image/") && strings.Contains(value, ";base64,")
+}
+
+func normalizeImageDataURL(value string) (string, bool) {
+	if isImageDataURL(value) {
+		return value, true
+	}
+	if looksLikeRawImageBase64(value) {
+		return "data:image/png;base64," + value, true
+	}
+	return value, false
+}
+
+func looksLikeRawImageBase64(value string) bool {
+	return strings.HasPrefix(value, "/9j/") ||
+		strings.HasPrefix(value, "iVBORw0KG") ||
+		strings.HasPrefix(value, "R0lGODlh") ||
+		strings.HasPrefix(value, "UklGR")
 }

@@ -35,6 +35,7 @@ import {
 import { usePrimarySidebarStore } from '@/stores';
 
 import {
+  type BizResourceType,
   type BizGroupTypeWithFolder,
   BizResourceContextMenuBtnType,
   type ResourceFolderCozeProps,
@@ -68,6 +69,7 @@ const ResourceFolderCozeImpl: FC<ResourceFolderCozeProps> = ({
   defaultResourceType,
   validateConfig,
   hideMoreBtn,
+  enableFolder,
   ...props
 }) => {
   const resourceMap = useMemo(
@@ -102,9 +104,9 @@ const ResourceFolderCozeImpl: FC<ResourceFolderCozeProps> = ({
       if (event.id !== props.id) {
         return;
       }
-      const selectResources = Object.values(event.tempSelectedMap || {}).filter(
-        item => item.type !== ResourceTypeEnum.Folder,
-      );
+      const selectResources = (
+        Object.values(event.tempSelectedMap || {}) as BizResourceType[]
+      ).filter(item => item.type !== ResourceTypeEnum.Folder);
       if (!selectResources?.length) {
         return;
       }
@@ -201,6 +203,7 @@ const ResourceFolderCozeImpl: FC<ResourceFolderCozeProps> = ({
     validateConfig,
     onCreateSubTypeResource: handleCreateResource,
     hideMoreBtn,
+    enableFolder,
   });
 
   const { selectedResource, handleOpenResource } = useResourceOpen();
@@ -235,6 +238,7 @@ const ResourceFolderCozeImpl: FC<ResourceFolderCozeProps> = ({
               onCreateResource={handleCreateResource}
               onImportResource={handleImportResource}
               onActionVisibleChange={handleFocusResourceFolder}
+              enableFolder={enableFolder}
             />
           ) : null
         }

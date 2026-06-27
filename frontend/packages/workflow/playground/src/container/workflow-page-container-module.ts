@@ -59,6 +59,7 @@ import {
 import {
   WorkflowCustomDragService,
   WorkflowEditService,
+  WorkflowAgentCommandService,
   WorkflowOperationService,
   WorkflowRunService,
   WorkflowSaveService,
@@ -102,6 +103,7 @@ export const WorkflowPageContainerModule = new ContainerModule(
     bind(WorkflowValidationService).toService(ValidationService);
 
     bind(WorkflowEditService).toSelf().inSingletonScope();
+    bind(WorkflowAgentCommandService).toSelf().inSingletonScope();
     bind(TestRunReporterService)
       .to(WorkflowTestRunReporterService)
       .inSingletonScope();

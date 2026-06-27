@@ -32,7 +32,7 @@ export const WorkspaceList: FC<WorkspaceListProps> = ({
   menus,
   currentSubMenu,
 }: WorkspaceListProps) => (
-  <div className="w-full mt-[16px]">
+  <div className="w-full mt-[6px]">
     <Space vertical spacing={4} className="w-full">
       {menus.map((item, index) => (
         <WorkspaceListItem

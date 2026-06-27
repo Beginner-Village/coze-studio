@@ -19,7 +19,7 @@ package agentflow
 import "strings"
 
 const wfNodeCatalogText = `节点目录(渐进式设计):
-- 3 大模型(LLM): 文本理解、生成、分类、抽取、总结。使用前调用 get_node_spec(type=3)。
+- 3 大模型(LLM): 多面手——普通回复、意图分类、参数提取(JSON),还能用 bind_plugins/bind_workflows 把插件/工作流挂上去让模型按需调用(节点 agent 化)。使用前调用 get_node_spec(type=3)。
 - 2 结束(End): 内置单例,不能新增;支持返回变量和返回文本,返回文本可流式透传多个上游变量。配置前调用 get_node_spec(type=2)。
 - 4 插件/API: 调用空间插件/API/工具。使用前调用 get_node_spec(type=4),并只使用资源清单里的 plugin_id/api_id。
 - 5 代码: 确定性计算、格式转换、字段清洗。使用前调用 get_node_spec(type=5)。
@@ -34,30 +34,43 @@ const wfNodeCatalogText = `节点目录(渐进式设计):
 - 22 意图识别: 对用户输入或文本做分类路由。
 - 27 知识库写入: 将内容写入知识库,需要真实 dataset_id 和写入策略。
 - 30 输入: 声明 Start.input 以外的结构化工作流入参。使用前调用 get_node_spec(type=30)。
-- 42 更新数据 / 43 查询数据 / 44 删除数据 / 46 新增数据 / 12 SQL自定义: 数据库 CRUD,必须先知道真实数据表和字段。
+- 42 更新数据 / 43 查询数据 / 44 删除数据 / 46 新增数据 / 12 SQL自定义: 数据库 CRUD,configure_node 已支持。先调 workflow_canvas_list_databases 取真实 table_id 和字段 field_id,再配置:查询/更新/删除用 conditions{字段,操作符,值}过滤,新增/更新用 values{field_id,value}写入,自定义 SQL 用 {{变量}} 占位。使用前调用 get_node_spec。
 - 45 HTTP: 直接调用 HTTP 接口。
 - 58 JSON序列化 / 59 JSON解析: 对对象和 JSON 字符串做转换。使用前调用 get_node_spec(type=58/59)。
 - 61 MCP: 调用 MCP server/tool。
 - 99 卡片选择: 输出卡片并等待用户选择,需要真实卡片资源。
 - 100 智能体: 调用子智能体/HiAgent/Coze Agent。使用前调用 get_node_spec(type=100),并只使用资源清单里的 agent_id。
-设计流程: 先选最小完整节点组合;每个执行节点都要设计 input bindings、核心配置、outputs、下游消费;Start/End 是内置单例只能引用不能新增。试运行失败时优先局部修复输入绑定、变量引用、outputs、merge_groups 或 End returns,不要默认清空画布。`
+设计流程: 先选最小完整节点组合;每个执行节点都要设计 input bindings、核心配置、outputs、下游消费;Start/End 是内置单例只能引用不能新增。试运行失败时优先局部修复输入绑定、变量引用、outputs、merge_groups 或 End returns,不要默认清空画布。
+configure_node 语义配置支持档位(决定能否自动配置;不在"完整支持"里的节点只能 add_node 添加占位,或用 set_node_params 专家兜底,不要假装已配好): 完整支持 = 3大模型(含 FC 绑插件/工作流)、4插件、5代码、6知识库检索、8条件、13输出、15文本处理、18问答、30输入、32变量聚合、数据库12/42/43/44/46(先 workflow_canvas_list_databases 取真实表/字段ID)、58JSON序列化、99卡片、100智能体、End返回;暂只能占位(语义配置后续增量上线) = 意图识别22、子工作流9、HTTP45、循环21/批处理28、知识库写入27、MCP61 等。复杂工作流要优先用"完整支持"的节点组合达成同等语义(例如用大模型节点做意图分类替代 type=22,用大模型 FC 绑插件替代部分确定性插件管线)。`
 
 var wfNodeSpecByType = map[string]string{
-	"3": `节点规格: 3 大模型(LLM)
-适用: 文本理解、生成、总结、抽取、分类、路由前判断。
-可绑定输入: input/inputs,每项形如 {from:"start或上游node_tag",output:"变量名",name:"本节点入参名"}。
-必须配置: prompt 或 user_prompt;建议配置 system_prompt;必须声明 outputs,至少 [{name:"answer",type:"string"}] 或 [{name:"output",type:"string"}]。
-下游绑定: 下游引用本节点输出用 {from:"llm_node_tag",output:"answer"}。
-configure_node 示例:
-{"node_tag":"llm","config":{"title":"大模型处理","input":{"from":"start","output":"input","name":"input"},"system_prompt":"你是严谨的处理节点","prompt":"请处理 {{input}}","outputs":[{"name":"answer","type":"string"}]}}`,
+	"3": `节点规格: 3 大模型(LLM) —— 工作流里最强的多面手节点(configure_node 语义支持: 完整)
+同一个 LLM 节点按 prompt/outputs/绑定不同,可承担四类角色:
+1) 普通生成/回复: prompt 写任务,outputs 声明 answer:string;支持流式。
+2) 意图分类/路由: prompt 要求"只输出一个意图类别词",outputs=[{name:"category",type:"string"}],下游接 type=8 IF 或多分支按 category 分流;比单独意图节点更灵活。
+3) 参数提取(对话工作流核心能力): prompt 要求"从用户对话抽取并只输出 JSON",outputs 按下游接口参数逐个声明且类型一致(数字 number、文本 string、布尔 boolean);下游插件/数据库节点绑定本节点这些输出。
+4) FC 绑插件/工作流(节点 agent 化, 重要): 用 bind_plugins / bind_workflows 把工具挂到本节点,模型会自主决定何时调、可多轮调用并整合结果——相当于一个小型智能体。与 type=4 插件节点区别: type=4 是确定性管线一定调一次;LLM-FC 是模型按需调用。
+可绑定输入: input/inputs,每项 {from:"start或上游node_tag",output:"变量名",name:"本节点入参名"};prompt/system_prompt 里用 {{name}} 引用。支持图片/音视频/文件多模态输入(取决于所选模型能力,不支持则自动降级为文本)。
+必须配置: prompt 或 user_prompt;建议配置 system_prompt;必须声明 outputs。
+FC 绑插件: bind_plugins:[{plugin_id,api_id,api_name,plugin_version}],四项 ID/版本均来自 workflow_canvas_list_plugins,禁止编造。
+FC 绑工作流: bind_workflows:[{workflow_id,plugin_id,plugin_version,workflow_version}],ID 来自资源清单。
+对话历史(chatflow 多轮记忆): enable_chat_history=true,可选 chat_history_round(默认3)。
+结构化输出: outputs 声明多个字段时按 JSON 产出(JSON 模式不可流式;只声明单个 string 输出时退回纯文本)。
+下游绑定: 下游引用本节点输出用 {from:"llm_node_tag",output:"字段名"}。
+普通/提参 configure_node 示例:
+{"node_tag":"llm","config":{"title":"大模型处理","input":{"from":"start","output":"input","name":"input"},"system_prompt":"你是严谨的处理节点","prompt":"请处理 {{input}}","outputs":[{"name":"answer","type":"string"}]}}
+FC 绑插件 configure_node 示例(让大模型按需调转账插件):
+{"node_tag":"llm_fc","config":{"title":"转账助手","input":{"from":"start","output":"input","name":"input"},"system_prompt":"你是转账助手,需要转账时调用绑定的转账插件。","prompt":"用户说: {{input}}","bind_plugins":[{"plugin_id":"真实plugin_id","api_id":"真实api_id","api_name":"转账","plugin_version":"v1.0.0"}],"outputs":[{"name":"answer","type":"string"}]}}`,
 
 	"4": `节点规格: 4 插件/API
 适用: 查询订单、调用外部服务、执行已有插件能力。
 可绑定输入: inputs 对象, key 是 API 参数名, value 是变量绑定 {from,output}。
-必须配置: plugin_id、api_id、plugin_name/api_name 必须来自当前空间资源清单,禁止编造。
+必须配置: 先调 workflow_canvas_list_plugins 取真实 plugin_id、api_id、plugin_name、api_name、plugin_version(=插件 version_name,如 v1.0.0),全部禁止编造。
+plugin_version 必填且非空:为空会被前端丢弃,导致节点报 "plugin version param is not found"。
 输出: 若资源清单中没有明确 API 输出,先声明 result:string 或按接口语义声明字段。
+对话工作流提参: 若当前是对话工作流(Start 只有用户自然语言输入),插件需要的结构化入参不要写死字面量,先加一个 type=3 大模型节点从对话抽取(outputs 按本插件参数逐个声明,类型必须匹配:数字 number、文本 string),再把本节点 inputs 绑定到大模型输出 {from:"llm_extract",output:"参数名"}。参数类型与 list_plugins 返回的参数 schema 不一致时会报"参数类型不匹配 / invalid syntax"。
 configure_node 示例:
-{"node_tag":"api_order","config":{"title":"查询订单API","plugin_id":"真实plugin_id","api_id":"真实api_id","plugin_name":"订单插件","api_name":"查询订单","inputs":{"order_id":{"from":"start","output":"input"}},"outputs":[{"name":"result","type":"string"}]}}`,
+{"node_tag":"api_order","config":{"title":"查询订单API","plugin_id":"真实plugin_id","api_id":"真实api_id","plugin_name":"订单插件","api_name":"查询订单","plugin_version":"v1.0.0","inputs":{"order_id":{"from":"start","output":"input"}},"outputs":[{"name":"result","type":"string"}]}}`,
 
 	"5": `节点规格: 5 代码
 适用: 确定性逻辑、JSON/字段转换、正则提取、简单计算,不要用它做主观生成。
@@ -139,6 +152,34 @@ configure_node 示例(使用 LLM 替代更稳): 添加 type=3 LLM, prompt 要求
 支持边界: 当前为 partial,method/url/headers/query/body/auth/outputs 语义配置器仍需补齐。能明确字段时才可配置,不能把它当作已完整支持节点。
 必须配置: method、url、headers/body/query 参数、outputs。参数值应绑定当前可用变量。
 如果接口已封装成插件/API,优先使用 type=4 插件/API 节点。`,
+
+	"43": `节点规格: 43 查询数据(configure_node 语义支持: 完整)
+先调 workflow_canvas_list_databases 取真实 table_id(=database_info_id)和字段 field_id/name/type,禁止编造。
+必须配置: table_id(绑定的表)。可选: fields(要查的字段 field_id 数组,省略=全部)、conditions(过滤条件)、limit、order_by。
+conditions 每项 {left:字段名, operator, right};operator 取值: EQUAL/NOT_EQUAL/GREATER_THAN/LESS_THAN/GREATER_EQUAL/LESS_EQUAL/IN/NOT_IN/IS_NULL/IS_NOT_NULL/LIKE/NOT_LIKE;right 可为字面量或变量绑定 {from,output}。
+输出固定 outputList(数组对象)+ rowNum。
+configure_node 示例:
+{"node_tag":"db_query","config":{"title":"查用户","table_id":"真实database_info_id","conditions":[{"left":"user_id","operator":"EQUAL","right":{"from":"start","output":"user_id"}}],"limit":10}}`,
+
+	"46": `节点规格: 46 新增数据(configure_node 语义支持: 完整)
+先 list_databases 取真实 table_id + 字段 field_id。必须配置: table_id、values(要写入的字段,每项 {field_id, value});value 可为字面量或 {from,output}。
+configure_node 示例:
+{"node_tag":"db_insert","config":{"title":"插入记录","table_id":"真实database_info_id","values":[{"field_id":111,"value":{"from":"start","output":"name"}},{"field_id":112,"value":"active"}]}}`,
+
+	"42": `节点规格: 42 更新数据(configure_node 语义支持: 完整)
+先 list_databases 取真实 table_id + field_id。必须配置: table_id、values(要更新的字段值)、conditions(更新哪些行的条件)。
+configure_node 示例:
+{"node_tag":"db_update","config":{"title":"更新状态","table_id":"真实database_info_id","values":[{"field_id":112,"value":"done"}],"conditions":[{"left":"id","operator":"EQUAL","right":{"from":"start","output":"id"}}]}}`,
+
+	"44": `节点规格: 44 删除数据(configure_node 语义支持: 完整)
+先 list_databases 取真实 table_id。必须配置: table_id、conditions(删除哪些行)。谨慎: 不带 conditions 会删全表。
+configure_node 示例:
+{"node_tag":"db_delete","config":{"title":"删除记录","table_id":"真实database_info_id","conditions":[{"left":"id","operator":"EQUAL","right":{"from":"start","output":"id"}}]}}`,
+
+	"12": `节点规格: 12 SQL自定义(configure_node 语义支持: 完整)
+先 list_databases 取真实表。必须配置: table_id、sql(用 {{变量}} 占位做参数化防注入)、inputs(SQL 里 {{变量}} 对应的变量绑定)。
+configure_node 示例:
+{"node_tag":"db_sql","config":{"title":"自定义查询","table_id":"真实database_info_id","sql":"SELECT * FROM t WHERE amount > {{min}}","inputs":[{"from":"start","output":"min","name":"min"}]}}`,
 
 	"58": `节点规格: 58 JSON序列化
 适用: 将对象/数组变量转换为 JSON 字符串,用于 HTTP body、日志或输出。

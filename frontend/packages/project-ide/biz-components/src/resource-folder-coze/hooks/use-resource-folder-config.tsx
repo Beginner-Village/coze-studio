@@ -59,7 +59,6 @@ import { Empty } from '../empty';
 import {
   contextMenuDTOToVOMap,
   createResourceLabelMap,
-  DISABLE_FOLDER,
   ITEM_HEIGHT,
   MAX_DEEP,
   TAB_SIZE,
@@ -82,6 +81,7 @@ export type UseResourceFolderConfigProps = {
    * Hide more menu button
    */
   hideMoreBtn?: boolean;
+  enableFolder?: boolean;
 } & Pick<ResourceFolderProps, 'validateConfig'>;
 // eslint-disable-next-line @coze-arch/max-line-per-function
 export const useResourceFolderConfig = ({
@@ -92,6 +92,7 @@ export const useResourceFolderConfig = ({
   createResourceConfig,
   validateConfig,
   hideMoreBtn,
+  enableFolder = false,
 }: UseResourceFolderConfigProps): Partial<ResourceFolderProps> => {
   const textRender = useCallback(
     ({ resource, isSelected }: CommonRenderProps) => (
@@ -131,7 +132,7 @@ export const useResourceFolderConfig = ({
                 },
               ];
           return [
-            DISABLE_FOLDER
+            !enableFolder
               ? null
               : {
                   id: BizResourceContextMenuBtnType.CreateFolder,
@@ -210,6 +211,7 @@ export const useResourceFolderConfig = ({
       onCreateSubTypeResource,
       FLAGS,
       hideMoreBtn,
+      enableFolder,
     ],
   );
 
@@ -255,7 +257,7 @@ export const useResourceFolderConfig = ({
     config: useMemo(
       () => ({
         itemHeight: ITEM_HEIGHT,
-        maxDeep: MAX_DEEP,
+        maxDeep: enableFolder ? 2 : MAX_DEEP,
         tabSize: TAB_SIZE,
         input: {
           placeholder: I18n.t('project_resource_sidebar_please_enter'),
@@ -266,7 +268,7 @@ export const useResourceFolderConfig = ({
             ? getURIByResource(resource.type as string, resource.id)
             : null,
       }),
-      [],
+      [enableFolder],
     ),
     renderMoreSuffix: useMemo<RenderMoreSuffixType>(
       () =>
@@ -289,7 +291,7 @@ export const useResourceFolderConfig = ({
     empty: <Empty type={groupType} />,
     powerBlackMap: {
       dragAndDrop: false,
-      folder: DISABLE_FOLDER,
+      folder: !enableFolder,
     },
     onContextMenuVisibleChange: (visible: boolean) =>
       setCanClosePopover(!visible),

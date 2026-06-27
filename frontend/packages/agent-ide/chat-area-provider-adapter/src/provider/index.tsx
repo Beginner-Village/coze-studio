@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useEffect, type PropsWithChildren } from 'react';
+import { useEffect, useState, type PropsWithChildren } from 'react';
 
 import { usePageRuntimeStore } from '@coze-studio/bot-detail-store/page-runtime';
 import { useBotSkillStore } from '@coze-studio/bot-detail-store/bot-skill';
@@ -24,7 +24,11 @@ import { Scene } from '@coze-common/chat-core';
 import { ResumePluginRegistry } from '@coze-common/chat-area-plugin-resume';
 import { ReasoningPluginRegistry } from '@coze-common/chat-area-plugin-reasoning';
 import { useCreateGrabPlugin } from '@coze-common/chat-area-plugin-message-grab';
-import { type MixInitResponse, type SenderInfo } from '@coze-common/chat-area';
+import {
+  type MixInitResponse,
+  type PluginRegistryEntry,
+  type SenderInfo,
+} from '@coze-common/chat-area';
 import { useMessageReportEvent } from '@coze-arch/bot-hooks';
 import {
   type GetMessageListRequest,
@@ -41,11 +45,33 @@ import { getDebugCommonPluginRegistry } from '@coze-agent-ide/chat-area-plugin-d
 export interface BotDebugChatAreaProviderAdapterProps
   extends Pick<BotDebugChatAreaProviderProps, 'botId'> {
   userId: string | undefined;
+  extraPluginRegistryList?: PluginRegistryEntry<any>[];
+  initialConversationId?: string;
+  initialScene?: SceneFromIDL;
+}
+
+const SUPER_AGENT_SESSION_SELECT_EVENT = 'coze:super-agent-session-select';
+
+interface SelectedSuperAgentSession {
+  conversationId: string;
+  scene?: SceneFromIDL;
 }
 
 export const BotDebugChatAreaProviderAdapter: React.FC<
   PropsWithChildren<BotDebugChatAreaProviderAdapterProps>
-> = ({ children, botId, userId }) => {
+> = ({
+  children,
+  botId,
+  userId,
+  extraPluginRegistryList = [],
+  initialConversationId = '',
+  initialScene,
+}) => {
+  const [selectedSession, setSelectedSession] =
+    useState<SelectedSuperAgentSession>({
+      conversationId: initialConversationId,
+      scene: initialScene,
+    });
   const DebugCommonPlugin = getDebugCommonPluginRegistry({
     scene: Scene.Playground,
     botId,
@@ -70,6 +96,49 @@ export const BotDebugChatAreaProviderAdapter: React.FC<
 
   useMessageReportEvent();
 
+  useEffect(() => {
+    setSelectedSession(prev => {
+      const next: SelectedSuperAgentSession = {
+        conversationId: initialConversationId,
+        scene: initialScene,
+      };
+      return prev.conversationId === next.conversationId &&
+        prev.scene === next.scene
+        ? prev
+        : next;
+    });
+  }, [initialConversationId, initialScene]);
+
+  useEffect(() => {
+    const onSelectSession = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        botId?: string;
+        conversationId?: string;
+        scene?: SceneFromIDL;
+      }>).detail;
+      if (detail?.botId !== botId) {
+        return;
+      }
+      const next: SelectedSuperAgentSession = {
+        conversationId: detail.conversationId ?? '',
+        scene: detail.scene,
+      };
+      // 与当前一致则跳过,避免无谓的 setState/重挂载。
+      setSelectedSession(prev =>
+        prev.conversationId === next.conversationId && prev.scene === next.scene
+          ? prev
+          : next,
+      );
+    };
+    window.addEventListener(SUPER_AGENT_SESSION_SELECT_EVENT, onSelectSession);
+    return () => {
+      window.removeEventListener(
+        SUPER_AGENT_SESSION_SELECT_EVENT,
+        onSelectSession,
+      );
+    };
+  }, [botId]);
+
   const getMessageList = (params: GetMessageListRequest) =>
     DeveloperApi.GetMessageList(params);
 
@@ -81,11 +150,12 @@ export const BotDebugChatAreaProviderAdapter: React.FC<
     const botInfo = useBotInfoStore.getState();
     const { name, icon_url } = botInfo ?? {};
     const params: GetMessageListRequest = {
+      conversation_id: selectedSession.conversationId || undefined,
       bot_id: botId,
       cursor: '0',
       count: 15,
       draft_mode: true,
-      scene: SceneFromIDL.Playground,
+      scene: selectedSession.scene ?? SceneFromIDL.Playground,
     };
     const dratMain = await getMessageList(params);
 
@@ -115,12 +185,16 @@ export const BotDebugChatAreaProviderAdapter: React.FC<
     GrabPlugin,
     ChatBackgroundPlugin,
     ReasoningPluginRegistry,
+    ...extraPluginRegistryList,
   ];
   if (!userId) {
     return null;
   }
   return (
     <BaseProvider
+      key={`${botId}:${selectedSession.conversationId || 'latest'}:${
+        selectedSession.scene ?? SceneFromIDL.Playground
+      }`}
       requestToInit={requestToInit}
       botId={botId}
       pluginRegistryList={pluginRegistryList}

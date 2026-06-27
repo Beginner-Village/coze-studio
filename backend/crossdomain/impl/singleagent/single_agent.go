@@ -58,10 +58,11 @@ func (c *impl) buildSingleAgentStreamExecuteReq(ctx context.Context, agentRuntim
 ) *model.ExecuteRequest {
 
 	return &model.ExecuteRequest{
-		Identity: c.buildIdentity(agentRuntime),
-		Input:    agentRuntime.Input,
-		History:  agentRuntime.HistoryMsg,
-		UserID:   agentRuntime.UserID,
+		Identity:       c.buildIdentity(agentRuntime),
+		Input:          agentRuntime.Input,
+		History:        agentRuntime.HistoryMsg,
+		UserID:         agentRuntime.UserID,
+		ConversationID: agentRuntime.ConversationID,
 		PreCallTools: slices.Transform(agentRuntime.PreRetrieveTools, func(tool *agentrun.Tool) *agentrun.ToolsRetriever {
 			return &agentrun.ToolsRetriever{
 				PluginID:  tool.PluginID,
@@ -81,6 +82,7 @@ func (c *impl) buildSingleAgentStreamExecuteReq(ctx context.Context, agentRuntim
 		}),
 		ResumeInfo: agentRuntime.ResumeInfo,
 		Variables:  agentRuntime.Variables, // 传递会话自定义变量
+		Ext:        agentRuntime.Ext,
 	}
 }
 

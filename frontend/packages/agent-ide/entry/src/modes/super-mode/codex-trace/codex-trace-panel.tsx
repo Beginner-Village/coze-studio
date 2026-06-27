@@ -552,6 +552,24 @@ const workflowToolLabel = (
       return { action: '优化布局' };
     case 'workflow_canvas_test_run':
       return { action: '试运行工作流' };
+    case 'workflow_canvas_get_operation_guide':
+      return { action: '读取操作指南' };
+    case 'workflow_canvas_get_resource_catalog':
+      return { action: '读取资源目录' };
+    case 'workflow_canvas_list_plugins':
+      return { action: '列出可用插件', target: stringArg(args, 'keyword') || undefined };
+    case 'workflow_canvas_create_plugin_from_curl':
+      return { action: '从CURL建插件', target: stringArg(args, 'name') || undefined };
+    case 'workflow_canvas_list_databases':
+      return { action: '列出数据库表', target: stringArg(args, 'keyword') || undefined };
+    case 'workflow_canvas_get_bindable_variables':
+      return { action: '读取可绑定变量', target: nodeTag || undefined };
+    case 'workflow_canvas_get_node_capability_audit':
+      return { action: '审计节点能力', target: type ? `type ${type}` : undefined };
+    case 'workflow_canvas_get_node_smoke_manifest':
+      return { action: '读取节点冒烟清单' };
+    case 'workflow_canvas_get_node_smoke_coverage':
+      return { action: '读取节点冒烟覆盖' };
     default:
       return { action: step.verb || '调用画布工具', target: nodeTag || title };
   }

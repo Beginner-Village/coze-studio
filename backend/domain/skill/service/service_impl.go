@@ -52,6 +52,11 @@ func (s *skillServiceImpl) CreateSkill(ctx context.Context, skill *entity.Skill)
 	}
 
 	skill.Status = 1 // active
+	if skill.ReviewStatus == 0 {
+		// Newly created skills are approved by default; only global publishing
+		// downgrades them to pending review.
+		skill.ReviewStatus = entity.SkillReviewStatusApproved
+	}
 	return s.repo.Create(ctx, skill)
 }
 
@@ -82,8 +87,24 @@ func (s *skillServiceImpl) DeleteSkill(ctx context.Context, skillID int64) error
 	return s.repo.Delete(ctx, skillID)
 }
 
+func (s *skillServiceImpl) PublishSkill(ctx context.Context, skillID int64, scope, reviewStatus int8, version, publisherID, publishedAt int64) error {
+	return s.repo.Publish(ctx, skillID, scope, reviewStatus, version, publisherID, publishedAt)
+}
+
+func (s *skillServiceImpl) ReviewSkill(ctx context.Context, skillID int64, reviewStatus int8, note string, reviewerID, reviewedAt int64) error {
+	return s.repo.SetReviewStatus(ctx, skillID, reviewStatus, note, reviewerID, reviewedAt)
+}
+
+func (s *skillServiceImpl) ListPendingReviews(ctx context.Context, req *entity.PendingReviewListRequest) (*entity.ListResponse, error) {
+	return s.repo.ListPendingReviews(ctx, req)
+}
+
 func (s *skillServiceImpl) ListSkills(ctx context.Context, req *entity.ListRequest) (*entity.ListResponse, error) {
 	return s.repo.List(ctx, req)
+}
+
+func (s *skillServiceImpl) ListMarketplaceSkills(ctx context.Context, req *entity.MarketplaceListRequest) (*entity.ListResponse, error) {
+	return s.repo.ListMarketplace(ctx, req)
 }
 
 func (s *skillServiceImpl) MGetSkills(ctx context.Context, skillIDs []int64) ([]*entity.Skill, error) {

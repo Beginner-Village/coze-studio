@@ -31,6 +31,8 @@ type IProps = Record<'message', Message<ContentType>>;
 export const BizMessageInnerAddonBottom: FC<IProps> = memo(
   p => {
     const [reasoningFinished, setReasoningFinished] = useState(false);
+    // 思维链默认折叠,用户可手动展开
+    const [expanded, setExpanded] = useState(false);
     const ref = useRef(p.message.reasoning_content);
 
     useEffect(() => {
@@ -42,14 +44,49 @@ export const BizMessageInnerAddonBottom: FC<IProps> = memo(
       // Content used to trigger reasoning rerender
     }, [p.message.reasoning_content, p.message.content]);
 
-    return p.message.role === 'assistant' && p.message.reasoning_content ? (
+    if (!(p.message.role === 'assistant' && p.message.reasoning_content)) {
+      return null;
+    }
+
+    const reasoning = p.message.reasoning_content;
+    const streaming = !p.message.is_finish && !reasoningFinished;
+
+    return (
       <div className="my-[8px]">
-        <MdBoxLazy
-          markDown={`${p.message.reasoning_content.replace(/^/gm, '> ')}`}
-          showIndicator={!p.message.is_finish && !reasoningFinished}
-        ></MdBoxLazy>
+        {/* 折叠态:只显示「思考中/已深度思考 · N 字」,点击展开 */}
+        <div
+          onClick={() => setExpanded(v => !v)}
+          className="inline-flex items-center gap-[6px] px-[10px] py-[4px] rounded-[8px] cursor-pointer select-none coz-mg-secondary coz-fg-secondary text-[13px] hover:coz-mg-primary transition-colors"
+        >
+          <span>{streaming ? '思考中' : '已深度思考'}</span>
+          <span className="coz-fg-dim">· {reasoning.length} 字</span>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              transform: expanded ? 'rotate(180deg)' : 'none',
+              transition: 'transform 0.15s',
+            }}
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </div>
+        {expanded ? (
+          <div className="mt-[6px]">
+            <MdBoxLazy
+              markDown={`${reasoning.replace(/^/gm, '> ')}`}
+              showIndicator={streaming}
+            ></MdBoxLazy>
+          </div>
+        ) : null}
       </div>
-    ) : null;
+    );
   },
   (prev, next) =>
     prev.message.role === next.message.role &&

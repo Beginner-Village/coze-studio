@@ -1,0 +1,235 @@
+.skillSelectModal {
+  :global {
+    .semi-modal {
+      width: min(720px, 96vw) !important;
+      max-width: 96vw;
+    }
+
+    .semi-modal-content {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 88vh;
+      padding: 0;
+      border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
+      border-radius: 16px;
+      box-shadow:
+        0 8px 24px 0 rgb(0 0 0 / 16%),
+        0 16px 48px 0 rgb(0 0 0 / 8%);
+    }
+
+    .semi-modal-header {
+      flex: 0 0 auto;
+      margin: 0 !important;
+      padding: 20px 24px 14px;
+    }
+
+    .semi-modal-close {
+      top: 16px;
+      right: 18px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+
+    .semi-modal-body {
+      overflow: hidden;
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 0 !important;
+    }
+
+    .semi-modal-footer {
+      flex: 0 0 auto;
+      margin: 0;
+      padding: 0;
+      border-top: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
+    }
+  }
+}
+
+.skillModalTitle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--coz-fg, rgba(15, 21, 40, 82%));
+
+  span {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--coz-fg-secondary, rgba(32, 41, 69, 62%));
+  }
+}
+
+.skillSelectBody {
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  max-height: calc(88vh - 138px);
+  background: var(--coz-bg-max, #fff);
+}
+
+.skillSearchWrap {
+  flex: 0 0 auto;
+  padding: 0 24px 12px;
+}
+
+.skillSearch {
+  width: 100%;
+
+  :global {
+    .semi-input-wrapper {
+      height: 34px;
+      background: var(--coz-bg-secondary, rgb(240, 240, 247));
+      border: 1px solid transparent;
+      border-radius: 8px;
+      transition: all 0.15s ease-out;
+
+      &:focus-within {
+        background: var(--coz-bg-max, #fff);
+        border-color: var(--coz-stroke-hglt, rgb(53, 138, 255));
+        box-shadow: 0 0 0 3px rgba(53, 138, 255, 35%);
+      }
+    }
+  }
+}
+
+.skillFilters {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  padding: 0 24px 12px;
+
+  button {
+    cursor: pointer;
+    height: 30px;
+    padding: 0 12px;
+    font-size: 13px;
+    color: var(--coz-fg-secondary, rgba(32, 41, 69, 62%));
+    background: var(--coz-bg-max, #fff);
+    border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
+    border-radius: 8px;
+    transition: all 0.14s ease-out;
+
+    &:hover {
+      color: var(--coz-fg-hglt, rgb(53, 138, 255));
+      border-color: var(--coz-stroke-hglt, rgb(53, 138, 255));
+    }
+  }
+}
+
+.skillFilterActive {
+  color: var(--coz-fg-hglt, rgb(53, 138, 255)) !important;
+  background: rgba(53, 138, 255, 10%) !important;
+  border-color: transparent !important;
+}
+
+.skillList {
+  scrollbar-width: thin;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 16px 12px;
+}
+
+.skillListItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  transition: background 0.14s ease-out;
+
+  &:hover {
+    background: var(--coz-bg-secondary, rgb(240, 240, 247));
+  }
+}
+
+.skillAvatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, rgb(124, 108, 255), rgb(167, 0, 250));
+  border-radius: 10px;
+}
+
+.skillInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.skillNameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skillName {
+  max-width: 360px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--coz-fg, rgba(15, 21, 40, 82%));
+}
+
+.skillCheck {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  color: rgb(0, 178, 60);
+}
+
+.skillDesc {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--coz-fg-secondary, rgba(32, 41, 69, 62%));
+}
+
+.skillDate {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--coz-fg-dim, rgba(55, 67, 106, 38%));
+}
+
+.skillAction {
+  flex: none;
+  margin-top: 2px;
+}
+
+.skillLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+}
+
+.skillModalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: var(--coz-bg-max, #fff);
+}
+
+.skillModalCount {
+  font-size: 12px;
+  color: var(--coz-fg-dim, rgba(55, 67, 106, 38%));
+
+  span {
+    color: var(--coz-fg, rgba(15, 21, 40, 82%));
+    font-weight: 600;
+  }
+}
+
+.skillModalActions {
+  display: flex;
+  gap: 10px;
+}

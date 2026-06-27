@@ -255,6 +255,7 @@ describe('创建消息', () => {
               size: 1234,
             },
             uri: 'file://file.pdf',
+            url: 'https://static.example.com/file.pdf',
           },
           {
             type: ContentType.Image,
@@ -267,6 +268,7 @@ describe('创建消息', () => {
             width: 10,
             height: 10,
             uri: 'file://image.png',
+            url: 'https://static.example.com/image.png',
           },
         ],
         mention_list: [],
@@ -287,7 +289,7 @@ describe('创建消息', () => {
             file_name: 'file.pdf',
             file_type: 'pdf',
             file_size: 1234,
-            file_url: '',
+            file_url: 'https://static.example.com/file.pdf',
           },
         },
         {
@@ -295,12 +297,12 @@ describe('创建消息', () => {
           image: {
             key: 'file://image.png',
             image_thumb: {
-              url: 'mocked URL',
+              url: 'https://static.example.com/image.png',
               width: 10,
               height: 10,
             },
             image_ori: {
-              url: 'mocked URL',
+              url: 'https://static.example.com/image.png',
               width: 10,
               height: 10,
             },

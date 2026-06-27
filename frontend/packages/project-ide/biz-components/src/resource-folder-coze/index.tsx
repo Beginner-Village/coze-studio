@@ -27,3 +27,10 @@ export {
   CustomResourceFolderShortcutService,
 } from './plugins';
 export { VARIABLE_RESOURCE_ID } from './constants';
+export {
+  createFolderedResourceTree,
+  getBackendFolderId,
+  getResourceFolderId,
+  ROOT_FOLDER_ID,
+  WORKFLOW_FOLDER_RESOURCE_TYPE,
+} from './folder-tree';

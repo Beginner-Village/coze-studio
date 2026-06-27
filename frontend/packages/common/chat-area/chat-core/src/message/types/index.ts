@@ -366,12 +366,14 @@ export interface TextAndFileMixMessagePropsFilePayload {
   type: ContentType.File;
   file: File;
   uri: string;
+  url?: string;
 }
 
 export interface TextAndFileMixMessagePropsImagePayload {
   type: ContentType.Image;
   file: File;
   uri: string;
+  url?: string;
   width: number;
   height: number;
 }

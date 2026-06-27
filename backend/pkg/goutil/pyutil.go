@@ -18,6 +18,7 @@ package goutil
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
@@ -37,8 +38,22 @@ func GetPython3Path() string {
 	cwd, err := os.Getwd()
 	if err != nil {
 		logs.Warnf("[GetPython3Path] Failed to get current working directory: %v", err)
-		return ".venv/bin/python3"
+		return pythonExecutableFallback()
 	}
 
-	return filepath.Join(cwd, ".venv/bin/python3")
+	venvPython := filepath.Join(cwd, ".venv/bin/python3")
+	if _, statErr := os.Stat(venvPython); statErr == nil {
+		return venvPython
+	}
+	logs.Warnf("[GetPython3Path] venv python missing at %s, fallback to system python3", venvPython)
+	return pythonExecutableFallback()
+}
+
+// pythonExecutableFallback 在项目内 .venv 缺失时退回系统 python3,
+// 避免容器重建后 .venv 丢失导致 code runner / 文档解析报"解释器不存在"。
+func pythonExecutableFallback() string {
+	if p, err := exec.LookPath("python3"); err == nil {
+		return p
+	}
+	return "python3"
 }

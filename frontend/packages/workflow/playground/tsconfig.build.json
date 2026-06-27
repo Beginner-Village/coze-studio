@@ -45,6 +45,12 @@
       "path": "../../agent-ide/bot-plugin/tools/tsconfig.build.json"
     },
     {
+      "path": "../../agent-ide/chat-area-provider-adapter/tsconfig.build.json"
+    },
+    {
+      "path": "../../agent-ide/entry/tsconfig.build.json"
+    },
+    {
       "path": "../../agent-ide/model-manager/tsconfig.build.json"
     },
     {
@@ -124,6 +130,9 @@
     },
     {
       "path": "../base/tsconfig.build.json"
+    },
+    {
+      "path": "../../common/chat-area/chat-area/tsconfig.build.json"
     },
     {
       "path": "../../common/chat-area/chat-uikit/tsconfig.build.json"

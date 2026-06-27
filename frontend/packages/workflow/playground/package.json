@@ -38,6 +38,8 @@
     "@coze-agent-ide/bot-plugin": "workspace:*",
     "@coze-agent-ide/bot-plugin-export": "workspace:*",
     "@coze-agent-ide/bot-plugin-tools": "workspace:*",
+    "@coze-agent-ide/bot-creator": "workspace:*",
+    "@coze-agent-ide/chat-area-provider-adapter": "workspace:*",
     "@coze-agent-ide/model-manager": "workspace:*",
     "@coze-agent-ide/plugin-risk-warning": "workspace:*",
     "@coze-agent-ide/plugin-shared": "workspace:*",
@@ -66,6 +68,7 @@
     "@coze-arch/responsive-kit": "workspace:*",
     "@coze-arch/web-context": "workspace:*",
     "@coze-common/biz-tooltip-ui": "workspace:*",
+    "@coze-common/chat-area": "workspace:*",
     "@coze-common/chat-uikit": "workspace:*",
     "@coze-common/editor-plugins": "workspace:*",
     "@coze-common/json-viewer": "workspace:*",
@@ -214,4 +217,3 @@
   },
   "// deps": "debug@^4.3.4 为脚本自动补齐，请勿改动"
 }
-

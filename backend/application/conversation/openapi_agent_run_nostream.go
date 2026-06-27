@@ -26,44 +26,42 @@ import (
 	"github.com/cloudwego/eino/schema"
 
 	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/run"
-	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
 	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/entity"
 	convEntity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/conversation/entity"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
-	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 )
 
 // ChatV3NoStreamResponse 非流式响应结构
 type ChatV3NoStreamResponse struct {
-	Code           int                       `json:"code"`
-	Msg            string                    `json:"msg"`
-	ConversationID string                    `json:"conversation_id"`
-	BotID          string                    `json:"bot_id"`
-	ChatID         string                    `json:"chat_id"`       // run_id
-	Status         string                    `json:"status"`        // created, in_progress, completed, failed
+	Code           int                        `json:"code"`
+	Msg            string                     `json:"msg"`
+	ConversationID string                     `json:"conversation_id"`
+	BotID          string                     `json:"bot_id"`
+	ChatID         string                     `json:"chat_id"` // run_id
+	Status         string                     `json:"status"`  // created, in_progress, completed, failed
 	Messages       []*run.ChatV3MessageDetail `json:"messages"`
-	Usage          *ChatV3Usage              `json:"usage,omitempty"`
+	Usage          *ChatV3Usage               `json:"usage,omitempty"`
 }
 
 // ChatV3Usage token 使用统计
 type ChatV3Usage struct {
-	TokenCount       int `json:"token_count"`
-	OutputCount      int `json:"output_count"`
-	InputCount       int `json:"input_count"`
+	TokenCount  int `json:"token_count"`
+	OutputCount int `json:"output_count"`
+	InputCount  int `json:"input_count"`
 }
 
 // OpenapiAgentRunNoStream 非流式 Agent 运行
 func (a *OpenapiAgentRunApplication) OpenapiAgentRunNoStream(ctx context.Context, ar *run.ChatV3Request) (*ChatV3NoStreamResponse, error) {
-	apiKeyInfo := ctxutil.GetApiAuthFromCtx(ctx)
-	creatorID := apiKeyInfo.UserID
-	connectorID := apiKeyInfo.ConnectorID
-
-	if ptr.From(ar.ConnectorID) == consts.WebSDKConnectorID {
-		connectorID = ptr.From(ar.ConnectorID)
+	actor, actorErr := resolveOpenapiRunActor(ctx, ar.ConnectorID, ar.ExtraParams)
+	if actorErr != nil {
+		logs.CtxErrorf(ctx, "resolveOpenapiRunActor err:%v", actorErr)
+		return nil, actorErr
 	}
+	creatorID := actor.creatorID
+	connectorID := actor.connectorID
 
-	agentInfo, caErr := a.checkAgent(ctx, ar, connectorID)
+	agentInfo, caErr := a.checkAgent(ctx, ar, connectorID, actor.isDraft)
 	if caErr != nil {
 		logs.CtxErrorf(ctx, "checkAgent err:%v", caErr)
 		return nil, caErr
@@ -76,7 +74,7 @@ func (a *OpenapiAgentRunApplication) OpenapiAgentRunNoStream(ctx context.Context
 	}
 
 	spaceID := agentInfo.SpaceID
-	arr, err := a.buildAgentRunRequest(ctx, ar, connectorID, spaceID, conversationData, agentInfo)
+	arr, err := a.buildAgentRunRequest(ctx, ar, connectorID, spaceID, conversationData, agentInfo, actor.isDraft)
 	if err != nil {
 		logs.CtxErrorf(ctx, "buildAgentRunRequest err:%v", err)
 		return nil, err

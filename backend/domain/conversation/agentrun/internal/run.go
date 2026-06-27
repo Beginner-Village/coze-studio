@@ -30,6 +30,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/repository"
 	msgEntity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/message/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
@@ -48,6 +49,7 @@ type AgentRuntime struct {
 	RunProcess    *RunProcess
 	RunRecordRepo repository.RunRecordRepo
 	ImagexClient  imagex.ImageX
+	StorageClient storage.Storage
 	MessageEvent  *Event
 
 	// 可观测性：记录最终输出内容，供 trace span 使用
@@ -161,9 +163,9 @@ func (art *AgentRuntime) Run(ctx context.Context) (err error) {
 	art.SetQuestionMsgID(input.ID)
 
 	if art.GetAgentInfo().BotMode == bot_common.BotMode_WorkflowMode {
-		err = art.ChatflowRun(ctx, art.ImagexClient)
+		err = art.ChatflowRun(ctx, art.ImagexClient, art.StorageClient)
 	} else {
-		err = art.AgentStreamExecute(ctx, art.ImagexClient)
+		err = art.AgentStreamExecute(ctx, art.ImagexClient, art.StorageClient)
 	}
 	return
 }

@@ -29,6 +29,7 @@ import {
 import {
   type ResourceFolderProps,
   type ResourceType,
+  ResourceTypeEnum,
   useProjectId,
   useSpaceId,
 } from '@coze-project-ide/framework';
@@ -36,14 +37,17 @@ import {
   BizResourceContextMenuBtnType,
   type BizResourceType,
   BizResourceTypeEnum,
+  getBackendFolderId,
+  ROOT_FOLDER_ID,
   type ResourceFolderCozeProps,
   useOpenResource,
   usePrimarySidebarStore,
+  WORKFLOW_FOLDER_RESOURCE_TYPE,
 } from '@coze-project-ide/biz-components';
 import { I18n } from '@coze-arch/i18n';
 import { WorkflowMode } from '@coze-arch/bot-api/workflow_api';
 import { ResourceCopyScene } from '@coze-arch/bot-api/plugin_develop';
-import { workflowApi } from '@coze-arch/bot-api';
+import { folderApi, workflowApi } from '@coze-arch/bot-api';
 import { Toast } from '@coze-arch/coze-design';
 
 import { WORKFLOW_SUB_TYPE_ICON_MAP } from '@/constants';
@@ -58,6 +62,8 @@ type UseWorkflowResourceReturn = Pick<
   | 'onCustomCreate'
   | 'onDelete'
   | 'onChangeName'
+  | 'onCreate'
+  | 'onDrag'
   | 'onAction'
   | 'createResourceConfig'
   | 'iconRender'
@@ -107,10 +113,42 @@ export const useWorkflowResource = (): UseWorkflowResourceReturn => {
     openCreateModal(subType as WorkflowMode);
   };
 
+  const onCreate: ResourceFolderCozeProps['onCreate'] = useCallback(
+    async createEvent => {
+      if (createEvent.type !== ResourceTypeEnum.Folder) {
+        return;
+      }
+      try {
+        const parentId = getBackendFolderId(createEvent.parentId);
+        await folderApi.createFolder({
+          space_id: spaceId,
+          parent_id: parentId === ROOT_FOLDER_ID ? undefined : parentId,
+          name: createEvent.name,
+        });
+        Toast.success(I18n.t('Save_success'));
+      } catch (e) {
+        console.log('[ResourceFolder]create workflow folder error>>>', e);
+        Toast.error(I18n.t('Create_failed'));
+      } finally {
+        refetch();
+      }
+    },
+    [refetch, spaceId],
+  );
+
   const onChangeName: ResourceFolderProps['onChangeName'] = useCallback(
     async changeNameEvent => {
       try {
         console.log('[ResourceFolder]on change name>>>', changeNameEvent);
+        if (changeNameEvent.type === ResourceTypeEnum.Folder) {
+          await folderApi.updateFolder({
+            space_id: spaceId,
+            folder_id: getBackendFolderId(changeNameEvent.id),
+            name: changeNameEvent.name,
+            description: changeNameEvent.resource?.description,
+          });
+          return;
+        }
         const resp = await workflowApi.UpdateWorkflowMeta({
           space_id: spaceId,
           workflow_id: changeNameEvent.id,
@@ -157,12 +195,26 @@ export const useWorkflowResource = (): UseWorkflowResourceReturn => {
       try {
         console.log('[ResourceFolder]on delete>>>', resources);
         console.log('delete start>>>', Date.now());
-        const resp = await workflowApi.BatchDeleteWorkflow({
-          space_id: spaceId,
-          workflow_id_list: resources
-            .filter(r => r.type === BizResourceTypeEnum.Workflow)
-            .map(r => r.id),
-        });
+        const workflowIds = resources
+          .filter(r => r.type === BizResourceTypeEnum.Workflow)
+          .map(r => r.id);
+        const folderIds = resources
+          .filter(r => r.type === ResourceTypeEnum.Folder)
+          .map(r => getBackendFolderId(r.id));
+        const resp = await Promise.all([
+          workflowIds.length
+            ? workflowApi.BatchDeleteWorkflow({
+                space_id: spaceId,
+                workflow_id_list: workflowIds,
+              })
+            : null,
+          ...folderIds.map(folderId =>
+            folderApi.deleteFolder({
+              space_id: spaceId,
+              folder_id: folderId,
+            }),
+          ),
+        ]);
         console.log('delete end>>>', Date.now());
         Toast.success(I18n.t('Delete_success'));
         refetch().then(() => console.log('refetch end>>>', Date.now()));
@@ -170,6 +222,36 @@ export const useWorkflowResource = (): UseWorkflowResourceReturn => {
       } catch (e) {
         console.log('[ResourceFolder]delete workflow error>>>', e);
         Toast.error(I18n.t('Delete_failed'));
+      }
+    },
+    [refetch, spaceId],
+  );
+
+  const onDrag: ResourceFolderCozeProps['onDrag'] = useCallback(
+    async ({ errorMsg, resourceList, toId }) => {
+      if (errorMsg) {
+        Toast.error(errorMsg);
+        return;
+      }
+      const workflowIds = (resourceList || [])
+        .filter(resource => resource.type === BizResourceTypeEnum.Workflow)
+        .map(resource => resource.id);
+      if (!workflowIds.length) {
+        return;
+      }
+      try {
+        await folderApi.moveResourcesToFolder({
+          space_id: spaceId,
+          folder_id: getBackendFolderId(toId),
+          resource_ids: workflowIds,
+          resource_type: WORKFLOW_FOLDER_RESOURCE_TYPE,
+        });
+        Toast.success(I18n.t('Update_success'));
+      } catch (e) {
+        console.log('[ResourceFolder]move workflow folder error>>>', e);
+        Toast.error(I18n.t('Update_failed'));
+      } finally {
+        refetch();
       }
     },
     [refetch, spaceId],
@@ -265,6 +347,8 @@ export const useWorkflowResource = (): UseWorkflowResourceReturn => {
 
   return {
     onChangeName,
+    onCreate,
+    onDrag,
     onAction,
     onDelete,
     onCustomCreate,

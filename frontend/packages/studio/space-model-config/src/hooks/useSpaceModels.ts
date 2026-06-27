@@ -53,7 +53,12 @@ export const useSpaceModels = (spaceId?: string): UseSpaceModelsResult => {
           name: model.name || '',
           description: model.description ? Object.keys(model.description).length > 0 ? 
             model.description[Object.keys(model.description)[0]] || '' : '' : '',
-          context_length: model.meta?.capability?.max_tokens || 0,
+          // 上下文窗口取 input_tokens(输入上限);旧代码误用 max_tokens(输出上限)。
+          // 优先 input_tokens,缺省回退 max_tokens 仅为兼容旧数据展示。
+          context_length:
+            model.meta?.capability?.input_tokens ||
+            model.meta?.capability?.max_tokens ||
+            0,
           icon_uri: model.icon_uri || '',
           protocol: model.meta?.protocol || '',
           custom_config: {},

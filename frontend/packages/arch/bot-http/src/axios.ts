@@ -18,6 +18,7 @@ import axios, { type AxiosResponse, isAxiosError } from 'axios';
 import { redirect } from '@coze-arch/web-context';
 import { logger } from '@coze-arch/logger';
 
+import { getLocalizedErrorMessage } from './user-facing-error';
 import { emitAPIErrorEvent, APIErrorEvent } from './eventbus';
 import { ApiError, reportHttpError, ReportEventNames } from './api-error';
 
@@ -66,7 +67,11 @@ axiosInstance.interceptors.response.use(
     const { code, msg, message } = data;
 
     if (code !== 0) {
-      const apiError = new ApiError(String(code), message ?? msg, response);
+      const apiError = new ApiError(
+        String(code),
+        getLocalizedErrorMessage(message ?? msg),
+        response,
+      );
 
       switch (code) {
         case ErrorCodes.NOT_LOGIN: {
@@ -113,6 +118,7 @@ axiosInstance.interceptors.response.use(
   error => {
     if (isAxiosError(error)) {
       reportHttpError(ReportEventNames.NetworkError, error);
+      error.message = getLocalizedErrorMessage(error.message) ?? error.message;
       if (error.response?.status === HTTP_STATUS_COE_UNAUTHORIZED) {
         // 401 Identity Expired & No Identity
         if (typeof error.response.data === 'object') {

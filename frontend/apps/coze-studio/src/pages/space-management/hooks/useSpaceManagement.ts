@@ -16,7 +16,17 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { space_management, space_export_import } from '@coze-studio/api-schema';
-import { SpaceInfo, SpaceMemberInfo, SpaceType, ImportPreviewData } from '../types';
+import { getLocalizedErrorMessage } from '@coze-arch/bot-api';
+
+import type {
+  SpaceInfo,
+  SpaceMemberInfo,
+  SpaceType,
+  ImportPreviewData,
+} from '../types';
+
+const getDisplayErrorMessage = (message?: string) =>
+  getLocalizedErrorMessage(message) || message || '未知错误';
 
 export function useSpaceManagement() {
   const [spaceList, setSpaceList] = useState<SpaceInfo[]>([]);
@@ -140,7 +150,7 @@ export function useSpaceManagement() {
         document.body.removeChild(link);
         alert(`导出成功！\n\n统计信息：\n- 智能体: ${response.data.statistics.agents}\n- 插件: ${response.data.statistics.plugins}\n- 工作流: ${response.data.statistics.workflows}\n- 变量: ${response.data.statistics.variables}`);
       } else {
-        alert(`导出失败: ${response.msg}`);
+        alert(`导出失败: ${getDisplayErrorMessage(response.msg)}`);
       }
     } catch (error: any) {
       if (error.code === '200' || error.code === 200 || error.code === '0' || error.code === 0) {
@@ -157,7 +167,7 @@ export function useSpaceManagement() {
           return;
         }
       }
-      alert(`导出失败: ${error.message || '未知错误'}`);
+      alert(`导出失败: ${getDisplayErrorMessage(error.message)}`);
     } finally {
       setExportingSpaceId(null);
     }
@@ -204,7 +214,7 @@ export function useSpaceManagement() {
       if (response.code === 0 || response.code === 200) {
         setImportPreviewData(response.data as ImportPreviewData);
       } else {
-        setImportError(`预览失败: ${response.msg}`);
+        setImportError(`预览失败: ${getDisplayErrorMessage(response.msg)}`);
       }
     } catch (error: any) {
       if (error.code === '200' || error.code === 200 || error.code === '0' || error.code === 0) {
@@ -214,7 +224,7 @@ export function useSpaceManagement() {
           return;
         }
       }
-      setImportError(`预览失败: ${error.message || '未知错误'}`);
+      setImportError(`预览失败: ${getDisplayErrorMessage(error.message)}`);
     } finally {
       setImportLoading(false);
     }
@@ -239,7 +249,7 @@ export function useSpaceManagement() {
         setShowImportModal(false);
         setImportPreviewData(null);
       } else {
-        setImportError(`导入失败: ${response.msg}`);
+        setImportError(`导入失败: ${getDisplayErrorMessage(response.msg)}`);
       }
     } catch (error: any) {
       if (error.code === '200' || error.code === 200 || error.code === '0' || error.code === 0) {
@@ -252,7 +262,7 @@ export function useSpaceManagement() {
           return;
         }
       }
-      setImportError(`导入失败: ${error.message || '未知错误'}`);
+      setImportError(`导入失败: ${getDisplayErrorMessage(error.message)}`);
     } finally {
       setImportLoading(false);
     }

@@ -89,6 +89,18 @@ describe('axiosInstance', () => {
     );
   });
 
+  it('should localize known backend api error messages', async () => {
+    mock.onGet('/register').reply(200, {
+      code: 700000009,
+      msg: 'password does not meet the security policy: must contain at least one uppercase letter',
+    });
+
+    await expect(axiosInstance.get('/register')).rejects.toMatchObject({
+      msg: '密码必须包含至少一个大写字母',
+      message: '密码必须包含至少一个大写字母',
+    });
+  });
+
   it('should emit special events when not login', async () => {
     mock.onGet('/users').reply(200, {
       // 700012006 => not login

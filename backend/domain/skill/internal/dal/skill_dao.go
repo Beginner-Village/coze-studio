@@ -34,20 +34,28 @@ const tableNameSkill = "skill"
 
 // skillPO is the persistent object for skill table.
 type skillPO struct {
-	ID          int64          `gorm:"column:id;primaryKey;autoIncrement:true"`
-	SkillID     int64          `gorm:"column:skill_id;not null"`
-	SpaceID     int64          `gorm:"column:space_id;not null"`
-	Name        string         `gorm:"column:name;not null"`
-	Description *string        `gorm:"column:description"`
-	Prompt      *string        `gorm:"column:prompt"`
-	Files       *string        `gorm:"column:files"`
-	IconURI     string         `gorm:"column:icon_uri;not null"`
-	CreatorID   int64          `gorm:"column:creator_id;not null"`
-	Status      int8           `gorm:"column:status;not null;default:1"`
-	Version     int64          `gorm:"column:version;not null;default:1"`
-	CreatedAt   int64          `gorm:"column:created_at;not null"`
-	UpdatedAt   int64          `gorm:"column:updated_at;not null"`
-	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at"`
+	ID               int64          `gorm:"column:id;primaryKey;autoIncrement:true"`
+	SkillID          int64          `gorm:"column:skill_id;not null"`
+	SpaceID          int64          `gorm:"column:space_id;not null"`
+	Name             string         `gorm:"column:name;not null"`
+	Description      *string        `gorm:"column:description"`
+	Prompt           *string        `gorm:"column:prompt"`
+	Files            *string        `gorm:"column:files"`
+	IconURI          string         `gorm:"column:icon_uri;not null"`
+	CreatorID        int64          `gorm:"column:creator_id;not null"`
+	Status           int8           `gorm:"column:status;not null;default:1"`
+	Version          int64          `gorm:"column:version;not null;default:1"`
+	PublishScope     int8           `gorm:"column:publish_scope;not null;default:1"`
+	PublishedVersion int64          `gorm:"column:published_version;not null;default:0"`
+	PublishedAt      int64          `gorm:"column:published_at;not null;default:0"`
+	PublishedBy      int64          `gorm:"column:published_by;not null;default:0"`
+	ReviewStatus     int8           `gorm:"column:review_status;not null;default:2"`
+	ReviewNote       *string        `gorm:"column:review_note"`
+	ReviewerID       int64          `gorm:"column:reviewer_id;not null;default:0"`
+	ReviewedAt       int64          `gorm:"column:reviewed_at;not null;default:0"`
+	CreatedAt        int64          `gorm:"column:created_at;not null"`
+	UpdatedAt        int64          `gorm:"column:updated_at;not null"`
+	DeletedAt        gorm.DeletedAt `gorm:"column:deleted_at"`
 }
 
 func (skillPO) TableName() string {
@@ -79,6 +87,9 @@ func (dao *SkillDAO) Create(ctx context.Context, skill *entity.Skill) (int64, er
 	po.UpdatedAt = now
 
 	if err := dao.db.WithContext(ctx).Create(po).Error; err != nil {
+		return 0, errorx.WrapByCode(err, errno.ErrSkillCreateCode)
+	}
+	if err := dao.createVersionFromSkill(ctx, po, now); err != nil {
 		return 0, errorx.WrapByCode(err, errno.ErrSkillCreateCode)
 	}
 	return id, nil
@@ -127,6 +138,11 @@ func (dao *SkillDAO) Update(ctx context.Context, skill *entity.Skill) error {
 	if skill.Prompt != "" {
 		updates["prompt"] = skill.Prompt
 	}
+	if skill.Files != nil {
+		if b, err := json.Marshal(skill.Files); err == nil {
+			updates["files"] = string(b)
+		}
+	}
 	if skill.IconURI != "" {
 		updates["icon_uri"] = skill.IconURI
 	}
@@ -157,6 +173,79 @@ func (dao *SkillDAO) Delete(ctx context.Context, skillID int64) error {
 		return errorx.WrapByCode(err, errno.ErrSkillDeleteCode)
 	}
 	return nil
+}
+
+func (dao *SkillDAO) Publish(ctx context.Context, skillID int64, scope, reviewStatus int8, version, publisherID, publishedAt int64) error {
+	err := dao.db.WithContext(ctx).Model(&skillPO{}).
+		Where("skill_id = ? AND status = ?", skillID, entity.SkillStatusActive).
+		Updates(map[string]interface{}{
+			"publish_scope":     scope,
+			"published_version": version,
+			"published_at":      publishedAt,
+			"published_by":      publisherID,
+			"review_status":     reviewStatus,
+			"updated_at":        time.Now().UnixMilli(),
+		}).Error
+	if err != nil {
+		return errorx.WrapByCode(err, errno.ErrSkillUpdateCode)
+	}
+	return nil
+}
+
+// SetReviewStatus records a platform review decision for a skill.
+func (dao *SkillDAO) SetReviewStatus(ctx context.Context, skillID int64, reviewStatus int8, note string, reviewerID, reviewedAt int64) error {
+	err := dao.db.WithContext(ctx).Model(&skillPO{}).
+		Where("skill_id = ? AND status = ?", skillID, entity.SkillStatusActive).
+		Updates(map[string]interface{}{
+			"review_status": reviewStatus,
+			"review_note":   note,
+			"reviewer_id":   reviewerID,
+			"reviewed_at":   reviewedAt,
+			"updated_at":    time.Now().UnixMilli(),
+		}).Error
+	if err != nil {
+		return errorx.WrapByCode(err, errno.ErrSkillUpdateCode)
+	}
+	return nil
+}
+
+// ListPendingReviews lists global-scope skills awaiting platform review.
+func (dao *SkillDAO) ListPendingReviews(ctx context.Context, req *entity.PendingReviewListRequest) (*entity.ListResponse, error) {
+	query := dao.db.WithContext(ctx).Model(&skillPO{}).
+		Where("status = ? AND publish_scope = ? AND review_status = ?",
+			entity.SkillStatusActive, entity.SkillPublishScopeGlobal, entity.SkillReviewStatusPending)
+	if req.SpaceID > 0 {
+		query = query.Where("space_id = ?", req.SpaceID)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrSkillListCode)
+	}
+
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	pageSize := req.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
+	var pos []skillPO
+	err := query.Order("published_at DESC, updated_at DESC").
+		Offset(int((page - 1) * pageSize)).
+		Limit(int(pageSize)).
+		Find(&pos).Error
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrSkillListCode)
+	}
+
+	skills := make([]*entity.Skill, 0, len(pos))
+	for _, po := range pos {
+		skills = append(skills, dao.po2do(&po))
+	}
+	return &entity.ListResponse{Skills: skills, Total: int32(total)}, nil
 }
 
 func (dao *SkillDAO) List(ctx context.Context, req *entity.ListRequest) (*entity.ListResponse, error) {
@@ -199,6 +288,72 @@ func (dao *SkillDAO) List(ctx context.Context, req *entity.ListRequest) (*entity
 	}, nil
 }
 
+func (dao *SkillDAO) ListMarketplace(ctx context.Context, req *entity.MarketplaceListRequest) (*entity.ListResponse, error) {
+	query := dao.db.WithContext(ctx).Model(&skillPO{}).
+		Where("status = ?", entity.SkillStatusActive)
+
+	switch req.Scope {
+	case entity.SkillPublishScopeGlobal:
+		// Global marketplace only surfaces approved skills.
+		query = query.Where("publish_scope = ? AND review_status = ?",
+			entity.SkillPublishScopeGlobal, entity.SkillReviewStatusApproved)
+	case entity.SkillPublishScopeSpace:
+		query = query.Where("publish_scope = ? AND space_id = ?", entity.SkillPublishScopeSpace, req.SpaceID)
+	default:
+		if req.SpaceID > 0 {
+			// Space-scoped skills are self-governed (no review); global must be approved.
+			query = query.Where(
+				"((publish_scope = ? AND review_status = ?) OR (publish_scope = ? AND space_id = ?))",
+				entity.SkillPublishScopeGlobal,
+				entity.SkillReviewStatusApproved,
+				entity.SkillPublishScopeSpace,
+				req.SpaceID,
+			)
+		} else {
+			query = query.Where("publish_scope = ? AND review_status = ?",
+				entity.SkillPublishScopeGlobal, entity.SkillReviewStatusApproved)
+		}
+	}
+
+	if req.Keyword != "" {
+		like := "%" + req.Keyword + "%"
+		query = query.Where("(name LIKE ? OR description LIKE ?)", like, like)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrSkillListCode)
+	}
+
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	pageSize := req.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
+	var pos []skillPO
+	err := query.Order("published_at DESC, updated_at DESC").
+		Offset(int((page - 1) * pageSize)).
+		Limit(int(pageSize)).
+		Find(&pos).Error
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrSkillListCode)
+	}
+
+	skills := make([]*entity.Skill, 0, len(pos))
+	for _, po := range pos {
+		skills = append(skills, dao.po2do(&po))
+	}
+
+	return &entity.ListResponse{
+		Skills: skills,
+		Total:  int32(total),
+	}, nil
+}
+
 func (dao *SkillDAO) MGet(ctx context.Context, skillIDs []int64) ([]*entity.Skill, error) {
 	if len(skillIDs) == 0 {
 		return nil, nil
@@ -222,15 +377,25 @@ func (dao *SkillDAO) MGet(ctx context.Context, skillIDs []int64) ([]*entity.Skil
 
 func (dao *SkillDAO) do2po(do *entity.Skill) *skillPO {
 	po := &skillPO{
-		SkillID:   do.SkillID,
-		SpaceID:   do.SpaceID,
-		Name:      do.Name,
-		IconURI:   do.IconURI,
-		CreatorID: do.CreatorID,
-		Status:    do.Status,
-		Version:   do.Version,
-		CreatedAt: do.CreatedAt,
-		UpdatedAt: do.UpdatedAt,
+		SkillID:          do.SkillID,
+		SpaceID:          do.SpaceID,
+		Name:             do.Name,
+		IconURI:          do.IconURI,
+		CreatorID:        do.CreatorID,
+		Status:           do.Status,
+		Version:          do.Version,
+		PublishScope:     do.PublishScope,
+		PublishedVersion: do.PublishedVersion,
+		PublishedAt:      do.PublishedAt,
+		PublishedBy:      do.PublishedBy,
+		ReviewStatus:     do.ReviewStatus,
+		ReviewerID:       do.ReviewerID,
+		ReviewedAt:       do.ReviewedAt,
+		CreatedAt:        do.CreatedAt,
+		UpdatedAt:        do.UpdatedAt,
+	}
+	if do.ReviewNote != "" {
+		po.ReviewNote = &do.ReviewNote
 	}
 	if do.Description != "" {
 		po.Description = &do.Description
@@ -238,7 +403,7 @@ func (dao *SkillDAO) do2po(do *entity.Skill) *skillPO {
 	if do.Prompt != "" {
 		po.Prompt = &do.Prompt
 	}
-	if len(do.Files) > 0 {
+	if do.Files != nil {
 		if b, err := json.Marshal(do.Files); err == nil {
 			s := string(b)
 			po.Files = &s
@@ -249,15 +414,25 @@ func (dao *SkillDAO) do2po(do *entity.Skill) *skillPO {
 
 func (dao *SkillDAO) po2do(po *skillPO) *entity.Skill {
 	do := &entity.Skill{
-		SkillID:   po.SkillID,
-		SpaceID:   po.SpaceID,
-		Name:      po.Name,
-		IconURI:   po.IconURI,
-		CreatorID: po.CreatorID,
-		Status:    po.Status,
-		Version:   po.Version,
-		CreatedAt: po.CreatedAt,
-		UpdatedAt: po.UpdatedAt,
+		SkillID:          po.SkillID,
+		SpaceID:          po.SpaceID,
+		Name:             po.Name,
+		IconURI:          po.IconURI,
+		CreatorID:        po.CreatorID,
+		Status:           po.Status,
+		Version:          po.Version,
+		PublishScope:     po.PublishScope,
+		PublishedVersion: po.PublishedVersion,
+		PublishedAt:      po.PublishedAt,
+		PublishedBy:      po.PublishedBy,
+		ReviewStatus:     po.ReviewStatus,
+		ReviewerID:       po.ReviewerID,
+		ReviewedAt:       po.ReviewedAt,
+		CreatedAt:        po.CreatedAt,
+		UpdatedAt:        po.UpdatedAt,
+	}
+	if po.ReviewNote != nil {
+		do.ReviewNote = *po.ReviewNote
 	}
 	if po.Description != nil {
 		do.Description = *po.Description

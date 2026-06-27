@@ -174,7 +174,7 @@ export const useCreateOrUpdateAgent = ({
           title={
             mode === 'add'
               ? agentType === 'super'
-                ? '创建超级智能体'
+                ? '创建 FinMallClaw'
                 : I18n.t('bot_list_create')
               : I18n.t('bot_edit_title')
           }

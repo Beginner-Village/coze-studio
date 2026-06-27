@@ -155,7 +155,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({
         assetSrc={AgentAsset}
         title={
           <span className="flex gap-x-4px items-center">
-            超级智能体
+            FinMallClaw
             <Badge count="Beta" type="alt" />
           </span>
         }

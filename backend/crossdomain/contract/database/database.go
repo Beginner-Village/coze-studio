@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/database"
+	service "github.com/ynet-dev/ynet-studio/backend/domain/memory/database/service"
 )
 
 //go:generate  mockgen -destination databasemock/database_mock.go --package databasemock -source database.go
@@ -31,6 +32,9 @@ type Database interface {
 	UnBindDatabase(ctx context.Context, req *database.UnBindDatabaseToAgentRequest) error
 	MGetDatabase(ctx context.Context, req *database.MGetDatabaseRequest) (*database.MGetDatabaseResponse, error)
 	GetAllDatabaseByAppID(ctx context.Context, req *database.GetAllDatabaseByAppIDRequest) (*database.GetAllDatabaseByAppIDResponse, error)
+	ListDatabase(ctx context.Context, req *service.ListDatabaseRequest) (*service.ListDatabaseResponse, error)
+	CreateDatabase(ctx context.Context, req *service.CreateDatabaseRequest) (*service.CreateDatabaseResponse, error)
+	AddDatabaseRecord(ctx context.Context, req *service.AddDatabaseRecordRequest) error
 
 	Execute(ctx context.Context, request *database.CustomSQLRequest) (*database.Response, error)
 	Query(ctx context.Context, request *database.QueryRequest) (*database.Response, error)

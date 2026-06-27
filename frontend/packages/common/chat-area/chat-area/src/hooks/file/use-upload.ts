@@ -56,6 +56,7 @@ const useUpload = () => {
           }
 
           data.uri = uri;
+          data.url = uploadResult.Url ?? null;
 
           if (data.fileType !== FileType.Image) {
             return;

@@ -105,10 +105,18 @@ func (s *SingleAgentApplicationService) UpdateSingleAgentDraft(ctx context.Conte
 		return nil, err
 	}
 
-	// 虚拟员工实例是产品模板的只读 shadow：不允许在此修改配置，以防消费者扩权
-	// 或改变冻结的能力快照（SuperAgentToolConfig）。
+	// 虚拟员工实例是产品模板的只读 shadow：不允许修改配置（防消费者扩权或改动
+	// 冻结的能力快照）。但前端编辑器在切换/失焦时会自动保存，若在此报错会弹出
+	// 「read-only shadow」错误 toast。故这里静默忽略更新——返回成功但不持久化
+	// （HasChange=false），既不改 shadow、也不打扰用户。
 	if currentAgentInfo.SourceProductID != 0 {
-		return nil, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("msg", "read-only shadow: cannot update config of a virtual employee instance (SourceProductID != 0)"))
+		return &playground.UpdateDraftBotInfoAgwResponse{
+			Data: &playground.UpdateDraftBotInfoAgwData{
+				HasChange:    ptr.Of(false),
+				CheckNotPass: false,
+				Branch:       playground.BranchPtr(playground.Branch_PersonalDraft),
+			},
+		}, nil
 	}
 
 	userID := ctxutil.MustGetUIDFromCtx(ctx)

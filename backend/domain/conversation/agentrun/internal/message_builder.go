@@ -17,8 +17,12 @@ package internal
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"mime"
+	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -29,6 +33,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
 	crossagent "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/agent"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
 
 	crossmessage "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/message"
 	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
@@ -433,7 +438,7 @@ func historyPairs(historyMsg []*message.Message) []*message.Message {
 	return historyAfterPairs
 }
 
-func transMessageToSchemaMessage(ctx context.Context, msgs []*message.Message, imagexClient imagex.ImageX) []*schema.Message {
+func transMessageToSchemaMessage(ctx context.Context, msgs []*message.Message, imagexClient imagex.ImageX, storageClient storage.Storage) []*schema.Message {
 	schemaMessage := make([]*schema.Message, 0, len(msgs))
 
 	for _, msgOne := range msgs {
@@ -457,7 +462,7 @@ func transMessageToSchemaMessage(ctx context.Context, msgs []*message.Message, i
 		if len(sm.ReasoningContent) > 0 {
 			sm.ReasoningContent = ""
 		}
-		schemaMessage = append(schemaMessage, parseMessageURI(ctx, sm, imagexClient))
+		schemaMessage = append(schemaMessage, ParseMessageURI(ctx, sm, imagexClient, storageClient))
 	}
 
 	// Filter out unpaired ToolCalls to prevent Qwen model errors
@@ -498,7 +503,10 @@ func filterUnpairedToolCalls(msgs []*schema.Message) []*schema.Message {
 	return msgs
 }
 
-func parseMessageURI(ctx context.Context, mcMsg *schema.Message, imagexClient imagex.ImageX) *schema.Message {
+// ParseMessageURI 将一条 schema.Message 中多模态部分的 URI 展开为模型可直接使用的内容。
+// 对图片：优先用对象存储读取 key 转 base64 data URL（入库只存 key），失败再回退 imagex 签名 URL；
+// 对 File/Audio/Video：沿用 imagex 签名 URL。
+func ParseMessageURI(ctx context.Context, mcMsg *schema.Message, imagexClient imagex.ImageX, storageClient storage.Storage) *schema.Message {
 	if mcMsg.MultiContent == nil {
 		return mcMsg
 	}
@@ -507,9 +515,16 @@ func parseMessageURI(ctx context.Context, mcMsg *schema.Message, imagexClient im
 		case schema.ChatMessagePartTypeImageURL:
 
 			if one.ImageURL.URI != "" {
-				url, err := imagexClient.GetResourceURL(ctx, one.ImageURL.URI)
-				if err == nil {
-					mcMsg.MultiContent[k].ImageURL.URL = url.URL
+				// 优先用对象存储把 URI 展开成自包含的 base64 data URL（模型可直接使用），
+				// 因为入库时 model_content 只存了 key/URI 而非 base64。
+				if dataURL, ok := imageURIToDataURL(ctx, storageClient, one.ImageURL.URI); ok {
+					mcMsg.MultiContent[k].ImageURL.URL = dataURL
+				} else if imagexClient != nil {
+					// 兜底：对象存储不可用时回退到 imagex 签名 URL。
+					url, err := imagexClient.GetResourceURL(ctx, one.ImageURL.URI)
+					if err == nil {
+						mcMsg.MultiContent[k].ImageURL.URL = url.URL
+					}
 				}
 			}
 		case schema.ChatMessagePartTypeFileURL:
@@ -536,6 +551,26 @@ func parseMessageURI(ctx context.Context, mcMsg *schema.Message, imagexClient im
 		}
 	}
 	return mcMsg
+}
+
+// imageURIToDataURL 从对象存储读取图片 key 对应的字节，编码为自包含的 base64 data URL，
+// 供模型直接使用。入库时 model_content 只存了 key/URI（不再内联 base64），调用模型前在此展开。
+func imageURIToDataURL(ctx context.Context, storageClient storage.Storage, uri string) (string, bool) {
+	if storageClient == nil || uri == "" {
+		return "", false
+	}
+	content, err := storageClient.GetObject(ctx, uri)
+	if err != nil || len(content) == 0 {
+		return "", false
+	}
+	contentType := mime.TypeByExtension(filepath.Ext(uri))
+	if contentType == "" {
+		contentType = http.DetectContentType(content)
+	}
+	if contentType == "" {
+		contentType = "image/png"
+	}
+	return "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(content), true
 }
 
 func parseResumeInfo(_ context.Context, historyMsg []*message.Message) *crossagent.ResumeInfo {

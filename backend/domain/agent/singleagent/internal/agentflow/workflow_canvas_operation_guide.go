@@ -73,9 +73,11 @@ func (t *wfCanvasGetOperationGuideTool) InvokableRun(_ context.Context, argument
 		"steps":          wfCanvasOperationGuideSteps(),
 		"guardrails":     wfCanvasOperationGuideGuardrails(),
 		"checklists":     wfCanvasOperationGuideChecklists(),
-		"instruction": "先按 steps 顺序完成渐进式设计和上下文读取,再修改画布。" +
+		"recipes":        wfCanvasOperationGuideRecipes(),
+		"instruction": "先参考 recipes 选一个匹配的工作流范式作为骨架(尤其对话工作流的槽位填充范式),再按 steps 顺序完成渐进式设计和上下文读取,再修改画布。" +
 			" 配置任何变量引用前必须调用 workflow_canvas_get_bindable_variables。" +
 			" 每组 add/connect/configure/delete 后调用 workflow_canvas_auto_layout 和 workflow_canvas_get_canvas_context 审计。" +
+			" 对话工作流(chatflow)里插件/API/数据库节点的结构化入参,先加 type=3 大模型节点从用户对话抽取参数再绑定,不要写死字面量。" +
 			" 失败时优先局部修复对应节点,不要默认 clear_canvas。",
 	})
 	return string(b), nil
@@ -172,6 +174,7 @@ func wfCanvasOperationGuideGuardrails() []string {
 		"配置任何变量引用前必须先调用 workflow_canvas_get_bindable_variables,只能绑定返回列表里的真实变量或本轮刚声明 outputs 的变量。",
 		"资源型节点必须先调用 workflow_canvas_get_resource_catalog,资源 ID、模型、插件/API、知识库、智能体、数据库、HTTP、MCP 和卡片不能编造。",
 		"每组 add/connect/configure/delete 后调用 workflow_canvas_auto_layout,再调用 workflow_canvas_get_canvas_context 做从 Start 到 End 的绑定审计。",
+		"对话工作流(chatflow)Start 通常只有用户自然语言输入(USER_INPUT/对话文本),没有结构化字段;插件/API/代码/数据库节点需要的金额、账号、类型、日期等参数不要写死字面量,先加 type=3 大模型节点从对话抽取(outputs 按下游参数逐个声明、类型与接口一致),再把下游入参绑定到大模型输出。",
 	}
 }
 
@@ -198,6 +201,76 @@ func wfCanvasOperationGuideChecklists() []wfCanvasOperationGuideChecklist {
 				"针对 BlockID empty、引用变量不存在、变量值为空、Python Args 规范错误,优先修复 input/inputs、outputs、condition、merge_groups、returns、content 或 code。",
 				"不要默认 clear_canvas;只对对应节点做局部修复。",
 				"修复后调用 workflow_canvas_auto_layout 和 workflow_canvas_test_run,不要把工具 ack 当成最终成功。",
+			},
+		},
+		{
+			ID:    "chatflow_param_extraction",
+			Title: "对话工作流大模型提参",
+			Items: []string{
+				"判断是否对话工作流: get_canvas_context/get_bindable_variables 里 Start 只暴露 USER_INPUT/对话文本而没有结构化字段时即为 chatflow。",
+				"插件/API/代码/数据库节点需要的每个结构化参数(金额、账号、类型、日期等)都要有真实来源,不能写死测试字面量,也不要把整段用户输入塞进单个参数。",
+				"先 workflow_canvas_add_node 一个 type=3 大模型节点,prompt 要求从用户对话抽取并只输出 JSON,outputs 按下游接口参数逐个声明,类型与 list_plugins 的参数 schema 一致(数字 number、文本 string)。",
+				"把大模型节点接在 Start 与插件节点之间,插件节点 inputs 绑定 {from:'大模型node_tag',output:'参数名'}。",
+				"试运行用一句包含所需信息的自然语言(例如'给账号12345转100元'),让大模型抽取参数,而不是逐个手填插件入参。",
+			},
+		},
+	}
+}
+
+type wfCanvasOperationGuideRecipe struct {
+	ID    string   `json:"id"`
+	Title string   `json:"title"`
+	When  string   `json:"when"`
+	Flow  []string `json:"flow"`
+	Tips  []string `json:"tips,omitempty"`
+}
+
+// wfCanvasOperationGuideRecipes 是常见工作流范式的"经验骨架",让智能体面对一个需求时
+// 心里先有套路,而不是从零乱拼节点。重点是对话工作流的槽位填充范式。
+func wfCanvasOperationGuideRecipes() []wfCanvasOperationGuideRecipe {
+	return []wfCanvasOperationGuideRecipe{
+		{
+			ID:    "slot_filling_chatflow",
+			Title: "槽位填充对话工作流(参数不全就反问补齐,齐了才调插件)",
+			When:  "对话里要调用一个需要多个参数的插件/接口,但用户不一定一次说全。这是对话工作流最常见的范式。",
+			Flow: []string{
+				"Start: 用户自然语言输入(USER_INPUT)",
+				"type=3 大模型(提参+查缺): 从对话提取目标接口需要的参数,outputs 按接口参数逐个声明(类型与接口一致),并额外声明 missing:string 列出仍缺失的必填参数(都齐全则为空字符串);建议 enable_chat_history=true 支持多轮补齐",
+				"type=8 条件IF: 判断 missing 是否为空(left=大模型.missing, operator=为空/null)。true=参数齐全分支, false=有缺失分支",
+				"齐全分支(true): type=4 插件节点,inputs 绑定大模型提取的各参数; 或用 type=3 大模型 bind_plugins 让模型自己按需调",
+				"缺失分支(false): type=18 问答节点,question 用 {{missing}} 反问用户补齐缺失参数(例如'还需要您提供: {{missing}}')",
+				"汇合: 两分支末端各用 type=15 文本处理产出 output:string, 再 type=32 变量聚合成一个 output, End 返回该 output",
+			},
+			Tips: []string{
+				"判断参数是否齐全,优先让大模型在提参时直接输出 missing 字段,IF 只判断 missing 是否为空——比给每个参数单独 IF 判断简单可靠得多。",
+				"大模型节点开 enable_chat_history=true 后,用户补齐参数时模型能结合上一轮上下文继续,实现多轮补全。",
+				"齐全分支可用独立 type=4 插件节点(确定性调用)或大模型 bind_plugins(模型自主调用)——前者更可控,后者更灵活。",
+			},
+		},
+		{
+			ID:    "intent_routing",
+			Title: "意图路由(先分类再分流处理)",
+			When:  "用户意图有多种(如查询/办理/投诉),需要按意图走不同处理分支。",
+			Flow: []string{
+				"Start → type=3 大模型(意图分类: prompt 要求只输出一个类别词, outputs=[{name:category,type:string}]) → type=8 条件IF 按 category 分流 → 各分支处理 → type=32 变量聚合 → End",
+			},
+			Tips: []string{"用大模型节点本身做分类即可,通常无需单独的 type=22 意图节点(它当前语义配置未完整)。"},
+		},
+		{
+			ID:    "llm_fc_agent",
+			Title: "节点内智能体(大模型 FC 绑插件/工作流, 自主多轮调用)",
+			When:  "希望大模型按需、可多轮地调用一个或多个工具并整合结果,而不是写死的固定管线。",
+			Flow: []string{
+				"Start → type=3 大模型(bind_plugins/bind_workflows 绑工具 + system_prompt 说明何时调用哪个工具 + enable_chat_history 多轮) → End",
+			},
+			Tips: []string{"绑了工具的大模型节点会进入 ReAct 模式自动调用工具; plugin_id/api_id 来自 workflow_canvas_list_plugins,禁止编造。"},
+		},
+		{
+			ID:    "rag_qa",
+			Title: "知识库问答(RAG)",
+			When:  "要基于资料库内容回答用户问题。",
+			Flow: []string{
+				"Start → type=6 知识库检索(dataset_ids 必须真实) → type=3 大模型(prompt 基于检索到的资料回答) → End",
 			},
 		},
 	}

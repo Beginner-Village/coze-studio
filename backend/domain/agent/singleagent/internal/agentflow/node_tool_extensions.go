@@ -52,11 +52,14 @@ func parseSuperAgentUserID(s string) int64 {
 // superAgentToolDeps 是构造一个超级 agent 扩展工具所需的运行时依赖。
 // SandboxKey 给沙箱类工具用;UserID/SpaceID/AgentID 给 per-user 能力(如记忆)用。
 type superAgentToolDeps struct {
-	SandboxKey string
-	UserID     int64
-	SpaceID    int64
-	AgentID    int64
-	Ext        map[string]string
+	SandboxKey  string
+	UserID      int64
+	SpaceID     int64
+	AgentID     int64
+	Ext         map[string]string
+	CanvasRelay workflowCanvasLiveRelay
+	// Ledger 记录本轮 agent 已下发的画布编辑;BuildAgent per-message 构造,故天然 per-turn。
+	Ledger *turnCanvasLedger
 }
 
 // superAgentExtensionFactory 按运行时依赖造一个工具。

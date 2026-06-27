@@ -31,6 +31,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/domain/conversation/agentrun/entity"
 	msgEntity "github.com/ynet-dev/ynet-studio/backend/domain/conversation/message/entity"
 	"github.com/ynet-dev/ynet-studio/backend/infra/contract/imagex"
+	"github.com/ynet-dev/ynet-studio/backend/infra/contract/storage"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ternary"
@@ -39,7 +40,7 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
 
-func (art *AgentRuntime) ChatflowRun(ctx context.Context, imagex imagex.ImageX) (err error) {
+func (art *AgentRuntime) ChatflowRun(ctx context.Context, imagex imagex.ImageX, storageClient storage.Storage) (err error) {
 
 	mh := &MessageEventHandler{
 		sw:           art.SW,
@@ -94,7 +95,7 @@ func (art *AgentRuntime) ChatflowRun(ctx context.Context, imagex imagex.ImageX) 
 		executeConfig.SectionID = &art.GetRunMeta().SectionID
 		executeConfig.InitRoundID = &art.RunRecord.ID
 		executeConfig.RoundID = &art.RunRecord.ID
-		executeConfig.UserMessage = transMessageToSchemaMessage(ctx, []*msgEntity.Message{art.GetInput()}, imagex)[0]
+		executeConfig.UserMessage = transMessageToSchemaMessage(ctx, []*msgEntity.Message{art.GetInput()}, imagex, storageClient)[0]
 		executeConfig.MaxHistoryRounds = ptr.Of(getAgentHistoryRounds(art.GetAgentInfo()))
 		wfStreamer, err = crossworkflow.DefaultSVC().StreamExecute(ctx, executeConfig, map[string]any{
 			"USER_INPUT": concatWfInput(art),

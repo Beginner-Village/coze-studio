@@ -28,6 +28,7 @@ import (
 	"github.com/cloudwego/eino/schema"
 
 	"github.com/ynet-dev/ynet-studio/backend/api/model/app/bot_common"
+	canvasauto "github.com/ynet-dev/ynet-studio/backend/application/workflow/canvasautomation"
 	"github.com/ynet-dev/ynet-studio/backend/domain/agent/singleagent/entity"
 	"github.com/ynet-dev/ynet-studio/backend/domain/workflow"
 	crosssandbox "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/sandbox"
@@ -435,11 +436,13 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	// 按能力开关门控 web_search/web_fetch/skill_manage（纯 MCP 模式下 web_* 一并剔除）。
 	if isSuperAgent(conf) {
 		extTools := newSuperAgentExtensionTools(superAgentToolDeps{
-			SandboxKey: sandboxKey,
-			UserID:     parseSuperAgentUserID(conf.UserID),
-			SpaceID:    conf.Agent.SpaceID,
-			AgentID:    conf.Agent.AgentID,
-			Ext:        conf.Ext,
+			SandboxKey:  sandboxKey,
+			UserID:      parseSuperAgentUserID(conf.UserID),
+			SpaceID:     conf.Agent.SpaceID,
+			AgentID:     conf.Agent.AgentID,
+			Ext:         conf.Ext,
+			CanvasRelay: canvasauto.SharedWorkflowCommandRelay(),
+			Ledger:      newTurnCanvasLedger(),
 		})
 		extTools = gateSuperAgentTools(ctx, extTools, superToolCfg, sandboxOff)
 		for _, et := range extTools {

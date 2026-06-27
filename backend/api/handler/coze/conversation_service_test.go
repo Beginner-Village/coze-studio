@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package coze
+package coze_test
 
 import (
 	"bytes"
 	"context"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/bytedance/sonic"
@@ -27,18 +28,30 @@ import (
 	"github.com/cloudwego/hertz/pkg/common/ut"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ynet-dev/ynet-studio/backend/api/handler/coze"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/common"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/conversation"
 	"github.com/ynet-dev/ynet-studio/backend/application"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
+func initApplicationOrSkip(t *testing.T) {
+	t.Helper()
+	err := application.Init(context.Background())
+	if err == nil {
+		return
+	}
+	if os.Getenv("CI_JOB_NAME") == "" {
+		t.Skipf("skip coze handler integration test: application init failed: %v", err)
+	}
+	t.Fatalf("application init failed: %v", err)
+}
+
 func TestClearConversationCtx(t *testing.T) {
 	h := server.Default()
-	err := application.Init(context.Background())
+	initApplicationOrSkip(t)
 
-	t.Logf("application init err: %v", err)
-	h.POST("/api/conversation/create_section", ClearConversationCtx)
+	h.POST("/api/conversation/create_section", coze.ClearConversationCtx)
 
 	req := &conversation.ClearConversationCtxRequest{
 		ConversationID: 7496795464885338112,
@@ -55,9 +68,8 @@ func TestClearConversationCtx(t *testing.T) {
 
 func TestClearConversationHistory(t *testing.T) {
 	h := server.Default()
-	err := application.Init(context.Background())
-	t.Logf("application init err: %v", err)
-	h.POST("/api/conversation/clear_message", ClearConversationHistory)
+	initApplicationOrSkip(t)
+	h.POST("/api/conversation/clear_message", coze.ClearConversationHistory)
 	req := &conversation.ClearConversationHistoryRequest{
 		ConversationID: 7496795464885338113,
 		Scene:          ptr.Of(common.Scene_Playground),

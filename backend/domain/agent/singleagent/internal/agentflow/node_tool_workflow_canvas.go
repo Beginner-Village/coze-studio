@@ -19,11 +19,22 @@ package agentflow
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/schema"
+
+	canvasauto "github.com/ynet-dev/ynet-studio/backend/application/workflow/canvasautomation"
 )
+
+// workflowCanvasLiveRelay 是 get_canvas_context 拿"前端实时画布"用的通道(就是前端聊天面板
+// 正在 1500ms 轮询的那个 relay)。nil 时工具自动回退到 deps.Ext 里的旧快照,绝不 hang。
+type workflowCanvasLiveRelay interface {
+	DispatchWorkflowCommand(context.Context, canvasauto.WorkflowCanvasDispatchCommand) error
+	WaitWorkflowCommandResult(context.Context, string) (canvasauto.WorkflowCanvasCommandResult, bool)
+}
 
 // 工作流画布操作工具(workflow_canvas_*)。
 //
@@ -53,7 +64,7 @@ func init() {
 		return &wfCanvasGetNodeSpecTool{}
 	})
 	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
-		return &wfCanvasGetContextTool{ext: deps.Ext}
+		return &wfCanvasGetContextTool{ext: deps.Ext, relay: deps.CanvasRelay, ledger: deps.Ledger}
 	})
 	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
 		return &wfCanvasGetNodeCapabilityAuditTool{ext: deps.Ext}
@@ -70,26 +81,26 @@ func init() {
 	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
 		return &wfCanvasGetBindableVariablesTool{ext: deps.Ext}
 	})
-	registerSuperAgentExtension(func(_ superAgentToolDeps) tool.InvokableTool {
-		return &wfCanvasAddNodeTool{}
+	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
+		return &wfCanvasAddNodeTool{ledger: deps.Ledger}
 	})
-	registerSuperAgentExtension(func(_ superAgentToolDeps) tool.InvokableTool {
-		return &wfCanvasConnectTool{}
+	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
+		return &wfCanvasConnectTool{ledger: deps.Ledger}
 	})
-	registerSuperAgentExtension(func(_ superAgentToolDeps) tool.InvokableTool {
-		return &wfCanvasDeleteNodeTool{}
+	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
+		return &wfCanvasDeleteNodeTool{ledger: deps.Ledger}
 	})
-	registerSuperAgentExtension(func(_ superAgentToolDeps) tool.InvokableTool {
-		return &wfCanvasDeleteLineTool{}
+	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
+		return &wfCanvasDeleteLineTool{ledger: deps.Ledger}
 	})
-	registerSuperAgentExtension(func(_ superAgentToolDeps) tool.InvokableTool {
-		return &wfCanvasClearCanvasTool{}
+	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
+		return &wfCanvasClearCanvasTool{ledger: deps.Ledger}
 	})
-	registerSuperAgentExtension(func(_ superAgentToolDeps) tool.InvokableTool {
-		return &wfCanvasConfigureNodeTool{}
+	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
+		return &wfCanvasConfigureNodeTool{ledger: deps.Ledger}
 	})
-	registerSuperAgentExtension(func(_ superAgentToolDeps) tool.InvokableTool {
-		return &wfCanvasSetParamsTool{}
+	registerSuperAgentExtension(func(deps superAgentToolDeps) tool.InvokableTool {
+		return &wfCanvasSetParamsTool{ledger: deps.Ledger}
 	})
 	registerSuperAgentExtension(func(_ superAgentToolDeps) tool.InvokableTool {
 		return &wfCanvasAutoLayoutTool{}
@@ -207,33 +218,93 @@ func (t *wfCanvasGetNodeSpecTool) InvokableRun(_ context.Context, argumentsInJSO
 // ---- workflow_canvas_get_canvas_context ----
 
 type wfCanvasGetContextTool struct {
-	ext map[string]string
+	ext    map[string]string
+	relay  workflowCanvasLiveRelay
+	ledger *turnCanvasLedger
 }
 
 func (t *wfCanvasGetContextTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
 		Name: "workflow_canvas_get_canvas_context",
 		Desc: "读取当前工作流上下文:节点、连线、每个节点 outputs、当前可绑定变量、空间资源清单、试运行意图。" +
-			"复杂流程修改前先调用它,后续 configure_node 必须只绑定这些已存在变量或你本轮 add_node 后声明的 outputs。",
+			"复杂流程修改前先调用它。返回里 canvas_context 是画布读取(因异步应用有延迟,可能还没含你本轮刚加的节点);" +
+			"your_turn_operations 是后端记录的你本轮已成功下发的全部画布操作的权威清单,用它确认自己的编辑已生效,不要因 canvas_context 暂时看不到就重做或清空。",
 		ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{}),
 	}, nil
 }
 
-func (t *wfCanvasGetContextTool) InvokableRun(_ context.Context, _ string, _ ...tool.Option) (string, error) {
+func (t *wfCanvasGetContextTool) InvokableRun(ctx context.Context, _ string, _ ...tool.Option) (string, error) {
+	workflowID := wfExtValue(t.ext, workflowCanvasWorkflowIDExtKey)
+	spaceID := wfExtValue(t.ext, workflowCanvasSpaceIDExtKey)
+	// 优先取前端正在轮询的 relay 上的【实时画布】(含本轮刚下发的增删改),根治"看不到自己编辑→误判→清空"。
+	if t.relay != nil && workflowID != "" && spaceID != "" {
+		if live, ok := t.fetchLiveCanvas(ctx, workflowID, spaceID); ok {
+			return live, nil
+		}
+	}
+	// 回退:无 relay / 编辑页未打开没人响应 / 超时 → 用消息发送前的旧快照,绝不 hang。
+	return t.snapshotResult(workflowID, spaceID), nil
+}
+
+func (t *wfCanvasGetContextTool) fetchLiveCanvas(ctx context.Context, workflowID, spaceID string) (string, bool) {
+	requestID := fmt.Sprintf("agentflow-get-ctx-%d", time.Now().UnixNano())
+	if err := t.relay.DispatchWorkflowCommand(ctx, canvasauto.WorkflowCanvasDispatchCommand{
+		WorkflowID:       workflowID,
+		SpaceID:          spaceID,
+		RequestID:        requestID,
+		RequiresResponse: true,
+		Command:          canvasauto.WorkflowCanvasCommand{Op: "get_canvas_context"},
+	}); err != nil {
+		return "", false
+	}
+	// 命令一直留在 relay 队列里(poll 不删除),前端 bridge 每 ~1.5s 轮询一次。
+	// 浏览器↔后端这条链路会间歇性抖动(实测单次断连可达 ~10s),8s 太短会在抖动窗口里
+	// 超时回退到旧快照、还把已恢复后到达的回填变成孤儿。给到 25s:只要网络在窗口内恢复
+	// 任意一次,bridge 重新 poll 就能取走命令并回填,等待者仍在 → 拿到实时画布。
+	waitCtx, cancel := context.WithTimeout(ctx, 25*time.Second)
+	defer cancel()
+	result, ok := t.relay.WaitWorkflowCommandResult(waitCtx, requestID)
+	if !ok || strings.TrimSpace(result.CanvasContext) == "" {
+		return "", false
+	}
+	bindable := strings.TrimSpace(result.BindableVariables)
+	if bindable == "" {
+		bindable = wfExtValue(t.ext, workflowCanvasBindableVarsExtKey)
+	}
 	b, _ := json.Marshal(map[string]string{
-		"status":              "canvas_context",
-		"workflow_id":         wfExtValue(t.ext, workflowCanvasWorkflowIDExtKey),
-		"space_id":            wfExtValue(t.ext, workflowCanvasSpaceIDExtKey),
-		"canvas_context":      wfExtValue(t.ext, workflowCanvasContextExtKey),
-		"node_capabilities":   wfExtValue(t.ext, workflowCanvasNodeCapabilityExtKey),
-		"bindable_variables":  wfExtValue(t.ext, workflowCanvasBindableVarsExtKey),
-		"resource_summary":    wfExtValue(t.ext, workflowCanvasResourceSummaryExtKey),
-		"binding_guide":       wfExtValue(t.ext, workflowCanvasBindingGuideExtKey),
-		"test_run_required":   wfExtValue(t.ext, workflowCanvasTestRunRequiredExtKey),
-		"test_run_input_hint": wfExtValue(t.ext, workflowCanvasTestRunInputExtKey),
-		"instruction":         "基于 canvas_context 增量编辑;canvas_context 是本次用户消息发送前快照,同一轮刚下发的画布操作可能尚未反映,不要把旧快照误判成空画布或最新画布;配置节点前先确认可绑定变量;完成一组增删改连线后从 Start 到 End 审计输入绑定、变量引用、分支出口、变量聚合和 End returns;如果绑定诊断不是 none,禁止说完成,必须局部修复对应节点;禁止默认 clear_canvas,除非用户明确要求整体重做或上下文证明局部修复不可行;试运行失败后读取失败节点并局部修复对应节点的输入绑定/变量引用/outputs/merge_groups/End returns。",
+		"status":               "canvas_context",
+		"source":               "browser_live",
+		"workflow_id":          workflowID,
+		"space_id":             spaceID,
+		"canvas_context":       result.CanvasContext,
+		"your_turn_operations": t.ledger.renderForAgent(),
+		"bindable_variables":   bindable,
+		"node_capabilities":    wfExtValue(t.ext, workflowCanvasNodeCapabilityExtKey),
+		"resource_summary":     wfExtValue(t.ext, workflowCanvasResourceSummaryExtKey),
+		"binding_guide":        wfExtValue(t.ext, workflowCanvasBindingGuideExtKey),
+		"test_run_required":    wfExtValue(t.ext, workflowCanvasTestRunRequiredExtKey),
+		"instruction":          "canvas_context 是浏览器画布的实时读取,但你本轮刚下发的 add_node/connect/configure 是【异步应用】的,可能还没出现在 canvas_context 里——这是正常现象,不代表失败。your_turn_operations 是后端记录的、你本轮已成功下发的全部画布操作的【权威清单】;请把 canvas_context 与 your_turn_operations 合并起来在脑中重建当前画布,以 your_turn_operations 为准确认自己的编辑已生效。从 Start 到 End 审计输入绑定、变量引用、分支出口、变量聚合、End returns;【严禁】因为 canvas_context 里暂时看不到刚加的节点就重做或 clear_canvas;绑定诊断非 none 时只局部修复对应节点。",
 	})
-	return string(b), nil
+	return string(b), true
+}
+
+func (t *wfCanvasGetContextTool) snapshotResult(workflowID, spaceID string) string {
+	b, _ := json.Marshal(map[string]string{
+		"status":               "canvas_context",
+		"source":               "pre_turn_snapshot",
+		"workflow_id":          workflowID,
+		"space_id":             spaceID,
+		"canvas_context":       wfExtValue(t.ext, workflowCanvasContextExtKey),
+		"your_turn_operations": t.ledger.renderForAgent(),
+		"node_capabilities":    wfExtValue(t.ext, workflowCanvasNodeCapabilityExtKey),
+		"bindable_variables":   wfExtValue(t.ext, workflowCanvasBindableVarsExtKey),
+		"resource_summary":     wfExtValue(t.ext, workflowCanvasResourceSummaryExtKey),
+		"binding_guide":        wfExtValue(t.ext, workflowCanvasBindingGuideExtKey),
+		"test_run_required":    wfExtValue(t.ext, workflowCanvasTestRunRequiredExtKey),
+		"test_run_input_hint":  wfExtValue(t.ext, workflowCanvasTestRunInputExtKey),
+		"instruction":          "canvas_context 是本次用户消息发送前的快照(实时画布本次没取到,通常是编辑页未打开或浏览器↔后端网络瞬时抖动,与你的操作无关);你本轮刚下发的画布操作【一定还没反映在这份快照里】。your_turn_operations 是后端记录的、你本轮已成功下发的全部画布操作的【权威清单】;请把快照与 your_turn_operations 合并起来在脑中重建当前画布,以 your_turn_operations 为准确认自己的编辑已生效,【绝不能把旧快照误判成空画布或最新画布】。只要工具返回成功就继续往下做,【严禁因为快照里看不到刚加的节点就 clear_canvas 或推倒重做】;配置前先确认可绑定变量;绑定诊断非 none 时只局部修复对应节点。",
+	})
+	return string(b)
 }
 
 // ---- workflow_canvas_get_node_capability_audit ----
@@ -323,7 +394,7 @@ func (t *wfCanvasGetBindableVariablesTool) InvokableRun(_ context.Context, _ str
 
 // ---- workflow_canvas_add_node ----
 
-type wfCanvasAddNodeTool struct{}
+type wfCanvasAddNodeTool struct{ ledger *turnCanvasLedger }
 
 type wfAddNodeArgs struct {
 	NodeTag string `json:"node_tag"`
@@ -360,12 +431,13 @@ func (t *wfCanvasAddNodeTool) InvokableRun(_ context.Context, argumentsInJSON st
 	if wfIsSingletonNodeType(a.Type) {
 		return "Error: Start/End 是工作流内置 singleton 单例节点,不能通过 workflow_canvas_add_node 新增;请直接引用 start(100001) 或 end(900001) 进行连线/配置。", nil
 	}
+	t.ledger.record(turnCanvasLedgerOp{Op: "add_node", NodeTag: a.NodeTag, Type: a.Type, Title: a.Title})
 	return wfAck("add_node", a), nil
 }
 
 // ---- workflow_canvas_connect ----
 
-type wfCanvasConnectTool struct{}
+type wfCanvasConnectTool struct{ ledger *turnCanvasLedger }
 
 type wfConnectArgs struct {
 	From     string `json:"from"`
@@ -396,12 +468,13 @@ func (t *wfCanvasConnectTool) InvokableRun(_ context.Context, argumentsInJSON st
 	if a.From == "" || a.To == "" {
 		return "Error: from 和 to 必填", nil
 	}
+	t.ledger.record(turnCanvasLedgerOp{Op: "connect", From: a.From, To: a.To})
 	return wfAck("connect", a), nil
 }
 
 // ---- workflow_canvas_delete_node ----
 
-type wfCanvasDeleteNodeTool struct{}
+type wfCanvasDeleteNodeTool struct{ ledger *turnCanvasLedger }
 
 type wfDeleteNodeArgs struct {
 	NodeTag string `json:"node_tag"`
@@ -427,12 +500,17 @@ func (t *wfCanvasDeleteNodeTool) InvokableRun(_ context.Context, argumentsInJSON
 	if a.NodeTag == "" && a.Node == "" {
 		return "Error: node_tag 必填", nil
 	}
+	delTag := a.NodeTag
+	if delTag == "" {
+		delTag = a.Node
+	}
+	t.ledger.record(turnCanvasLedgerOp{Op: "delete_node", NodeTag: delTag})
 	return wfAck("delete_node", a), nil
 }
 
 // ---- workflow_canvas_delete_line ----
 
-type wfCanvasDeleteLineTool struct{}
+type wfCanvasDeleteLineTool struct{ ledger *turnCanvasLedger }
 
 func (t *wfCanvasDeleteLineTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
@@ -455,12 +533,13 @@ func (t *wfCanvasDeleteLineTool) InvokableRun(_ context.Context, argumentsInJSON
 	if a.From == "" || a.To == "" {
 		return "Error: from 和 to 必填", nil
 	}
+	t.ledger.record(turnCanvasLedgerOp{Op: "delete_line", From: a.From, To: a.To})
 	return wfAck("delete_line", a), nil
 }
 
 // ---- workflow_canvas_clear_canvas ----
 
-type wfCanvasClearCanvasTool struct{}
+type wfCanvasClearCanvasTool struct{ ledger *turnCanvasLedger }
 
 func (t *wfCanvasClearCanvasTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return &schema.ToolInfo{
@@ -472,12 +551,13 @@ func (t *wfCanvasClearCanvasTool) Info(_ context.Context) (*schema.ToolInfo, err
 }
 
 func (t *wfCanvasClearCanvasTool) InvokableRun(_ context.Context, _ string, _ ...tool.Option) (string, error) {
+	t.ledger.record(turnCanvasLedgerOp{Op: "clear_canvas"})
 	return wfAck("clear_canvas", struct{}{}), nil
 }
 
 // ---- workflow_canvas_configure_node ----
 
-type wfCanvasConfigureNodeTool struct{}
+type wfCanvasConfigureNodeTool struct{ ledger *turnCanvasLedger }
 
 type wfConfigureNodeArgs struct {
 	NodeTag string          `json:"node_tag"`
@@ -489,7 +569,7 @@ func (t *wfCanvasConfigureNodeTool) Info(_ context.Context) (*schema.ToolInfo, e
 		Name: "workflow_canvas_configure_node",
 		Desc: "用语义化 JSON 配置节点内部表单,由前端翻译成真实画布 schema。优先使用它,不要猜内部表单 path。" +
 			" 常用字段: title; input/inputs 绑定上游变量,形如 {from:'start',output:'input',name:'input'};" +
-			" prompt/user_prompt/system_prompt 配置 LLM; outputs 声明输出变量,如 [{name:'answer',type:'string'}];" +
+			" prompt/user_prompt/system_prompt 配置 LLM; bind_plugins/bind_workflows 给 LLM 节点绑 FC 工具让模型按需调用,如 bind_plugins:[{plugin_id,api_id,api_name,plugin_version}]; outputs 声明输出变量,如 [{name:'answer',type:'string'}];" +
 			" returns 配置 End 返回变量,如 [{name:'output',from:'llm',output:'answer'}];" +
 			" End 返回文本时用 input/inputs 绑定多个上游输出,content/text/template 拼最终回答,streaming_output=true 开启流式透传;" +
 			" code/language 配置 Code; condition 配置 If,如 {left:{from:'intent',output:'category'},operator:'equal',right:'售后'}。" +
@@ -513,12 +593,13 @@ func (t *wfCanvasConfigureNodeTool) InvokableRun(_ context.Context, argumentsInJ
 	if len(a.Config) == 0 || string(a.Config) == "null" {
 		return "Error: config 必填", nil
 	}
+	t.ledger.record(turnCanvasLedgerOp{Op: "configure_node", NodeTag: a.NodeTag, Detail: wfTruncate(string(a.Config), 160)})
 	return wfAck("configure_node", a), nil
 }
 
 // ---- workflow_canvas_set_node_params ----
 
-type wfCanvasSetParamsTool struct{}
+type wfCanvasSetParamsTool struct{ ledger *turnCanvasLedger }
 
 type wfSetParamsArgs struct {
 	NodeTag string          `json:"node_tag"`
@@ -547,6 +628,7 @@ func (t *wfCanvasSetParamsTool) InvokableRun(_ context.Context, argumentsInJSON 
 	if a.NodeTag == "" {
 		return "Error: node_tag 必填", nil
 	}
+	t.ledger.record(turnCanvasLedgerOp{Op: "set_node_params", NodeTag: a.NodeTag, Detail: wfTruncate(string(a.Params), 160)})
 	return wfAck("set_node_params", a), nil
 }
 

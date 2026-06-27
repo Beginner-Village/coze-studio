@@ -25,13 +25,13 @@ export interface CreatorProps {
 }
 
 export const Creator: FC<CreatorProps> = ({ avatar, name, extra }) => (
-  <div className="flex items-center gap-x-[4px] h-[16px] coz-fg-secondary text-[12px] leading-16px">
+  <div className="flex items-center gap-x-[6px] h-[18px] coz-fg-dim text-[12px] leading-[18px]">
     {/* The open-source version has no multi-person collaboration function and does not display resource owner information */}
     {IS_OPEN_SOURCE ? null : (
       <>
-        <Avatar className="w-[16px] h-[16px] flex-shrink-0" src={avatar} />
+        <Avatar className="w-[18px] h-[18px] flex-shrink-0" src={avatar} />
         <div className="text-nowrap">{name}</div>
-        <div className="w-3px h-3px rounded-full bg-[var(--coz-fg-secondary)]" />
+        <div className="w-[3px] h-[3px] rounded-full bg-[var(--coz-fg-dim)]" />
       </>
     )}
     <div className="text-ellipsis whitespace-nowrap overflow-hidden">

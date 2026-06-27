@@ -16,7 +16,21 @@
 
 package skill
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/ynet-dev/ynet-studio/backend/domain/skill/entity"
+	"gopkg.in/yaml.v3"
+)
+
+type skillFrontmatter struct {
+	Name        string   `yaml:"name"`
+	Description string   `yaml:"description"`
+	Version     string   `yaml:"version"`
+	Category    string   `yaml:"category"`
+	Tags        []string `yaml:"tags"`
+	Platforms   []string `yaml:"platforms"`
+}
 
 // parseSkillFrontmatter 解析 SKILL.md 的 YAML frontmatter(对齐 Anthropic / LangChain Agent Skills)。
 // 形如:
@@ -29,9 +43,46 @@ import "strings"
 //
 // 返回 name、description、以及去掉 frontmatter 后的正文。无 frontmatter 时返回空 name/desc + 原文。
 func parseSkillFrontmatter(skillMd string) (name, description, body string) {
+	front, body, ok := splitSkillFrontmatter(skillMd)
+	if !ok {
+		return "", "", skillMd
+	}
+
+	var fm skillFrontmatter
+	if err := yaml.Unmarshal([]byte(front), &fm); err != nil {
+		return "", "", body
+	}
+
+	return strings.TrimSpace(fm.Name), strings.TrimSpace(fm.Description), body
+}
+
+func ParseSkillMetadata(skillMd string) entity.SkillMetadata {
+	return parseSkillMetadata(skillMd)
+}
+
+func parseSkillMetadata(skillMd string) entity.SkillMetadata {
+	front, _, ok := splitSkillFrontmatter(skillMd)
+	if !ok {
+		return entity.SkillMetadata{}
+	}
+
+	var fm skillFrontmatter
+	if err := yaml.Unmarshal([]byte(front), &fm); err != nil {
+		return entity.SkillMetadata{}
+	}
+
+	return entity.SkillMetadata{
+		Version:   strings.TrimSpace(fm.Version),
+		Category:  strings.TrimSpace(fm.Category),
+		Tags:      compactStrings(fm.Tags),
+		Platforms: compactStrings(fm.Platforms),
+	}
+}
+
+func splitSkillFrontmatter(skillMd string) (front, body string, ok bool) {
 	s := strings.ReplaceAll(skillMd, "\r\n", "\n")
 	if !strings.HasPrefix(strings.TrimLeft(s, " \t\n"), "---") {
-		return "", "", skillMd
+		return "", skillMd, false
 	}
 	// 定位首尾 ---
 	trimmed := strings.TrimLeft(s, " \t\n")
@@ -39,25 +90,20 @@ func parseSkillFrontmatter(skillMd string) (name, description, body string) {
 	rest = strings.TrimPrefix(rest, "\n")
 	end := strings.Index(rest, "\n---")
 	if end < 0 {
-		return "", "", skillMd
+		return "", skillMd, false
 	}
-	front := rest[:end]
+	front = rest[:end]
 	body = strings.TrimPrefix(rest[end+len("\n---"):], "\n")
+	return front, body, true
+}
 
-	for _, line := range strings.Split(front, "\n") {
-		idx := strings.Index(line, ":")
-		if idx < 0 {
-			continue
-		}
-		key := strings.TrimSpace(line[:idx])
-		val := strings.TrimSpace(line[idx+1:])
-		val = strings.Trim(val, `"'`)
-		switch strings.ToLower(key) {
-		case "name":
-			name = val
-		case "description":
-			description = val
+func compactStrings(values []string) []string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			out = append(out, value)
 		}
 	}
-	return name, description, body
+	return out
 }

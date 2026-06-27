@@ -263,3 +263,48 @@ func TestRunImpl_List(t *testing.T) {
 
 	})
 }
+
+func TestRunImpl_GetByID(t *testing.T) {
+	ctx := context.Background()
+	mockDBGen := orm.NewMockDB()
+	mockDBGen.AddTable(&model.RunRecord{}).AddRows(
+		&model.RunRecord{
+			ID:             765,
+			ConversationID: 123,
+			AgentID:        456,
+			SectionID:      789,
+			UserID:         "external-user",
+			Status:         string(entity.RunStatusFailed),
+			LastError:      `{"code":500,"msg":"tool failed"}`,
+			CreatedAt:      1000,
+			UpdatedAt:      2000,
+			CompletedAt:    0,
+			FailedAt:       2500,
+		},
+	)
+	mockDB, err := mockDBGen.DB()
+	assert.NoError(t, err)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockIDGen := mock.NewMockIDGenerator(ctrl)
+
+	service := &runImpl{
+		Components: Components{
+			RunRecordRepo: repository.NewRunRecordRepo(mockDB, mockIDGen),
+		},
+	}
+
+	got, err := service.GetByID(ctx, 765)
+
+	assert.NoError(t, err)
+	assert.Equal(t, int64(765), got.ID)
+	assert.Equal(t, int64(123), got.ConversationID)
+	assert.Equal(t, int64(456), got.AgentID)
+	assert.Equal(t, entity.RunStatusFailed, got.Status)
+	assert.Equal(t, int64(1000), got.CreatedAt)
+	assert.Equal(t, int64(2000), got.UpdatedAt)
+	assert.Equal(t, int64(2500), got.FailedAt)
+	assert.NotNil(t, got.Error)
+	assert.Equal(t, int64(500), got.Error.Code)
+	assert.Equal(t, "tool failed", got.Error.Msg)
+}

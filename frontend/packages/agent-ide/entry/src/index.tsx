@@ -23,4 +23,8 @@ export {
   type WorkflowModeProps,
   type SuperModeProps,
 } from './modes';
+export {
+  SuperChatArea,
+  type SuperChatAreaProps,
+} from './modes/super-mode/super-chat-area';
 export { SkillsModal } from './components/shortcut-skills-modal';

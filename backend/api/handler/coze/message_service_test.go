@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package coze
+package coze_test
 
 import (
 	"bytes"
-	"context"
 	"net/http"
 	"testing"
 
@@ -27,19 +26,17 @@ import (
 	"github.com/cloudwego/hertz/pkg/common/ut"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/ynet-dev/ynet-studio/backend/api/handler/coze"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/common"
 	"github.com/ynet-dev/ynet-studio/backend/api/model/conversation/message"
-	"github.com/ynet-dev/ynet-studio/backend/application"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/ptr"
 )
 
 func TestGetMessageList(t *testing.T) {
 	h := server.Default()
-	err := application.Init(context.Background())
+	initApplicationOrSkip(t)
 
-	t.Logf("application init err: %v", err)
-
-	h.POST("/api/conversation/get_message_list", GetMessageList)
+	h.POST("/api/conversation/get_message_list", coze.GetMessageList)
 	req := &message.GetMessageListRequest{
 		BotID:          "7366055842027922437",
 		Scene:          ptr.Of(common.Scene_Playground),

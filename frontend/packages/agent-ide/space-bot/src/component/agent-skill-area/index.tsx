@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+/* eslint-disable max-lines -- AgentSkillArea owns create, select, and attached skill list modals in this package. */
 import React, { useState, useCallback, useEffect } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
@@ -39,6 +40,8 @@ import {
   ToolItemActionDelete,
 } from '@coze-agent-ide/tool';
 
+import styles from './index.module.less';
+
 const { Text } = Typography;
 
 interface AgentSkillAreaProps {
@@ -46,53 +49,37 @@ interface AgentSkillAreaProps {
   title?: string;
 }
 
-/** 技能列表项 - 匹配工作流卡片样式 */
 const SkillListItem: React.FC<{
   skill: SkillInfo;
   isAdded: boolean;
   onAdd: () => void;
   onRemove: () => void;
 }> = ({ skill: skillItem, isAdded, onAdd, onRemove }) => (
-  <div
-    className="flex items-start gap-[12px] px-[16px] py-[12px] border-b border-solid hover:bg-gray-50 transition-colors"
-    style={{ borderColor: 'var(--coz-stroke-secondary, #f0f1f2)' }}
-  >
-    {/* 图标 */}
-    <div
-      className="w-[40px] h-[40px] flex items-center justify-center rounded-[8px] flex-shrink-0 mt-[2px]"
-      style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      }}
-    >
-      <span className="text-white text-[16px] font-bold">S</span>
+  <div className={styles.skillListItem}>
+    <div className={styles.skillAvatar}>
+      {(skillItem.name?.trim()?.slice(0, 1) || 'S').toUpperCase()}
     </div>
-    {/* 内容 */}
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-[6px]">
-        <Text
-          ellipsis={{ showTooltip: true }}
-          className="text-[14px] font-medium coz-fg-primary max-w-[300px]"
-        >
+    <div className={styles.skillInfo}>
+      <div className={styles.skillNameRow}>
+        <Text ellipsis={{ showTooltip: true }} className={styles.skillName}>
           {skillItem.name}
         </Text>
-        <IconCozCheckMarkCircleFill className="text-xs coz-fg-hglt-green flex-shrink-0" />
+        {isAdded ? (
+          <IconCozCheckMarkCircleFill className={styles.skillCheck} />
+        ) : null}
       </div>
       {skillItem.description ? (
-        <Text
-          ellipsis={{ showTooltip: true }}
-          className="text-[12px] coz-fg-secondary mt-[2px] block"
-        >
+        <Text ellipsis={{ showTooltip: true }} className={styles.skillDesc}>
           {skillItem.description}
         </Text>
       ) : null}
-      <div className="text-[11px] coz-fg-tertiary mt-[4px]">
+      <div className={styles.skillDate}>
         {skillItem.created_at
           ? `创建于 ${new Date(skillItem.created_at).toLocaleDateString('zh-CN')}`
           : ''}
       </div>
     </div>
-    {/* 添加按钮 */}
-    <div className="flex-shrink-0 mt-[2px]">
+    <div className={styles.skillAction}>
       {isAdded ? (
         <Button
           size="small"
@@ -108,7 +95,7 @@ const SkillListItem: React.FC<{
         <Button
           size="small"
           type="primary"
-          theme="borderless"
+          theme="solid"
           onClick={e => {
             e.stopPropagation();
             onAdd();
@@ -121,7 +108,6 @@ const SkillListItem: React.FC<{
   </div>
 );
 
-/** 技能选择弹窗 */
 const SkillSelectModal: React.FC<{
   visible: boolean;
   loading: boolean;
@@ -146,51 +132,59 @@ const SkillSelectModal: React.FC<{
   onCreateClick,
 }) => (
   <Modal
-    title="添加技能"
+    className={styles.skillSelectModal}
+    title={
+      <span className={styles.skillModalTitle}>
+        添加技能 <span>从空间技能库中选择</span>
+      </span>
+    }
     visible={visible}
     onCancel={onClose}
-    footer={null}
-    width={800}
+    footer={
+      <div className={styles.skillModalFooter}>
+        <div className={styles.skillModalCount}>
+          共 <span>{skillList.length}</span> 个可用技能
+        </div>
+        <div className={styles.skillModalActions}>
+          <Button color="secondary" onClick={onCreateClick}>
+            新建技能
+          </Button>
+          <Button color="primary" onClick={onClose}>
+            完成
+          </Button>
+        </div>
+      </div>
+    }
+    width={720}
     bodyStyle={{
       padding: 0,
-      maxHeight: '70vh',
-      display: 'flex',
-      flexDirection: 'column',
+      overflow: 'hidden',
     }}
   >
-    <div
-      className="flex h-full"
-      style={{ minHeight: '400px', maxHeight: 'calc(70vh - 56px)' }}
-    >
-      <div
-        className="w-[200px] border-r border-solid flex flex-col flex-shrink-0 p-[12px]"
-        style={{ borderColor: 'var(--coz-stroke-secondary, #f0f1f2)' }}
-      >
+    <div className={styles.skillSelectBody}>
+      <div className={styles.skillSearchWrap}>
         <Search
-          placeholder="搜索"
+          placeholder="搜索技能..."
           value={search}
           onChange={val => onSearchChange(val as string)}
-          className="mb-[12px]"
+          className={styles.skillSearch}
         />
-        <div className="text-[12px] coz-fg-tertiary">
-          从空间技能库中选择技能添加到当前智能体
-        </div>
-        <div className="flex-1" />
-        <Button
-          color="primary"
-          className="w-full mt-[12px]"
-          onClick={onCreateClick}
-        >
-          + 新建技能
-        </Button>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className={styles.skillFilters}>
+        <button className={styles.skillFilterActive} type="button">
+          全部
+        </button>
+        <button type="button">文档</button>
+        <button type="button">数据</button>
+        <button type="button">自动化</button>
+      </div>
+      <div className={styles.skillList}>
         {loading ? (
-          <div className="flex justify-center items-center py-[60px]">
+          <div className={styles.skillLoading}>
             <Spin />
           </div>
         ) : skillList.length === 0 ? (
-          <div className="flex justify-center items-center py-[60px]">
+          <div className={styles.skillLoading}>
             <Empty
               description={
                 search
@@ -220,6 +214,57 @@ interface ScriptFile {
   content: string;
 }
 
+interface BuildSkillFilesInput {
+  name: string;
+  description: string;
+  skillMd: string;
+  scripts: ScriptFile[];
+}
+
+const normalizeSkillFilePath = (path: string) => {
+  const normalized = path
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/\/+/g, '/');
+  if (
+    !normalized ||
+    normalized === 'SKILL.md' ||
+    normalized.split('/').some(part => part === '..' || part === '.')
+  ) {
+    return '';
+  }
+  return normalized;
+};
+
+const buildSkillMd = (name: string, description: string, skillMd: string) => {
+  const content = skillMd.trim()
+    ? skillMd.replace(/\r\n/g, '\n')
+    : `# ${name.trim()}\n\n用途说明...\n\n## 工作流\n1. ...`;
+  if (content.trimStart().startsWith('---')) {
+    return content;
+  }
+  return `---\nname: ${name.trim()}\ndescription: ${description.trim()}\n---\n${content}`;
+};
+
+const buildSkillFiles = ({
+  name,
+  description,
+  skillMd,
+  scripts,
+}: BuildSkillFilesInput) => {
+  const files: Record<string, string> = {
+    'SKILL.md': buildSkillMd(name, description, skillMd),
+  };
+  scripts.forEach(script => {
+    const path = normalizeSkillFilePath(script.path);
+    if (path && script.content.trim()) {
+      files[path] = script.content.replace(/\r\n/g, '\n');
+    }
+  });
+  return files;
+};
+
 /** 新建技能弹窗:写 SKILL.md + 可选脚本,存进空间技能库 */
 const CreateSkillModal: React.FC<{
   visible: boolean;
@@ -245,19 +290,13 @@ const CreateSkillModal: React.FC<{
       Toast.warning('请填写技能名称');
       return;
     }
-    // 把脚本拼成 <skill-file> 块,落盘时会还原为 /skills/<name>/<path>
-    const scriptBlocks = scripts
-      .filter(s => s.path.trim() && s.content.trim())
-      .map(s => `<skill-file path="${s.path.trim()}">\n${s.content}\n</skill-file>`)
-      .join('\n\n');
-    const prompt = scriptBlocks ? `${skillMd}\n\n${scriptBlocks}` : skillMd;
     setSubmitting(true);
     try {
       const resp = await skill.CreateSkill({
         space_id: spaceId,
         name: name.trim(),
         description: description.trim(),
-        prompt,
+        files: buildSkillFiles({ name, description, skillMd, scripts }),
         icon_uri: '',
       });
       if (resp.code === 0) {
@@ -298,7 +337,9 @@ const CreateSkillModal: React.FC<{
           />
         </div>
         <div>
-          <div className="text-[13px] coz-fg-secondary mb-[4px]">一句话描述</div>
+          <div className="text-[13px] coz-fg-secondary mb-[4px]">
+            一句话描述
+          </div>
           <Input
             value={description}
             onChange={setDescription}

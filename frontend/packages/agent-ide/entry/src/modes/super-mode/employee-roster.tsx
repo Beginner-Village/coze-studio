@@ -388,7 +388,11 @@ export const EmployeeRoster: React.FC<EmployeeRosterProps> = ({
           return;
         }
         const shadowId = res.data.shadow_agent_id;
-        navigate(
+        // 虚拟员工之间切换用整页跳转（而非 SPA navigate）：bot 编辑器的全局 store
+        // 在原地软导航切换 botId 时无法干净重置——unmount 清空 store 与异步重载之间
+        // 存在空窗，组件会在空数据上渲染并读到 undefined 而崩溃（「无法查看智能体」）。
+        // 整页加载是该架构本就假设的「一次加载一个 bot」，可靠且无崩溃。
+        window.location.assign(
           `/space/${spaceId}/bot/${shadowId}/arrange?employeeChat=1&name=${encodeURIComponent(
             product.name,
           )}`,

@@ -37,7 +37,7 @@ export const IntelligenceTag: React.FC<IntelligenceTagProps> = ({
     if (agentType === 'super') {
       return (
         <Tag color="purple" size="small" className="w-fit">
-          超级智能体
+          FinMallClaw
         </Tag>
       );
     }

@@ -209,11 +209,9 @@ export const LibraryHeader: React.FC<{
   const menuConfig = entityConfigs.find(
     item => item.typeFilter?.value === sourceType,
   );
-  const currentEntityFilter = entityConfigs.find(
-    item => item.typeFilter?.value === sourceType,
-  ).typeFilter;
+  const currentEntityFilter = menuConfig?.typeFilter;
   const currentEntityTitle =
-    currentEntityFilter.filterName || currentEntityFilter.label;
+    currentEntityFilter?.filterName || currentEntityFilter?.label;
 
   const { importWorkflow, validateImportPackage } = useWorkflowImportExport({
     spaceId,
@@ -241,9 +239,11 @@ export const LibraryHeader: React.FC<{
   };
 
   return (
-    <div className="flex items-center justify-between mb-[16px]">
-      <div className="font-[500] text-[20px]">{currentEntityTitle}</div>
-      <div className="flex items-center gap-2">
+    <div className="flex items-start justify-between gap-[16px]">
+      <div className="font-[600] text-[24px] leading-[32px] coz-fg-plus">
+        {currentEntityTitle}
+      </div>
+      <div className="flex items-center gap-[12px] pt-[2px]">
         <Upload
           accept=".json"
           action=""

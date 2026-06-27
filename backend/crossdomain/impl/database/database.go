@@ -87,6 +87,18 @@ func (c *databaseImpl) MGetDatabase(ctx context.Context, req *model.MGetDatabase
 	return c.DomainSVC.MGetDatabase(ctx, req)
 }
 
+func (c *databaseImpl) ListDatabase(ctx context.Context, req *service.ListDatabaseRequest) (*service.ListDatabaseResponse, error) {
+	return c.DomainSVC.ListDatabase(ctx, req)
+}
+
+func (c *databaseImpl) CreateDatabase(ctx context.Context, req *service.CreateDatabaseRequest) (*service.CreateDatabaseResponse, error) {
+	return c.DomainSVC.CreateDatabase(ctx, req)
+}
+
+func (c *databaseImpl) AddDatabaseRecord(ctx context.Context, req *service.AddDatabaseRecordRequest) error {
+	return c.DomainSVC.AddDatabaseRecord(ctx, req)
+}
+
 func (c *databaseImpl) GetAllDatabaseByAppID(ctx context.Context, req *model.GetAllDatabaseByAppIDRequest) (*model.GetAllDatabaseByAppIDResponse, error) {
 	return c.DomainSVC.GetAllDatabaseByAppID(ctx, req)
 }

@@ -76,7 +76,14 @@ func isStaticFile(ctx *app.RequestContext) bool {
 		strings.HasPrefix(path, "/space/") ||
 		strings.HasPrefix(path, "/admin") ||
 		strings.HasPrefix(path, "/template/") ||
-		strings.HasPrefix(path, "/loop/") {
+		strings.HasPrefix(path, "/loop/") ||
+		// 卡片后端代理前缀(cardBackendProxyRegister 透传到 finmall 卡片系统),
+		// 这些请求不携带 studio session,按静态/透传处理以跳过 session 鉴权。
+		strings.HasPrefix(path, "/aop-web/") ||
+		strings.HasPrefix(path, "/fgw/") ||
+		strings.HasPrefix(path, "/filestore/") ||
+		strings.HasPrefix(path, "/ai-example/") ||
+		strings.HasPrefix(path, "/agent-h5/") {
 		return true
 	}
 

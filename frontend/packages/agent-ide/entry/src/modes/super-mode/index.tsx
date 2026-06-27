@@ -76,7 +76,12 @@ const SuperContentLayout: React.FC<SuperContentLayoutProps> = ({
   // 员工聊天:以对话为主，产物面板默认折叠，按需用右侧抽屉把手展开。
   const [artifactsOpen, setArtifactsOpen] = useState(false);
   const chatPanel = (
-    <div className={configStyles.chatPanel}>
+    // 员工聊天里 chatPanel 是 flex 列的子项，必须 flex:1 撑满，否则空会话时
+    // 聊天面板按内容缩成一小块、输入框浮在顶部不沉底（普通布局是 grid 子项，flex 无影响）。
+    <div
+      className={configStyles.chatPanel}
+      style={employeeChat ? { flex: '1 1 0%', minHeight: 0 } : undefined}
+    >
       <SuperChatArea
         renderChatTitleNode={renderChatTitleNode}
         chatSlot={chatSlot}
@@ -91,9 +96,12 @@ const SuperContentLayout: React.FC<SuperContentLayoutProps> = ({
       <ContentView
         mode={BotMode.SingleMode}
         style={{
-          gridTemplateColumns: artifactsOpen
-            ? '248px minmax(420px, 1fr) 380px'
-            : '248px minmax(480px, 1fr)',
+          // 产物展开时占满主区（员工列表→最右），聊天用 display:none 暂藏（保留
+          // 会话状态），不挤压聊天、不覆盖、不遮挡输入框；产物拿到全宽完整显示。
+          gridTemplateColumns: '248px minmax(0, 1fr)',
+          // 行高必须约束成视口高度（minmax(0,1fr)），否则网格行按聊天内容撑高、
+          // 溢出被 overflow:hidden 裁掉，导致输入框被顶到视口外、消息区不能内部滚动。
+          gridTemplateRows: 'minmax(0, 1fr)',
           gap: 12,
           padding: 12,
           background: 'rgb(244, 246, 251)',
@@ -101,13 +109,28 @@ const SuperContentLayout: React.FC<SuperContentLayoutProps> = ({
         }}
       >
         <EmployeeRoster currentBotId={currentBotId} />
-        {chatPanel}
-        {artifactsOpen ? <SandboxWorkspace /> : null}
-        {/* 产物抽屉把手：默认折叠，以对话为主；点开右侧看员工产出的文件 */}
+        <div style={{ position: 'relative', minWidth: 0, height: '100%' }}>
+          <div
+            style={{
+              height: '100%',
+              minWidth: 0,
+              display: artifactsOpen ? 'none' : 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {chatPanel}
+          </div>
+          {artifactsOpen ? (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex' }}>
+              <SandboxWorkspace />
+            </div>
+          ) : null}
+        </div>
+        {/* 把手：右缘常驻，开/合产物面板 */}
         <button
           type="button"
           onClick={() => setArtifactsOpen(o => !o)}
-          title={artifactsOpen ? '收起产物' : '查看产物文件'}
+          title={artifactsOpen ? '返回对话' : '查看产物文件'}
           style={{
             position: 'absolute',
             top: '50%',

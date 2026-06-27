@@ -1907,6 +1907,13 @@ func (p *PluginApplicationService) GetFolderList(ctx context.Context, req *plugi
 	folderList := make([]*pluginAPI.FolderInfo, 0, len(folders))
 	for _, folder := range folders {
 		resourceIDs := resourceIDsByFolder[folder.ID]
+		// Serialize resource IDs as strings: large int64 IDs lose precision when
+		// sent as JSON numbers to JS, and the frontend matches them against the
+		// string res_id from the resource list. (id/space_id already use ,string)
+		resourceIDStrs := make([]string, 0, len(resourceIDs))
+		for _, rid := range resourceIDs {
+			resourceIDStrs = append(resourceIDStrs, strconv.FormatInt(rid, 10))
+		}
 		folderList = append(folderList, &pluginAPI.FolderInfo{
 			ID:            folder.ID,
 			SpaceID:       folder.SpaceID,
@@ -1916,7 +1923,7 @@ func (p *PluginApplicationService) GetFolderList(ctx context.Context, req *plugi
 			CreatorID:     folder.CreatorID,
 			CreatedAt:     folder.CreatedAt,
 			UpdatedAt:     folder.UpdatedAt,
-			ResourceIDs:   resourceIDs,
+			ResourceIDs:   resourceIDStrs,
 			ResourceCount: int64(len(resourceIDs)),
 		})
 	}

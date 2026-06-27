@@ -36,11 +36,7 @@ import {
   type ResourceFolderCozeProps,
   type ResourceSubType,
 } from './type';
-import {
-  createResourceIconMap,
-  createResourceLabelMap,
-  DISABLE_FOLDER,
-} from './constants';
+import { createResourceIconMap, createResourceLabelMap } from './constants';
 
 import styles from './styles.module.less';
 
@@ -59,6 +55,7 @@ interface ResourceGroupActionsProps {
   ) => void;
   onImportResource?: (groupType: ProjectResourceGroupType) => void;
   createResourceConfig: ResourceFolderCozeProps['createResourceConfig'];
+  enableFolder?: boolean;
 }
 
 export const ResourceGroupActions: React.FC<ResourceGroupActionsProps> = ({
@@ -67,6 +64,7 @@ export const ResourceGroupActions: React.FC<ResourceGroupActionsProps> = ({
   onCreateResource,
   onImportResource,
   createResourceConfig,
+  enableFolder = false,
 }) => {
   const shortcutService = useIDEService<ShortcutsService>(ShortcutsService);
   const keybindingContent = useMemo(() => {
@@ -131,7 +129,7 @@ export const ResourceGroupActions: React.FC<ResourceGroupActionsProps> = ({
             mode="menu"
             style={{ width: menuWidth }}
           >
-            {DISABLE_FOLDER ? null : (
+            {enableFolder ? (
               <Menu.Item
                 onClick={(value, event) => {
                   event.stopPropagation();
@@ -141,7 +139,7 @@ export const ResourceGroupActions: React.FC<ResourceGroupActionsProps> = ({
               >
                 {I18n.t('project_resource_sidebar_create_new_folder')}
               </Menu.Item>
-            )}
+            ) : null}
             {createResourceNode}
             <Menu.Item
               onClick={(value, event) => {

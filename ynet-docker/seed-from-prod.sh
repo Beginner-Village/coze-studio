@@ -48,7 +48,8 @@ WORKDIR="${WORKDIR:-/tmp/seed-from-prod}"; DRY_RUN="${DRY_RUN:-0}"; TS="$(date +
 EXCLUDE_TABLES="node_execution workflow_execution run_record workflow_snapshot conversation message \
 knowledge_document_slice operation_log audit_logs chatflow_conversation_history \
 agent_conversation_mapping statistics_export_file data_copy_task \
-model_template"
+model_template workflow_version single_agent_version"
+# 注：workflow_version(672MB)/single_agent_version(80MB) 是历史发布版本快照，用户确认不需要 → 不导；工作流实体在 workflow_draft。
 # 注：model_template 无雪花业务键(仅 id+provider)且是环境相关的全局模型配置 → 不导(保留226自己的)。
 # 已验证其余 reassign 表均有业务键(agent_id/skill_id 或按 space_id/user_id 配置)，重分配 id 安全。
 # 已知跨环境局限：导入的 prod 智能体/工作流的"模型绑定"指向 prod 模型，226 需按需重选模型。

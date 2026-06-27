@@ -290,7 +290,7 @@ export const Develop: FC<DevelopProps> = ({ spaceId }) => {
             <Search
               disabled={filterParams.recentlyOpen}
               showClear={true}
-              className="w-[200px]"
+              className="w-[300px]"
               style={filterParams.searchValue ? highlightFilterStyle : {}}
               placeholder={I18n.t('workspace_develop_search_project')}
               value={filterParams.searchValue}
@@ -306,8 +306,8 @@ export const Develop: FC<DevelopProps> = ({ spaceId }) => {
             {data?.list.length ? (
               <div
                 className={classNames(
-                  'grid grid-cols-3 auto-rows-min gap-[20px]',
-                  '[@media(min-width:1600px)]:grid-cols-4',
+                  'grid auto-rows-min gap-[16px]',
+                  'grid-cols-[repeat(auto-fill,minmax(248px,1fr))]',
                 )}
               >
                 {data.list.map((project, index) => (

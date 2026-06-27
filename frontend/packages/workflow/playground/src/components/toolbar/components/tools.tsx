@@ -33,6 +33,7 @@ import { Interactive } from './interactive';
 import { Comment } from './comment';
 import { AutoLayout } from './auto-layout';
 import { AddNode } from './add-node';
+import { MCPConnect } from './mcp-connect';
 
 import css from './tools.module.less';
 
@@ -57,6 +58,7 @@ export const Tools = (props: ITool) => {
         <Comment />
         <AutoLayout />
         <MinimapSwitch {...props} />
+        <MCPConnect />
         {enableAddNode ? (
           <>
             <Divider layout="vertical" style={{ height: '16px' }} margin={3} />

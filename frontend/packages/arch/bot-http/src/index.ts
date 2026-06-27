@@ -32,4 +32,5 @@ export {
   ErrorCodes,
 } from './axios';
 export { ApiError, isApiError } from './api-error';
+export { getLocalizedErrorMessage } from './user-facing-error';
 export { type AxiosRequestConfig } from 'axios';

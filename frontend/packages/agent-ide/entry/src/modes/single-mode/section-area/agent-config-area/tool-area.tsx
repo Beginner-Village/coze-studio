@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-/* eslint-disable @coze-arch/no-deep-relative-import */
+/* eslint-disable @coze-arch/no-deep-relative-import -- ToolArea composes local entry sections. */
+/* eslint-disable @coze-arch/max-line-per-function -- Keeps the product-defined tool section order together. */
 import classNames from 'classnames';
 import { useModelStore } from '@coze-studio/bot-detail-store/model';
 import { useBotInfoStore } from '@coze-studio/bot-detail-store/bot-info';
@@ -39,6 +40,7 @@ import {
   ExternalKnowledgeArea,
   CardBindingArea,
   AgentSkillArea,
+  StrategyBindingArea,
   ForceToolReturn,
 } from '@coze-agent-ide/space-bot/component';
 import { PluginApisArea } from '@coze-agent-ide/plugin-area-adapter';
@@ -68,9 +70,53 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
   } = props;
   const { node: DataSetArea, initRef: DataSetAreaRef } = useDataSetArea();
   const modelId = useModelStore(state => state.config.model);
-  // 超级智能体:精简中间面板,只留「技能(插件/MCP)」与「对话」,
-  // 砍掉工作流/卡片绑定/知识库/变量记忆 —— 老智能体不受影响。
   const isSuper = useBotInfoStore(state => state.agentType) === 'super';
+
+  if (isSuper) {
+    return (
+      <LayoutContext value={{ placement: PlacementEnum.CENTER }}>
+        <div
+          className={classNames(s['setting-area'], 'coz-bg-plus', {
+            [s['tool-hidden']]: isAllToolHidden,
+          })}
+        >
+          <div
+            className="p-[12px] overflow-auto flex-1"
+            id={settingAreaScrollId}
+          >
+            <ToolView>
+              {/* 超级体专属:仅保留真正在用的板块(开场白/用户问题建议/技能)。
+                  快捷指令、插件商店对超级体是冗余(超级体用沙箱+技能,不走插件/快捷指令),已下线。 */}
+              <GroupingContainer
+                toolGroupKey={ToolGroupKey.DIALOG}
+                title={I18n.t('bot_edit_type_dialog')}
+              >
+                <OnboardingMessage
+                  toolKey={ToolKey.ONBOARDING}
+                  title={I18n.t('bot_preview_opening_remarks')}
+                />
+                <SuggestionBlock
+                  toolKey={ToolKey.SUGGEST}
+                  title={I18n.t('bot_edit_suggestion')}
+                />
+                {dialogToolSlot}
+              </GroupingContainer>
+              <GroupingContainer
+                title={I18n.t('bot_edit_type_skills')}
+                toolGroupKey={ToolGroupKey.SKILL}
+              >
+                <AgentSkillArea toolKey={ToolKey.AGENT_SKILL} title="技能" />
+                <ForceToolReturn />
+                {skillToolSlot}
+              </GroupingContainer>
+              {extraToolSlot}
+            </ToolView>
+          </div>
+        </div>
+      </LayoutContext>
+    );
+  }
+
   return (
     <LayoutContext value={{ placement: PlacementEnum.CENTER }}>
       <div
@@ -89,24 +135,21 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
                 toolKey={ToolKey.PLUGIN}
                 title={I18n.t('Plugins')}
               />
-              {/* Workflow（超级智能体不展示） */}
-              {isSuper ? null : (
-                <WorkflowCard
-                  flowMode={WorkflowMode.Workflow}
-                  toolKey={ToolKey.WORKFLOW}
-                  title={I18n.t('Workflows')}
-                  from={WorkflowModalFrom.BotSkills}
-                />
-              )}
-              {/* 卡片绑定（超级智能体不展示） */}
-              {isSuper ? null : <CardBindingArea />}
+              <WorkflowCard
+                flowMode={WorkflowMode.Workflow}
+                toolKey={ToolKey.WORKFLOW}
+                title={I18n.t('Workflows')}
+                from={WorkflowModalFrom.BotSkills}
+              />
+              <CardBindingArea />
+              {/* Strategy binding (progressive disclosure) */}
+              <StrategyBindingArea />
               {/* Agent Skills (progressive disclosure) */}
               <AgentSkillArea toolKey={ToolKey.AGENT_SKILL} title="技能" />
               {/* Force tool return switch */}
               <ForceToolReturn />
               {skillToolSlot}
             </GroupingContainer>
-            {isSuper ? null : (
             <GroupingContainer
               toolGroupKey={ToolGroupKey.KNOWLEDGE}
               title={I18n.t('bot_edit_type_knowledge')}
@@ -157,8 +200,6 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
               />
               {knowledgeToolSlot}
             </GroupingContainer>
-            )}
-            {isSuper ? null : (
             <GroupingContainer
               toolGroupKey={ToolGroupKey.MEMORY}
               title={I18n.t('bot_edit_type_memory')}
@@ -170,7 +211,6 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
               />
               {memoryToolSlot}
             </GroupingContainer>
-            )}
             <GroupingContainer
               toolGroupKey={ToolGroupKey.DIALOG}
               title={I18n.t('bot_edit_type_dialog')}

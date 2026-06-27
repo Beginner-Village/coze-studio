@@ -18,6 +18,7 @@ import React from 'react';
 
 import { I18n } from '@coze-arch/i18n';
 import {
+  IconCozFolder,
   IconCozWorkflow,
   IconCozPlugin,
   IconCozDocument,
@@ -30,12 +31,8 @@ import {
 import { ResourceTypeEnum } from '@coze-project-ide/framework';
 
 import { BizResourceContextMenuBtnType, BizResourceTypeEnum } from './type';
-export const iconFolder = (
-  <i style={{ fontSize: 14 }} className={'codicon codicon-folder'} />
-);
-export const iconFolderOpended = (
-  <i style={{ fontSize: 14 }} className={'codicon codicon-folder-opened'} />
-);
+export const iconFolder = <IconCozFolder />;
+export const iconFolderOpended = <IconCozFolder />;
 
 export const VARIABLE_RESOURCE_ID = 'variables';
 
@@ -102,5 +99,3 @@ export const contextMenuDTOToVOMap = {
 export const MAX_DEEP = 6;
 export const TAB_SIZE = 14;
 export const ITEM_HEIGHT = 28;
-/* Disable folder feature */
-export const DISABLE_FOLDER = true;

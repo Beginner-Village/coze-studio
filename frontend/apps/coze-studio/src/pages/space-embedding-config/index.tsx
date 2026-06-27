@@ -31,9 +31,13 @@ import {
   Toast,
 } from '@coze-arch/coze-design';
 import { IconCozPlus } from '@coze-arch/coze-design/icons';
+import { getLocalizedErrorMessage } from '@coze-arch/bot-api';
 import { space_embedding } from '@coze-studio/api-schema';
 
 const { Title } = Typography;
+
+const getDisplayErrorMessage = (message?: string) =>
+  getLocalizedErrorMessage(message) || message || '未知错误';
 
 // Types
 type SpaceEmbeddingConfig = space_embedding.SpaceEmbeddingConfig;
@@ -372,7 +376,7 @@ const Page: React.FC = () => {
         // Form validation error - Semi Design validate() rejects with field errors
         // Errors are already shown inline by the Form component
       } else {
-        Toast.error('操作失败: ' + (error.message || '未知错误'));
+        Toast.error(`操作失败: ${getDisplayErrorMessage(error.message)}`);
       }
     }
   };

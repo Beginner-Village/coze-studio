@@ -65,6 +65,7 @@ export const createBatchFileUploadStore = (mark: string) =>
               const baseFileData: BaseFileData = {
                 percent: 0,
                 uri: null,
+                url: null,
                 file,
                 id,
                 status: FileStatus.Uploading,

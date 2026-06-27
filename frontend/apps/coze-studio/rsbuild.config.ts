@@ -23,9 +23,16 @@ import { GLOBAL_ENVS } from '@coze-arch/bot-env';
 const { codeInspectorPlugin } = require('code-inspector-plugin');
 
 // 常量定义
-// const DEFAULT_WEB_SERVER_PORT = 8888;
+const DEFAULT_WEB_SERVER_PORT = 8888;
 
-// const API_PROXY_TARGET = `http://localhost:${process.env.WEB_SERVER_PORT || DEFAULT_WEB_SERVER_PORT}/`;
+const normalizeProxyTarget = (target: string) =>
+  target.endsWith('/') ? target : `${target}/`;
+
+const API_PROXY_TARGET = normalizeProxyTarget(
+  process.env.API_PROXY_TARGET ||
+    process.env.WEB_SERVER_URL ||
+    `http://localhost:${process.env.WEB_SERVER_PORT || DEFAULT_WEB_SERVER_PORT}`,
+);
 
 const mergedConfig = defineConfig({
   server: {
@@ -38,10 +45,10 @@ const mergedConfig = defineConfig({
         secure: false,
         changeOrigin: true,
       },
-      // 其他API代理到本地后端
+      // 其他 API 默认代理到本地后端,也可通过 API_PROXY_TARGET 指向远程测试环境。
       {
         context: ['/api', '/v1', '/filestore', '/agent-h5/'],
-        target: 'http://localhost:8888/',
+        target: API_PROXY_TARGET,
         secure: false,
         changeOrigin: true,
       },

@@ -84,6 +84,10 @@ interface TestRunOneNodeOptions {
   useProject?: boolean;
 }
 
+interface TestRunOptions {
+  skipGlobalReload?: boolean;
+}
+
 /**
  * Workflow execution
  */
@@ -111,6 +115,7 @@ export class WorkflowRunService {
   readonly onTestRunStateChange = this.testRunStateEmitter.event;
 
   private _testRunState: TestRunState = TestRunState.Idle;
+  private latestProcessResult?: GetWorkFlowProcessData;
 
   public get testRunState() {
     return this._testRunState;
@@ -157,6 +162,7 @@ export class WorkflowRunService {
   };
 
   clearTestRunResult = () => {
+    this.latestProcessResult = undefined;
     this.testFormState.unfreezeTestRun();
     this.globalState.viewStatus = WorkflowExecStatus.DEFAULT;
     // Clear the node results to avoid echo when the test runs
@@ -303,8 +309,11 @@ export class WorkflowRunService {
       }
     });
 
-    return data || {};
+    this.latestProcessResult = data || {};
+    return this.latestProcessResult;
   };
+
+  getLastProcessResult = () => this.latestProcessResult;
 
   // Pause test run
   pauseTestRun = () => {
@@ -346,10 +355,10 @@ export class WorkflowRunService {
     return this.loop(executeId);
   };
 
-  finishProcess = () => {
+  finishProcess = (options?: { skipReload?: boolean }) => {
     this.testFormState.unfreezeTestRun();
     this.globalState.viewStatus = WorkflowExecStatus.DONE;
-    if (!this.globalState.isViewHistory) {
+    if (!options?.skipReload && !this.globalState.isViewHistory) {
       // Refresh the publishable state based on practice run results
       this.globalState.reload();
     }
@@ -411,14 +420,17 @@ export class WorkflowRunService {
     botId?: string,
     /** Is the current selection an application? */
     useProject?: boolean,
+    options?: TestRunOptions,
   ) => {
     if (this.globalState.config.saving) {
       return;
     }
+    this.latestProcessResult = undefined;
     this.testFormState.freezeTestRun(START_NODE_ID);
 
     let executeStatus;
     let executeId = '';
+    let processResult: GetWorkFlowProcessData | undefined;
 
     try {
       this.execState.closeSideSheet();
@@ -465,7 +477,8 @@ export class WorkflowRunService {
         });
         this.setTestRunState(TestRunState.Executing);
         executeStatus = await this.loop(executeId);
-        this.finishProcess();
+        processResult = this.latestProcessResult;
+        this.finishProcess({ skipReload: options?.skipGlobalReload });
       }
       this.reporter.runEnd({
         testrun_type: 'flow',
@@ -480,6 +493,10 @@ export class WorkflowRunService {
       this.execState.updateConfig({
         systemError: error.msg || error.message,
       });
+      processResult = this.latestProcessResult ?? {
+        executeStatus: WorkflowExeStatus.Fail,
+        reason: error.msg || error.message,
+      };
       this.reporter.runEnd({
         testrun_type: 'flow',
         testrun_result: 'error',
@@ -494,6 +511,7 @@ export class WorkflowRunService {
       this.globalState.inPluginUpdated = false;
       this.setTestRunState(ExecuteStatusToTestRunStateMap[executeStatus]);
     }
+    return processResult ?? this.latestProcessResult;
   };
 
   /**

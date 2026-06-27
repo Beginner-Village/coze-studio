@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/cloudwego/eino/schema"
+
+	crosssingleagent "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/singleagent"
 )
 
 func TestTrimHistoryByTokenBudgetDisabled(t *testing.T) {
@@ -51,7 +53,7 @@ func TestTrimHistoryByTokenBudgetKeepsNewest(t *testing.T) {
 func TestTrimHistoryDropsLeadingOrphanToolMsg(t *testing.T) {
 	big := strings.Repeat("x", 3000)
 	h := []*schema.Message{
-		{Role: schema.Assistant, Content: big},                       // oldest (will be trimmed)
+		{Role: schema.Assistant, Content: big},                        // oldest (will be trimmed)
 		{Role: schema.Tool, Content: "tool result", ToolCallID: "c1"}, // becomes leading orphan after trim
 		{Role: schema.User, Content: big},                             // newest
 	}
@@ -63,5 +65,51 @@ func TestTrimHistoryDropsLeadingOrphanToolMsg(t *testing.T) {
 	}
 	if len(got) > 0 && got[0].Role == schema.Tool {
 		t.Fatalf("leading tool message should have been dropped")
+	}
+}
+
+func TestHistoryTokenBudgetForSuperAgentLetsHarnessCompact(t *testing.T) {
+	superAgent := &crosssingleagent.SingleAgent{AgentType: "super"}
+	if got := historyTokenBudgetForAgent(superAgent); got != 0 {
+		t.Fatalf("super agent history should be handed to harness compaction, got budget %d", got)
+	}
+
+	normalAgent := &crosssingleagent.SingleAgent{}
+	if got := historyTokenBudgetForAgent(normalAgent); got != defaultHistoryTokenBudget {
+		t.Fatalf("normal agent should keep default token budget, got %d", got)
+	}
+}
+
+func TestBuildAgentHistorySchemaDropsHistoryForWorkflowCanvasMode(t *testing.T) {
+	history := []*schema.Message{
+		{Role: schema.User, Content: "old workflow request"},
+		{
+			Role: schema.Assistant,
+			ToolCalls: []schema.ToolCall{
+				{
+					ID:   "call_update_plan",
+					Type: "function",
+					Function: schema.FunctionCall{
+						Name:      "update_plan",
+						Arguments: `{"plan":[]}`,
+					},
+				},
+			},
+		},
+		{Role: schema.Tool, Content: "Plan updated", ToolCallID: "call_update_plan"},
+	}
+
+	got := buildAgentHistorySchema(history, nil, map[string]string{"workflow_canvas_mode": "true"})
+	if len(got) != 0 {
+		t.Fatalf("workflow canvas mode should not send stale history to model, got %d messages", len(got))
+	}
+}
+
+func TestBuildAgentHistorySchemaKeepsHistoryByDefault(t *testing.T) {
+	history := []*schema.Message{{Role: schema.User, Content: "old request"}}
+
+	got := buildAgentHistorySchema(history, nil, nil)
+	if len(got) != 1 {
+		t.Fatalf("normal runs should keep history, got %d messages", len(got))
 	}
 }

@@ -39,14 +39,15 @@ import (
 	coze "github.com/ynet-dev/ynet-studio/backend/api/router/coze"
 	embedding "github.com/ynet-dev/ynet-studio/backend/api/router/embedding"
 	external_knowledge "github.com/ynet-dev/ynet-studio/backend/api/router/external_knowledge"
-	rerankRouter "github.com/ynet-dev/ynet-studio/backend/api/router/rerank"
 	memory_config "github.com/ynet-dev/ynet-studio/backend/api/router/memory_config"
 	modelmgr "github.com/ynet-dev/ynet-studio/backend/api/router/modelmgr"
 	operationlog "github.com/ynet-dev/ynet-studio/backend/api/router/operationlog"
+	rerankRouter "github.com/ynet-dev/ynet-studio/backend/api/router/rerank"
 	skill "github.com/ynet-dev/ynet-studio/backend/api/router/skill"
 	space "github.com/ynet-dev/ynet-studio/backend/api/router/space"
 	statistics "github.com/ynet-dev/ynet-studio/backend/api/router/statistics"
 	template_publish "github.com/ynet-dev/ynet-studio/backend/api/router/template_publish"
+	workflowmcp "github.com/ynet-dev/ynet-studio/backend/api/router/workflowmcp"
 	ynet_agent "github.com/ynet-dev/ynet-studio/backend/api/router/ynet_agent"
 	ynet_workflow "github.com/ynet-dev/ynet-studio/backend/api/router/ynet_workflow"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
@@ -65,6 +66,7 @@ func GeneratedRegister(r *server.Hertz) {
 	memory_config.Register(r)
 
 	ynet_workflow.Register(r)
+	workflowmcp.Register(r)
 
 	statistics.Register(r)
 
@@ -88,7 +90,103 @@ func GeneratedRegister(r *server.Hertz) {
 	manualRegisterImportExport(r)
 	manualRegisterExternalKnowledge(r)
 	cozeLoopProxyRegister(r)
+	cardBackendProxyRegister(r)
 	staticFileRegister(r)
+}
+
+// cardBackendProxyRegister registers a reverse proxy for the finmall card backend.
+// 卡片编辑器(/agent-h5 #/m_cardEditor)依赖 finmall 的 aop-web 卡片系统(IDC*.do)、
+// fgw 网关、filestore 资源与 ai-example 接口。测试环境(如 226)只部署了 coze-studio、
+// 没有这套后端,这些请求会落到 SPA fallback 返回 index.html,导致卡片功能整体不可用。
+// 这里把相关前缀透传到真实卡片后端(默认 agent.finmall.com,可用 YNET_CARD_BACKEND_URL 覆盖),
+// 使同源下卡片编辑器与卡片相关接口可直接复用线上卡片后端。
+func cardBackendProxyRegister(r *server.Hertz) {
+	target := strings.TrimRight(os.Getenv("YNET_CARD_BACKEND_URL"), "/")
+	if target == "" {
+		target = "https://agent.finmall.com"
+	}
+	if _, err := url.Parse(target); err != nil {
+		logs.Warnf("[cardBackendProxy] Invalid YNET_CARD_BACKEND_URL: %v", err)
+		return
+	}
+
+	httpClient := &http.Client{Timeout: 60 * time.Second}
+
+	// 需要透传到卡片后端的路径前缀。
+	// /agent-h5 是 finmall 卡片编辑器(m_cardEditor)预编译 H5,本仓库无源码,
+	// 直接代理到线上,使测试环境也能打开真实卡片编辑器(后续在其 index.html 注入 AI 面板)。
+	prefixes := []string{"/aop-web", "/fgw", "/filestore", "/ai-example", "/agent-h5"}
+
+	handler := func(c context.Context, ctx *app.RequestContext) {
+		originalPath := string(ctx.Request.URI().Path())
+		targetURL := target + originalPath
+		if qs := string(ctx.Request.URI().QueryString()); qs != "" {
+			targetURL += "?" + qs
+		}
+
+		var bodyReader io.Reader
+		if body := ctx.Request.Body(); len(body) > 0 {
+			bodyReader = bytes.NewReader(body)
+		}
+		proxyReq, err := http.NewRequestWithContext(c, string(ctx.Method()), targetURL, bodyReader)
+		if err != nil {
+			ctx.JSON(500, map[string]string{"code": "500", "msg": "card proxy error"})
+			return
+		}
+
+		// 复制请求头,但丢弃 host/connection 及携带 studio 会话凭证的头
+		// (Cookie/Authorization),避免把 studio session 泄露给一方卡片后端。
+		ctx.Request.Header.VisitAll(func(key, value []byte) {
+			k := string(key)
+			switch {
+			case strings.EqualFold(k, "host"), strings.EqualFold(k, "connection"),
+				strings.EqualFold(k, "cookie"), strings.EqualFold(k, "authorization"):
+				return
+			default:
+				proxyReq.Header.Set(k, string(value))
+			}
+		})
+
+		resp, err := httpClient.Do(proxyReq)
+		if err != nil {
+			logs.CtxWarnf(c, "[cardBackendProxy] request failed: %v", err)
+			ctx.JSON(503, map[string]string{"code": "503", "msg": "card backend unavailable"})
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			logs.CtxWarnf(c, "[cardBackendProxy] read response body failed: %v", err)
+			ctx.JSON(503, map[string]string{"code": "503", "msg": "card backend unavailable"})
+			return
+		}
+
+		// 透传响应头,但剥离跨源敏感头:Set-Cookie(防上游往 studio 源种 cookie)、
+		// 以及会影响本站安全策略的 CSP/X-Frame/CORS 头;Content-Length 由实际 body 重算。
+		for key, values := range resp.Header {
+			switch {
+			case strings.EqualFold(key, "Content-Length"),
+				strings.EqualFold(key, "Set-Cookie"),
+				strings.EqualFold(key, "Content-Security-Policy"),
+				strings.EqualFold(key, "X-Frame-Options"),
+				strings.EqualFold(key, "Access-Control-Allow-Origin"),
+				strings.EqualFold(key, "Access-Control-Allow-Credentials"):
+				continue
+			}
+			for _, v := range values {
+				ctx.Response.Header.Add(key, v)
+			}
+		}
+		ctx.SetStatusCode(resp.StatusCode)
+		ctx.Response.SetBody(body)
+	}
+
+	for _, p := range prefixes {
+		r.Any(p+"/*path", handler)
+	}
+
+	logs.Infof("[cardBackendProxy] card backend proxy enabled: %v -> %s", prefixes, target)
 }
 
 // staticFileRegister registers web page router.
@@ -203,9 +301,12 @@ func cozeLoopProxyRegister(r *server.Hertz) {
 		if token := os.Getenv("YNET_LOOP_TELEMETRY_TOKEN"); token != "" {
 			proxyReq.Header.Set("Authorization", "Bearer "+token)
 		}
-		// Inject Loop session cookie for API requests that require session auth
+		// Inject Loop session cookie for API requests that require session auth.
+		// 用 Loop 原生 session 覆盖整个 Cookie 头:Studio 转发的 session_key(Studio 签名格式)
+		// 与注入值并存时,旧版 Loop 会读到 Studio 那条并因无 studio-session fallback 而验签失败。
+		// Loop 的 API 鉴权只依赖 session_key,故直接覆盖为唯一的 Loop session 是安全的。
 		if sessionKey := os.Getenv("YNET_LOOP_SESSION_KEY"); sessionKey != "" {
-			proxyReq.AddCookie(&http.Cookie{Name: "session_key", Value: sessionKey})
+			proxyReq.Header.Set("Cookie", "session_key="+sessionKey)
 		}
 
 		// Forward request

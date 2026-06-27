@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -41,6 +42,7 @@ type skillVersionPO struct {
 	Name        string  `gorm:"column:name;not null"`
 	Description *string `gorm:"column:description"`
 	Prompt      *string `gorm:"column:prompt"`
+	Files       *string `gorm:"column:files"`
 	IconURI     string  `gorm:"column:icon_uri;not null"`
 	ContentHash string  `gorm:"column:content_hash;not null"`
 	CreatedAt   int64   `gorm:"column:created_at;not null"`
@@ -96,13 +98,18 @@ func (dao *SkillDAO) createVersionFromSkill(ctx context.Context, po *skillPO, no
 	if po.Prompt != nil {
 		prompt = *po.Prompt
 	}
+	files := map[string]string(nil)
+	if po.Files != nil && *po.Files != "" {
+		_ = json.Unmarshal([]byte(*po.Files), &files)
+	}
 	v := &entity.SkillVersion{
 		SkillID:     po.SkillID,
 		Version:     po.Version,
 		Name:        po.Name,
 		Prompt:      prompt,
+		Files:       files,
 		IconURI:     po.IconURI,
-		ContentHash: contentHash(prompt),
+		ContentHash: contentHash(prompt, files),
 		CreatedAt:   now,
 	}
 	if po.Description != nil {
@@ -111,8 +118,16 @@ func (dao *SkillDAO) createVersionFromSkill(ctx context.Context, po *skillPO, no
 	return dao.CreateVersion(ctx, v)
 }
 
-func contentHash(prompt string) string {
-	sum := sha256.Sum256([]byte(prompt))
+func contentHash(prompt string, files map[string]string) string {
+	payload := struct {
+		Prompt string            `json:"prompt"`
+		Files  map[string]string `json:"files,omitempty"`
+	}{
+		Prompt: prompt,
+		Files:  files,
+	}
+	b, _ := json.Marshal(payload)
+	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
 }
 
@@ -135,6 +150,12 @@ func skillVersionDo2po(v *entity.SkillVersion) *skillVersionPO {
 	if v.Prompt != "" {
 		po.Prompt = &v.Prompt
 	}
+	if v.Files != nil {
+		if b, err := json.Marshal(v.Files); err == nil {
+			s := string(b)
+			po.Files = &s
+		}
+	}
 	return po
 }
 
@@ -152,6 +173,12 @@ func skillVersionPo2do(po *skillVersionPO) *entity.SkillVersion {
 	}
 	if po.Prompt != nil {
 		v.Prompt = *po.Prompt
+	}
+	if po.Files != nil && *po.Files != "" {
+		files := map[string]string{}
+		if err := json.Unmarshal([]byte(*po.Files), &files); err == nil {
+			v.Files = files
+		}
 	}
 	return v
 }

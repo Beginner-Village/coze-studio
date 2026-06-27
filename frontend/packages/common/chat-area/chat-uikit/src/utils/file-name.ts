@@ -32,3 +32,14 @@ export const getFileExtensionAndName = (fileName: string) => {
     nameWithoutExtension,
   };
 };
+
+const SANDBOX_FILENAME_EXTENSIONS =
+  'py|js|ts|tsx|jsx|json|md|txt|csv|xlsx|xls|docx|doc|pptx|ppt|pdf|sh|go|yaml|yml|toml|lock';
+
+const sandboxFilenameRegExp = new RegExp(
+  `(^|[\\s,，、])([A-Za-z0-9_-]+\\.(?:${SANDBOX_FILENAME_EXTENSIONS}))(?![A-Za-z0-9_/.-])`,
+  'g',
+);
+
+export const protectSandboxFilenames = (text: string) =>
+  text.replace(sandboxFilenameRegExp, '$1`$2`');
