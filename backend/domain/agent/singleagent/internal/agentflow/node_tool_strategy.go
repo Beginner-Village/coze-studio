@@ -513,10 +513,13 @@ func (t *invokeCapabilityTool) InvokableRun(ctx context.Context, argumentsInJSON
 		if wfRunErr != nil {
 			return fmt.Sprintf("Error executing workflow: %v", wfRunErr), nil
 		}
-		// Mirror native workflow returnDirectly: if the workflow's TerminatePlan==
-		// UseAnswerContent AND forceToolReturn is not set, prefix the result with the
-		// sentinel so the callback can route it directly to the user (bypass the model).
-		if !t.conf.forceToolReturn && wfTools[0].TerminatePlan() == vo.UseAnswerContent {
+		// Mirror native workflow returnDirectly: if the workflow returns answer content
+		// (i.e. NOT ReturnVariables — this matches workflow_tool.InvokableRun's own
+		// text-vs-JSON branch, and correctly covers the empty/default TerminatePlan that
+		// WorkflowAsModelTool leaves on "return text" End nodes) AND forceToolReturn is
+		// not set, prefix the result with the sentinel so the callback can route it
+		// directly to the user (bypass the model).
+		if !t.conf.forceToolReturn && wfTools[0].TerminatePlan() != vo.ReturnVariables {
 			return StrategyReturnDirectlyMarker + wfResult, nil
 		}
 		return wfResult, nil
