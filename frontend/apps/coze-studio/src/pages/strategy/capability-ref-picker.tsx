@@ -16,7 +16,7 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { ResType } from '@coze-arch/idl/plugin_develop';
+import { PublishStatus, ResType } from '@coze-arch/idl/plugin_develop';
 import type { PluginAPIInfo } from '@coze-arch/idl/plugin_develop';
 import { Select, Spin, Typography } from '@coze-arch/coze-design';
 import { PluginDevelopApi } from '@coze-arch/bot-api';
@@ -31,6 +31,8 @@ export interface ResourceOption {
   res_id: string;
   name: string;
   description?: string;
+  // workflow 未发布时为 true:不可被引用(run 用 FromLatestVersion 需已发布版本),下拉中标灰禁选
+  disabled?: boolean;
 }
 
 // ---------- Hook: workflow / knowledge list ----------
@@ -57,13 +59,18 @@ export function useResourceOptions(
     })
       .then(resp => {
         if (resp.code === 0 || resp.code === null || resp.code === undefined) {
-          setOptions(
-            (resp.resource_list ?? []).map(r => ({
-              res_id: r.res_id ?? '',
-              name: r.name ?? r.res_id ?? '',
-              description: r.description,
-            })),
-          );
+          const mapped = (resp.resource_list ?? []).map(r => ({
+            res_id: r.res_id ?? '',
+            name: r.name ?? r.res_id ?? '',
+            description: r.description,
+            // 只有工作流要求"已发布"才能被引用;知识库始终可用
+            disabled:
+              type === 'workflow' &&
+              r.publish_status !== PublishStatus.Published,
+          }));
+          // 已发布(可选)的排在前面,未发布(禁选)沉底
+          mapped.sort((a, b) => Number(a.disabled) - Number(b.disabled));
+          setOptions(mapped);
         }
       })
       .catch(() => setOptions([]))
@@ -298,8 +305,9 @@ export const CapabilityRefPicker: React.FC<CapabilityRefPickerProps> = ({
             }
             emptyContent={emptyLabel}
             optionList={options.map(o => ({
-              label: o.name,
+              label: o.disabled ? `${o.name}(未发布,不可用)` : o.name,
               value: o.res_id,
+              disabled: o.disabled,
               showTick: true,
             }))}
           />
