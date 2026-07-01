@@ -229,7 +229,23 @@ export interface Experiment {
     | { total?: number; finished?: number; success?: number };
   created_at?: string | number;
   description?: string;
+  desc?: string;
   base_info?: BaseInfo;
+  start_time?: string | number;
+  end_time?: string | number;
+  evaluator_version_ids?: string[];
+  target_id?: string;
+  eval_target?: {
+    eval_target_type?: number;
+    source_target_id?: string;
+  };
+  expt_stats?: {
+    success_turn_cnt?: number;
+    fail_turn_cnt?: number;
+    pending_turn_cnt?: number;
+    processing_turn_cnt?: number;
+    terminated_turn_cnt?: number;
+  };
 }
 
 export interface TrajectoryConfig {
@@ -295,6 +311,9 @@ export interface CreateExperimentRequest {
   target_version_id?: string;
   target_id?: string;
   create_eval_target_param?: CreateEvalTargetParam;
+  // 目标连接器：把评测集列映射到目标输入字段。bot/workflow 必须提供≥1条，否则实验校验不过、
+  // 或目标节点不展开 turn（就不会真正执行目标）。
+  target_field_mapping?: TargetFieldMapping;
   expt_type?: number;
 }
 
@@ -302,6 +321,10 @@ export interface FieldMapping {
   field_name?: string;
   from_field_name?: string;
   const_value?: string;
+}
+
+export interface TargetFieldMapping {
+  from_eval_set?: FieldMapping[];
 }
 
 export interface EvaluatorFieldMapping {
@@ -581,6 +604,7 @@ export function createExperiment(
     target_version_id: req.target_version_id,
     target_id: req.target_id,
     create_eval_target_param: req.create_eval_target_param,
+    target_field_mapping: req.target_field_mapping,
     expt_type: req.expt_type,
   });
 }
@@ -605,6 +629,95 @@ export function getExperimentAggrResult(req: {
   return post(`${EVALUATION_BASE}/experiments/aggr_results/batch_get`, {
     workspace_id: req.workspace_id,
     expt_ids: [req.experiment_id],
+  });
+}
+
+// ── 逐行结果（batch test 的核心产出：每条评测项的目标输出 + 各评估器打分）──
+// 后端 BatchGetExperimentResult (/experiments/results/batch_get)。响应结构较深且
+// 未锁定 IDL，这里用宽松类型，渲染层按 key 尽力取值并对未知字段做 JSON 兜底。
+export interface ExperimentColumnField {
+  key?: string;
+  name?: string;
+  content_type?: string;
+}
+
+export interface ExperimentColumnEvaluator {
+  evaluator_id?: string;
+  evaluator_version_id?: string;
+  name?: string;
+  version?: string;
+}
+
+// 单条 item 结果：字段随后端演进，renderer 一律按可选处理。
+export type ExperimentResultRow = Record<string, unknown>;
+
+export interface ListExperimentResultsResponse {
+  column_eval_set_fields?: ExperimentColumnField[];
+  column_evaluators?: ExperimentColumnEvaluator[];
+  expt_column_evaluators?: ExperimentColumnEvaluator[];
+  item_results?: ExperimentResultRow[];
+  total?: number | string;
+}
+
+// ── 批量测试编排用 API ──
+// 向评测集写入数据项：每条 item 的字段 map 转成 field_data_list(注意 key=field_data_list)。
+export function createEvaluationSetItems(req: {
+  workspace_id: string;
+  evaluation_set_id: string;
+  rows: Array<Record<string, string>>;
+}): Promise<{ added_items?: Record<string, string> }> {
+  return post(
+    `${EVALUATION_BASE}/evaluation_sets/${req.evaluation_set_id}/items/batch_create`,
+    {
+      workspace_id: req.workspace_id,
+      evaluation_set_id: req.evaluation_set_id,
+      allow_partial_add: true,
+      items: req.rows.map(fields => ({
+        turns: [
+          {
+            field_data_list: Object.entries(fields).map(([k, v]) => ({
+              key: k,
+              name: k,
+              content: { content_type: 'Text', text: v },
+            })),
+          },
+        ],
+      })),
+    },
+  );
+}
+
+// 提交评测集版本快照(实验按版本读数据，草稿不可直接用)。
+export function commitEvaluationSetVersion(req: {
+  workspace_id: string;
+  evaluation_set_id: string;
+  version: string;
+  description?: string;
+}): Promise<{ id?: string }> {
+  return post(
+    `${EVALUATION_BASE}/evaluation_sets/${req.evaluation_set_id}/versions`,
+    {
+      workspace_id: req.workspace_id,
+      evaluation_set_id: req.evaluation_set_id,
+      version: req.version,
+      description: req.description,
+    },
+  );
+}
+
+export function listExperimentResults(req: {
+  workspace_id: string;
+  experiment_id: string;
+  page_number?: number;
+  page_size?: number;
+}): Promise<ListExperimentResultsResponse> {
+  return post(`${EVALUATION_BASE}/experiments/results/batch_get`, {
+    workspace_id: req.workspace_id,
+    experiment_ids: [req.experiment_id],
+    // 单实验视图必须带 baseline_experiment_id=自身，否则后端只回表头、不回 item_results。
+    baseline_experiment_id: req.experiment_id,
+    page_number: req.page_number ?? 1,
+    page_size: req.page_size ?? 20,
   });
 }
 

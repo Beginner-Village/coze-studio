@@ -395,6 +395,13 @@ const createSubMenuConfig = () => {
       path: 'observability?tab=experiments',
       dataTestId: 'navigation_workspace_observability_experiments',
     },
+    {
+      icon: menuIcon('experiment'),
+      activeIcon: menuIcon('experiment'),
+      title: () => '批量测试',
+      path: SpaceSubModuleEnum.BATCH_TEST,
+      dataTestId: 'navigation_workspace_batch_test',
+    },
   ];
 
   // 过滤掉 false 值（被 feature flag 隐藏的菜单项）

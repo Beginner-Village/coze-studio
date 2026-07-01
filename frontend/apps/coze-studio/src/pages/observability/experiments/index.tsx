@@ -107,6 +107,8 @@ const Page: React.FC = () => {
   const [, setSearchParams] = useSearchParams();
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const fetchExperiments = useCallback(async () => {
     if (!spaceId) {
@@ -117,15 +119,16 @@ const Page: React.FC = () => {
       const res = await listExperiments({
         workspace_id: spaceId,
         page_size: PAGE_SIZE,
-        page_number: 1,
+        page_number: page,
       });
       setExperiments(res.experiments || []);
+      setTotal(Number(res.total) || 0);
     } catch (err: unknown) {
       Toast.error(getErrorMessage(err, '加载实验失败'));
     } finally {
       setLoading(false);
     }
-  }, [spaceId]);
+  }, [spaceId, page]);
 
   useEffect(() => {
     fetchExperiments();
@@ -237,18 +240,39 @@ const Page: React.FC = () => {
             <Spin />
           </div>
         ) : (
-          <Table
-            tableProps={{
-              loading,
-              dataSource: experiments,
-              columns,
-              rowKey: getExperimentId,
-              pagination: false,
-              empty: (
-                <div className="text-center py-8 text-gray-500">暂无实验</div>
-              ),
-            }}
-          />
+          <>
+            <Table
+              tableProps={{
+                loading,
+                dataSource: experiments,
+                columns,
+                rowKey: getExperimentId,
+                pagination: false,
+                empty: (
+                  <div className="text-center py-8 text-gray-500">暂无实验</div>
+                ),
+              }}
+            />
+            <div className="flex items-center justify-end gap-3 mt-4">
+              <span className="text-sm text-gray-500">
+                第 {page} 页{total ? ` / 共 ${total} 条` : ''}
+              </span>
+              <Button
+                size="small"
+                disabled={page <= 1 || loading}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              >
+                上一页
+              </Button>
+              <Button
+                size="small"
+                disabled={experiments.length < PAGE_SIZE || loading}
+                onClick={() => setPage(p => p + 1)}
+              >
+                下一页
+              </Button>
+            </div>
+          </>
         )}
       </Layout.Content>
     </Layout>

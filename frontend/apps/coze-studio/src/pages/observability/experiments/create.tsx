@@ -40,7 +40,48 @@ import {
   type EvaluationSet,
   type EvaluatorFieldMapping,
   type Evaluator,
+  type TargetFieldMapping,
 } from '../loop-eval-api';
+
+// CozeWorkflow / CozeBot 的通用输入字段 key（与后端 BuildBySource 声明一致）。
+const TARGET_INPUT_FIELD_KEY = 'input';
+
+// 从评测集读取列名（用于自动构建 target 连接器）。
+function getEvalSetColumns(record?: EvaluationSet): string[] {
+  const schema = (
+    record as {
+      evaluation_set_version?: {
+        evaluation_set_schema?: {
+          field_schemas?: Array<{ key?: string; name?: string }>;
+        };
+      };
+    }
+  )?.evaluation_set_version?.evaluation_set_schema?.field_schemas;
+  return (schema || []).map(f => f.key || f.name || '').filter(Boolean);
+}
+
+// 为 bot/workflow 自动构建 target 连接器：把目标输入字段映射到评测集同名列（否则首列）。
+// prompt 自行处理变量映射，返回 undefined。
+function buildTargetFieldMapping(
+  targetType: TargetType,
+  evalSet?: EvaluationSet,
+): TargetFieldMapping | undefined {
+  if (targetType === 'prompt') {
+    return undefined;
+  }
+  const cols = getEvalSetColumns(evalSet);
+  const fromField = cols.includes(TARGET_INPUT_FIELD_KEY)
+    ? TARGET_INPUT_FIELD_KEY
+    : cols[0];
+  if (!fromField) {
+    return undefined;
+  }
+  return {
+    from_eval_set: [
+      { field_name: TARGET_INPUT_FIELD_KEY, from_field_name: fromField },
+    ],
+  };
+}
 
 const FieldLabel: React.FC<{
   label: string;
@@ -60,21 +101,17 @@ const PAGE_SIZE = 50;
 
 const STEP_TITLES = ['基础信息', '选择评估集', '选择评估器'];
 
-// Eval target types. `a2a_agent` / `custom_agent` are the agent-eval types added
-// by the coze-loop fusion; `prompt` / `bot` / `workflow` predate it.
-// For `workflow` / `bot` we list real candidates via the studio APIs
-// (workflowApi.GetWorkFlowList / intelligenceApi.GetDraftIntelligenceList) so the
-// user can pick a target_id from a dropdown. For `prompt` / `a2a_agent` /
-// `custom_agent` there is no dedicated list endpoint yet, so target_id stays
-// free-text. TODO: add a picker for those once a ListTargets endpoint ships.
-type TargetType = 'prompt' | 'bot' | 'a2a_agent' | 'custom_agent' | 'workflow';
+// Eval target types with a real, executable operator in loop today:
+// workflow / bot run via studio OpenAPI (/v1/workflow/run, /v3/chat); prompt runs
+// via loop's prompt service. For workflow/bot we list real candidates via the
+// studio APIs (workflowApi.GetWorkFlowList / intelligenceApi.GetDraftIntelligenceList)
+// so the user picks a target_id from a dropdown; prompt stays free-text (loop prompt id).
+type TargetType = 'prompt' | 'bot' | 'workflow';
 
 const TARGET_TYPE_OPTIONS: { label: string; value: TargetType }[] = [
   { label: '工作流 (Workflow)', value: 'workflow' },
   { label: '智能体 (Bot)', value: 'bot' },
   { label: 'Prompt', value: 'prompt' },
-  { label: 'A2A Agent', value: 'a2a_agent' },
-  { label: 'Custom Agent', value: 'custom_agent' },
 ];
 
 function targetIdHint(targetType: TargetType): string {
@@ -85,10 +122,6 @@ function targetIdHint(targetType: TargetType): string {
       return '智能体 ID（target_id）';
     case 'prompt':
       return 'Prompt ID（target_id）';
-    case 'a2a_agent':
-      return 'A2A Agent ID（target_id）';
-    case 'custom_agent':
-      return 'Custom Agent ID（target_id）';
     default:
       return 'target_id';
   }
@@ -138,18 +171,19 @@ function isPickableTargetType(targetType: TargetType): boolean {
   return targetType === 'workflow' || targetType === 'bot';
 }
 
-function getLoopRecordOnlyTargetType(
-  targetType: TargetType,
-): number | undefined {
+// Base (executable) EvalTargetType in the loop entity model: workflow=4, bot=1,
+// prompt=2. An operator runs the REAL target for these — as opposed to the
+// record-only *Online variants (11/12/13) that only log a placeholder and never run.
+function getBaseEvalTargetType(targetType: TargetType): number {
   switch (targetType) {
     case 'workflow':
-      return 13;
+      return 4;
     case 'bot':
-      return 11;
+      return 1;
     case 'prompt':
-      return 12;
+      return 2;
     default:
-      return undefined;
+      return 2;
   }
 }
 
@@ -165,14 +199,16 @@ function buildEvaluatorFieldMapping(
 
 function buildCreateEvalTargetParam(
   targetType: TargetType,
-): CreateEvalTargetParam | undefined {
-  const evalTargetType = getLoopRecordOnlyTargetType(targetType);
-  if (!evalTargetType) {
-    return undefined;
-  }
-  // 226 Loop only has a Prompt source operator registered today; workflow/bot
-  // online experiments use record-only placeholder targets until typed operators land.
-  return { eval_target_type: evalTargetType };
+  sourceTargetId: string,
+  sourceTargetVersion: string,
+): CreateEvalTargetParam {
+  // Create a REAL executable eval target: loop's operator (CozeBot / CozeWorkflow /
+  // Prompt) runs this target on every eval-set row and records its output.
+  return {
+    eval_target_type: getBaseEvalTargetType(targetType),
+    source_target_id: sourceTargetId,
+    source_target_version: sourceTargetVersion || undefined,
+  };
 }
 
 const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
@@ -327,8 +363,8 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
       Toast.error('缺少 workspace_id');
       return;
     }
-    if (evaluatorIds.length === 0) {
-      Toast.error('请至少选择一个评估器');
+    if (!targetId.trim()) {
+      Toast.error('请选择评测对象（target_id）');
       return;
     }
     const selectedEvalSet = evalSets.find(
@@ -339,14 +375,12 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
       Toast.error('缺少评估集版本 ID');
       return;
     }
-    const createEvalTargetParam =
-      targetVersionId.trim() && targetId.trim()
-        ? undefined
-        : buildCreateEvalTargetParam(targetType);
-    if (!targetVersionId.trim() && !createEvalTargetParam) {
-      Toast.error('该评测对象类型暂未接入 Loop 在线实验');
-      return;
-    }
+    // 评估器可选：不选则只批量运行评测对象、记录逐行输出（纯批量测试）。
+    const createEvalTargetParam = buildCreateEvalTargetParam(
+      targetType,
+      targetId.trim(),
+      targetVersionId.trim(),
+    );
     setSubmitting(true);
     try {
       const evaluatorDetails = await Promise.all(
@@ -373,14 +407,12 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
         evaluator_version_ids: evaluatorVersionIds,
         evaluator_field_mapping:
           buildEvaluatorFieldMapping(evaluatorVersionIds),
-        target_id: createEvalTargetParam
-          ? undefined
-          : targetId.trim() || undefined,
-        target_version_id: createEvalTargetParam
-          ? undefined
-          : targetVersionId.trim() || undefined,
         create_eval_target_param: createEvalTargetParam,
-        expt_type: 2,
+        target_field_mapping: buildTargetFieldMapping(
+          targetType,
+          selectedEvalSet,
+        ),
+        expt_type: 1, // Offline：真实运行评测对象（agent/workflow/prompt），非 record-only
       });
       Toast.success('创建成功');
       setSearchParams?.({ tab: 'experiments' });

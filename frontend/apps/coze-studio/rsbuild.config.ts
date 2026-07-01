@@ -46,8 +46,9 @@ const mergedConfig = defineConfig({
         changeOrigin: true,
       },
       // 其他 API 默认代理到本地后端,也可通过 API_PROXY_TARGET 指向远程测试环境。
+      // /loop/* 是 Loop 评测/观测 API(经 Studio 反代),本地 dev 也需一并代理。
       {
-        context: ['/api', '/v1', '/filestore', '/agent-h5/'],
+        context: ['/api', '/v1', '/loop', '/filestore', '/agent-h5/'],
         target: API_PROXY_TARGET,
         secure: false,
         changeOrigin: true,
