@@ -33,9 +33,12 @@ import { intelligenceApi, workflowApi } from '@coze-arch/bot-api';
 
 import {
   createExperiment,
+  getEvaluator,
   listEvaluationSets,
   listEvaluators,
+  type CreateEvalTargetParam,
   type EvaluationSet,
+  type EvaluatorFieldMapping,
   type Evaluator,
 } from '../loop-eval-api';
 
@@ -104,8 +107,20 @@ function getEvaluationSetId(record: EvaluationSet): string {
   return String(record.evaluation_set_id || record.id || '');
 }
 
-function getEvaluatorVersionId(record: Evaluator): string {
-  return String(record.current_version?.id || record.latest_version || '');
+function getEvaluationSetVersionId(record?: EvaluationSet): string {
+  if (!record) {
+    return '';
+  }
+  return String(
+    record.evaluation_set_version?.id ||
+      record.evaluation_set_version?.evaluation_set_version_id ||
+      record.evaluation_set_version?.evaluation_set_id ||
+      getEvaluationSetId(record),
+  );
+}
+
+function getEvaluatorId(record: Evaluator): string {
+  return String(record.evaluator_id || record.id || '');
 }
 
 function getEvaluatorLabel(record: Evaluator): string {
@@ -123,6 +138,43 @@ function isPickableTargetType(targetType: TargetType): boolean {
   return targetType === 'workflow' || targetType === 'bot';
 }
 
+function getLoopRecordOnlyTargetType(
+  targetType: TargetType,
+): number | undefined {
+  switch (targetType) {
+    case 'workflow':
+      return 13;
+    case 'bot':
+      return 11;
+    case 'prompt':
+      return 12;
+    default:
+      return undefined;
+  }
+}
+
+function buildEvaluatorFieldMapping(
+  evaluatorVersionIds: string[],
+): EvaluatorFieldMapping[] {
+  return evaluatorVersionIds.map(evaluatorVersionId => ({
+    evaluator_version_id: evaluatorVersionId,
+    from_eval_set: [],
+    from_target: [],
+  }));
+}
+
+function buildCreateEvalTargetParam(
+  targetType: TargetType,
+): CreateEvalTargetParam | undefined {
+  const evalTargetType = getLoopRecordOnlyTargetType(targetType);
+  if (!evalTargetType) {
+    return undefined;
+  }
+  // 226 Loop only has a Prompt source operator registered today; workflow/bot
+  // online experiments use record-only placeholder targets until typed operators land.
+  return { eval_target_type: evalTargetType };
+}
+
 const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
   const { space_id: spaceIdFromParams } = useParams<{ space_id: string }>();
   const effectiveWorkspaceId = workspaceId || spaceIdFromParams || '';
@@ -133,7 +185,7 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
   const [targetId, setTargetId] = useState('');
   const [targetVersionId, setTargetVersionId] = useState('');
   const [evalSetId, setEvalSetId] = useState('');
-  const [evaluatorVersionIds, setEvaluatorVersionIds] = useState<string[]>([]);
+  const [evaluatorIds, setEvaluatorIds] = useState<string[]>([]);
   const [evalSets, setEvalSets] = useState<EvaluationSet[]>([]);
   const [evaluators, setEvaluators] = useState<Evaluator[]>([]);
   const [evalSetsLoading, setEvalSetsLoading] = useState(false);
@@ -252,7 +304,7 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
       evaluators
         .map(evaluator => ({
           label: getEvaluatorLabel(evaluator),
-          value: getEvaluatorVersionId(evaluator),
+          value: getEvaluatorId(evaluator),
         }))
         .filter(option => option.value),
     [evaluators],
@@ -275,20 +327,60 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
       Toast.error('缺少 workspace_id');
       return;
     }
-    if (evaluatorVersionIds.length === 0) {
+    if (evaluatorIds.length === 0) {
       Toast.error('请至少选择一个评估器');
+      return;
+    }
+    const selectedEvalSet = evalSets.find(
+      set => getEvaluationSetId(set) === evalSetId,
+    );
+    const evalSetVersionId = getEvaluationSetVersionId(selectedEvalSet);
+    if (!evalSetVersionId) {
+      Toast.error('缺少评估集版本 ID');
+      return;
+    }
+    const createEvalTargetParam =
+      targetVersionId.trim() && targetId.trim()
+        ? undefined
+        : buildCreateEvalTargetParam(targetType);
+    if (!targetVersionId.trim() && !createEvalTargetParam) {
+      Toast.error('该评测对象类型暂未接入 Loop 在线实验');
       return;
     }
     setSubmitting(true);
     try {
+      const evaluatorDetails = await Promise.all(
+        evaluatorIds.map(evaluatorId =>
+          getEvaluator({
+            space_id: effectiveWorkspaceId,
+            evaluator_id: evaluatorId,
+          }),
+        ),
+      );
+      const evaluatorVersionIds = evaluatorDetails
+        .map(resp => resp.evaluator?.current_version?.id)
+        .filter((id): id is string => Boolean(id));
+      if (evaluatorVersionIds.length !== evaluatorIds.length) {
+        Toast.error('缺少评估器版本 ID');
+        return;
+      }
       await createExperiment({
         workspace_id: effectiveWorkspaceId,
         name: name.trim(),
         description: description.trim() || undefined,
         eval_set_id: evalSetId,
+        eval_set_version_id: evalSetVersionId,
         evaluator_version_ids: evaluatorVersionIds,
-        target_id: targetId.trim() || undefined,
-        target_version_id: targetVersionId.trim() || undefined,
+        evaluator_field_mapping:
+          buildEvaluatorFieldMapping(evaluatorVersionIds),
+        target_id: createEvalTargetParam
+          ? undefined
+          : targetId.trim() || undefined,
+        target_version_id: createEvalTargetParam
+          ? undefined
+          : targetVersionId.trim() || undefined,
+        create_eval_target_param: createEvalTargetParam,
+        expt_type: 2,
       });
       Toast.success('创建成功');
       setSearchParams?.({ tab: 'experiments' });
@@ -399,9 +491,9 @@ const Page: React.FC<PageProps> = ({ workspaceId, setSearchParams }) => {
                 <FieldLabel label="评估器" required>
                   <Select
                     multiple
-                    value={evaluatorVersionIds}
+                    value={evaluatorIds}
                     onChange={value =>
-                      setEvaluatorVersionIds(
+                      setEvaluatorIds(
                         Array.isArray(value) ? value.map(String) : [],
                       )
                     }

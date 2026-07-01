@@ -32,7 +32,6 @@ import {
 import {
   getExperiment,
   getExperimentAggrResult,
-  listTrajectoryConfigs,
   type Experiment,
   type TrajectoryConfig,
 } from '../loop-eval-api';
@@ -121,7 +120,7 @@ const Page: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [resultUnavailable, setResultUnavailable] = useState(false);
-  const [trajectoryUnavailable, setTrajectoryUnavailable] = useState(false);
+  const [trajectoryUnavailable] = useState(false);
 
   // Lightweight status/progress refresh, reused by the manual refresh button and
   // the auto-poll loop while the experiment is still running.
@@ -184,24 +183,9 @@ const Page: React.FC = () => {
         setResultUnavailable(true);
       }
 
-      try {
-        const trajectory = await listTrajectoryConfigs({
-          workspace_id: spaceId,
-          page_size: 20,
-          page_number: 1,
-        });
-        setTrajectoryConfigs(
-          trajectory.trajectory_configs || trajectory.configs || [],
-        );
-        setTrajectoryUnavailable(false);
-      } catch (err) {
-        console.error(
-          '[ExperimentDetail] Failed to fetch trajectory configs:',
-          err,
-        );
-        setTrajectoryConfigs([]);
-        setTrajectoryUnavailable(true);
-      }
+      // Loop's trajectory endpoint requires concrete trace_ids. Experiment
+      // detail responses do not expose them yet, so avoid a failing probe here.
+      setTrajectoryConfigs([]);
     } catch (err: unknown) {
       Toast.error(getErrorMessage(err, '加载实验详情失败'));
     } finally {

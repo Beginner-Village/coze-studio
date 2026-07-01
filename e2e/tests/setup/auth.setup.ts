@@ -1,3 +1,19 @@
+/*
+ * Copyright 2025 ynet-dev Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * 登录 setup：获取登录态并保存到 auth.json
  * 只需跑一次，后续所有测试复用
@@ -9,7 +25,7 @@ import path from 'path';
 
 const AUTH_FILE = path.join(__dirname, '../../auth.json');
 
-const BASE_URL = process.env.BASE_URL || 'http://10.10.10.220:9888';
+const BASE_URL = process.env.BASE_URL || 'http://10.10.10.226:8896';
 const EMAIL = process.env.TEST_EMAIL || 'admin@ynet.com';
 const PASSWORD = process.env.TEST_PASSWORD || 'Admin@2026';
 

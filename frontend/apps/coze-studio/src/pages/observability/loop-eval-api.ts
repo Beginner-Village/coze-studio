@@ -42,9 +42,13 @@ export interface EvaluationSet {
   // Loop nests created/updated metadata under base_info for many entities.
   base_info?: BaseInfo;
   evaluation_set_version?: {
+    id?: string;
+    evaluation_set_id?: string;
+    evaluation_set_version_id?: string;
     version?: string;
     version_num?: string;
     item_count?: number | string;
+    evaluation_set_schema?: EvaluationSetSchema;
   };
 }
 
@@ -237,6 +241,11 @@ export interface TrajectoryConfig {
   updated_at?: string | number;
 }
 
+export interface Trajectory {
+  trace_id?: string;
+  [key: string]: unknown;
+}
+
 export interface ListResponse<T> {
   total?: number | string;
   next_page_token?: string;
@@ -247,6 +256,7 @@ export interface ListResponse<T> {
   items?: T[];
   configs?: T[];
   trajectory_configs?: T[];
+  trajectories?: T[];
 }
 
 export interface FieldSchema {
@@ -279,9 +289,31 @@ export interface CreateExperimentRequest {
   name: string;
   description?: string;
   eval_set_id: string;
+  eval_set_version_id?: string;
   evaluator_version_ids: string[];
+  evaluator_field_mapping?: EvaluatorFieldMapping[];
   target_version_id?: string;
   target_id?: string;
+  create_eval_target_param?: CreateEvalTargetParam;
+  expt_type?: number;
+}
+
+export interface FieldMapping {
+  field_name?: string;
+  from_field_name?: string;
+  const_value?: string;
+}
+
+export interface EvaluatorFieldMapping {
+  evaluator_version_id: string;
+  from_eval_set?: FieldMapping[];
+  from_target?: FieldMapping[];
+}
+
+export interface CreateEvalTargetParam {
+  eval_target_type: number;
+  source_target_id?: string;
+  source_target_version?: string;
 }
 
 // Resolve user_id → display name via Studio's MGetUserBasicInfo.
@@ -543,9 +575,13 @@ export function createExperiment(
     name: req.name,
     desc: req.description,
     eval_set_id: req.eval_set_id,
+    eval_set_version_id: req.eval_set_version_id,
     evaluator_version_ids: req.evaluator_version_ids,
+    evaluator_field_mapping: req.evaluator_field_mapping,
     target_version_id: req.target_version_id,
     target_id: req.target_id,
+    create_eval_target_param: req.create_eval_target_param,
+    expt_type: req.expt_type,
   });
 }
 
@@ -553,21 +589,31 @@ export function getExperiment(req: {
   workspace_id: string;
   experiment_id: string;
 }): Promise<{ experiment?: Experiment }> {
-  return post(`${EVALUATION_BASE}/experiments`, req);
+  return post<{ experiments?: Experiment[] }>(
+    `${EVALUATION_BASE}/experiments/batch_get`,
+    {
+      workspace_id: req.workspace_id,
+      expt_ids: [req.experiment_id],
+    },
+  ).then(resp => ({ experiment: resp.experiments?.[0] }));
 }
 
 export function getExperimentAggrResult(req: {
   workspace_id: string;
   experiment_id: string;
 }): Promise<Record<string, unknown>> {
-  return post(`${EVALUATION_BASE}/experiments/get_experiment_aggr_result`, req);
+  return post(`${EVALUATION_BASE}/experiments/aggr_results/batch_get`, {
+    workspace_id: req.workspace_id,
+    expt_ids: [req.experiment_id],
+  });
 }
 
-export function listTrajectoryConfigs(req: {
+export function listTrajectories(req: {
   workspace_id: string;
-  page_size?: number;
-  page_number?: number;
-}): Promise<ListResponse<TrajectoryConfig>> {
+  platform_type: string;
+  trace_ids: string[];
+  start_time?: number | string;
+}): Promise<ListResponse<Trajectory>> {
   return post(`${OBSERVABILITY_BASE}/traces/trajectory`, req);
 }
 
