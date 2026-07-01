@@ -54,6 +54,41 @@ func (f *fakeRepo) createdLen() int {
 	defer f.mu.Unlock()
 	return len(f.created)
 }
+func (f *fakeRepo) lastDeleteTS() int64 {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.deleteTS
+}
+
+func TestRetentionDefaultsTo180Days(t *testing.T) {
+	repo := &fakeRepo{}
+	svc := NewOperationLog(repo, Config{}).(*operationLogSvc)
+	if got := svc.cfg.RetentionDays; got != 180 {
+		t.Fatalf("want default retention 180 days, got %d", got)
+	}
+}
+
+func TestRetentionClampsBelow180Days(t *testing.T) {
+	repo := &fakeRepo{}
+	svc := NewOperationLog(repo, Config{RetentionDays: 90}).(*operationLogSvc)
+	if got := svc.cfg.RetentionDays; got != 180 {
+		t.Fatalf("want retention below 180 to clamp to 180 days, got %d", got)
+	}
+}
+
+func TestCleanupUses180DayCutoff(t *testing.T) {
+	repo := &fakeRepo{}
+	svc := NewOperationLog(repo, Config{RetentionDays: 180}).(*operationLogSvc)
+
+	before := time.Now().Add(-180 * 24 * time.Hour).UnixMilli()
+	svc.cleanupOnce(context.Background())
+	after := time.Now().Add(-180 * 24 * time.Hour).UnixMilli()
+
+	got := repo.lastDeleteTS()
+	if got < before || got > after {
+		t.Fatalf("want cleanup cutoff between %d and %d, got %d", before, after, got)
+	}
+}
 
 func TestCollectAndFlush(t *testing.T) {
 	repo := &fakeRepo{}

@@ -54,7 +54,7 @@ func OperationLogMW() app.HandlerFunc {
 
 		ctx.Next(c)
 
-		uidPtr := ctxutil.GetUIDFromCtx(c)
+		uidPtr := operationLogOperatorID(c)
 		if uidPtr == nil {
 			return // unauthenticated write operations are not audited
 		}
@@ -81,6 +81,17 @@ func OperationLogMW() app.HandlerFunc {
 
 		operationlog.OperationLogApplicationSVC.Collect(ev)
 	}
+}
+
+func operationLogOperatorID(ctx context.Context) *int64 {
+	if uid := ctxutil.GetUIDFromCtx(ctx); uid != nil {
+		return uid
+	}
+	if apiAuth := ctxutil.GetApiAuthFromCtx(ctx); apiAuth != nil && apiAuth.UserID != 0 {
+		uid := apiAuth.UserID
+		return &uid
+	}
+	return nil
 }
 
 // buildEvent assembles an audit event from already-parsed request data. It is a

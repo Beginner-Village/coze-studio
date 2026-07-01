@@ -76,6 +76,42 @@ func TestMatchMemberRouteMethodSplit(t *testing.T) {
 	}
 }
 
+func TestMatchSuperAgentSandboxRoutes(t *testing.T) {
+	cases := []struct {
+		method string
+		path   string
+		action string
+	}{
+		{"POST", "/api/super-agent/runs/create", "create_run"},
+		{"POST", "/api/super-agent/runs/reply", "reply_run"},
+		{"POST", "/api/super-agent/runs/cancel", "cancel_run"},
+		{"POST", "/api/super-agent/sessions/create", "create_session"},
+		{"POST", "/api/super-agent/sessions/rename", "rename_session"},
+		{"POST", "/api/super-agent/sessions/delete", "delete_session"},
+		{"POST", "/api/super-agent/harness/plan", "update_plan"},
+		{"POST", "/api/super-agent/harness/context/clear", "clear_context"},
+		{"POST", "/api/super-agent/harness/cleanup", "cleanup_outputs"},
+		{"POST", "/api/super-agent/sandbox/exec", "run_bash"},
+		{"POST", "/api/super-agent/workspace/mkdir", "create_dir"},
+		{"POST", "/api/super-agent/workspace/upload", "upload_file"},
+		{"POST", "/api/super-agent/workspace/write", "write_file"},
+		{"POST", "/api/super-agent/workspace/download", "download_file"},
+		{"POST", "/api/super-agent/workspace/patch", "patch_file"},
+		{"POST", "/api/super-agent/workspace/edit", "edit_file"},
+		{"POST", "/api/super-agent/workspace/move", "move_file"},
+		{"POST", "/api/super-agent/workspace/delete", "delete_file"},
+		{"POST", "/api/super-agent/artifacts/download", "download_artifact"},
+		{"POST", "/api/super-agent/artifacts/move", "move_artifact"},
+		{"POST", "/api/super-agent/artifacts/delete", "delete_artifact"},
+	}
+	for _, tc := range cases {
+		r := Match(tc.method, tc.path)
+		if r == nil || r.Module != "super_agent" || r.Action != tc.action {
+			t.Fatalf("%s %s want super_agent %s rule, got %+v", tc.method, tc.path, tc.action, r)
+		}
+	}
+}
+
 func TestMatchPath(t *testing.T) {
 	if !matchPath("/api/res/:id", "/api/res/123") {
 		t.Fatal("wildcard segment should match")

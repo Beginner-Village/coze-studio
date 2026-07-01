@@ -44,7 +44,6 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/application/admin"
 	aiProductApp "github.com/ynet-dev/ynet-studio/backend/application/aiproduct"
 	"github.com/ynet-dev/ynet-studio/backend/application/app"
-	strategyApp "github.com/ynet-dev/ynet-studio/backend/application/strategy"
 	"github.com/ynet-dev/ynet-studio/backend/application/base/appinfra"
 	"github.com/ynet-dev/ynet-studio/backend/application/connector"
 	"github.com/ynet-dev/ynet-studio/backend/application/conversation"
@@ -61,6 +60,7 @@ import (
 	skillApp "github.com/ynet-dev/ynet-studio/backend/application/skill"
 	spaceapp "github.com/ynet-dev/ynet-studio/backend/application/space"
 	"github.com/ynet-dev/ynet-studio/backend/application/statistics"
+	strategyApp "github.com/ynet-dev/ynet-studio/backend/application/strategy"
 	"github.com/ynet-dev/ynet-studio/backend/application/upload"
 	"github.com/ynet-dev/ynet-studio/backend/application/user"
 	"github.com/ynet-dev/ynet-studio/backend/application/workflow"
@@ -270,7 +270,7 @@ func Init(ctx context.Context) (err error) {
 			basicServices.userSVC.DomainSVC,
 			oplogsvc.Config{
 				BufferSize:    envInt("OPERATION_LOG_BUFFER_SIZE", 4096),
-				RetentionDays: envInt("OPERATION_LOG_RETENTION_DAYS", 90),
+				RetentionDays: envInt("OPERATION_LOG_RETENTION_DAYS", 180),
 			},
 		)
 	}

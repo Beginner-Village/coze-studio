@@ -26,12 +26,14 @@ import (
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 )
 
+const minimumRetentionDays = 180
+
 // Config 控制缓冲、批量与保留期。
 type Config struct {
 	BufferSize    int           // channel 容量
 	BatchSize     int           // 单批落库最大条数
 	FlushInterval time.Duration // 定时 flush 间隔
-	RetentionDays int           // 保留天数 [30,90]
+	RetentionDays int           // 保留天数，最低 180 天
 	CleanupEvery  time.Duration // 清理任务周期
 }
 
@@ -52,15 +54,14 @@ func NewOperationLog(repo repository.OperationLogRepository, cfg Config) Operati
 	if cfg.FlushInterval <= 0 {
 		cfg.FlushInterval = time.Second
 	}
-	if cfg.RetentionDays < 30 {
-		cfg.RetentionDays = 30
-	}
-	if cfg.RetentionDays > 90 {
-		cfg.RetentionDays = 90
+	if cfg.RetentionDays < minimumRetentionDays {
+		cfg.RetentionDays = minimumRetentionDays
 	}
 	if cfg.CleanupEvery <= 0 {
 		cfg.CleanupEvery = 24 * time.Hour
 	}
+	logs.Infof("[operationlog] initialized buffer_size=%d batch_size=%d retention_days=%d cleanup_every=%s",
+		cfg.BufferSize, cfg.BatchSize, cfg.RetentionDays, cfg.CleanupEvery)
 	return &operationLogSvc{
 		repo: repo,
 		cfg:  cfg,

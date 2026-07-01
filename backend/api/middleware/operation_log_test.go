@@ -17,11 +17,15 @@
 package middleware
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	oplogmw "github.com/ynet-dev/ynet-studio/backend/api/middleware/operationlog"
-	"github.com/ynet-dev/ynet-studio/backend/domain/operationlog/entity"
+	openauthentity "github.com/ynet-dev/ynet-studio/backend/domain/openauth/openapiauth/entity"
+	oplogentity "github.com/ynet-dev/ynet-studio/backend/domain/operationlog/entity"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/ctxcache"
+	"github.com/ynet-dev/ynet-studio/backend/types/consts"
 )
 
 func TestBuildEventFields(t *testing.T) {
@@ -45,7 +49,7 @@ func TestBuildEventFields(t *testing.T) {
 	if ev.OperatorID != 999 {
 		t.Fatalf("operator_id want 999, got %d", ev.OperatorID)
 	}
-	if ev.Status != entity.StatusSuccess {
+	if ev.Status != oplogentity.StatusSuccess {
 		t.Fatalf("status want success, got %d", ev.Status)
 	}
 	if ev.Module != "workflow" || ev.Action != "update" || ev.ResourceType != 6 {
@@ -56,6 +60,16 @@ func TestBuildEventFields(t *testing.T) {
 	}
 	if ev.LogID != "lg1" || ev.ClientIP != "1.2.3.4" || ev.DurationMs != 12 || ev.CreatedAt != 1000 {
 		t.Fatalf("bad io fields: %+v", ev)
+	}
+}
+
+func TestOperationLogOperatorIDFromOpenAPIAuth(t *testing.T) {
+	ctx := ctxcache.Init(context.Background())
+	ctxcache.Store(ctx, consts.OpenapiAuthKeyInCtx, &openauthentity.ApiKey{UserID: 12345})
+
+	uid := operationLogOperatorID(ctx)
+	if uid == nil || *uid != 12345 {
+		t.Fatalf("want api auth user id 12345, got %v", uid)
 	}
 }
 
@@ -83,7 +97,7 @@ func TestBuildEventFailStatus(t *testing.T) {
 	ev := buildEvent(rule, "POST", "/api/workflow_api/create", 5,
 		nil, map[string]any{}, nil, "", nil, 500, "1.1.1.1", 3, "", 2)
 
-	if ev.Status != entity.StatusFail {
+	if ev.Status != oplogentity.StatusFail {
 		t.Fatalf("status want fail for 500, got %d", ev.Status)
 	}
 	if ev.SpaceID != 0 {
@@ -96,7 +110,7 @@ func TestBuildEventBizCodeFail(t *testing.T) {
 	ev := buildEvent(rule, "POST", "/api/workflow_api/create", 5,
 		nil, map[string]any{}, nil, "", []byte(`{"code": 700012345, "msg":"x"}`), 200, "1.1.1.1", 3, "", 2)
 
-	if ev.Status != entity.StatusFail {
+	if ev.Status != oplogentity.StatusFail {
 		t.Fatalf("status want fail for biz code != 0, got %d", ev.Status)
 	}
 	if ev.ErrorCode != "700012345" {
@@ -109,7 +123,7 @@ func TestBuildEventBizCodeSuccess(t *testing.T) {
 	ev := buildEvent(rule, "POST", "/api/workflow_api/create", 5,
 		nil, map[string]any{}, nil, "", []byte(`{"code":0,"data":{}}`), 200, "1.1.1.1", 3, "", 2)
 
-	if ev.Status != entity.StatusSuccess {
+	if ev.Status != oplogentity.StatusSuccess {
 		t.Fatalf("status want success for biz code 0, got %d", ev.Status)
 	}
 	if ev.ErrorCode != "" {
@@ -122,7 +136,7 @@ func TestBuildEventHTTPFail(t *testing.T) {
 	ev := buildEvent(rule, "POST", "/api/workflow_api/create", 5,
 		nil, map[string]any{}, nil, "", nil, 500, "1.1.1.1", 3, "", 2)
 
-	if ev.Status != entity.StatusFail {
+	if ev.Status != oplogentity.StatusFail {
 		t.Fatalf("status want fail for HTTP 500, got %d", ev.Status)
 	}
 	if ev.ErrorCode != "500" {
@@ -135,7 +149,7 @@ func TestBuildEventNonJSONBody(t *testing.T) {
 	ev := buildEvent(rule, "POST", "/api/workflow_api/create", 5,
 		nil, map[string]any{}, nil, "", []byte("not-json"), 200, "1.1.1.1", 3, "", 2)
 
-	if ev.Status != entity.StatusSuccess {
+	if ev.Status != oplogentity.StatusSuccess {
 		t.Fatalf("status want success for non-json body, got %d", ev.Status)
 	}
 	if ev.ErrorCode != "" {

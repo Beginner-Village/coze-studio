@@ -48,7 +48,7 @@ type RouteRule struct {
 }
 
 // rules 路由白名单。path 与 body 字段名均对照 backend/api/router/* 与 api/model/* 真实注册核对。
-// 覆盖模块：workflow / agent(draftbot) / hi-agent / knowledge / plugin / database / variable(memory) / prompt / space member / space。
+// 覆盖模块：workflow / agent(draftbot) / super-agent sandbox / hi-agent / knowledge / plugin / database / variable(memory) / prompt / space member / space。
 var rules = []RouteRule{
 	// ---- workflow（/api/workflow_api，见 api/router/workflow/workflow_svc.go）----
 	{Method: "POST", PathPattern: "/api/workflow_api/create", Module: "workflow", ResourceType: resourceTypeWorkflow, Action: "create", DescTemplate: "创建了工作流", ResourceNameFrom: "body:name"},
@@ -64,6 +64,29 @@ var rules = []RouteRule{
 	{Method: "POST", PathPattern: "/api/draftbot/delete", Module: "agent", ResourceType: resourceTypeBot, Action: "delete", DescTemplate: "删除了智能体", ResourceIDFrom: "body:bot_id"},
 	{Method: "POST", PathPattern: "/api/draftbot/publish", Module: "agent", ResourceType: resourceTypeBot, Action: "publish", DescTemplate: "发布了智能体", ResourceIDFrom: "body:bot_id"},
 	{Method: "POST", PathPattern: "/api/draftbot/duplicate", Module: "agent", ResourceType: resourceTypeBot, Action: "copy", DescTemplate: "复制了智能体", ResourceIDFrom: "body:bot_id"},
+
+	// ---- super-agent sandbox / BashTool（/api/super-agent，见 api/router/coze/api.go）----
+	{Method: "POST", PathPattern: "/api/super-agent/runs/create", Module: "super_agent", ResourceType: resourceTypeBot, Action: "create_run", DescTemplate: "创建了超级体运行", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:content"},
+	{Method: "POST", PathPattern: "/api/super-agent/runs/reply", Module: "super_agent", ResourceType: resourceTypeBot, Action: "reply_run", DescTemplate: "继续了超级体运行", ResourceIDFrom: "body:run_id", ResourceNameFrom: "body:content"},
+	{Method: "POST", PathPattern: "/api/super-agent/runs/cancel", Module: "super_agent", ResourceType: resourceTypeBot, Action: "cancel_run", DescTemplate: "取消了超级体运行", ResourceIDFrom: "body:run_id"},
+	{Method: "POST", PathPattern: "/api/super-agent/sessions/create", Module: "super_agent", ResourceType: resourceTypeBot, Action: "create_session", DescTemplate: "创建了超级体会话", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:title"},
+	{Method: "POST", PathPattern: "/api/super-agent/sessions/rename", Module: "super_agent", ResourceType: resourceTypeBot, Action: "rename_session", DescTemplate: "重命名了超级体会话", ResourceIDFrom: "body:conversation_id", ResourceNameFrom: "body:title"},
+	{Method: "POST", PathPattern: "/api/super-agent/sessions/delete", Module: "super_agent", ResourceType: resourceTypeBot, Action: "delete_session", DescTemplate: "删除了超级体会话", ResourceIDFrom: "body:conversation_id"},
+	{Method: "POST", PathPattern: "/api/super-agent/harness/plan", Module: "super_agent", ResourceType: resourceTypeBot, Action: "update_plan", DescTemplate: "更新了超级体执行计划", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:conversation_id"},
+	{Method: "POST", PathPattern: "/api/super-agent/harness/context/clear", Module: "super_agent", ResourceType: resourceTypeBot, Action: "clear_context", DescTemplate: "清理了超级体上下文", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:conversation_id"},
+	{Method: "POST", PathPattern: "/api/super-agent/harness/cleanup", Module: "super_agent", ResourceType: resourceTypeBot, Action: "cleanup_outputs", DescTemplate: "清理了超级体工具输出", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:conversation_id"},
+	{Method: "POST", PathPattern: "/api/super-agent/sandbox/exec", Module: "super_agent", ResourceType: resourceTypeBot, Action: "run_bash", DescTemplate: "执行了超级体沙箱命令", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:command"},
+	{Method: "POST", PathPattern: "/api/super-agent/workspace/mkdir", Module: "super_agent", ResourceType: resourceTypeBot, Action: "create_dir", DescTemplate: "创建了超级体沙箱目录", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:path"},
+	{Method: "POST", PathPattern: "/api/super-agent/workspace/upload", Module: "super_agent", ResourceType: resourceTypeBot, Action: "upload_file", DescTemplate: "上传了超级体沙箱文件", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:path"},
+	{Method: "POST", PathPattern: "/api/super-agent/workspace/write", Module: "super_agent", ResourceType: resourceTypeBot, Action: "write_file", DescTemplate: "写入了超级体沙箱文件", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:path"},
+	{Method: "POST", PathPattern: "/api/super-agent/workspace/download", Module: "super_agent", ResourceType: resourceTypeBot, Action: "download_file", DescTemplate: "下载了超级体沙箱文件", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:path"},
+	{Method: "POST", PathPattern: "/api/super-agent/workspace/patch", Module: "super_agent", ResourceType: resourceTypeBot, Action: "patch_file", DescTemplate: "应用了超级体沙箱补丁", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:workdir"},
+	{Method: "POST", PathPattern: "/api/super-agent/workspace/edit", Module: "super_agent", ResourceType: resourceTypeBot, Action: "edit_file", DescTemplate: "编辑了超级体沙箱文件", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:path"},
+	{Method: "POST", PathPattern: "/api/super-agent/workspace/move", Module: "super_agent", ResourceType: resourceTypeBot, Action: "move_file", DescTemplate: "移动了超级体沙箱文件", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:target_path"},
+	{Method: "POST", PathPattern: "/api/super-agent/workspace/delete", Module: "super_agent", ResourceType: resourceTypeBot, Action: "delete_file", DescTemplate: "删除了超级体沙箱文件", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:path"},
+	{Method: "POST", PathPattern: "/api/super-agent/artifacts/download", Module: "super_agent", ResourceType: resourceTypeBot, Action: "download_artifact", DescTemplate: "下载了超级体产物", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:path"},
+	{Method: "POST", PathPattern: "/api/super-agent/artifacts/move", Module: "super_agent", ResourceType: resourceTypeBot, Action: "move_artifact", DescTemplate: "移动了超级体产物", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:target_path"},
+	{Method: "POST", PathPattern: "/api/super-agent/artifacts/delete", Module: "super_agent", ResourceType: resourceTypeBot, Action: "delete_artifact", DescTemplate: "删除了超级体产物", ResourceIDFrom: "body:agent_id", ResourceNameFrom: "body:path"},
 
 	// ---- hi-agent（/api/space/:space_id/hi-agents，见 api/router/ynet_agent/ynet_agent.go）----
 	{Method: "POST", PathPattern: "/api/space/:space_id/hi-agents", Module: "agent", ResourceType: resourceTypeBot, Action: "create", DescTemplate: "创建了智能体", ResourceNameFrom: "body:name"},
