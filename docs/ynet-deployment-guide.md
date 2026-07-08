@@ -636,7 +636,7 @@ Guard 容器内包含前端 (nginx:80) 和后端 (uvicorn:8000)，nginx 自带 A
 #!/bin/bash
 # guard-test.sh — Guard 安全围栏功能验证
 GUARD="http://10.10.10.226:8080/api"
-API_KEY="test-api-key-default-tenant"
+API_KEY=$GUARD_KEY
 
 echo "=== [1/5] 健康检查 ==="
 curl -sf http://10.10.10.226:8080/health && echo " ✓ 健康" || echo " ✗ 不可达"
@@ -692,7 +692,7 @@ curl -X POST http://10.10.10.226:8080/api/v1/auth/login \
 # 文本安全检测 (API Key 认证)
 curl -X POST http://10.10.10.226:8080/api/v1/guard/check \
   -H 'Content-Type: application/json' \
-  -H 'X-API-Key: test-api-key-default-tenant' \
+  -H "X-API-Key: ${GUARD_API_KEY}" \
   -d '{"query":"检测内容","context":{"session_id":"s1","user_id":"u1","scene":"test"}}'
 
 # 文本安全检测 (JWT 认证)
@@ -703,12 +703,12 @@ curl -X POST http://10.10.10.226:8080/api/v1/guard/check \
 
 # Shield 产品列表
 curl http://10.10.10.226:8080/api/v1/shield/products \
-  -H 'X-API-Key: test-api-key-default-tenant'
+  -H "X-API-Key: ${GUARD_API_KEY}"
 
 # Shield 文本检测
 curl -X POST http://10.10.10.226:8080/api/v1/shield/check/text \
   -H 'Content-Type: application/json' \
-  -H 'X-API-Key: test-api-key-default-tenant' \
+  -H "X-API-Key: ${GUARD_API_KEY}" \
   -d '{"product_code":"yicheng_content_safety","business_code":"aigc_input_text","content":"检测内容","content_type":"text","user_id":"u1"}'
 ```
 
@@ -726,7 +726,7 @@ curl -X POST http://10.10.10.226:8080/api/v1/shield/check/text \
 | 管理员用户名 | `admin` |
 | 管理员密码 | `admin123` |
 | 租户 ID | `default` |
-| 测试 API Key | `test-api-key-default-tenant` |
+| 测试 API Key | 由部署方通过 `GUARD_API_KEY` 提供 |
 
 ---
 
@@ -737,7 +737,7 @@ curl -X POST http://10.10.10.226:8080/api/v1/shield/check/text \
 | **Studio** | http://10.10.10.220:9888 | admin@ynet.com | Admin@2026 |
 | **Loop** | http://10.10.10.226:8082 | studio@ynet.com | Ynet@2026 |
 | **Guard 前端** | http://10.10.10.226:8080 | admin | admin123 |
-| **Guard API** | http://10.10.10.226:8080/api/v1/ | API Key | test-api-key-default-tenant |
+| **Guard API** | http://10.10.10.226:8080/api/v1/ | API Key | `${GUARD_API_KEY}` |
 | **Harbor** | http://10.10.10.206:8090 | admin | Harbor12345 |
 | **OceanBase** | 111.204.125.244:8100 | root@test#oceanbase_cluster1 | Ynet@2026 |
 | **Loop PAT** | — | — | clpat-ynet-studio-d95cb84497ab387c4ddb06dcc2673b66 |

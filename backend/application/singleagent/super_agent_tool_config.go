@@ -31,7 +31,8 @@ func (s *SingleAgentApplicationService) GetSuperAgentToolConfig(ctx context.Cont
 	if err != nil {
 		return nil, err
 	}
-	return draft.SuperAgentToolConfig, nil
+	// 脱敏回显：MCP env 里的凭证(Authorization/API key 等)以哨兵替换，绝不明文出后端。
+	return draft.SuperAgentToolConfig.RedactedForRead(), nil
 }
 
 // UpdateSuperAgentToolConfig 持久化某个超级体的能力开关配置（先取完整草稿，仅替换该字段后回写）。
@@ -41,6 +42,9 @@ func (s *SingleAgentApplicationService) UpdateSuperAgentToolConfig(ctx context.C
 	if err != nil {
 		return err
 	}
+	// 回填脱敏密钥：客户端把上次读到的(含哨兵 env)整份配置存回时，用已存密钥还原哨兵值，
+	// 避免把真实凭证冲成哨兵字面量。draft 此刻仍持有旧配置，正好作为回填来源。
+	crossagent.MergeMCPServerSecrets(cfg, draft.SuperAgentToolConfig)
 	draft.SuperAgentToolConfig = cfg
 	return s.DomainSVC.UpdateSingleAgentDraft(ctx, draft)
 }
@@ -58,8 +62,20 @@ func (s *SingleAgentApplicationService) loadOwnedSuperAgentDraft(ctx context.Con
 	if err != nil {
 		return nil, err
 	}
-	if draft == nil || draft.CreatorID != callerUserID {
+	if draft == nil {
 		return nil, fmt.Errorf("agent %d not found or access denied", agentID)
+	}
+	if draft.CreatorID != callerUserID {
+		// Allow space members (not only the creator) — space-scoped
+		// collaboration. Non-members get the same opaque error, so agent
+		// existence is not leaked to unrelated users.
+		isMember, _, _, _, mErr := s.appContext.UserDomainSVC.CheckMemberPermission(ctx, draft.SpaceID, callerUserID)
+		if mErr != nil {
+			return nil, mErr
+		}
+		if !isMember {
+			return nil, fmt.Errorf("agent %d not found or access denied", agentID)
+		}
 	}
 	return draft, nil
 }

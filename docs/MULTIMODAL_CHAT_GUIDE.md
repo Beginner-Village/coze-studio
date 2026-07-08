@@ -128,7 +128,7 @@ curl -X POST "${BASE_URL}/api/bot/upload_file" \
 #!/bin/bash
 
 BASE_URL="https://agents.finmall.com"
-API_KEY="pat_a6721931ccf78645b8726bd103e7db6f831c7c057e74164976e316b41a878a33"
+API_KEY="${OPENYNET_PAT}"
 BOT_ID="7535655495097384960"
 
 # 步骤1: 创建会话
@@ -167,7 +167,7 @@ curl -X POST "${BASE_URL}/v3/chat" \
 #!/bin/bash
 
 BASE_URL="https://agents.finmall.com"
-API_KEY="pat_a6721931ccf78645b8726bd103e7db6f831c7c057e74164976e316b41a878a33"
+API_KEY="${OPENYNET_PAT}"
 BOT_ID="7535655495097384960"
 IMAGE_PATH="/path/to/your/image.jpg"
 
@@ -234,7 +234,7 @@ curl -X POST "${BASE_URL}/v3/chat" \
 #!/bin/bash
 
 BASE_URL="https://agents.finmall.com"
-API_KEY="pat_a6721931ccf78645b8726bd103e7db6f831c7c057e74164976e316b41a878a33"
+API_KEY="${OPENYNET_PAT}"
 BOT_ID="7535655495097384960"
 IMAGE_PATH="/path/to/your/image.jpg"
 
@@ -368,7 +368,7 @@ data:
 
 ```bash
 BASE_URL="https://agents.finmall.com"
-API_KEY="pat_a6721931ccf78645b8726bd103e7db6f831c7c057e74164976e316b41a878a33"
+API_KEY="${OPENYNET_PAT}"
 BOT_ID="7535655495097384960"
 SPACE_ID="7533521629687578624"
 ```

@@ -264,7 +264,7 @@ collection = {
     'schema': 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
   },
   'variable': [
-    {'key':'base_url','value':'http://10.10.10.220:9888'},
+    {'key':'base_url','value':'http://10.10.10.226:8896'},
     {'key':'api_key','value':''},{'key':'session_key','value':''},
     {'key':'bot_id','value':''},{'key':'workflow_id','value':''},{'key':'dataset_id','value':''},
     {'key':'conversation_id','value':''},{'key':'space_id','value':''},{'key':'user_id','value':'biz_user_001'},

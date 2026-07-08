@@ -30,4 +30,8 @@ type Run interface {
 	Create(ctx context.Context, runRecord *entity.AgentRunMeta) (*entity.RunRecordMeta, error)
 	GetByID(ctx context.Context, runID int64) (*entity.RunRecordMeta, error)
 	List(ctx context.Context, ListMeta *entity.ListRunRecordMeta) ([]*entity.RunRecordMeta, error)
+	// ReleaseRunLock 主动释放某会话的活跃 run 锁。用于「清理会话」等场景：
+	// 若上一条 run 因异常（模型报错、进程重启、流中断）未走到正常释放，锁会残留，
+	// 用户重开/清理会话后仍被「已有正在进行的请求」卡住。这里显式清掉即可解锁。
+	ReleaseRunLock(ctx context.Context, conversationID int64) error
 }

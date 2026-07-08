@@ -40,6 +40,10 @@ import { Spin } from '@coze-arch/bot-semi';
 import { getFlags } from '@coze-arch/bot-flags';
 import { CustomError } from '@coze-arch/bot-error';
 import { type BotSpace } from '@coze-arch/bot-api/developer_api';
+import {
+  fetchSuperAgentEnabled,
+  getSuperAgentEnabledCache,
+} from '@coze-arch/bot-api';
 
 import { AddNodeModalProvider } from '@/contexts/add-node-modal-context';
 
@@ -78,6 +82,26 @@ import {
 } from '../../constants';
 import { WorkflowFloatLayout } from './workflow-float-layout';
 import { WorkflowAgentPanel, PANEL_WIDTH } from '../workflow-agent-panel';
+
+/**
+ * 工作流自动搭建 AI 面板（依赖预置 finmallclaw 驱动 agent）。是否展示改为运行时驱动：
+ * 向后端 `/api/super-agent/ui-config` 拉取（联动 SANDBOX_ENABLED），运维改后端 env 即可，
+ * 前端无需重新构建。构建期常量 IS_DISABLE_SUPER_AGENT 保留为硬兜底。降级默认隐藏。
+ */
+const SuperAgentGatedWorkflowAgentPanel: React.FC<
+  React.ComponentProps<typeof WorkflowAgentPanel>
+> = props => {
+  const [enabled, setEnabled] = useState<boolean>(
+    getSuperAgentEnabledCache() ?? false,
+  );
+  useEffect(() => {
+    fetchSuperAgentEnabled().then(setEnabled);
+  }, []);
+  if (IS_DISABLE_SUPER_AGENT || !enabled) {
+    return null;
+  }
+  return <WorkflowAgentPanel {...props} />;
+};
 import { useNodesMount } from './use-nodes-mount';
 import { useDataCompensation } from './use-data-compensation';
 
@@ -290,8 +314,10 @@ const WorkflowContainer = forwardRef<
           (preview/history/no-permission), i.e. readonly that is NOT caused by
           the transient executing state.
         */}
+        {/* 工作流自动搭建 AI 面板：是否展示由运行时接口决定（见 SuperAgentGatedWorkflowAgentPanel），
+            此处只保留与执行态相关的读写门控。 */}
         {readonly && !workflowState.isExecuting ? null : (
-          <WorkflowAgentPanel onOpenChange={setAgentPanelOpen} />
+          <SuperAgentGatedWorkflowAgentPanel onOpenChange={setAgentPanelOpen} />
         )}
         <ChatTestRunPauseSideSheet />
       </QueryClientProvider>

@@ -190,15 +190,31 @@ func (c *runImpl) acquireRunLock(ctx context.Context, conversationID int64) (fun
 		logs.CtxWarnf(ctx, "acquireRunLock incr failed, skip dedup: %v", err)
 		return nil, false
 	}
-	// 无论是否首个，都刷新 TTL，避免残留死锁。
-	c.Cache.Expire(ctx, key, runLockTTL)
 	if cnt > 1 {
+		// 已有活跃 run：不刷新 TTL。否则用户在残留锁（如进程重启/流中断导致 release
+		// 未执行）之上不断重试，会每次把 TTL 续满，锁永远不过期、会话被永久锁死。
+		// 不续期后，残留锁由首次获锁时设置的 TTL 兜底，最迟 runLockTTL 后自愈。
 		return nil, true
 	}
+	// 仅在成功获取锁（首个活跃 run）时设置 TTL。
+	c.Cache.Expire(ctx, key, runLockTTL)
 	release := func() {
 		c.Cache.Del(context.WithoutCancel(ctx), key)
 	}
 	return release, false
+}
+
+// ReleaseRunLock 主动删除某会话的活跃 run 锁 key（与 acquireRunLock 同格式）。
+// 缓存未配置或会话号非法时静默返回；删除失败仅告警不阻断上层业务。
+func (c *runImpl) ReleaseRunLock(ctx context.Context, conversationID int64) error {
+	if c.Cache == nil || conversationID <= 0 {
+		return nil
+	}
+	key := fmt.Sprintf("ynet:run:active:%d", conversationID)
+	if err := c.Cache.Del(ctx, key).Err(); err != nil {
+		logs.CtxWarnf(ctx, "ReleaseRunLock del key %s failed: %v", key, err)
+	}
+	return nil
 }
 
 func (c *runImpl) run(ctx context.Context, sw *schema.StreamWriter[*entity.AgentRunResponse], rtDependence *runtimeDependence) (err error) {
@@ -312,9 +328,31 @@ func (c *runImpl) handlerStreamExecute(ctx context.Context, sw *schema.StreamWri
 		}
 
 		schemaMsg := buildSchemaMessage(ctx, msg, c.Components.ImagexSVC, c.Components.TosClient)
-		if schemaMsg != nil {
-			historySchema = append(historySchema, schemaMsg)
+		if schemaMsg == nil {
+			continue
 		}
+
+		// 工作流输出节点/卡片节点的内容会以 assistant answer 落库(model_content 含卡片
+		// 信封)。若原样进历史,模型会把"上一轮自己回过这段卡片 JSON"当范本照抄,造成
+		// 上下文污染(见 message.MessageTypeKnowledge 同类处理)。按"工作流调用产生的
+		// 所有输出都应归属该次工具调用"的原则:把卡片信封并入最近一条 role=tool 消息
+		// (同次调用的 fc 返回),该 assistant 消息只保留卡片外的纯文本;若无文本则整条丢弃。
+		if schemaMsg.Role == schema.Assistant && containsCardEnvelope(schemaMsg.Content) {
+			text, card := splitCardEnvelope(schemaMsg.Content)
+			if mergeContentIntoLastToolMessage(historySchema, card) {
+				if strings.TrimSpace(text) == "" {
+					continue
+				}
+				schemaMsg.Content = text
+			} else if strings.TrimSpace(text) == "" {
+				// 没有可并入的 tool 消息(异常),又只有卡片 → 不进历史,避免 assistant 污染
+				continue
+			} else {
+				schemaMsg.Content = text
+			}
+		}
+
+		historySchema = append(historySchema, schemaMsg)
 	}
 
 	historySchema = buildAgentHistorySchema(historySchema, rtDependence.agentInfo, rtDependence.runMeta.Ext)
@@ -497,6 +535,46 @@ func buildSchemaMessage(ctx context.Context, msg *msgEntity.Message, imagexClien
 		Content:      msg.Content,
 		MultiContent: buildSchemaMultiContent(msg.MultiContent, msg.Content),
 	}
+}
+
+// containsCardEnvelope 判断内容里是否含工作流输出/卡片节点的"终态展示信封"
+// (卡片/模板)。displayResponseType 是卡片框架专有字段,普通文本回复不会有。
+func containsCardEnvelope(content string) bool {
+	return strings.Contains(content, `"displayResponseType"`)
+}
+
+// splitCardEnvelope 把内容拆成「卡片信封前的纯文本」与「卡片信封 JSON」两部分。
+// 卡片信封以 `{"contentList"` 开头(可能带空格),通常位于内容末尾。找不到则原样返回。
+func splitCardEnvelope(content string) (text string, card string) {
+	marker := strings.Index(content, `"contentList"`)
+	if marker < 0 {
+		return content, ""
+	}
+	// 回退到 contentList 前最近的 '{',即信封起点。
+	start := strings.LastIndex(content[:marker], "{")
+	if start < 0 {
+		return content, ""
+	}
+	return content[:start], content[start:]
+}
+
+// mergeContentIntoLastToolMessage 把 card 追加到 history 中最近一条 role=tool 消息
+// (同次工具调用的 fc 返回)的 Content 里。成功返回 true;没有 tool 消息返回 false。
+func mergeContentIntoLastToolMessage(history []*schema.Message, card string) bool {
+	if strings.TrimSpace(card) == "" {
+		return false
+	}
+	for i := len(history) - 1; i >= 0; i-- {
+		if history[i] != nil && history[i].Role == schema.Tool {
+			if strings.TrimSpace(history[i].Content) == "" {
+				history[i].Content = card
+			} else {
+				history[i].Content = history[i].Content + "\n" + card
+			}
+			return true
+		}
+	}
+	return false
 }
 
 func buildSchemaMultiContent(multi []*message.InputMetaData, fallbackText string) []schema.ChatMessagePart {

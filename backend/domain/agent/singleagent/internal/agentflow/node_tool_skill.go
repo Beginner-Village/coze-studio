@@ -42,6 +42,7 @@ import (
 type readSkillTool struct {
 	spaceID       int64
 	sandboxKey    string
+	injectScripts bool
 	skillInfoList []*singleagent.SkillReference
 	skillCache    map[int64]*entity.Skill
 	mu            sync.Mutex
@@ -51,10 +52,14 @@ type readSkillRequest struct {
 	SkillName string `json:"skill_name" jsonschema:"description=The name of the skill to read detailed instructions for"`
 }
 
-func newReadSkillTool(spaceID int64, sandboxKey string, skillInfoList []*singleagent.SkillReference) tool.InvokableTool {
+// newReadSkillTool 构造 read_skill 工具。injectScripts=true 时，读取技能会同时把技能脚本
+// eager 注入沙箱 /skills/<name>/ 并提示模型用 run_bash 执行；injectScripts=false(普通体
+// 只读技能模式)时只返回 SKILL.md 正文，绝不落盘脚本、不提示执行。
+func newReadSkillTool(spaceID int64, sandboxKey string, skillInfoList []*singleagent.SkillReference, injectScripts bool) tool.InvokableTool {
 	return &readSkillTool{
 		spaceID:       spaceID,
 		sandboxKey:    sandboxKey,
+		injectScripts: injectScripts,
 		skillInfoList: skillInfoList,
 		skillCache:    make(map[int64]*entity.Skill),
 	}
@@ -110,8 +115,9 @@ func (t *readSkillTool) InvokableRun(ctx context.Context, argumentsInJSON string
 	instructions, files := prepareSkillRuntimeFiles(skill)
 
 	// 把脚本注入沙箱 /skills/<name>/，让模型可用 run_bash 执行（L3 可执行脚本）。
+	// 只读技能模式(injectScripts=false)下整段跳过：只回 SKILL.md 正文，不落盘、不提示执行。
 	var injectNote string
-	if len(files) > 0 {
+	if t.injectScripts && len(files) > 0 {
 		if svc := crosssandbox.DefaultSVC(); svc != nil && t.sandboxKey != "" {
 			if err := svc.SyncSkill(ctx, t.sandboxKey, skill.Name, files); err != nil {
 				logs.CtxWarnf(ctx, "[readSkillTool] inject skill files for %s failed: %v", skill.Name, err)
@@ -345,9 +351,11 @@ func computeSkillsManifest(skills []boundSkillFiles) string {
 }
 
 // newSkillTools creates the read_skill tool if skills are configured.
-func newSkillTools(spaceID int64, sandboxKey string, skillInfoList []*singleagent.SkillReference) []tool.InvokableTool {
+// injectScripts is threaded to read_skill: false = read-only skills (no script
+// injection / no run_bash hint).
+func newSkillTools(spaceID int64, sandboxKey string, skillInfoList []*singleagent.SkillReference, injectScripts bool) []tool.InvokableTool {
 	if len(skillInfoList) == 0 {
 		return nil
 	}
-	return []tool.InvokableTool{newReadSkillTool(spaceID, sandboxKey, skillInfoList)}
+	return []tool.InvokableTool{newReadSkillTool(spaceID, sandboxKey, skillInfoList, injectScripts)}
 }

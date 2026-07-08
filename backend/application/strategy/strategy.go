@@ -23,10 +23,12 @@ import (
 
 	resCommon "github.com/ynet-dev/ynet-studio/backend/api/model/resource/common"
 	apiModel "github.com/ynet-dev/ynet-studio/backend/api/model/data/strategy"
+	knowledgeModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/knowledge"
 	pluginModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/plugin"
 	workflowModel "github.com/ynet-dev/ynet-studio/backend/api/model/crossdomain/workflow"
 	"github.com/ynet-dev/ynet-studio/backend/application/base/ctxutil"
 	"github.com/ynet-dev/ynet-studio/backend/application/search"
+	crossknowledge "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/knowledge"
 	crossplugin "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/plugin"
 	crossuser "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/user"
 	crossworkflow "github.com/ynet-dev/ynet-studio/backend/crossdomain/contract/workflow"
@@ -133,11 +135,30 @@ func (s *StrategyApplicationService) resolvePluginSpaceID(ctx context.Context, p
 	return plugins[0].SpaceID, true, nil
 }
 
+// resolveKnowledgeSpaceID resolves the owning space of a knowledge base by id,
+// mirroring resolveWorkflowSpaceID / resolvePluginSpaceID. A knowledge capability
+// stores the knowledge id in ref_id. Returns (spaceID, true, nil) when resolved;
+// (0, false, nil) when the knowledge service is unavailable or the knowledge
+// cannot be loaded so callers can decide policy; a non-nil error only for
+// unexpected failures.
+func (s *StrategyApplicationService) resolveKnowledgeSpaceID(ctx context.Context, knowledgeID int64) (int64, bool, error) {
+	knowledgeSVC := crossknowledge.DefaultSVC()
+	if knowledgeSVC == nil {
+		return 0, false, nil
+	}
+	resp, err := knowledgeSVC.GetKnowledgeByID(ctx, &knowledgeModel.GetKnowledgeByIDRequest{KnowledgeID: knowledgeID})
+	if err != nil || resp == nil || resp.Knowledge == nil {
+		logs.CtxWarnf(ctx, "resolveKnowledgeSpaceID: load knowledge %d failed: %v", knowledgeID, err)
+		return 0, false, nil
+	}
+	return resp.Knowledge.SpaceID, true, nil
+}
+
 // validateCapabilityRefInSpace verifies the resource a capability points to
 // belongs to spaceID, guarding against cross-space repoint / reference. Workflow
-// (ref_id) and plugin (ref_sub_id) are verified here against their owning space;
-// knowledge per-resource checks remain a follow-up — the space-access gate on
-// the strategy still applies for all types.
+// (ref_id), plugin (ref_sub_id) and knowledge (ref_id) are each verified here
+// against their owning space; the space-access gate on the strategy still
+// applies for all types as a second layer.
 func (s *StrategyApplicationService) validateCapabilityRefInSpace(ctx context.Context, capType string, refID, refSubID, spaceID int64) error {
 	switch capType {
 	case strategyEntity.CapabilityTypeWorkflow:
@@ -170,10 +191,19 @@ func (s *StrategyApplicationService) validateCapabilityRefInSpace(ctx context.Co
 		}
 		return nil
 	case strategyEntity.CapabilityTypeKnowledge:
-		// TODO(sec): add per-resource space validation for knowledge once a clean
-		// space resolver is wired. The strategy-level checkSpaceAccess gate still
-		// applies.
-		logs.CtxWarnf(ctx, "validateCapabilityRefInSpace: per-resource space check not implemented for type %s (refID=%d refSubID=%d)", capType, refID, refSubID)
+		// The knowledge id lives in ref_id. Resolve its owning space and require
+		// it to match — mirrors the workflow/plugin path: unresolvable fails
+		// closed, mismatch is a permission error.
+		kbSpaceID, ok, err := s.resolveKnowledgeSpaceID(ctx, refID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errorx.New(errno.ErrMemoryInvalidParamCode, errorx.KV("msg", "referenced knowledge not found or not accessible"))
+		}
+		if kbSpaceID != spaceID {
+			return errorx.New(errno.ErrMemoryPermissionCode, errorx.KV("msg", "referenced knowledge does not belong to this space"))
+		}
 		return nil
 	default:
 		return nil

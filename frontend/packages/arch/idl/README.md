@@ -1,10 +1,10 @@
 # @coze-arch/idl
 
-Interface Definition Language (IDL) package providing TypeScript type definitions and API client services for the Coze platform ecosystem.
+Interface Definition Language (IDL) package providing TypeScript type definitions and API client services for the YNET platform ecosystem.
 
 ## Project Overview
 
-`@coze-arch/idl` is a comprehensive package that contains auto-generated TypeScript interfaces, types, and service clients derived from Thrift IDL definitions. It serves as the central type system for the Coze platform, providing strongly-typed API contracts for over 60+ services including bot management, workflow orchestration, plugin systems, evaluation frameworks, and more.
+`@coze-arch/idl` is a comprehensive package that contains auto-generated TypeScript interfaces, types, and service clients derived from Thrift IDL definitions. It serves as the central type system for the YNET platform, providing strongly-typed API contracts for over 60+ services including bot management, workflow orchestration, plugin systems, evaluation frameworks, and more.
 
 ## Features
 
@@ -13,7 +13,7 @@ Interface Definition Language (IDL) package providing TypeScript type definition
 - **Modular Structure**: Each service is packaged as a separate export for selective importing
 - **Strong Type Safety**: Full TypeScript support with detailed interface definitions
 - **Auto-Generated**: Maintained through automated code generation from Thrift IDL files
-- **Extensive Coverage**: Covers all major Coze platform services:
+- **Extensive Coverage**: Covers all major YNET platform services:
   - **Bot Services**: Bot management, connector APIs, open APIs
   - **Workflow Services**: Fornax workflow engine, automation, evaluation
   - **Plugin Services**: Plugin development, marketplace, operation APIs

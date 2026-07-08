@@ -83,7 +83,7 @@ meta:
         prefill_response: false
     conn_config:
         base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-        api_key: "sk-7eb60ba6992845e186ad7ea9580da9e5"
+        api_key: ""
         timeout: 10s
         model: "qwen-plus-latest"
         temperature: 0.7

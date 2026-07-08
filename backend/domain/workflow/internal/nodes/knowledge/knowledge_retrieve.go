@@ -204,12 +204,16 @@ func (kr *Retrieve) Invoke(ctx context.Context, input map[string]any) (map[strin
 		logs.CtxInfof(ctx, "[retrieve] empty result: query=%q knowledge_ids=%v", query, kr.knowledgeIDs)
 	}
 	result := make(map[string]any)
-	result[outputList] = slices.Transform(response.RetrieveSlices, func(m *knowledge.RetrieveSlice) any {
+	list := slices.Transform(response.RetrieveSlices, func(m *knowledge.RetrieveSlice) any {
 		return map[string]any{
 			"documentId": m.Slice.DocumentID,
 			"output":     m.Slice.GetSliceContent(),
 		}
 	})
+	if list == nil { // no result: emit an empty array instead of null
+		list = make([]any, 0)
+	}
+	result[outputList] = list
 
 	return result, nil
 }

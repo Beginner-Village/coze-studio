@@ -82,10 +82,18 @@ export function SingleAgentModelView(props: SingleAgentModelViewProps) {
     })),
   );
 
+  // 选中某个模型：既更新组件本地 state（驱动 UI 显示），也同步进 model store 的
+  // config.model。后者是关键——自动保存监听的是 store.config，若只改本地 state，
+  // 切换模型不会被保存（保存的仍是旧模型，重进又被 store 旧值覆盖回退）。
+  const applyModelSelection = (modelId: string) => {
+    setCurrentModelIdState(modelId);
+    setModelByImmer(draft => {
+      draft.config.model = modelId;
+    });
+  };
+
   const { modalNode, checkAndOpenModal } = useModelCapabilityCheckModal({
-    onOk: modelId => {
-      setCurrentModelIdState(modelId);
-    },
+    onOk: applyModelSelection,
   });
 
   const isReadonly = useBotDetailIsReadonly();
@@ -103,7 +111,7 @@ export function SingleAgentModelView(props: SingleAgentModelViewProps) {
       // 当前模型不存在时，fallback到第一个可用模型
       const firstAvailableModelId = String(modelList[0]?.model_type);
       setCurrentModelIdState(firstAvailableModelId);
-      
+
       // 同时更新store中的模型配置
       setModelByImmer(draft => {
         draft.config.model = firstAvailableModelId;
@@ -117,15 +125,13 @@ export function SingleAgentModelView(props: SingleAgentModelViewProps) {
   }
 
   // 确保有选中的模型，否则使用第一个可用模型
-  const effectiveModelId = currentModelIdState || String(modelList[0]?.model_type);
+  const effectiveModelId =
+    currentModelIdState || String(modelList[0]?.model_type);
 
   return effectiveModelId ? (
     <>
       <ModelSelect
-        popoverClassName={classNames(
-          'h-auto !max-h-[70vh]',
-          popoverClassName,
-        )}
+        popoverClassName={classNames('h-auto !max-h-[70vh]', popoverClassName)}
         popoverPosition={popoverPosition}
         zIndex={zIndex}
         clickToHide={clickToHide}
@@ -142,7 +148,7 @@ export function SingleAgentModelView(props: SingleAgentModelViewProps) {
           const modelId = String(m.model_type);
           const checkPassed = checkAndOpenModal(modelId);
           if (checkPassed) {
-            setCurrentModelIdState(modelId);
+            applyModelSelection(modelId);
           }
           return checkPassed;
         }}

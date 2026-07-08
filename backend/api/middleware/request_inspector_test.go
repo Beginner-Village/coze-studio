@@ -69,6 +69,18 @@ func TestSuperAgentAppServerPathsNeedOpenAPIAuth(t *testing.T) {
 		"/api/super-agent/marketplace/list",
 		"/api/super-agent/marketplace/get",
 		"/api/super-agent/marketplace/install",
+		"/api/super-agent/runtime-config/get",
+		"/api/super-agent/runtime-config/update",
+		"/api/super-agent/runtime-config/delete",
+		"/api/super-agent/approvals/list",
+		"/api/super-agent/approvals/resolve",
+		"/api/super-agent/products/list",
+		"/api/super-agent/products/get",
+		"/api/super-agent/products/install",
+		"/api/super-agent/products/upgrade",
+		"/api/super-agent/products/uninstall",
+		"/api/super-agent/config/get",
+		"/api/super-agent/config/update",
 	} {
 		t.Run(path, func(t *testing.T) {
 			ctx := &app.RequestContext{Request: protocol.Request{}}

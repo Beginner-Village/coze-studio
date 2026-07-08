@@ -4,7 +4,7 @@ A ide features package for the Ynet Studio monorepo
 
 ## Overview
 
-This package is part of the Ynet Studio monorepo and provides ide features functionality. It serves as a core component in the Coze ecosystem.
+This package is part of the Ynet Studio monorepo and provides ide features functionality. It serves as a core component in the YNET ecosystem.
 
 ## Getting Started
 

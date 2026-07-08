@@ -132,6 +132,61 @@ type DatabaseLister interface {
 	ListBySpaceID(ctx context.Context, spaceID int64, limit int) ([]*DatabaseInfo, error)
 }
 
+// ResyncAllSpaces ensures the three list indices exist, purges every doc in
+// them (orphan cleanup after a DB-level data sync bypasses the app write
+// path), then rebuilds each given space. Per-space failures are collected and
+// returned, not fatal; only an index-ensure / purge failure aborts.
+func (s *searchImpl) ResyncAllSpaces(ctx context.Context, spaceIDs []int64) (*spacemodel.ResyncESCounts, []int64, error) {
+	if s.esClient == nil {
+		return nil, nil, fmt.Errorf("search.ResyncAllSpaces: es client not wired")
+	}
+	indices := []string{projectIndexName, resourceIndexName, kbEntriesIndex}
+
+	// (1) ensure indices exist. coze_resource / project_draft are created
+	// lazily on first doc write, but DeleteByQuery 404s on a missing index —
+	// kb_entries in particular never gets created if a space has no KB write.
+	for _, idx := range indices {
+		exists, err := s.esClient.Exists(ctx, idx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("check index %s: %w", idx, err)
+		}
+		if !exists {
+			if err := s.esClient.CreateIndex(ctx, idx, map[string]any{}); err != nil {
+				return nil, nil, fmt.Errorf("create index %s: %w", idx, err)
+			}
+		}
+	}
+
+	// (2) purge all docs (orphan cleanup — docs of spaces no longer present
+	// in MySQL are never touched by per-space delete, so wipe globally).
+	for _, idx := range indices {
+		if _, err := s.esClient.DeleteByQuery(ctx, idx, map[string]any{
+			"match_all": map[string]any{},
+		}); err != nil {
+			return nil, nil, fmt.Errorf("purge index %s: %w", idx, err)
+		}
+	}
+
+	// (3) rebuild each space; collect per-space failures.
+	agg := &spacemodel.ResyncESCounts{}
+	failed := make([]int64, 0)
+	for _, id := range spaceIDs {
+		c, err := s.ResyncSpace(ctx, id)
+		if err != nil {
+			logs.CtxWarnf(ctx, "[ResyncAllSpaces] space=%d rebuild failed: %v", id, err)
+			failed = append(failed, id)
+			continue
+		}
+		agg.ProjectDraft += c.ProjectDraft
+		agg.CozeResource += c.CozeResource
+		agg.KbEntries += c.KbEntries
+		agg.SliceReindexJobs += c.SliceReindexJobs
+	}
+	logs.CtxInfof(ctx, "[ResyncAllSpaces] requested=%d ok=%d failed=%d project_draft=%d coze_resource=%d kb_entries=%d",
+		len(spaceIDs), len(spaceIDs)-len(failed), len(failed), agg.ProjectDraft, agg.CozeResource, agg.KbEntries)
+	return agg, failed, nil
+}
+
 // ResyncSpace drops all ES docs for the given space + replays writes from
 // MySQL for project_draft / coze_resource / kb_entries indices.
 //

@@ -170,10 +170,29 @@ func Init(ctx context.Context) (*AppDependencies, error) {
 	return deps, nil
 }
 
+// sandboxEnabledByConfig 报告是否启用 agent 沙箱。默认启用；仅当环境变量 SANDBOX_ENABLED
+// 显式设为 false/0/no/off/disabled 时关闭。现场若暂不部署沙箱，把 SANDBOX_ENABLED=false 写进
+// 配置即可：后端不初始化沙箱管理器，转而以「无沙箱」模式运行（普通体只读技能、超级体纯 MCP），
+// 不再需要 Docker 等沙箱依赖。默认开启保证已配置沙箱的现有环境零改动。
+func sandboxEnabledByConfig() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("SANDBOX_ENABLED"))) {
+	case "false", "0", "no", "off", "disabled":
+		return false
+	default:
+		return true
+	}
+}
+
 // initSandboxManager 构造会话级沙箱管理器并启动空闲回收器。
 // 后端由 SANDBOX_BACKEND 选择（默认 docker）；注册表用 Redis（多节点可见）；
 // workspace 持久化到对象存储。空闲阈值可经 SANDBOX_IDLE_PAUSE_SEC / SANDBOX_IDLE_KILL_SEC 覆盖。
+// 现场未配置沙箱（SANDBOX_ENABLED=false）时返回 nil，上层不调用 SetDefaultSVC → DefaultSVC()
+// 为 nil → 运行时全面走「无沙箱」降级路径。
 func initSandboxManager(ctx context.Context, deps *AppDependencies) *sandboxmgr.Manager {
+	if !sandboxEnabledByConfig() {
+		logs.CtxInfof(ctx, "[sandbox] SANDBOX_ENABLED is off; agent sandbox disabled — running in no-sandbox mode")
+		return nil
+	}
 	cfg := sandboxmgr.DefaultConfig()
 	if v := os.Getenv("SANDBOX_IDLE_PAUSE_SEC"); v != "" {
 		if n, e := strconv.ParseInt(v, 10, 64); e == nil {

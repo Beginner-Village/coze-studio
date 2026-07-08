@@ -375,3 +375,97 @@ func TestNewSandboxToolsReadonlyFlag(t *testing.T) {
 		}
 	}
 }
+
+func TestSkillExecutionDisabled(t *testing.T) {
+	t.Setenv("SKILL_EXECUTION_DISABLED", "")
+	if skillExecutionDisabled() {
+		t.Fatal("unset -> not disabled")
+	}
+	t.Setenv("SKILL_EXECUTION_DISABLED", "false")
+	if skillExecutionDisabled() {
+		t.Fatal("false -> not disabled")
+	}
+	t.Setenv("SKILL_EXECUTION_DISABLED", "true")
+	if !skillExecutionDisabled() {
+		t.Fatal("true -> disabled")
+	}
+	t.Setenv("SKILL_EXECUTION_DISABLED", "TRUE")
+	if !skillExecutionDisabled() {
+		t.Fatal("TRUE (case-insensitive) -> disabled")
+	}
+}
+
+func TestSkillReadOnlyMode(t *testing.T) {
+	t.Setenv("SKILL_EXECUTION_DISABLED", "")
+
+	// A super agent is NEVER read-only, regardless of the per-agent toggle.
+	if skillReadOnlyMode(true, true) || skillReadOnlyMode(true, false) {
+		t.Fatal("super agent must NEVER be read-only (harness must stay unaffected)")
+	}
+	// Normal agent, per-agent skill execution allowed -> can execute.
+	if skillReadOnlyMode(false, true) {
+		t.Fatal("normal agent with per-agent skill execution allowed -> not read-only")
+	}
+	// Normal agent, per-agent toggle OFF -> read-only.
+	if !skillReadOnlyMode(false, false) {
+		t.Fatal("normal agent with per-agent skill execution disabled -> read-only")
+	}
+	// The global env force-disables execution even when the per-agent toggle allows it.
+	t.Setenv("SKILL_EXECUTION_DISABLED", "true")
+	if !skillReadOnlyMode(false, true) {
+		t.Fatal("global SKILL_EXECUTION_DISABLED=true must force read-only even if per-agent allows")
+	}
+	// ...but the global env still never affects a super agent.
+	if skillReadOnlyMode(true, true) {
+		t.Fatal("global env must not make a super agent read-only")
+	}
+}
+
+func TestResolveSandboxOff(t *testing.T) {
+	// 沙箱服务不可用(现场未配沙箱)时,任何 agent 都应判定为沙箱关闭。
+	if !resolveSandboxOff(false, false, true) {
+		t.Fatal("normal agent must be sandbox-off when service unavailable")
+	}
+	if !resolveSandboxOff(false, true, true) {
+		t.Fatal("super agent must be sandbox-off when service unavailable")
+	}
+	// 沙箱可用时:普通体永不因该函数关闭(其无 per-agent 总开关)。
+	if resolveSandboxOff(true, false, true) {
+		t.Fatal("normal agent with sandbox available must not be sandbox-off")
+	}
+	// 沙箱可用 + 超级体 per-agent 总开关开 -> 不关闭。
+	if resolveSandboxOff(true, true, true) {
+		t.Fatal("super agent with sandbox on must not be sandbox-off")
+	}
+	// 沙箱可用 + 超级体 per-agent 总开关关(纯 MCP) -> 关闭。
+	if !resolveSandboxOff(true, true, false) {
+		t.Fatal("super agent with per-agent sandbox switch off must be sandbox-off")
+	}
+}
+
+func TestShouldMountSandbox(t *testing.T) {
+	t.Setenv("SANDBOX_TOOLS_ENABLED", "")
+	// super agent: mounted unless the sandbox master switch is off
+	if !shouldMountSandbox(true, false, false, false, 0) {
+		t.Fatal("super agent should mount sandbox")
+	}
+	if shouldMountSandbox(true, false, true, false, 0) {
+		t.Fatal("super agent with sandboxOff (pure-MCP) must not mount")
+	}
+	// normal agent with skills -> mounted
+	if !shouldMountSandbox(false, false, false, false, 2) {
+		t.Fatal("normal agent with skills should mount sandbox")
+	}
+	// normal agent with skills but read-only -> NOT mounted (no run_bash)
+	if shouldMountSandbox(false, false, false, true, 2) {
+		t.Fatal("normal agent in read-only skill mode must NOT mount sandbox")
+	}
+	// normal agent without skills -> not mounted
+	if shouldMountSandbox(false, false, false, false, 0) {
+		t.Fatal("normal agent without skills should not mount sandbox")
+	}
+	// workflow-canvas mode -> never mounted
+	if shouldMountSandbox(true, true, false, false, 5) {
+		t.Fatal("workflow-canvas mode must never mount sandbox")
+	}
+}

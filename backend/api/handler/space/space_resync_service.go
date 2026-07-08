@@ -32,6 +32,7 @@ import (
 // in a fake without booting the full application.Init wiring.
 type resyncESInvoker interface {
 	ResyncES(ctx context.Context, req *resyncmodel.ResyncESRequest) (*resyncmodel.ResyncESResponse, error)
+	ResyncAllES(ctx context.Context, req *resyncmodel.ResyncAllESRequest) (*resyncmodel.ResyncAllESResponse, error)
 }
 
 // resyncSvcGetter returns the active invoker. Production reads the global
@@ -60,6 +61,32 @@ func ResyncES(ctx context.Context, c *app.RequestContext) {
 	}
 
 	resp, err := svc.ResyncES(ctx, &req)
+	if err != nil {
+		httputil.InternalError(ctx, c, err)
+		return
+	}
+
+	c.JSON(consts.StatusOK, resp)
+}
+
+// ResyncAllES purges the three list indices and rebuilds every space in the
+// request body, bypassing the per-space owner gate. Admin/maintenance use
+// after a DB-level data sync. Requires a logged-in caller.
+// @router /api/space/resync_all_es [POST]
+func ResyncAllES(ctx context.Context, c *app.RequestContext) {
+	var req resyncmodel.ResyncAllESRequest
+	if err := c.BindAndValidate(&req); err != nil {
+		c.String(consts.StatusBadRequest, err.Error())
+		return
+	}
+
+	svc := resyncSvcGetter()
+	if svc == nil {
+		c.String(consts.StatusInternalServerError, "resync service not initialized")
+		return
+	}
+
+	resp, err := svc.ResyncAllES(ctx, &req)
 	if err != nil {
 		httputil.InternalError(ctx, c, err)
 		return

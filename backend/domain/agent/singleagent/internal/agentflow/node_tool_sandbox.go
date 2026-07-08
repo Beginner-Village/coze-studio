@@ -347,6 +347,53 @@ func sandboxToolsEnabled(skillCount int) bool {
 	return skillCount > 0
 }
 
+// skillExecutionDisabled 报告是否通过环境变量 SKILL_EXECUTION_DISABLED=true 全局关闭
+// 「普通(非超级)智能体」的技能脚本执行。开启后普通体把技能当成只读文档：read_skill 仍
+// 返回 SKILL.md 正文，但不再向沙箱注入脚本、也不挂载 run_bash/write_file 等沙箱工具——
+// 技能变成「只能读说明、不能跑脚本」。
+func skillExecutionDisabled() bool {
+	return strings.EqualFold(os.Getenv("SKILL_EXECUTION_DISABLED"), "true")
+}
+
+// skillReadOnlyMode 报告「这个 agent 是否应把技能当只读」。它只可能对普通体为 true：
+// 超级体(harness)永远不受影响，以保持「超级体/普通体互不改变对方行为」的铁律。
+// 普通体只读的判定 = per-agent 开关关闭(perAgentSkillExecEnabled=false) 或 全局 env 强制关闭。
+// 即：每个智能体各自决定是否允许执行技能脚本，另留一个全局 env 兜底(运维一键全关)。
+func skillReadOnlyMode(isSuper bool, perAgentSkillExecEnabled bool) bool {
+	if isSuper {
+		return false
+	}
+	return !perAgentSkillExecEnabled || skillExecutionDisabled()
+}
+
+// shouldMountSandbox 集中决定是否给某个 agent 挂载沙箱工具集
+// (run_bash/read_file/write_file/…)：
+//   - workflow-canvas 模式：从不挂(画布有自己的工具集)。
+//   - 超级体：除非沙箱总开关关闭(纯 MCP 模式)，否则挂。
+//   - 普通体：仅当技能触发(sandboxToolsEnabled)且未处于只读技能模式时才挂。
+func shouldMountSandbox(isSuper, workflowCanvasMode, sandboxOff, skillReadOnly bool, skillCount int) bool {
+	if workflowCanvasMode {
+		return false
+	}
+	if isSuper {
+		return !sandboxOff
+	}
+	return !skillReadOnly && sandboxToolsEnabled(skillCount)
+}
+
+// resolveSandboxOff 报告「沙箱对该 agent 是否关闭」。它在两种情况下为 true：
+//   - 全局沙箱服务不可用（现场未配置沙箱，SANDBOX_ENABLED=false → DefaultSVC()==nil）；
+//   - 超级体的 per-agent 沙箱总开关关闭（纯 MCP 模式）。
+//
+// 普通体没有 per-agent 沙箱总开关，只受「服务是否可用」这一半影响。sandboxOff=true 时，
+// 沙箱工具/web_search/web_fetch/skill_manage/deep_task 都会从工具集里剔除，技能脚本不注入。
+func resolveSandboxOff(sandboxAvailable, isSuper, superSandboxEnabled bool) bool {
+	if !sandboxAvailable {
+		return true
+	}
+	return isSuper && !superSandboxEnabled
+}
+
 // ---- update_plan (DeepAgents 风格的显式规划/进度追踪) ----
 
 type updatePlanTool struct{ key string }

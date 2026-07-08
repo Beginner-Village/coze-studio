@@ -728,12 +728,15 @@ func decodeMap(s string) map[string]any {
 }
 
 func encodeInt64Slice(v []int64) string {
+	// Return valid empty JSON (not "") for empty/nil slices: mcp_product_ids /
+	// skill_product_ids are JSON-typed columns where an empty string is rejected
+	// as invalid JSON ("The document is empty."). decodeInt64Slice handles "[]".
 	if len(v) == 0 {
-		return ""
+		return "[]"
 	}
 	b, err := json.Marshal(v)
 	if err != nil {
-		return ""
+		return "[]"
 	}
 	return string(b)
 }

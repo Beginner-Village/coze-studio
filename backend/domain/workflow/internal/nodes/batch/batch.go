@@ -161,8 +161,10 @@ func (b *Batch) Invoke(ctx context.Context, in map[string]any, opts ...nodes.Nod
 	minLen := math.MaxInt64
 	for _, arrayKey := range b.inputArrays {
 		a, ok := nodes.TakeMapValue(in, compose.FieldPath{arrayKey})
-		if !ok {
-			return nil, fmt.Errorf("incoming array not present in input: %s", arrayKey)
+		if !ok || a == nil { // missing or null array (e.g. empty knowledge result): zero items
+			arrays[arrayKey] = []any{}
+			minLen = 0
+			continue
 		}
 
 		if reflect.TypeOf(a).Kind() != reflect.Slice {
@@ -185,7 +187,7 @@ func (b *Batch) Invoke(ctx context.Context, in map[string]any, opts ...nodes.Nod
 		return nil, fmt.Errorf("incoming max iteration not present in input: %s", in)
 	}
 
-	maxIter = maxIterAny.(int64)
+	maxIter, _ = maxIterAny.(int64) // non-int/null falls back to the default below
 	if maxIter == 0 {
 		maxIter = 100
 	}
@@ -195,7 +197,7 @@ func (b *Batch) Invoke(ctx context.Context, in map[string]any, opts ...nodes.Nod
 		return nil, fmt.Errorf("incoming concurrency not present in input: %s", in)
 	}
 
-	concurrency = concurrencyAny.(int64)
+	concurrency, _ = concurrencyAny.(int64) // non-int/null falls back to the default below
 	if concurrency == 0 {
 		concurrency = 10
 	}

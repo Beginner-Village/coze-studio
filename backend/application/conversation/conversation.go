@@ -113,6 +113,13 @@ func (c *ConversationApplicationService) CreateSection(ctx context.Context, conv
 	if err != nil {
 		return 0, err
 	}
+
+	// 清理会话即用户「重开」的意图：主动释放可能残留的活跃 run 锁，避免上一条 run
+	// 异常未释放时，用户清理后再发消息仍被「已有正在进行的请求」卡住。
+	if c.AgentRunDomainSVC != nil {
+		_ = c.AgentRunDomainSVC.ReleaseRunLock(ctx, conversationID)
+	}
+
 	return convRes.SectionID, nil
 }
 

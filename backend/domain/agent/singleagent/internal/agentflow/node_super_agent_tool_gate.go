@@ -25,8 +25,8 @@ import (
 )
 
 // gateSuperAgentTools 按超级体能力开关(SuperAgentToolConfig)剔除被关闭的工具。
-// tc 为 nil 时全部放行(默认全开，保持向后兼容)。sandboxOff=true(沙箱总开关关闭，
-// 即「纯 MCP 模式」)时，依赖沙箱执行的 web_search/web_fetch 一并剔除。
+// tc 为 nil 时全部放行(默认全开，保持向后兼容)。sandboxOff=true(沙箱不可用或总开关关闭，
+// 即「纯 MCP 模式」)时，依赖沙箱执行的 web_search/web_fetch/skill_manage 一并剔除。
 // 该门控只作用于超级体的工具集，普通单智能体不会调用此函数。
 func gateSuperAgentTools(ctx context.Context, tools []tool.InvokableTool, tc *crossagent.SuperAgentToolConfig, sandboxOff bool) []tool.InvokableTool {
 	blocked := map[string]bool{}
@@ -36,7 +36,7 @@ func gateSuperAgentTools(ctx context.Context, tools []tool.InvokableTool, tc *cr
 	if sandboxOff || !tc.WebFetchEnabled() {
 		blocked["web_fetch"] = true
 	}
-	if !tc.SkillManageEnabled() {
+	if sandboxOff || !tc.SkillManageEnabled() {
 		blocked["skill_manage"] = true
 	}
 	if !tc.RunBashEnabled() {
@@ -54,4 +54,15 @@ func gateSuperAgentTools(ctx context.Context, tools []tool.InvokableTool, tc *cr
 		out = append(out, t)
 	}
 	return out
+}
+
+// shouldMountDeepTask 决定是否给智能体挂载 deep_task 子任务工具。仅超级体、非 workflow-canvas
+// 模式、且 deep_task 开关开启时挂;此外沙箱总开关关闭(纯 MCP 模式)时不挂——此时 deep_task
+// 派生的子代理继承的工具集里既无沙箱工具、也不含 MCP 工具(MCP 在 deep_task 之后才注入、
+// 且不被子代理继承),子代理几乎没有可用工具,暴露该工具只会误导模型。普通体永不挂。
+func shouldMountDeepTask(isSuper, workflowCanvasMode, sandboxOff, deepTaskEnabled bool) bool {
+	if !isSuper || workflowCanvasMode || sandboxOff {
+		return false
+	}
+	return deepTaskEnabled
 }

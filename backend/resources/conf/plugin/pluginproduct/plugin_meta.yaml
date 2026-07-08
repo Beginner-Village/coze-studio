@@ -19,7 +19,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
         - name: X-Requested-With
           value: XMLHttpRequest
       path: [ ]
@@ -54,7 +54,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
       query: [ ]
   tools:
@@ -118,7 +118,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
       query: [ ]
   tools:
@@ -147,7 +147,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
       query: [ ]
   tools:
@@ -206,7 +206,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
       query: [ ]
   tools:
@@ -235,7 +235,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
       query: [ ]
   tools:
@@ -268,7 +268,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
       query: [ ]
   tools:
@@ -313,7 +313,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
       query: [ ]
   tools:
@@ -363,7 +363,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
       query: [ ]
   tools:
@@ -447,7 +447,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
   tools:
     - tool_id: 160001
       deprecated: false
@@ -557,7 +557,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
       query: [ ]
   tools:
@@ -646,7 +646,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
   tools:
     - tool_id: 180001
@@ -718,7 +718,7 @@
     common_params:
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
       query: [ ]
       body: [ ]
@@ -782,7 +782,7 @@
     common_params:
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
       path: [ ]
       query: [ ]
       body: [ ]
@@ -817,7 +817,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
   tools:
     - tool_id: 210001
       deprecated: false
@@ -864,7 +864,7 @@
       body: [ ]
       header:
         - name: User-Agent
-          value: Coze/1.0
+          value: YNET/1.0
     auth:
       type: service_http
       key: Authorization

@@ -7,10 +7,14 @@
 import requests
 import json
 import base64
+import os
 
 BASE_URL = "http://localhost:8888"
-API_KEY = "pat_a6721931ccf78645b8726bd103e7db6f831c7c057e74164976e316b41a878a33"
+API_KEY = os.environ.get("OPENYNET_PAT", "")
 BOT_ID = "7551994989534773248"
+
+if not API_KEY:
+    raise SystemExit("Set OPENYNET_PAT before running this debug script.")
 
 file_path = '/Users/luzhipeng/Desktop/f23b20a2d24bc36ddcc490055e93edb2.jpg'
 

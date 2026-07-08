@@ -1,6 +1,6 @@
 # @coze-studio/open-env-adapter
 
-Coze Web ChatApp SDK
+YNET Web ChatApp SDK
 
 ## Overview
 

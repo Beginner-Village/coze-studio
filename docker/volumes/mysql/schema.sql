@@ -2987,3 +2987,58 @@ CREATE TABLE IF NOT EXISTS `operation_log` (
   KEY `idx_space_operator` (`space_id`, `operator_id`),
   KEY `idx_space_restype` (`space_id`, `resource_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='空间级操作审计日志';
+
+-- 策略（能力策略 / 渐进披露编排）：策略 → 场景 → 能力 三层，能力可绑 workflow/plugin/knowledge/prompt。
+-- 与 docs/ynet-database-sql/01-ynet-studio.sql 保持一致，补进 docker 全新初始化 schema，
+-- 避免跳过部署期自适应迁移器的环境缺表导致 /api/strategy/* 直接 500。
+-- IF NOT EXISTS 幂等，与迁移器/已建库共存无冲突。
+CREATE TABLE IF NOT EXISTS `strategy` (
+  `id` bigint unsigned NOT NULL COMMENT 'ID',
+  `space_id` bigint unsigned NOT NULL COMMENT 'Space ID',
+  `app_id` bigint unsigned DEFAULT NULL COMMENT 'App ID',
+  `creator_id` bigint NOT NULL DEFAULT '0' COMMENT 'Creator ID',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Strategy name',
+  `description` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Description / L1 hint',
+  `icon_uri` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Icon Uri',
+  `status` tinyint NOT NULL DEFAULT '0' COMMENT '0 draft 1 published',
+  `version` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Published version',
+  `created_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Create Time ms',
+  `updated_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Update Time ms',
+  `deleted_at` datetime DEFAULT NULL COMMENT 'Delete Time',
+  PRIMARY KEY (`id`),
+  KEY `idx_space_app_creator_deleted` (`space_id`,`app_id`,`creator_id`,`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='strategy';
+
+CREATE TABLE IF NOT EXISTS `strategy_scenario` (
+  `id` bigint unsigned NOT NULL COMMENT 'ID',
+  `strategy_id` bigint unsigned NOT NULL COMMENT 'Strategy ID',
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'Scenario name',
+  `description` varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Model-facing description',
+  `sort_order` int NOT NULL DEFAULT '0' COMMENT 'Sort order',
+  `created_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Create Time ms',
+  `updated_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Update Time ms',
+  `deleted_at` datetime DEFAULT NULL COMMENT 'Delete Time',
+  PRIMARY KEY (`id`),
+  KEY `idx_strategy_deleted` (`strategy_id`,`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='strategy scenario';
+
+CREATE TABLE IF NOT EXISTS `strategy_capability` (
+  `id` bigint unsigned NOT NULL COMMENT 'ID',
+  `strategy_id` bigint unsigned NOT NULL COMMENT 'Strategy ID',
+  `scenario_id` bigint unsigned NOT NULL COMMENT 'Scenario ID',
+  `type` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT 'workflow/plugin/knowledge/prompt',
+  `ref_id` bigint unsigned DEFAULT NULL COMMENT 'workflow_id / plugin_tool_id / knowledge_id',
+  `ref_sub_id` bigint unsigned DEFAULT NULL COMMENT 'plugin_id (for plugin type)',
+  `ref_version` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'workflow/plugin version',
+  `prompt_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT 'inline prompt (prompt type)',
+  `retrieve_config` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT 'json: top_k/min_score (knowledge type)',
+  `alias_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT 'Model-facing name override',
+  `alias_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT 'Model-facing curated description',
+  `sort_order` int NOT NULL DEFAULT '0' COMMENT 'Sort order',
+  `created_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Create Time ms',
+  `updated_at` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Update Time ms',
+  `deleted_at` datetime DEFAULT NULL COMMENT 'Delete Time',
+  PRIMARY KEY (`id`),
+  KEY `idx_scenario_deleted` (`scenario_id`,`deleted_at`),
+  KEY `idx_strategy_deleted` (`strategy_id`,`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='strategy capability';

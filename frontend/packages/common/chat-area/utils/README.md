@@ -4,7 +4,7 @@ utils in vanilla ts, no react, no logger, no I18n
 
 ## Overview
 
-This package is part of the Ynet Studio monorepo and provides utilities functionality. It serves as a core component in the Coze ecosystem.
+This package is part of the Ynet Studio monorepo and provides utilities functionality. It serves as a core component in the YNET ecosystem.
 
 ## Getting Started
 

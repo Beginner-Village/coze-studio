@@ -1,6 +1,6 @@
 {
   "title": "Qwen3.5-Plus 本地视频分析方案",
-  "creator": "Coze Studio Team",
+  "creator": "YNET Studio Team",
   "styles": {
     "defaultFont": "Microsoft YaHei",
     "defaultFontSize": 11
@@ -9,12 +9,33 @@
     {
       "header": {
         "paragraphs": [
-          { "text": "Qwen3.5-Plus 本地视频分析技术文档", "alignment": "right", "runs": [{"text": "Qwen3.5-Plus 本地视频分析技术文档", "italic": true, "fontSize": 9, "color": "888888"}] }
+          {
+            "text": "Qwen3.5-Plus 本地视频分析技术文档",
+            "alignment": "right",
+            "runs": [
+              {
+                "text": "Qwen3.5-Plus 本地视频分析技术文档",
+                "italic": true,
+                "fontSize": 9,
+                "color": "888888"
+              }
+            ]
+          }
         ]
       },
       "footer": {
         "paragraphs": [
-          { "text": "Confidential - Coze Studio", "alignment": "center", "runs": [{"text": "Confidential - Coze Studio", "fontSize": 8, "color": "AAAAAA"}] }
+          {
+            "text": "Confidential - YNET Studio",
+            "alignment": "center",
+            "runs": [
+              {
+                "text": "Confidential - YNET Studio",
+                "fontSize": 8,
+                "color": "AAAAAA"
+              }
+            ]
+          }
         ]
       },
       "content": [
@@ -38,7 +59,9 @@
         { "text": "" },
 
         { "text": "1. 概述", "heading": 2 },
-        { "text": "Qwen3.5-Plus 是阿里云通义千问系列的旗舰多模态大模型，原生支持文本、图像和视频输入。本文档介绍如何将本地视频文件送入 Qwen3.5-Plus 进行分析，包括直接视频上传、抽帧传图、Base64 编码三种方案，以及文档（PDF/图片）分析能力。" },
+        {
+          "text": "Qwen3.5-Plus 是阿里云通义千问系列的旗舰多模态大模型，原生支持文本、图像和视频输入。本文档介绍如何将本地视频文件送入 Qwen3.5-Plus 进行分析，包括直接视频上传、抽帧传图、Base64 编码三种方案，以及文档（PDF/图片）分析能力。"
+        },
         { "text": "" },
 
         { "text": "模型关键参数", "heading": 3 },
@@ -46,9 +69,36 @@
           "rows": [
             {
               "cells": [
-                { "content": [{ "runs": [{"text": "参数", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" },
-                { "content": [{ "runs": [{"text": "值", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" },
-                { "content": [{ "runs": [{"text": "说明", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "参数", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                },
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "值", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                },
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "说明", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                }
               ],
               "isHeader": true
             },
@@ -94,11 +144,15 @@
         { "text": "" },
 
         { "text": "2. 本地视频分析方案", "heading": 2 },
-        { "text": "本地视频无法直接通过 URL 传给云端 API，需要先处理为 API 可接受的格式。以下三种方案按推荐度排序。" },
+        {
+          "text": "本地视频无法直接通过 URL 传给云端 API，需要先处理为 API 可接受的格式。以下三种方案按推荐度排序。"
+        },
         { "text": "" },
 
         { "text": "方案一：Base64 编码直传（推荐，最简单）", "heading": 3 },
-        { "text": "将本地视频文件读取为 Base64 编码字符串，通过 video_url 字段以 data URI 形式传入。适合中小视频文件（< 50MB）。" },
+        {
+          "text": "将本地视频文件读取为 Base64 编码字符串，通过 video_url 字段以 data URI 形式传入。适合中小视频文件（< 50MB）。"
+        },
         { "text": "" },
         { "runs": [{ "text": "Python 代码示例：", "bold": true }] },
         { "text": "" },
@@ -106,37 +160,281 @@
           "rows": [
             {
               "cells": [
-                { "content": [
-                  { "runs": [{ "text": "import base64", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "from openai import OpenAI", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "client = OpenAI(", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    api_key=\"sk-xxxxx\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    base_url=\"https://dashscope.aliyuncs.com/compatible-mode/v1\"", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": ")", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "# 读取本地视频并编码为 base64", "font": "Consolas", "fontSize": 9, "color": "6A9955" }] },
-                  { "runs": [{ "text": "with open(\"/path/to/local/video.mp4\", \"rb\") as f:", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    video_base64 = base64.b64encode(f.read()).decode(\"utf-8\")", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "response = client.chat.completions.create(", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    model=\"qwen3.5-plus\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    messages=[{", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "        \"role\": \"user\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "        \"content\": [", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "            {", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "                \"type\": \"video_url\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "                \"video_url\": {", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "                    \"url\": f\"data:video/mp4;base64,{video_base64}\"", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "                }", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "            },", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "            {\"type\": \"text\", \"text\": \"请详细描述这个视频的内容\"}", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "        ]", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    }]", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": ")", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "print(response.choices[0].message.content)", "font": "Consolas", "fontSize": 9, "color": "333333" }] }
-                ], "shading": "F5F5F5" }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        {
+                          "text": "import base64",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "from openai import OpenAI",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "client = OpenAI(",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    api_key=\"sk-xxxxx\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    base_url=\"https://dashscope.aliyuncs.com/compatible-mode/v1\"",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": ")",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "# 读取本地视频并编码为 base64",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "6A9955"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "with open(\"/path/to/local/video.mp4\", \"rb\") as f:",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    video_base64 = base64.b64encode(f.read()).decode(\"utf-8\")",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "response = client.chat.completions.create(",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    model=\"qwen3.5-plus\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    messages=[{",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "        \"role\": \"user\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "        \"content\": [",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "            {",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "                \"type\": \"video_url\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "                \"video_url\": {",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "                    \"url\": f\"data:video/mp4;base64,{video_base64}\"",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "                }",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "            },",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "            {\"type\": \"text\", \"text\": \"请详细描述这个视频的内容\"}",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "        ]",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    }]",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": ")",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "print(response.choices[0].message.content)",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    }
+                  ],
+                  "shading": "F5F5F5"
+                }
               ]
             }
           ],
@@ -145,8 +443,13 @@
         },
         { "text": "" },
 
-        { "text": "方案二：抽帧为图片列表传入（推荐，适合长视频）", "heading": 3 },
-        { "text": "使用 FFmpeg 或 OpenCV 从视频中抽取关键帧，将帧图片编码为 Base64 后以 image_url 列表形式传入。适合长视频、大文件，可控制 token 消耗。" },
+        {
+          "text": "方案二：抽帧为图片列表传入（推荐，适合长视频）",
+          "heading": 3
+        },
+        {
+          "text": "使用 FFmpeg 或 OpenCV 从视频中抽取关键帧，将帧图片编码为 Base64 后以 image_url 列表形式传入。适合长视频、大文件，可控制 token 消耗。"
+        },
         { "text": "" },
         { "runs": [{ "text": "Python 代码示例：", "bold": true }] },
         { "text": "" },
@@ -154,43 +457,336 @@
           "rows": [
             {
               "cells": [
-                { "content": [
-                  { "runs": [{ "text": "import base64, subprocess, glob, os", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "from openai import OpenAI", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "client = OpenAI(", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    api_key=\"sk-xxxxx\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    base_url=\"https://dashscope.aliyuncs.com/compatible-mode/v1\"", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": ")", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "# 1. 使用 FFmpeg 每2秒抽取一帧", "font": "Consolas", "fontSize": 9, "color": "6A9955" }] },
-                  { "runs": [{ "text": "os.makedirs(\"/tmp/frames\", exist_ok=True)", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "subprocess.run([", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    \"ffmpeg\", \"-i\", \"/path/to/local/video.mp4\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    \"-vf\", \"fps=0.5\",  # 每2秒一帧", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    \"/tmp/frames/frame_%04d.jpg\"", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "])", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "# 2. 读取所有帧并编码", "font": "Consolas", "fontSize": 9, "color": "6A9955" }] },
-                  { "runs": [{ "text": "frames = sorted(glob.glob(\"/tmp/frames/frame_*.jpg\"))", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "content = []", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "for frame_path in frames:", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    with open(frame_path, \"rb\") as f:", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "        img_b64 = base64.b64encode(f.read()).decode(\"utf-8\")", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    content.append({", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "        \"type\": \"image_url\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "        \"image_url\": {\"url\": f\"data:image/jpeg;base64,{img_b64}\"}", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    })", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "content.append({\"type\": \"text\", \"text\": \"以上是视频帧，请分析内容\"})", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "# 3. 调用 API", "font": "Consolas", "fontSize": 9, "color": "6A9955" }] },
-                  { "runs": [{ "text": "response = client.chat.completions.create(", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    model=\"qwen3.5-plus\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    messages=[{\"role\": \"user\", \"content\": content}]", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": ")", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "print(response.choices[0].message.content)", "font": "Consolas", "fontSize": 9, "color": "333333" }] }
-                ], "shading": "F5F5F5" }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        {
+                          "text": "import base64, subprocess, glob, os",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "from openai import OpenAI",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "client = OpenAI(",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    api_key=\"sk-xxxxx\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    base_url=\"https://dashscope.aliyuncs.com/compatible-mode/v1\"",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": ")",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "# 1. 使用 FFmpeg 每2秒抽取一帧",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "6A9955"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "os.makedirs(\"/tmp/frames\", exist_ok=True)",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "subprocess.run([",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    \"ffmpeg\", \"-i\", \"/path/to/local/video.mp4\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    \"-vf\", \"fps=0.5\",  # 每2秒一帧",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    \"/tmp/frames/frame_%04d.jpg\"",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "])",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "# 2. 读取所有帧并编码",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "6A9955"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "frames = sorted(glob.glob(\"/tmp/frames/frame_*.jpg\"))",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "content = []",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "for frame_path in frames:",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    with open(frame_path, \"rb\") as f:",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "        img_b64 = base64.b64encode(f.read()).decode(\"utf-8\")",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    content.append({",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "        \"type\": \"image_url\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "        \"image_url\": {\"url\": f\"data:image/jpeg;base64,{img_b64}\"}",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    })",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "content.append({\"type\": \"text\", \"text\": \"以上是视频帧，请分析内容\"})",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "# 3. 调用 API",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "6A9955"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "response = client.chat.completions.create(",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    model=\"qwen3.5-plus\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    messages=[{\"role\": \"user\", \"content\": content}]",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": ")",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "print(response.choices[0].message.content)",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    }
+                  ],
+                  "shading": "F5F5F5"
+                }
               ]
             }
           ],
@@ -199,8 +795,13 @@
         },
         { "text": "" },
 
-        { "text": "方案三：上传到 OSS 后传 URL（适合大文件/批量处理）", "heading": 3 },
-        { "text": "将本地视频上传到阿里云 OSS 或其他可公网访问的存储服务，生成临时 URL 后传给 API。适合大视频文件或需要批量处理的场景。" },
+        {
+          "text": "方案三：上传到 OSS 后传 URL（适合大文件/批量处理）",
+          "heading": 3
+        },
+        {
+          "text": "将本地视频上传到阿里云 OSS 或其他可公网访问的存储服务，生成临时 URL 后传给 API。适合大视频文件或需要批量处理的场景。"
+        },
         { "text": "" },
         { "runs": [{ "text": "Python 代码示例：", "bold": true }] },
         { "text": "" },
@@ -208,35 +809,266 @@
           "rows": [
             {
               "cells": [
-                { "content": [
-                  { "runs": [{ "text": "from openai import OpenAI", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "client = OpenAI(", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    api_key=\"sk-xxxxx\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    base_url=\"https://dashscope.aliyuncs.com/compatible-mode/v1\"", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": ")", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "# 视频已上传到 OSS，获取预签名 URL", "font": "Consolas", "fontSize": 9, "color": "6A9955" }] },
-                  { "runs": [{ "text": "video_url = \"https://your-bucket.oss-cn-hangzhou.aliyuncs.com/video.mp4\"", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "response = client.chat.completions.create(", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    model=\"qwen3.5-plus\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    messages=[{", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "        \"role\": \"user\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "        \"content\": [", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "            {", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "                \"type\": \"video_url\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "                \"video_url\": {", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "                    \"url\": video_url,", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "                    \"fps\": 2  # 可选，指定采样帧率", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "                }", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "            },", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "            {\"type\": \"text\", \"text\": \"分析这个视频中发生了什么\"}", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "        ]", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    }]", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": ")", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "print(response.choices[0].message.content)", "font": "Consolas", "fontSize": 9, "color": "333333" }] }
-                ], "shading": "F5F5F5" }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        {
+                          "text": "from openai import OpenAI",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "client = OpenAI(",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    api_key=\"sk-xxxxx\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    base_url=\"https://dashscope.aliyuncs.com/compatible-mode/v1\"",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": ")",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "# 视频已上传到 OSS，获取预签名 URL",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "6A9955"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "video_url = \"https://your-bucket.oss-cn-hangzhou.aliyuncs.com/video.mp4\"",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "response = client.chat.completions.create(",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    model=\"qwen3.5-plus\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    messages=[{",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "        \"role\": \"user\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "        \"content\": [",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "            {",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "                \"type\": \"video_url\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "                \"video_url\": {",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "                    \"url\": video_url,",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "                    \"fps\": 2  # 可选，指定采样帧率",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "                }",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "            },",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "            {\"type\": \"text\", \"text\": \"分析这个视频中发生了什么\"}",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "        ]",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    }]",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": ")",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "print(response.choices[0].message.content)",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    }
+                  ],
+                  "shading": "F5F5F5"
+                }
               ]
             }
           ],
@@ -250,17 +1082,66 @@
           "rows": [
             {
               "cells": [
-                { "content": [{ "runs": [{"text": "方案", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" },
-                { "content": [{ "runs": [{"text": "适用场景", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" },
-                { "content": [{ "runs": [{"text": "文件限制", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" },
-                { "content": [{ "runs": [{"text": "优点", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" },
-                { "content": [{ "runs": [{"text": "缺点", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "方案", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                },
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "适用场景", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                },
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "文件限制", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                },
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "优点", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                },
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "缺点", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                }
               ],
               "isHeader": true
             },
             {
               "cells": [
-                { "content": [{ "runs": [{"text": "Base64 直传", "bold": true}] }] },
+                {
+                  "content": [
+                    { "runs": [{ "text": "Base64 直传", "bold": true }] }
+                  ]
+                },
                 { "content": [{ "text": "短视频、快速测试" }] },
                 { "content": [{ "text": "< 50MB" }] },
                 { "content": [{ "text": "最简单，无需额外服务" }] },
@@ -269,7 +1150,11 @@
             },
             {
               "cells": [
-                { "content": [{ "runs": [{"text": "抽帧传图", "bold": true}] }] },
+                {
+                  "content": [
+                    { "runs": [{ "text": "抽帧传图", "bold": true }] }
+                  ]
+                },
                 { "content": [{ "text": "长视频、精细控制" }] },
                 { "content": [{ "text": "不限" }] },
                 { "content": [{ "text": "可控帧率和 token，支持超长视频" }] },
@@ -278,7 +1163,9 @@
             },
             {
               "cells": [
-                { "content": [{ "runs": [{"text": "OSS URL", "bold": true}] }] },
+                {
+                  "content": [{ "runs": [{ "text": "OSS URL", "bold": true }] }]
+                },
                 { "content": [{ "text": "大文件、批量处理" }] },
                 { "content": [{ "text": "不限" }] },
                 { "content": [{ "text": "支持大文件，服务端采样" }] },
@@ -293,7 +1180,9 @@
         { "pageBreak": true },
 
         { "text": "3. 文档分析能力", "heading": 2 },
-        { "text": "Qwen3.5-Plus 同样支持文档理解，包括 PDF、图表、表格、截图等。处理方式是将文档页面转为图片后以 image_url 传入。" },
+        {
+          "text": "Qwen3.5-Plus 同样支持文档理解，包括 PDF、图表、表格、截图等。处理方式是将文档页面转为图片后以 image_url 传入。"
+        },
         { "text": "" },
 
         { "text": "PDF 文档分析示例", "heading": 3 },
@@ -302,40 +1191,306 @@
           "rows": [
             {
               "cells": [
-                { "content": [
-                  { "runs": [{ "text": "import base64", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "from io import BytesIO", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "from pdf2image import convert_from_path", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "from openai import OpenAI", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "client = OpenAI(", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    api_key=\"sk-xxxxx\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    base_url=\"https://dashscope.aliyuncs.com/compatible-mode/v1\"", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": ")", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "# 1. 将 PDF 页面转为图片", "font": "Consolas", "fontSize": 9, "color": "6A9955" }] },
-                  { "runs": [{ "text": "images = convert_from_path(\"/path/to/document.pdf\", dpi=200)", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "# 2. 编码每页为 Base64", "font": "Consolas", "fontSize": 9, "color": "6A9955" }] },
-                  { "runs": [{ "text": "content = []", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "for img in images:", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    buffer = BytesIO()", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    img.save(buffer, format=\"JPEG\", quality=85)", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    img_b64 = base64.b64encode(buffer.getvalue()).decode(\"utf-8\")", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    content.append({", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "        \"type\": \"image_url\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "        \"image_url\": {\"url\": f\"data:image/jpeg;base64,{img_b64}\"}", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    })", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "content.append({\"type\": \"text\", \"text\": \"请分析这份文档的主要内容\"})", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "# 3. 调用 API", "font": "Consolas", "fontSize": 9, "color": "6A9955" }] },
-                  { "runs": [{ "text": "response = client.chat.completions.create(", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    model=\"qwen3.5-plus\",", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "    messages=[{\"role\": \"user\", \"content\": content}]", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": ")", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "print(response.choices[0].message.content)", "font": "Consolas", "fontSize": 9, "color": "333333" }] }
-                ], "shading": "F5F5F5" }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        {
+                          "text": "import base64",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "from io import BytesIO",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "from pdf2image import convert_from_path",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "from openai import OpenAI",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "client = OpenAI(",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    api_key=\"sk-xxxxx\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    base_url=\"https://dashscope.aliyuncs.com/compatible-mode/v1\"",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": ")",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "# 1. 将 PDF 页面转为图片",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "6A9955"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "images = convert_from_path(\"/path/to/document.pdf\", dpi=200)",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "# 2. 编码每页为 Base64",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "6A9955"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "content = []",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "for img in images:",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    buffer = BytesIO()",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    img.save(buffer, format=\"JPEG\", quality=85)",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    img_b64 = base64.b64encode(buffer.getvalue()).decode(\"utf-8\")",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    content.append({",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "        \"type\": \"image_url\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "        \"image_url\": {\"url\": f\"data:image/jpeg;base64,{img_b64}\"}",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    })",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "content.append({\"type\": \"text\", \"text\": \"请分析这份文档的主要内容\"})",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "# 3. 调用 API",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "6A9955"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "response = client.chat.completions.create(",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    model=\"qwen3.5-plus\",",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "    messages=[{\"role\": \"user\", \"content\": content}]",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": ")",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "print(response.choices[0].message.content)",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    }
+                  ],
+                  "shading": "F5F5F5"
+                }
               ]
             }
           ],
@@ -349,9 +1504,36 @@
           "rows": [
             {
               "cells": [
-                { "content": [{ "runs": [{"text": "文档类型", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" },
-                { "content": [{ "runs": [{"text": "处理方式", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" },
-                { "content": [{ "runs": [{"text": "推荐工具", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "文档类型", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                },
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "处理方式", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                },
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "推荐工具", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                }
               ],
               "isHeader": true
             },
@@ -403,27 +1585,81 @@
           "rows": [
             {
               "cells": [
-                { "content": [{ "runs": [{"text": "区域", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" },
-                { "content": [{ "runs": [{"text": "Base URL", "bold": true, "color": "FFFFFF"}] }], "shading": "1A73E8" }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "区域", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                },
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        { "text": "Base URL", "bold": true, "color": "FFFFFF" }
+                      ]
+                    }
+                  ],
+                  "shading": "1A73E8"
+                }
               ],
               "isHeader": true
             },
             {
               "cells": [
                 { "content": [{ "text": "中国（北京）" }] },
-                { "content": [{ "runs": [{ "text": "https://dashscope.aliyuncs.com/compatible-mode/v1", "font": "Consolas", "fontSize": 9 }] }] }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        {
+                          "text": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                          "font": "Consolas",
+                          "fontSize": 9
+                        }
+                      ]
+                    }
+                  ]
+                }
               ]
             },
             {
               "cells": [
                 { "content": [{ "text": "新加坡（国际）" }] },
-                { "content": [{ "runs": [{ "text": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", "font": "Consolas", "fontSize": 9 }] }] }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        {
+                          "text": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+                          "font": "Consolas",
+                          "fontSize": 9
+                        }
+                      ]
+                    }
+                  ]
+                }
               ]
             },
             {
               "cells": [
                 { "content": [{ "text": "美国（弗吉尼亚）" }] },
-                { "content": [{ "runs": [{ "text": "https://dashscope-us.aliyuncs.com/compatible-mode/v1", "font": "Consolas", "fontSize": 9 }] }] }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        {
+                          "text": "https://dashscope-us.aliyuncs.com/compatible-mode/v1",
+                          "font": "Consolas",
+                          "fontSize": 9
+                        }
+                      ]
+                    }
+                  ]
+                }
               ]
             }
           ],
@@ -438,18 +1674,101 @@
           "rows": [
             {
               "cells": [
-                { "content": [
-                  { "runs": [{ "text": "# Python 依赖", "font": "Consolas", "fontSize": 9, "color": "6A9955" }] },
-                  { "runs": [{ "text": "pip install openai", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "# 视频抽帧（方案二需要）", "font": "Consolas", "fontSize": 9, "color": "6A9955" }] },
-                  { "runs": [{ "text": "brew install ffmpeg   # macOS", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "apt install ffmpeg    # Ubuntu", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "", "font": "Consolas", "fontSize": 9 }] },
-                  { "runs": [{ "text": "# PDF 文档分析", "font": "Consolas", "fontSize": 9, "color": "6A9955" }] },
-                  { "runs": [{ "text": "pip install pdf2image PyMuPDF", "font": "Consolas", "fontSize": 9, "color": "333333" }] },
-                  { "runs": [{ "text": "brew install poppler  # macOS, pdf2image 依赖", "font": "Consolas", "fontSize": 9, "color": "333333" }] }
-                ], "shading": "F5F5F5" }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        {
+                          "text": "# Python 依赖",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "6A9955"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "pip install openai",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "# 视频抽帧（方案二需要）",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "6A9955"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "brew install ffmpeg   # macOS",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "apt install ffmpeg    # Ubuntu",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        { "text": "", "font": "Consolas", "fontSize": 9 }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "# PDF 文档分析",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "6A9955"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "pip install pdf2image PyMuPDF",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "brew install poppler  # macOS, pdf2image 依赖",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    }
+                  ],
+                  "shading": "F5F5F5"
+                }
               ]
             }
           ],
@@ -461,30 +1780,70 @@
         { "text": "5. 最佳实践与注意事项", "heading": 2 },
         { "text": "" },
         { "text": "视频分析最佳实践", "heading": 3 },
-        { "text": "帧率选择：一般场景 fps=1~2 即可；动作密集场景可提高到 fps=5", "bullet": true },
-        { "text": "长视频处理：超过 10 分钟的视频建议使用抽帧方案，控制总帧数在 100 帧以内", "bullet": true },
-        { "text": "分辨率：帧图片建议 720p 以内，过高分辨率会增加 token 消耗但提升有限", "bullet": true },
-        { "text": "提示词：明确告知模型分析目标（如「统计人数」「识别动作」「提取字幕」）效果更好", "bullet": true },
-        { "text": "Token 预估：每帧约消耗 1000~2000 tokens，100 帧视频约 10~20 万 tokens", "bullet": true },
+        {
+          "text": "帧率选择：一般场景 fps=1~2 即可；动作密集场景可提高到 fps=5",
+          "bullet": true
+        },
+        {
+          "text": "长视频处理：超过 10 分钟的视频建议使用抽帧方案，控制总帧数在 100 帧以内",
+          "bullet": true
+        },
+        {
+          "text": "分辨率：帧图片建议 720p 以内，过高分辨率会增加 token 消耗但提升有限",
+          "bullet": true
+        },
+        {
+          "text": "提示词：明确告知模型分析目标（如「统计人数」「识别动作」「提取字幕」）效果更好",
+          "bullet": true
+        },
+        {
+          "text": "Token 预估：每帧约消耗 1000~2000 tokens，100 帧视频约 10~20 万 tokens",
+          "bullet": true
+        },
         { "text": "" },
         { "text": "文档分析最佳实践", "heading": 3 },
-        { "text": "PDF 转图片 DPI 建议 150~200，平衡清晰度和 token 消耗", "bullet": true },
+        {
+          "text": "PDF 转图片 DPI 建议 150~200，平衡清晰度和 token 消耗",
+          "bullet": true
+        },
         { "text": "多页文档可分批处理，每批 10~20 页", "bullet": true },
-        { "text": "表格密集的文档建议提高 DPI 到 250 以保证识别率", "bullet": true },
-        { "text": "结合 OCR 预处理可进一步提升文档结构化提取效果", "bullet": true },
+        {
+          "text": "表格密集的文档建议提高 DPI 到 250 以保证识别率",
+          "bullet": true
+        },
+        {
+          "text": "结合 OCR 预处理可进一步提升文档结构化提取效果",
+          "bullet": true
+        },
         { "text": "" },
 
         { "text": "6. 常见问题", "heading": 2 },
         { "text": "" },
-        { "runs": [{ "text": "Q: Base64 编码视频太大怎么办？", "bold": true }] },
-        { "text": "A: 超过 50MB 的视频建议使用方案二（抽帧）或方案三（OSS URL）。也可以先用 FFmpeg 压缩：" },
+        {
+          "runs": [{ "text": "Q: Base64 编码视频太大怎么办？", "bold": true }]
+        },
+        {
+          "text": "A: 超过 50MB 的视频建议使用方案二（抽帧）或方案三（OSS URL）。也可以先用 FFmpeg 压缩："
+        },
         {
           "rows": [
             {
               "cells": [
-                { "content": [
-                  { "runs": [{ "text": "ffmpeg -i input.mp4 -vf scale=720:-1 -crf 28 output.mp4", "font": "Consolas", "fontSize": 9, "color": "333333" }] }
-                ], "shading": "F5F5F5" }
+                {
+                  "content": [
+                    {
+                      "runs": [
+                        {
+                          "text": "ffmpeg -i input.mp4 -vf scale=720:-1 -crf 28 output.mp4",
+                          "font": "Consolas",
+                          "fontSize": 9,
+                          "color": "333333"
+                        }
+                      ]
+                    }
+                  ],
+                  "shading": "F5F5F5"
+                }
               ]
             }
           ],
@@ -493,13 +1852,19 @@
         },
         { "text": "" },
         { "runs": [{ "text": "Q: API 返回 token 超限错误？", "bold": true }] },
-        { "text": "A: 减少传入的帧数或降低图片分辨率。使用抽帧方案时，降低 fps 值或限制最大帧数。" },
+        {
+          "text": "A: 减少传入的帧数或降低图片分辨率。使用抽帧方案时，降低 fps 值或限制最大帧数。"
+        },
         { "text": "" },
         { "runs": [{ "text": "Q: 视频中的音频能分析吗？", "bold": true }] },
-        { "text": "A: Qwen3.5-Plus 目前只分析视频画面，不处理音频。如需音频分析，需先用 Whisper 等工具转文字，再和视频帧一起传入。" },
+        {
+          "text": "A: Qwen3.5-Plus 目前只分析视频画面，不处理音频。如需音频分析，需先用 Whisper 等工具转文字，再和视频帧一起传入。"
+        },
         { "text": "" },
         { "runs": [{ "text": "Q: 支持哪些视频格式？", "bold": true }] },
-        { "text": "A: 常见格式均支持：MP4、AVI、MOV、MKV、WebM。Base64 直传时需确保 MIME type 正确（如 video/mp4）。" }
+        {
+          "text": "A: 常见格式均支持：MP4、AVI、MOV、MKV、WebM。Base64 直传时需确保 MIME type 正确（如 video/mp4）。"
+        }
       ]
     }
   ]

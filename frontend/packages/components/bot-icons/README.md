@@ -4,7 +4,7 @@ Wrapper components for semi
 
 ## Overview
 
-This package is part of the Ynet Studio monorepo and provides ui component functionality. It serves as a core component in the Coze ecosystem.
+This package is part of the Ynet Studio monorepo and provides ui component functionality. It serves as a core component in the YNET ecosystem.
 
 ## Getting Started
 

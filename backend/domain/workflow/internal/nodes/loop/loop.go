@@ -221,10 +221,15 @@ func (l *Loop) Invoke(ctx context.Context, in map[string]any, opts ...nodes.Node
 	arrays := make(map[string][]any, len(l.inputArrays))
 	for _, arrayKey := range l.inputArrays {
 		a, ok := nodes.TakeMapValue(in, compose.FieldPath{arrayKey})
-		if !ok {
-			return nil, fmt.Errorf("incoming array not present in input: %s", arrayKey)
+		if !ok || a == nil { // missing or null array: treat as empty (zero iterations)
+			arrays[arrayKey] = []any{}
+			continue
 		}
-		arrays[arrayKey] = a.([]any)
+		arr, isArr := a.([]any)
+		if !isArr {
+			return nil, fmt.Errorf("incoming value for %q is not an array: %T", arrayKey, a)
+		}
+		arrays[arrayKey] = arr
 	}
 
 	options := nodes.GetCommonOptions(&nodes.NodeOptions{}, opts...)
@@ -471,8 +476,9 @@ func (l *Loop) getMaxIter(in map[string]any) (int, error) {
 	case ByArray:
 		for _, arrayKey := range l.inputArrays {
 			a, ok := nodes.TakeMapValue(in, compose.FieldPath{arrayKey})
-			if !ok {
-				return 0, fmt.Errorf("incoming array not present in input: %s", arrayKey)
+			if !ok || a == nil { // missing or null array (e.g. empty knowledge result): zero iterations
+				maxIter = 0
+				continue
 			}
 
 			if reflect.TypeOf(a).Kind() != reflect.Slice {
@@ -486,11 +492,15 @@ func (l *Loop) getMaxIter(in map[string]any) (int, error) {
 		}
 	case ByIteration:
 		iter, ok := nodes.TakeMapValue(in, compose.FieldPath{Count})
-		if !ok {
-			return 0, errors.New("incoming LoopCount not present in input when loop type is ByIteration")
+		if !ok || iter == nil { // missing or null loop count: zero iterations
+			return 0, nil
 		}
 
-		maxIter = int(iter.(int64))
+		cnt, isInt := iter.(int64)
+		if !isInt {
+			return 0, fmt.Errorf("incoming LoopCount is not an integer: %T", iter)
+		}
+		maxIter = int(cnt)
 	case Infinite:
 	default:
 		return 0, fmt.Errorf("loop type not supported: %v", l.loopType)

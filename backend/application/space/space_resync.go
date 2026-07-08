@@ -25,6 +25,7 @@ import (
 	searchsvc "github.com/ynet-dev/ynet-studio/backend/domain/search/service"
 	usersvc "github.com/ynet-dev/ynet-studio/backend/domain/user/service"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/errorx"
+	"github.com/ynet-dev/ynet-studio/backend/pkg/lang/conv"
 	"github.com/ynet-dev/ynet-studio/backend/pkg/logs"
 	"github.com/ynet-dev/ynet-studio/backend/types/errno"
 )
@@ -107,5 +108,56 @@ func (s *SpaceResyncService) ResyncES(ctx context.Context, req *spacemodel.Resyn
 		Code:   0,
 		Msg:    "success",
 		Counts: counts,
+	}, nil
+}
+
+// ResyncAllES is the admin bulk rebuild used after a DB-level data sync. It
+// purges the three list indices (orphan cleanup) and rebuilds every space in
+// req.SpaceIDs, bypassing the per-space owner gate (the domain ResyncSpace
+// carries no ownership check). Gated only by requiring a logged-in caller —
+// an internal maintenance operation, not a user-facing one.
+func (s *SpaceResyncService) ResyncAllES(ctx context.Context, req *spacemodel.ResyncAllESRequest) (*spacemodel.ResyncAllESResponse, error) {
+	if _, err := getUserIDFromContext(ctx); err != nil {
+		return nil, err
+	}
+	ids := make([]int64, 0, len(req.SpaceIDs))
+	for _, raw := range req.SpaceIDs {
+		id, err := conv.StrToInt64(raw)
+		if err != nil || id <= 0 {
+			continue
+		}
+		ids = append(ids, id)
+	}
+	if len(ids) == 0 {
+		return nil, errorx.New(errno.ErrSpaceResyncESCode, errorx.KV("msg", "no valid space_ids provided"))
+	}
+
+	agg, failed, err := s.searchSVC.ResyncAllSpaces(ctx, ids)
+	if err != nil {
+		return nil, errorx.WrapByCode(err, errno.ErrSpaceResyncESCode, errorx.KV("msg", "bulk resync failed"))
+	}
+	if agg == nil {
+		agg = &spacemodel.ResyncESCounts{}
+	}
+
+	failedStr := make([]string, 0, len(failed))
+	for _, f := range failed {
+		failedStr = append(failedStr, conv.Int64ToStr(f))
+	}
+	logs.CtxInfof(ctx, "[ResyncAllES] requested=%d ok=%d failed=%d project_draft=%d coze_resource=%d kb_entries=%d",
+		len(ids), len(ids)-len(failed), len(failed), agg.ProjectDraft, agg.CozeResource, agg.KbEntries)
+
+	return &spacemodel.ResyncAllESResponse{
+		Code: 0,
+		Msg:  "success",
+		Counts: &spacemodel.ResyncAllESCounts{
+			Spaces:       len(ids) - len(failed),
+			Failed:       len(failed),
+			FailedIDs:    failedStr,
+			ProjectDraft: agg.ProjectDraft,
+			CozeResource: agg.CozeResource,
+			KbEntries:    agg.KbEntries,
+			Purged:       true,
+		},
 	}, nil
 }

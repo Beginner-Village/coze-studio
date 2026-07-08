@@ -15,7 +15,7 @@
  */
 
 import { useSearchParams } from 'react-router-dom';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useState, useEffect } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 import classNames from 'classnames';
@@ -25,6 +25,10 @@ import { useBotDetailIsReadonly } from '@coze-studio/bot-detail-store';
 import { Button, Modal } from '@coze-arch/coze-design';
 import { BotPageFromEnum } from '@coze-arch/bot-typings/common';
 import { BotMode } from '@coze-arch/bot-api/developer_api';
+import {
+  fetchSuperAgentEnabled,
+  getSuperAgentEnabledCache,
+} from '@coze-arch/bot-api';
 import { AbilityAreaContainer } from '@coze-agent-ide/tool';
 import { useBotPageStore } from '@coze-agent-ide/space-bot/store';
 import {
@@ -174,7 +178,7 @@ const SuperContentLayout: React.FC<SuperContentLayoutProps> = ({
   );
 };
 
-export const SuperMode: React.FC<SuperModeProps> = ({
+const SuperModeInner: React.FC<SuperModeProps> = ({
   rightSheetSlot,
   renderChatTitleNode,
   chatSlot,
@@ -299,4 +303,25 @@ export const SuperMode: React.FC<SuperModeProps> = ({
       </div>
     </div>
   );
+};
+
+/**
+ * 超级体编辑器入口。是否渲染改为运行时驱动：向后端 `/api/super-agent/ui-config` 拉取
+ * （联动 SANDBOX_ENABLED），运维改后端一个 env 即可，前端无需重新构建。
+ *
+ * 这里用「外层 gate + 内层 SuperModeInner」而非在组件顶部早返回：外层只有恒定的
+ * useState/useEffect 两个 hook，内层组件仅在启用时挂载，二者都不违反 rules-of-hooks。
+ * 构建期常量 IS_DISABLE_SUPER_AGENT 保留为硬兜底（置 true 永远隐藏）；降级默认隐藏。
+ */
+export const SuperMode: React.FC<SuperModeProps> = props => {
+  const [enabled, setEnabled] = useState<boolean>(
+    getSuperAgentEnabledCache() ?? false,
+  );
+  useEffect(() => {
+    fetchSuperAgentEnabled().then(setEnabled);
+  }, []);
+  if (IS_DISABLE_SUPER_AGENT || !enabled) {
+    return null;
+  }
+  return <SuperModeInner {...props} />;
 };

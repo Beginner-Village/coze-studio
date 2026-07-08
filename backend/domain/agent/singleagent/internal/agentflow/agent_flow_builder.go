@@ -281,6 +281,27 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	// 沙箱 key（按 connector/agent/user_id 稳定派生），技能工具与沙箱工具共用。
 	sandboxKey := sandboxKeyFor(conf.Identity.ConnectorID, conf.Agent.AgentID, conf.UserID)
 
+	// 沙箱服务是否可用：现场未配置沙箱(SANDBOX_ENABLED=false)时启动阶段不会 SetDefaultSVC，
+	// 此处 DefaultSVC()==nil。沙箱不可用时对所有 agent 一律进入「无沙箱」降级路径。
+	sandboxAvailable := crosssandbox.DefaultSVC() != nil
+
+	// 超级体能力开关(per-agent，默认全开)。
+	superToolCfg := conf.Agent.SuperAgentToolConfig
+	// 沙箱对该 agent 是否关闭 = 沙箱服务不可用(现场未配沙箱) 或 超级体 per-agent 总开关关闭(纯 MCP 模式)。
+	sandboxOff := resolveSandboxOff(sandboxAvailable, isSuperAgent(conf), superToolCfg.SandboxEnabled())
+
+	// 普通体「只读技能」模式：只读取技能内容、不执行脚本。判定 = per-agent 开关
+	// (SuperAgentToolConfig.SkillExecution，默认允许) 关闭，或 全局 env SKILL_EXECUTION_DISABLED
+	// 兜底关闭。仅对普通体生效；超级体(harness)恒不受影响，保持「super/normal 互不影响」铁律。
+	// 此外：沙箱不可用时普通体也强制只读(read_skill 仍返回 SKILL.md，但不注入脚本、不挂 run_bash)。
+	skillReadOnly := skillReadOnlyMode(isSuperAgent(conf), superToolCfg.SkillExecutionEnabled())
+	if sandboxOff && !isSuperAgent(conf) {
+		skillReadOnly = true
+	}
+	if skillReadOnly {
+		logs.CtxInfof(ctx, "[BuildAgent] skill read-only mode ON (per-agent SkillExecution off / SKILL_EXECUTION_DISABLED / no sandbox): no sandbox/script execution for this normal agent")
+	}
+
 	// 技能机制(标准 Agent Skills 渐进式披露):
 	// - L1 元数据:系统提示注入技能名+简介(见 skillsRenderer)。
 	// - L2 说明:read_skill 工具按需返回技能 SKILL.md(显式"打开"技能的工具,所有 agent 都挂)。
@@ -288,27 +309,23 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 	//   模型按 SKILL.md 指引用 run_bash 执行文件夹里的固定脚本。
 	var skillTools []tool.InvokableTool
 	if !workflowCanvasMode {
-		skillTools = newSkillTools(conf.Agent.SpaceID, sandboxKey, conf.Agent.SkillInfoList)
+		skillTools = newSkillTools(conf.Agent.SpaceID, sandboxKey, conf.Agent.SkillInfoList, !skillReadOnly && !sandboxOff)
 	}
 	agentTools = append(agentTools, slices.Transform(skillTools, func(a tool.InvokableTool) tool.BaseTool {
 		return a
 	})...)
-	if isSuperAgent(conf) && !workflowCanvasMode && len(conf.Agent.SkillInfoList) > 0 {
+	if isSuperAgent(conf) && !workflowCanvasMode && !sandboxOff && len(conf.Agent.SkillInfoList) > 0 {
 		// manifest 守卫:技能集合未变时整段跳过,仅首次/变更时才真正落盘。
 		syncBoundSkillsToSandbox(ctx, sandboxKey, conf.Agent.SpaceID, conf.Agent.SkillInfoList)
 		logs.CtxInfof(ctx, "[BuildAgent] ensured %d skill folder(s) in sandbox /skills (manifest-guarded, key=%s)", len(conf.Agent.SkillInfoList), sandboxKey)
 	}
-
-	// 超级体能力开关(per-agent，默认全开)。沙箱总开关关闭=「纯 MCP 模式」。
-	superToolCfg := conf.Agent.SuperAgentToolConfig
-	sandboxOff := isSuperAgent(conf) && !superToolCfg.SandboxEnabled()
 
 	// 添加沙箱工具 (run_bash/read_file/write_file/list_files 等)。超级体默认挂(需读 /skills/)，
 	// 但沙箱总开关关闭时不挂；run_bash 子开关关闭时单独剔除 run_bash。
 	//
 	// 虚拟员工实例(SourceProductID != 0)：/skills 以只读挂载，防止运行时改写技能模板。
 	instanceMode := isInstanceAgent(conf)
-	mountSandbox := !workflowCanvasMode && ((isSuperAgent(conf) && !sandboxOff) || (!isSuperAgent(conf) && sandboxToolsEnabled(len(conf.Agent.SkillInfoList))))
+	mountSandbox := shouldMountSandbox(isSuperAgent(conf), workflowCanvasMode, sandboxOff, skillReadOnly, len(conf.Agent.SkillInfoList))
 	if mountSandbox {
 		sandboxTools := newSandboxTools(sandboxKey, instanceMode)
 		if isSuperAgent(conf) {
@@ -423,7 +440,7 @@ func BuildAgent(ctx context.Context, conf *Config) (r *AgentRunner, err error) {
 
 	// 纯按类型区分:deep_task / 沙箱 / 扩展工具只挂给超级 agent。
 	// 普通(老)智能体沿用原来那一套,完全不碰沙箱与超级工具。
-	if isSuperAgent(conf) && !workflowCanvasMode && superToolCfg.DeepTaskEnabled() {
+	if shouldMountDeepTask(isSuperAgent(conf), workflowCanvasMode, sandboxOff, superToolCfg.DeepTaskEnabled()) {
 		if dt, derr := newDeepTaskTool(ctx, chatModel, append([]tool.BaseTool(nil), agentTools...)); derr != nil {
 			logs.CtxWarnf(ctx, "[BuildAgent] build deep_task tool failed: %v", derr)
 		} else if dt != nil {

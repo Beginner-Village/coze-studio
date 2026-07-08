@@ -131,7 +131,7 @@ func TestReadSkillToolUsesStandardSkillFilesAsInstructions(t *testing.T) {
 
 	readTool := newReadSkillTool(11, "sandbox-key", []*singleagent.SkillReference{
 		{SkillID: 7, SkillName: "report"},
-	})
+	}, true)
 
 	out, err := readTool.InvokableRun(context.Background(), `{"skill_name":"report"}`)
 	if err != nil {
@@ -185,5 +185,46 @@ func TestSyncBoundSkillsToSandboxInstallsStandardFolderSkill(t *testing.T) {
 	}
 	if len(fm.files[skillManifestPath]) == 0 {
 		t.Fatalf("manifest should be written after successful sync: %v", fm.files)
+	}
+}
+
+// TestReadSkillToolReadOnlyModeSkipsInjection verifies that when injectScripts=false
+// (a normal agent in read-only skill mode), read_skill still returns the SKILL.md
+// instructions but does NOT sync any scripts into the sandbox and does NOT tell the
+// model to run them. This is the "read the skill as a document, never execute" path.
+func TestReadSkillToolReadOnlyModeSkipsInjection(t *testing.T) {
+	fm := &fakeSandboxMgr{}
+	crosssandbox.SetDefaultSVC(fm)
+	defer crosssandbox.SetDefaultSVC(nil)
+
+	crossskill.SetDefaultSVC(&fakeSkillSvc{skills: map[int64]*entity.Skill{
+		7: {
+			SkillID: 7,
+			SpaceID: 11,
+			Name:    "report",
+			Files: map[string]string{
+				"SKILL.md":       "# Report Skill\nUse scripts/run.py.",
+				"scripts/run.py": "print('ok')",
+			},
+		},
+	}})
+	defer crossskill.SetDefaultSVC(nil)
+
+	readTool := newReadSkillTool(11, "sandbox-key", []*singleagent.SkillReference{
+		{SkillID: 7, SkillName: "report"},
+	}, false)
+
+	out, err := readTool.InvokableRun(context.Background(), `{"skill_name":"report"}`)
+	if err != nil {
+		t.Fatalf("read_skill returned err: %v", err)
+	}
+	if !strings.Contains(out, "# Report Skill") {
+		t.Fatalf("read-only read_skill must still return SKILL.md content, got %q", out)
+	}
+	if strings.Contains(out, "run them with run_bash") {
+		t.Fatalf("read-only read_skill must NOT instruct the model to run scripts: %q", out)
+	}
+	if _, ok := fm.files["/skills/report/scripts/run.py"]; ok {
+		t.Fatalf("read-only read_skill must NOT sync scripts into the sandbox: %v", fm.files)
 	}
 }

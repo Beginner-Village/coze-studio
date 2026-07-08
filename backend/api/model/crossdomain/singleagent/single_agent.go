@@ -104,6 +104,11 @@ type SuperAgentToolConfig struct {
 	DeepTask    *bool `json:"deep_task,omitempty"`
 	SkillManage *bool `json:"skill_manage,omitempty"`
 
+	// SkillExecution 控制「该智能体是否允许执行技能脚本(沙箱)」。区别于上面各开关(仅超级体生效),
+	// 该项对普通(非超级)智能体同样生效:关闭=只读技能——只读 SKILL.md、不挂 run_bash 等沙箱工具、
+	// read_skill 不注入脚本。nil=允许(向后兼容)。
+	SkillExecution *bool `json:"skill_execution,omitempty"`
+
 	// MCPServers 动态 MCP server 列表（第二块接入）。
 	MCPServers []*MCPServerConfig `json:"mcp_servers,omitempty"`
 }
@@ -129,6 +134,89 @@ func (c *SuperAgentToolConfig) RunBashEnabled() bool   { return c == nil || bool
 func (c *SuperAgentToolConfig) DeepTaskEnabled() bool  { return c == nil || boolEnabled(c.DeepTask) }
 func (c *SuperAgentToolConfig) SkillManageEnabled() bool {
 	return c == nil || boolEnabled(c.SkillManage)
+}
+
+// SkillExecutionEnabled 报告是否允许「该智能体执行技能脚本(沙箱)」。也作用于普通体:关闭时
+// 普通体把技能当只读文档处理。nil=允许(向后兼容)。
+func (c *SuperAgentToolConfig) SkillExecutionEnabled() bool {
+	return c == nil || boolEnabled(c.SkillExecution)
+}
+
+// mcpSecretRedacted 是任何「读取/回显」路径上替换 MCP env 密钥值的哨兵。写入(update)时
+// 若某个 env 值仍等于该哨兵，表示「保留已存密钥」(见 MergeMCPServerSecrets)。
+const mcpSecretRedacted = "__ynet_redacted__"
+
+// RedactEnvSecrets 返回 env 的副本，把每个值替换成脱敏哨兵(保留 key，让前端仍能看到有哪些变量)。
+// env 为空时原样返回。绝不修改入参。
+func RedactEnvSecrets(env map[string]string) map[string]string {
+	if len(env) == 0 {
+		return env
+	}
+	out := make(map[string]string, len(env))
+	for k := range env {
+		out[k] = mcpSecretRedacted
+	}
+	return out
+}
+
+// RedactedForRead 返回可安全回传给客户端的配置副本：每个 MCP server 的 env 值都被替换成
+// 脱敏哨兵，凭证(如 Authorization: Bearer …)永不出后端。bool 开关与非密钥字段原样拷贝。
+// c 为 nil 时返回 nil，且绝不修改入参。
+func (c *SuperAgentToolConfig) RedactedForRead() *SuperAgentToolConfig {
+	if c == nil {
+		return nil
+	}
+	cp := *c
+	if len(c.MCPServers) > 0 {
+		cp.MCPServers = make([]*MCPServerConfig, len(c.MCPServers))
+		for i, srv := range c.MCPServers {
+			if srv == nil {
+				continue
+			}
+			s := *srv
+			s.Env = RedactEnvSecrets(srv.Env)
+			cp.MCPServers[i] = &s
+		}
+	}
+	return &cp
+}
+
+// MergeMCPServerSecrets 在写入时回填被脱敏的密钥：对 newCfg 里每个 server，凡 env 值仍等于
+// 脱敏哨兵的，用 oldCfg 里同名 server、同 key 的已存值替换；哨兵但旧配置里找不到对应值的，
+// 直接丢弃(绝不把哨兵字面量落库)。这样客户端可以把读到的(含脱敏 env 的)整份配置原样存回，
+// 而不会冲掉真实凭证。直接就地修改 newCfg。
+func MergeMCPServerSecrets(newCfg, oldCfg *SuperAgentToolConfig) {
+	if newCfg == nil || len(newCfg.MCPServers) == 0 {
+		return
+	}
+	oldByName := map[string]*MCPServerConfig{}
+	if oldCfg != nil {
+		for _, srv := range oldCfg.MCPServers {
+			if srv != nil {
+				oldByName[srv.Name] = srv
+			}
+		}
+	}
+	for _, srv := range newCfg.MCPServers {
+		if srv == nil || len(srv.Env) == 0 {
+			continue
+		}
+		old := oldByName[srv.Name]
+		merged := make(map[string]string, len(srv.Env))
+		for k, v := range srv.Env {
+			if v != mcpSecretRedacted {
+				merged[k] = v
+				continue
+			}
+			if old != nil {
+				if prev, ok := old.Env[k]; ok {
+					merged[k] = prev
+				}
+			}
+			// 哨兵但旧配置无对应值 → 丢弃该 key，绝不落库哨兵字面量。
+		}
+		srv.Env = merged
+	}
 }
 
 // SkillReference is a lightweight reference for Bot binding.

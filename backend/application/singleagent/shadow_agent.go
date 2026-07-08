@@ -252,7 +252,8 @@ func mcpServerToMap(srv *crossdomainSingleagent.MCPServerConfig) map[string]any 
 		m["args"] = srv.Args
 	}
 	if len(srv.Env) > 0 {
-		m["env"] = srv.Env
+		// 脱敏：影子(虚拟员工)视图也不回显 MCP 凭证明文。
+		m["env"] = crossdomainSingleagent.RedactEnvSecrets(srv.Env)
 	}
 	if srv.URL != "" {
 		m["url"] = srv.URL

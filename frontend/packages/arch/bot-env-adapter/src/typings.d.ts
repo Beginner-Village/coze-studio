@@ -76,6 +76,7 @@ declare const IS_BOT_OP: boolean;
 declare const IS_CN_REGION: boolean;
 declare const IS_DEV_MODE: boolean;
 declare const IS_OPEN_SOURCE: boolean;
+declare const IS_DISABLE_SUPER_AGENT: boolean;
 declare const IS_OVERSEA: boolean;
 declare const IS_OVERSEA_RELEASE: boolean;
 declare const IS_PROD: boolean;

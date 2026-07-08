@@ -45,6 +45,10 @@ const IS_BOE = processEnvs.BUILD_TYPE === 'offline';
 const IS_DEV_MODE = processEnvs.NODE_ENV === 'development'; // local development
 const IS_BOT_OP = false; // Whether it is a bot operation platform, the default is false, and the build from the operation platform will be set to true.
 const IS_OPEN_SOURCE = (process.env.IS_OPEN_SOURCE ?? 'false') === 'true';
+// 现场未部署沙箱环境时的构建期开关：置为 true 可隐藏「超级体(FinMallClaw)/沙箱」相关入口与 UI。
+// 默认 false（正常显示）。与后端 SANDBOX_ENABLED=false 配合，用于现场「无沙箱」打包。
+const IS_DISABLE_SUPER_AGENT =
+  (process.env.IS_DISABLE_SUPER_AGENT ?? 'false') === 'true';
 
 const judgements = {
   IS_OVERSEA,
@@ -57,6 +61,7 @@ const judgements = {
   IS_PROD,
   IS_BOT_OP,
   IS_OPEN_SOURCE,
+  IS_DISABLE_SUPER_AGENT,
 };
 
 const getInnerCDN = () =>

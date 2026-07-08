@@ -35,3 +35,28 @@ type ResyncESResponse struct {
 	Msg    string          `json:"msg"`
 	Counts *ResyncESCounts `json:"counts"`
 }
+
+// ResyncAllESRequest is the admin bulk-resync payload. space_ids are decimal
+// strings (snowflake ids overflow JSON number precision). Used after a
+// DB-level data sync to rebuild ES for every space at once, bypassing the
+// per-space owner gate.
+type ResyncAllESRequest struct {
+	SpaceIDs []string   `json:"space_ids"`
+	Base     *base.Base `json:"Base,omitempty"`
+}
+
+type ResyncAllESCounts struct {
+	Spaces       int      `json:"spaces"` // spaces rebuilt OK
+	Failed       int      `json:"failed"`
+	FailedIDs    []string `json:"failed_ids"`
+	ProjectDraft int      `json:"project_draft"`
+	CozeResource int      `json:"coze_resource"`
+	KbEntries    int      `json:"kb_entries"`
+	Purged       bool     `json:"purged"`
+}
+
+type ResyncAllESResponse struct {
+	Code   int64              `json:"code"`
+	Msg    string             `json:"msg"`
+	Counts *ResyncAllESCounts `json:"counts"`
+}

@@ -4,7 +4,7 @@ feature gating for bot studio
 
 ## Overview
 
-This package is part of the Ynet Studio monorepo and provides architecture functionality. It serves as a core component in the Coze ecosystem.
+This package is part of the Ynet Studio monorepo and provides architecture functionality. It serves as a core component in the YNET ecosystem.
 
 ## Getting Started
 

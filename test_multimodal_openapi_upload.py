@@ -5,13 +5,17 @@
 
 import requests
 import json
+import os
 from urllib.parse import urljoin
 
 # 配置
 BASE_URL = "https://agents.finmall.com"
-API_KEY = "pat_a6721931ccf78645b8726bd103e7db6f831c7c057e74164976e316b41a878a33"
+API_KEY = os.environ.get("OPENYNET_PAT", "")
 BOT_ID = "7551994989534773248"
 IMAGE_PATH = "/Users/luzhipeng/Desktop/f23b20a2d24bc36ddcc490055e93edb2.jpg"
+
+if not API_KEY:
+    raise SystemExit("Set OPENYNET_PAT before running this upload test.")
 
 def _build_accessible_url(file_data):
     """将上传结果中的url/uri转换为可直接访问的绝对URL"""

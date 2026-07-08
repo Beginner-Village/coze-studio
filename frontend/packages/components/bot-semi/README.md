@@ -1,6 +1,6 @@
 # @coze-arch/bot-semi
 
-A comprehensive UI component library that provides wrapped and enhanced components based on SemiDesign UI framework. This package serves as the foundation UI layer for the Coze bot studio platform, offering both direct Semi UI re-exports and custom-styled components.
+A comprehensive UI component library that provides wrapped and enhanced components based on SemiDesign UI framework. This package serves as the foundation UI layer for the YNET bot studio platform, offering both direct Semi UI re-exports and custom-styled components.
 
 ## Features
 
@@ -9,7 +9,7 @@ A comprehensive UI component library that provides wrapped and enhanced componen
 - **Custom Hooks** - Specialized hooks like `useGrab` for advanced UI interactions
 - **TypeScript Support** - Full TypeScript definitions and type safety
 - **Modular Exports** - Individual component imports for optimal bundle size
-- **Platform Integration** - Built-in integration with Coze icons and internationalization
+- **Platform Integration** - Built-in integration with YNET icons and internationalization
 
 ## Get Started
 

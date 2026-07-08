@@ -1,6 +1,6 @@
 # @coze-arch/i18n
 
-A comprehensive internationalization (i18n) solution for the Coze platform, providing unified text localization and language management across all applications in the monorepo.
+A comprehensive internationalization (i18n) solution for the YNET platform, providing unified text localization and language management across all applications in the monorepo.
 
 ## Features
 
@@ -10,7 +10,7 @@ A comprehensive internationalization (i18n) solution for the Coze platform, prov
 - **🔌 Plugin Architecture**: Extensible plugin system with language detection and ICU formatting
 - **📱 React Integration**: Built-in React provider and context for seamless component integration
 - **🛡️ Fallback Handling**: Robust fallback mechanisms for missing translations
-- **🎨 Design System Integration**: Seamless integration with Coze Design components
+- **🎨 Design System Integration**: Seamless integration with YNET Design components
 
 ## Get Started
 
@@ -281,4 +281,4 @@ Internal package - ByteDance Ltd.
 
 ---
 
-For questions or support, please contact the Coze Architecture team.
+For questions or support, please contact the YNET Architecture team.

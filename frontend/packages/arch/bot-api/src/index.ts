@@ -149,3 +149,7 @@ export type {
   DeleteCapabilityRequest,
   DeleteCapabilityResponse,
 } from './strategy-api';
+export {
+  fetchSuperAgentEnabled,
+  getSuperAgentEnabledCache,
+} from './super-agent-ui-config';

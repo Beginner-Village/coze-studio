@@ -14,9 +14,11 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+
       height: min(760px, 88vh);
       max-height: 88vh;
       padding: 0;
+
       border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
       border-radius: 16px;
       box-shadow:
@@ -39,8 +41,10 @@
     .semi-modal-close {
       top: 16px;
       right: 18px;
+
       width: 32px;
       height: 32px;
+
       border-radius: 8px;
     }
 
@@ -62,29 +66,31 @@
 
 .modalTitle {
   display: inline-flex;
-  align-items: center;
   gap: 10px;
+  align-items: center;
   letter-spacing: 0.01em;
 }
 
 .modalTitleDot {
   width: 4px;
   height: 4px;
-  border-radius: 50%;
   background: var(--coz-fg-dim, rgba(55, 67, 106, 38%));
+  border-radius: 50%;
 }
 
 .settingsModalBody {
+  overflow: hidden;
   height: 100%;
   min-height: 0;
-  overflow: hidden;
 }
 
 .settingsShell {
   display: flex;
   flex-direction: column;
+
   height: 100%;
   min-height: 0;
+
   background: var(--coz-bg-max, #fff);
 }
 
@@ -93,14 +99,17 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
+
   padding: 0 24px 14px;
+
   border-bottom: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
 }
 
 .toolbarLabel {
   display: inline-flex;
-  align-items: center;
   gap: 7px;
+  align-items: center;
+
   font-size: 13px;
   font-weight: 600;
   color: var(--coz-fg-secondary, rgba(32, 41, 69, 62%));
@@ -117,14 +126,18 @@
 
 .tab {
   cursor: pointer;
+
   height: 30px;
   padding: 0 12px;
+
   font-size: 14px;
   font-weight: 500;
   color: var(--coz-fg-secondary, rgba(32, 41, 69, 62%));
+
   background: transparent;
   border: 0;
   border-radius: 8px;
+
   transition: all 0.15s ease-out;
 
   &:hover {
@@ -141,8 +154,39 @@
 
 .toolbarRight {
   display: flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
+}
+
+.publishVirtualEmployeeBtn {
+  cursor: pointer;
+
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+
+  height: 32px;
+  padding: 0 14px;
+
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--coz-fg-hglt, rgb(53, 138, 255));
+  white-space: nowrap;
+
+  background: var(--coz-mg-hglt, rgba(53, 138, 255, 8%));
+  border: 1px solid var(--coz-stroke-hglt, rgba(53, 138, 255, 28%));
+  border-radius: 8px;
+
+  transition: all 0.15s ease-out;
+
+  &:hover {
+    background: var(--coz-mg-hglt-hovered, rgba(53, 138, 255, 14%));
+    border-color: var(--coz-stroke-hglt, rgb(53, 138, 255));
+  }
+
+  &:active {
+    background: var(--coz-mg-hglt-pressed, rgba(53, 138, 255, 20%));
+  }
 }
 
 .modelSelectSlot {
@@ -153,15 +197,19 @@
 
 .modelTrigger {
   cursor: pointer;
+
   display: inline-flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
+
   max-width: 240px;
   height: 32px;
   padding: 0 10px 0 8px;
+
   background: var(--coz-bg-max, #fff);
   border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
   border-radius: 8px;
+
   transition: all 0.15s ease-out;
 
   &:hover {
@@ -179,18 +227,22 @@
   display: grid;
   flex: none;
   place-items: center;
+
   width: 20px;
   height: 20px;
+
   font-family: ui-monospace, monospace;
   font-size: 11px;
   font-weight: 700;
   color: #fff;
+
   background: rgb(167, 0, 250);
   border-radius: 6px;
 }
 
 .modelName {
   overflow: hidden;
+
   font-size: 13px;
   font-weight: 600;
   color: var(--coz-fg, rgba(15, 21, 40, 82%));
@@ -212,6 +264,7 @@
   width: 380px !important;
   max-width: calc(100vw - 32px) !important;
   max-height: min(460px, 70vh) !important;
+
   background: var(--coz-bg-max, #fff);
   border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
   border-radius: 12px !important;
@@ -221,9 +274,9 @@
 
   :global {
     .max-h-\[inherit\] {
+      overflow-y: auto;
       max-height: inherit;
       padding: 8px;
-      overflow-y: auto;
     }
 
     article {
@@ -235,14 +288,19 @@
 
 .storeButton {
   cursor: pointer;
+
   display: grid;
   place-items: center;
+
   width: 32px;
   height: 32px;
+
   color: var(--coz-fg-secondary, rgba(32, 41, 69, 62%));
+
   background: transparent;
   border: 0;
   border-radius: 8px;
+
   transition: all 0.15s ease-out;
 
   svg {
@@ -258,8 +316,10 @@
 
 .settingsScroll {
   scrollbar-width: thin;
+
   overflow-y: auto;
   flex: 1 1 auto;
+
   min-height: 0;
   padding: 20px 24px;
 }
@@ -277,8 +337,9 @@
 
 .personaLabel {
   display: flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
+
   font-size: 14px;
   font-weight: 600;
   color: var(--coz-fg, rgba(15, 21, 40, 82%));
@@ -296,14 +357,19 @@
 .aiButton,
 .plainButton {
   cursor: pointer;
+
   display: inline-flex;
-  align-items: center;
   gap: 5px;
+  align-items: center;
+
   height: 28px;
   padding: 0 10px;
+
   font-size: 12px;
   font-weight: 500;
+
   border-radius: 7px;
+
   transition: all 0.15s ease-out;
 }
 
@@ -330,9 +396,11 @@
 
 .personaBox {
   overflow: hidden;
+
   background: var(--coz-bg-secondary, rgb(240, 240, 247));
   border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
   border-radius: 10px;
+
   transition: all 0.15s ease-out;
 
   &:focus-within {
@@ -353,8 +421,10 @@
     textarea,
     [contenteditable='true'] {
       min-height: 120px;
+
       font-size: 13px;
       line-height: 1.7;
+
       background: transparent !important;
       border: 0 !important;
       box-shadow: none !important;
@@ -366,7 +436,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   padding: 8px 12px;
+
   border-top: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
 }
 
@@ -377,8 +449,10 @@
 
 .miniTag {
   padding: 3px 8px;
+
   font-size: 11px;
   color: var(--coz-fg-secondary, rgba(32, 41, 69, 62%));
+
   background: var(--coz-mg-primary, rgba(82, 100, 154, 8%));
   border-radius: 5px;
 }
@@ -403,7 +477,9 @@
 
 .capsSection {
   overflow: hidden;
+
   margin-bottom: 16px;
+
   background: var(--coz-bg-max, #fff);
   border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
   border-radius: 12px;
@@ -413,14 +489,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   padding: 12px 14px;
+
   border-bottom: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
 }
 
 .capsTitle {
   display: flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
+
   font-size: 14px;
   font-weight: 600;
   color: var(--coz-fg, rgba(15, 21, 40, 82%));
@@ -436,11 +515,13 @@
 
 .capRow {
   display: flex;
+  gap: 16px;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+
   min-height: 48px;
   padding: 8px 0;
+
   border-bottom: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 8%));
 
   &:last-child {
@@ -473,8 +554,10 @@
 .capsHint {
   margin: 8px 0 4px;
   padding: 8px 10px;
+
   font-size: 12px;
   color: rgb(167, 0, 250);
+
   background: rgba(167, 0, 250, 7%);
   border: 1px solid rgba(167, 0, 250, 25%);
   border-radius: 8px;
@@ -488,9 +571,10 @@
 
 .mcpHead {
   display: flex;
+  gap: 16px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+
   margin-bottom: 8px;
 }
 
@@ -503,18 +587,23 @@
 
 .mcpAddBtn {
   cursor: pointer;
+
   display: inline-flex;
   flex: none;
-  align-items: center;
   gap: 5px;
+  align-items: center;
+
   height: 28px;
   padding: 0 10px;
+
   font-size: 12px;
   font-weight: 500;
   color: rgb(167, 0, 250);
+
   background: rgba(167, 0, 250, 7%);
   border: 1px solid rgba(167, 0, 250, 25%);
   border-radius: 7px;
+
   transition: all 0.15s ease-out;
 
   &:hover {
@@ -529,9 +618,11 @@
 
 .mcpEmpty {
   padding: 12px;
+
   font-size: 12px;
-  text-align: center;
   color: var(--coz-fg-dim, rgba(55, 67, 106, 38%));
+  text-align: center;
+
   background: var(--coz-bg-secondary, rgb(240, 240, 247));
   border: 1px dashed var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
   border-radius: 8px;
@@ -545,10 +636,12 @@
 
 .mcpRow {
   display: flex;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+
   padding: 8px 10px;
+
   background: var(--coz-bg-secondary, rgb(240, 240, 247));
   border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
   border-radius: 8px;
@@ -563,8 +656,8 @@
 
 .mcpRowTop {
   display: flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
 }
 
 .mcpName {
@@ -575,15 +668,18 @@
 
 .mcpType {
   padding: 2px 6px;
+
   font-family: ui-monospace, monospace;
   font-size: 11px;
   color: var(--coz-fg-hglt, rgb(53, 138, 255));
+
   background: rgba(53, 138, 255, 10%);
   border-radius: 5px;
 }
 
 .mcpUrl {
   overflow: hidden;
+
   font-size: 12px;
   color: var(--coz-fg-secondary, rgba(32, 41, 69, 62%));
   text-overflow: ellipsis;
@@ -592,15 +688,20 @@
 
 .mcpDelBtn {
   cursor: pointer;
+
   display: grid;
   flex: none;
   place-items: center;
+
   width: 28px;
   height: 28px;
+
   color: var(--coz-fg-secondary, rgba(32, 41, 69, 62%));
+
   background: transparent;
   border: 0;
   border-radius: 7px;
+
   transition: all 0.15s ease-out;
 
   &:hover {
@@ -637,14 +738,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   padding: 12px 14px;
+
   border-bottom: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
 }
 
 .toolsTitle {
   display: flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
+
   font-size: 14px;
   font-weight: 600;
   color: var(--coz-fg, rgba(15, 21, 40, 82%));
@@ -656,14 +760,19 @@
 
 .addButton {
   cursor: pointer;
+
   display: grid;
   place-items: center;
+
   width: 28px;
   height: 28px;
+
   color: var(--coz-fg-secondary, rgba(32, 41, 69, 62%));
+
   background: var(--coz-bg-max, #fff);
   border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
   border-radius: 7px;
+
   transition: all 0.15s ease-out;
 
   &:hover {
@@ -699,17 +808,20 @@
     [class*='wrapper'] > [class*='header'] {
       height: auto !important;
       padding: 12px 14px !important;
+
+      background: var(--coz-bg-max, #fff);
       border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
       border-radius: 12px 12px 0 0;
-      background: var(--coz-bg-max, #fff);
     }
 
     [class*='content-block'] {
       overflow: hidden;
+
       margin-top: -1px;
+
+      background: var(--coz-bg-max, #fff);
       border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%)) !important;
       border-radius: 0;
-      background: var(--coz-bg-max, #fff);
     }
 
     [class*='content-block']:last-child {
@@ -717,8 +829,8 @@
     }
 
     [class*='header-content'] {
-      min-height: 44px !important;
       height: auto !important;
+      min-height: 44px !important;
       padding: 0 14px !important;
       border-radius: 0 !important;
     }
@@ -733,7 +845,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+
   padding: 14px 24px;
+
   background: var(--coz-bg-max, #fff);
 }
 
@@ -755,8 +869,10 @@
 
 .chatPanel {
   overflow: hidden;
+
   min-width: 400px;
   min-height: 0;
+
   background: var(--coz-bg-max, #fff);
   border: 1px solid var(--coz-stroke-primary, rgba(82, 100, 154, 13%));
   border-radius: 14px;

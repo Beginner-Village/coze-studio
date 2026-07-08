@@ -48,6 +48,7 @@ import { OnboardingMessage } from '@coze-agent-ide/onboarding-message-adapter';
 
 import s from '../../../../index.module.less';
 import { SkillsModal } from '../../../../components/shortcut-skills-modal';
+import { AllowSkillExecution } from './allow-skill-execution';
 
 export interface ToolAreaProps {
   isAllToolHidden: boolean;
@@ -148,6 +149,8 @@ export const ToolArea: React.FC<ToolAreaProps> = props => {
               <AgentSkillArea toolKey={ToolKey.AGENT_SKILL} title="技能" />
               {/* Force tool return switch */}
               <ForceToolReturn />
+              {/* 普通体专属：是否允许该智能体执行技能脚本(沙箱)。关闭=只读技能 */}
+              <AllowSkillExecution />
               {skillToolSlot}
             </GroupingContainer>
             <GroupingContainer

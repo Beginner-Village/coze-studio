@@ -49,6 +49,11 @@ func (f *fakeResyncInvoker) ResyncES(_ context.Context, req *resyncmodel.ResyncE
 	return f.resp, f.err
 }
 
+func (f *fakeResyncInvoker) ResyncAllES(_ context.Context, _ *resyncmodel.ResyncAllESRequest) (*resyncmodel.ResyncAllESResponse, error) {
+	f.called = true
+	return &resyncmodel.ResyncAllESResponse{}, f.err
+}
+
 // installFake swaps the package-level invoker getter and returns a restore fn.
 func installFake(f *fakeResyncInvoker) func() {
 	orig := resyncSvcGetter

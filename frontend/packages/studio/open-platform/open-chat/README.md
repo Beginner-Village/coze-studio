@@ -1,6 +1,6 @@
 # @coze-studio/open-chat
 
-Coze Web ChatApp SDK
+YNET Web ChatApp SDK
 
 ## Overview
 

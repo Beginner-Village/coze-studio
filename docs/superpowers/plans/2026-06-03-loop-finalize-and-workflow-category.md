@@ -92,7 +92,7 @@ Expected: 容器起来。
 
 - [ ] **Step 2: 建实验冒烟**
 
-通过 Loop 前端或 API:建 dataset → 选 CozeWorkflow(target_type=4) 或 CustomAgent(=10) target → 选 evaluator → SubmitExperiment → 看 run 状态到 Success。
+通过 Loop 前端或 API:建 dataset → 选 YNETWorkflow(target_type=4) 或 CustomAgent(=10) target → 选 evaluator → SubmitExperiment → 看 run 状态到 Success。
 Expected: 实验跑批产出聚合结果,无 panic。
 
 ### Task 1.5: 确认猎鹰对接(Studio session/trace)融合后未回退

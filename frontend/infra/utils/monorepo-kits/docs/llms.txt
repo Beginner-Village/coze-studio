@@ -2,7 +2,7 @@
 
 /* Function Overview */
 
-/* "@Coze-arch/monorepo-kits" is a toolkit for managing monorepo projects, providing project lookup, dependency analysis, and configuration management capabilities based on the Rush framework. */
+/* "@YNET-arch/monorepo-kits" is a toolkit for managing monorepo projects, providing project lookup, dependency analysis, and configuration management capabilities based on the Rush framework. */
 
 /* Main Functional Modules */
 

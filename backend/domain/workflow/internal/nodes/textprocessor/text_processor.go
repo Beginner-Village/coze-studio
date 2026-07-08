@@ -119,7 +119,7 @@ func (t *TextProcessor) Invoke(ctx context.Context, input map[string]any) (map[s
 	switch t.typ {
 	case ConcatText:
 		arrayRenderer := func(i any) (string, error) {
-			vs := i.([]any)
+			vs, _ := i.([]any) // nil / non-slice renders as empty
 			return join(vs, t.concatChar)
 		}
 

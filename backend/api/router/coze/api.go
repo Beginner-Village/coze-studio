@@ -93,6 +93,7 @@ func Register(r *server.Hertz) {
 			{
 				_superAgent.GET("/manifest", coze.SuperAgentManifest)
 				_superAgent.GET("/openapi.json", coze.SuperAgentOpenAPI)
+				_superAgent.GET("/ui-config", coze.SuperAgentUIConfig)
 				_runs := _superAgent.Group("/runs")
 				_runs.POST("/create", coze.SuperAgentCreateRun)
 				_runs.POST("/get", coze.SuperAgentGetRun)

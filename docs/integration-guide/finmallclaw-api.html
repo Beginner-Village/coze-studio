@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>finmallclaw 外部对接 · API 参考</title>
+<style>
+  :root {
+    --bg: #f7f5f1; --surface: #fffefb; --surface-2: #f1eee7;
+    --border: #e4ded3; --border-strong: #d3ccbe;
+    --text: #211d17; --muted: #6d665a; --faint: #928a7c;
+    --accent: #a56c14; --accent-ink: #7d4f08; --accent-soft: rgba(165,108,20,.10);
+    --post: #2f6aa8; --post-soft: rgba(47,106,168,.12);
+    --get: #2c8560; --get-soft: rgba(44,133,96,.12);
+    --ok: #2c8560; --warn: #a56c14; --crit: #b8412a;
+    --code-bg: #17150f; --code-panel: #201d15; --code-text: #ebe6da;
+    --code-muted: #8b8473; --code-str: #c8b072; --code-com: #6f6857; --code-key: #d9a94e;
+    --shadow: 0 1px 2px rgba(40,32,18,.05), 0 8px 28px -14px rgba(40,32,18,.18);
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --measure: 66ch;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131110; --surface: #1b1915; --surface-2: #232019;
+      --border: #322d24; --border-strong: #423b30;
+      --text: #ece7dc; --muted: #9a9285; --faint: #7c7466;
+      --accent: #e0a851; --accent-ink: #f0c37e; --accent-soft: rgba(224,168,81,.13);
+      --post: #6f9be0; --post-soft: rgba(111,155,224,.16);
+      --get: #5cc39a; --get-soft: rgba(92,195,154,.16);
+      --ok: #5cc39a; --warn: #e0a851; --crit: #e8785e;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f7f5f1; --surface: #fffefb; --surface-2: #f1eee7;
+    --border: #e4ded3; --border-strong: #d3ccbe;
+    --text: #211d17; --muted: #6d665a; --faint: #928a7c;
+    --accent: #a56c14; --accent-ink: #7d4f08; --accent-soft: rgba(165,108,20,.10);
+    --post: #2f6aa8; --post-soft: rgba(47,106,168,.12);
+    --get: #2c8560; --get-soft: rgba(44,133,96,.12);
+    --ok: #2c8560; --warn: #a56c14; --crit: #b8412a;
+    --shadow: 0 1px 2px rgba(40,32,18,.05), 0 8px 28px -14px rgba(40,32,18,.18);
+  }
+  :root[data-theme="dark"] {
+    --bg: #131110; --surface: #1b1915; --surface-2: #232019;
+    --border: #322d24; --border-strong: #423b30;
+    --text: #ece7dc; --muted: #9a9285; --faint: #7c7466;
+    --accent: #e0a851; --accent-ink: #f0c37e; --accent-soft: rgba(224,168,81,.13);
+    --post: #6f9be0; --post-soft: rgba(111,155,224,.16);
+    --get: #5cc39a; --get-soft: rgba(92,195,154,.16);
+    --ok: #5cc39a; --warn: #e0a851; --crit: #e8785e;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation: none !important; transition: none !important; } }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 16px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  a { color: var(--accent-ink); text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent); text-underline-offset: 3px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+  /* ---- top bar ---- */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px clamp(16px, 4vw, 40px);
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(10px); border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; font-weight: 650; letter-spacing: -.01em; }
+  .brand b { color: var(--accent-ink); }
+  .brand .mono { font-family: var(--mono); font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 0; }
+  .spacer { flex: 1; }
+  .base-pill {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    background: var(--surface-2); border: 1px solid var(--border);
+    padding: 5px 10px; border-radius: 7px; white-space: nowrap;
+  }
+  @media (max-width: 720px){ .base-pill{ display:none; } }
+  .tbtn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  }
+  .tbtn:hover { border-color: var(--border-strong); }
+
+  /* ---- shell ---- */
+  .shell { display: grid; grid-template-columns: 244px minmax(0,1fr); gap: 0; max-width: 1180px; margin: 0 auto; }
+  @media (max-width: 940px){ .shell { grid-template-columns: 1fr; } }
+
+  nav.toc {
+    position: sticky; top: 60px; align-self: start; height: calc(100vh - 60px);
+    overflow-y: auto; padding: 30px 18px 40px 12px; border-right: 1px solid var(--border);
+  }
+  @media (max-width: 940px){ nav.toc { display: none; } }
+  .toc .eyebrow { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); margin: 18px 8px 8px; }
+  .toc a {
+    display: block; padding: 6px 10px; border-radius: 7px; font-size: 13.5px;
+    color: var(--muted); text-decoration: none; border-left: 2px solid transparent;
+  }
+  .toc a:hover { background: var(--surface-2); color: var(--text); }
+  .toc a.active { color: var(--accent-ink); background: var(--accent-soft); border-left-color: var(--accent); font-weight: 600; }
+  .toc a .m { font-family: var(--mono); font-size: 10px; opacity: .7; }
+
+  main { padding: 30px clamp(18px, 4vw, 56px) 96px; min-width: 0; }
+  section { scroll-margin-top: 80px; padding-top: 26px; }
+  section + section { border-top: 1px solid var(--border); margin-top: 30px; }
+
+  /* ---- hero ---- */
+  .hero { padding: 22px 0 8px; }
+  .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--accent-ink); margin: 0 0 14px; }
+  h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.05; letter-spacing: -.025em; margin: 0 0 16px; text-wrap: balance; font-weight: 720; }
+  .lede { font-size: 18px; color: var(--muted); max-width: var(--measure); margin: 0 0 20px; }
+  .tested { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ok); background: var(--get-soft); border: 1px solid color-mix(in srgb, var(--get) 30%, transparent); padding: 5px 12px; border-radius: 999px; font-weight: 600; }
+  .tested .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--get) 22%, transparent); }
+
+  h2 { font-size: clamp(21px, 3vw, 27px); letter-spacing: -.02em; margin: 4px 0 6px; font-weight: 680; text-wrap: balance; }
+  h2 .num { font-family: var(--mono); font-size: .62em; color: var(--accent); margin-right: 12px; font-weight: 600; vertical-align: 2px; }
+  h3 { font-size: 16.5px; margin: 26px 0 8px; letter-spacing: -.01em; }
+  section > p, section > ul, section > ol { max-width: var(--measure); }
+  p { margin: 10px 0; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 5px 0; }
+  code:not(pre code) {
+    font-family: var(--mono); font-size: .87em; background: var(--surface-2);
+    border: 1px solid var(--border); padding: 1px 6px; border-radius: 5px; color: var(--accent-ink);
+    word-break: break-word;
+  }
+
+  /* ---- steps ---- */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 22px 0 4px; }
+  @media (max-width: 680px){ .steps { grid-template-columns: 1fr; } }
+  .step { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 16px 18px; box-shadow: var(--shadow); position: relative; }
+  .step .n { font-family: var(--mono); font-size: 12px; color: var(--accent-ink); background: var(--accent-soft); width: 26px; height: 26px; display: grid; place-items: center; border-radius: 7px; font-weight: 700; margin-bottom: 10px; }
+  .step h4 { margin: 0 0 4px; font-size: 15px; }
+  .step p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .step .path { font-family: var(--mono); font-size: 12px; color: var(--text); margin-top: 8px; word-break: break-all; }
+
+  /* ---- endpoint card ---- */
+  .ep { background: var(--surface); border: 1px solid var(--border); border-radius: 13px; margin: 20px 0; overflow: hidden; box-shadow: var(--shadow); }
+  .ep > .head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .method { font-family: var(--mono); font-size: 11.5px; font-weight: 700; letter-spacing: .04em; padding: 4px 9px; border-radius: 6px; }
+  .method.post { color: var(--post); background: var(--post-soft); }
+  .method.get { color: var(--get); background: var(--get-soft); }
+  .ep .route { font-family: var(--mono); font-size: 13.5px; color: var(--text); word-break: break-all; font-weight: 600; }
+  .ep .desc { color: var(--muted); font-size: 13px; flex-basis: 100%; margin: 0; }
+  .ep .body { padding: 4px 16px 16px; }
+
+  /* ---- tables ---- */
+  .tbl-wrap { overflow-x: auto; margin: 12px 0; border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  thead th { background: var(--surface-2); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 650; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  td .fld { font-family: var(--mono); font-size: 12.5px; color: var(--accent-ink); white-space: nowrap; }
+  .req { font-family: var(--mono); font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+  .req.y { color: var(--crit); background: color-mix(in srgb, var(--crit) 12%, transparent); }
+  .req.n { color: var(--faint); background: var(--surface-2); }
+  .req.o { color: var(--post); background: var(--post-soft); }
+  table code { font-family: var(--mono); font-size: 12px; }
+
+  /* ---- code blocks ---- */
+  .code { position: relative; margin: 14px 0; border-radius: 11px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--code-bg) 60%, #000); background: var(--code-bg); }
+  .code .bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--code-panel); border-bottom: 1px solid rgba(255,255,255,.06); }
+  .code .bar .lbl { font-family: var(--mono); font-size: 11px; color: var(--code-muted); letter-spacing: .05em; text-transform: uppercase; }
+  .code .bar .sp { flex: 1; }
+  .copy { font-family: var(--mono); font-size: 11px; color: var(--code-text); background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); padding: 4px 10px; border-radius: 6px; cursor: pointer; }
+  .copy:hover { background: rgba(255,255,255,.12); }
+  .copy.done { color: var(--code-key); border-color: color-mix(in srgb, var(--code-key) 40%, transparent); }
+  pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-family: var(--mono); font-size: 12.8px; line-height: 1.65; color: var(--code-text); }
+  pre .c { color: var(--code-com); font-style: italic; }
+  pre .s { color: var(--code-str); }
+  pre .k { color: var(--code-key); }
+  pre .p { color: #8fb8d8; }
+
+  /* ---- callout ---- */
+  .note { display: flex; gap: 12px; padding: 14px 16px; border-radius: 11px; margin: 16px 0; border: 1px solid var(--border); background: var(--surface); font-size: 14px; }
+  .note .ic { flex-shrink: 0; width: 22px; height: 22px; }
+  .note.warn { border-color: color-mix(in srgb, var(--warn) 34%, transparent); background: var(--accent-soft); }
+  .note.info { border-color: color-mix(in srgb, var(--post) 28%, transparent); background: var(--post-soft); }
+  .note strong { color: var(--text); }
+  .note p { margin: 0; }
+  .note.warn .ic { color: var(--warn); } .note.info .ic { color: var(--post); }
+
+  .pillrow { display: flex; flex-wrap: wrap; gap: 7px; margin: 12px 0; }
+  .evt { font-family: var(--mono); font-size: 11.5px; padding: 4px 9px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); }
+  .evt.end { color: var(--ok); border-color: color-mix(in srgb, var(--get) 34%, transparent); background: var(--get-soft); }
+  .evt.err { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 32%, transparent); background: color-mix(in srgb, var(--crit) 9%, transparent); }
+
+  footer { max-width: 1180px; margin: 0 auto; padding: 24px clamp(18px,4vw,56px) 60px; color: var(--faint); font-size: 12.5px; border-top: 1px solid var(--border); }
+  footer .mono { font-family: var(--mono); }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><b>finmallclaw</b><span class="mono">/api/super-agent</span></div>
+  <div class="spacer"></div>
+  <span class="base-pill">BASE · http://10.10.10.226:8896</span>
+  <button class="tbtn" id="themeBtn" title="切换主题" aria-label="切换深浅主题">◐</button>
+</div>
+
+<div class="shell">
+  <nav class="toc" id="toc">
+    <div class="eyebrow">开始</div>
+    <a href="#overview"><span class="m">§0</span> 概览与速览</a>
+    <a href="#auth"><span class="m">§1</span> 鉴权 · 获取 PAT</a>
+    <a href="#params"><span class="m">§2</span> 对接参数</a>
+    <div class="eyebrow">接口</div>
+    <a href="#sessions"><span class="m">POST</span> 建会话</a>
+    <a href="#runs-create"><span class="m">POST</span> 发消息 · 同步</a>
+    <a href="#runs-stream"><span class="m">POST</span> 发消息 · 流式</a>
+    <a href="#multi"><span class="m">POST</span> 多轮 / 历史</a>
+    <a href="#cancel"><span class="m">POST</span> 取消运行</a>
+    <div class="eyebrow">机制</div>
+    <a href="#sandbox"><span class="m">§</span> 沙箱能力</a>
+    <a href="#events"><span class="m">§</span> SSE 事件与消息类型</a>
+    <a href="#errors"><span class="m">§</span> 错误处理</a>
+    <div class="eyebrow">附录</div>
+    <a href="#tested"><span class="m">A</span> 实测记录</a>
+    <a href="#endpoints"><span class="m">B</span> 全接口清单</a>
+  </nav>
+
+  <main>
+    <section id="overview" class="hero" style="border:none;padding-top:8px;">
+      <p class="kicker">外部系统集成指南</p>
+      <h1>用 API 对接 finmallclaw 智能体</h1>
+      <p class="lede">发一条消息 → 智能体思考、调用工具（含隔离沙箱里执行命令）→ 拿回答。全套走标准 HTTP + Bearer 鉴权，服务端一次请求即可集成。</p>
+      <span class="tested"><span class="dot"></span>本页所有请求 / 响应 / 事件已在 226 环境用真实 PAT 端到端跑通</span>
+
+      <h3 style="margin-top:30px;">三步接入</h3>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><h4>拿一个 API Key</h4><p>在平台生成个人访问令牌（PAT）。</p><div class="path">Bearer pat_xxx</div></div>
+        <div class="step"><div class="n">2</div><h4>建会话</h4><p>拿到 conversation_id，后续每轮都带上。</p><div class="path">/sessions/create</div></div>
+        <div class="step"><div class="n">3</div><h4>发消息拿回答</h4><p>同步一次拿完整回答，或流式看实时过程。</p><div class="path">/runs/create · /runs/stream</div></div>
+      </div>
+
+      <h3>最小可用示例（同步）</h3>
+      <div class="code" data-copy>
+        <div class="bar"><span class="lbl">shell</span><span class="sp"></span><button class="copy">复制</button></div>
+<pre><span class="c"># 变量</span>
+BASE=http://10.10.10.226:8896
+PAT=pat_xxxxxxxxxxxxxxxx          <span class="c"># 你的 API Key</span>
+AGENT=7540939700521926656          <span class="c"># finmallclaw 智能体 ID</span>
+SPACE=7532755646102372352          <span class="c"># 所属空间 ID</span>
+
+<span class="c"># 1) 建会话，取出 conversation_id</span>
+CONV=$(curl -s -X POST <span class="s">"$BASE/api/super-agent/sessions/create"</span> \
+  -H <span class="s">"Authorization: Bearer $PAT"</span> -H <span class="s">'Content-Type: application/json'</span> \
+  -d <span class="s">"{\"agent_id\":\"$AGENT\",\"space_id\":\"$SPACE\"}"</span> \
+  | python3 -c <span class="s">'import sys,json;print(json.load(sys.stdin)["data"]["session"]["conversation_id"])'</span>)
+
+<span class="c"># 2) 发消息（同步阻塞，直接返回完整回答）</span>
+curl -s -X POST <span class="s">"$BASE/api/super-agent/runs/create"</span> \
+  -H <span class="s">"Authorization: Bearer $PAT"</span> -H <span class="s">'Content-Type: application/json'</span> \
+  -d <span class="s">"{\"agent_id\":\"$AGENT\",\"space_id\":\"$SPACE\",\"conversation_id\":\"$CONV\",\"user_id\":\"ext-user-1\",\"additional_messages\":[{\"role\":\"user\",\"content\":\"你好\",\"content_type\":\"text\"}]}"</span></pre>
+      </div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>项</th><th>值</th></tr></thead>
+          <tbody>
+            <tr><td>Base URL（测试）</td><td><code>http://10.10.10.226:8896</code>　生产换成对外网关地址即可</td></tr>
+            <tr><td>鉴权</td><td>请求头 <code>Authorization: Bearer &lt;PAT&gt;</code></td></tr>
+            <tr><td>接口前缀</td><td><code>/api/super-agent/*</code>，请求/响应体 JSON（流式为 SSE）</td></tr>
+            <tr><td>统一返回包</td><td><code>{"code":0,"msg":"success","data":{…}}</code>，<code>code≠0</code> 为错误</td></tr>
+            <tr><td>自描述接口</td><td><code>GET /api/super-agent/manifest</code> · <code>GET /api/super-agent/openapi.json</code>（权威字段来源，可导入 Postman/Apifox）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="auth">
+      <h2><span class="num">1</span>鉴权 · 获取 API Key（PAT）</h2>
+      <p>对外接口用<strong>个人访问令牌（PAT）</strong>做 Bearer 鉴权。PAT 归属某个平台用户，<strong>只能调用该用户有权限的智能体</strong>——平台已按资源做 owner 校验，越权会被拒。</p>
+
+      <h3>方式一 · 平台 UI 生成（推荐）</h3>
+      <p>登录平台 → 头像 / 设置 → <strong>API 授权 / 个人访问令牌</strong> → 新建，复制形如 <code>pat_xxx</code> 的令牌。明文只在创建时返回一次，请妥善保存。</p>
+
+      <h3>方式二 · 接口生成（需登录态 Cookie）</h3>
+      <div class="code" data-copy>
+        <div class="bar"><span class="lbl">shell</span><span class="sp"></span><button class="copy">复制</button></div>
+<pre><span class="c"># a) 登录拿 session cookie</span>
+curl -s -c cookies.txt -X POST <span class="s">"$BASE/api/passport/web/email/login/"</span> \
+  -H <span class="s">'Content-Type: application/json'</span> \
+  -d <span class="s">'{"email":"&lt;账号邮箱&gt;","password":"&lt;密码&gt;"}'</span>
+
+<span class="c"># b) 用 cookie 创建 PAT（expire_at 为到期 Unix 秒）</span>
+EXP=$(( $(date +%s) + 30*24*3600 ))
+curl -s -b cookies.txt -X POST \
+  <span class="s">"$BASE/api/permission_api/pat/create_personal_access_token_and_permission"</span> \
+  -H <span class="s">'Content-Type: application/json'</span> \
+  -d <span class="s">"{\"name\":\"finmallclaw-integration\",\"expire_at\":$EXP,\"duration_day\":\"30\"}"</span>
+<span class="c"># 返回 data.token 即 PAT 明文</span></pre>
+      </div>
+      <div class="note warn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+        <p>为对接方单独建 PAT、设合理有效期，不要把 PAT 写进代码仓库或前端。泄露后到令牌管理页删除即可失效。</p></div>
+    </section>
+
+    <section id="params">
+      <h2><span class="num">2</span>定位对接参数</h2>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>参数</th><th>含义</th><th>怎么拿</th></tr></thead>
+          <tbody>
+            <tr><td><span class="fld">agent_id</span></td><td>finmallclaw 智能体 ID（雪花 ID，字符串）</td><td>智能体编辑/详情页 URL 里的 id；或平台侧提供</td></tr>
+            <tr><td><span class="fld">space_id</span></td><td>智能体所属<strong>空间</strong> ID</td><td>详情页 URL 中的 space id；或平台侧提供</td></tr>
+            <tr><td><span class="fld">user_id</span></td><td>对接方自定义的<strong>终端用户标识</strong></td><td>任意字符串（如 <code>ext-user-1001</code>），用于区分不同终端用户的会话与记忆；不传则默认 <code>api-user-&lt;PAT用户ID&gt;</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>agent_id</code> 与 <code>bot_id</code> 二选一即可（含义相同，后者为兼容字段）。</p>
+      <div class="note info"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4m0-4h.01"/></svg>
+        <p><strong>关于「超级体」</strong>：用 PAT 调 <code>/api/super-agent/runs/*</code> 时，后端会自动把该智能体按<strong>超级智能体 harness</strong> 运行（注入 <code>super_agent_app_server=true</code> 标记）——无需在数据库里把它标成 super，也无需自己传该标记。</p></div>
+    </section>
+
+    <section id="sessions">
+      <h2>建会话</h2>
+      <div class="ep">
+        <div class="head"><span class="method post">POST</span><span class="route">/api/super-agent/sessions/create</span>
+          <p class="desc">多轮对话前先建会话，拿到 conversation_id（后续每轮都带上它）。</p></div>
+        <div class="body">
+          <h3 style="margin-top:14px;">请求体</h3>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>字段</th><th>必填</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><span class="fld">agent_id</span> / <span class="fld">bot_id</span></td><td><span class="req y">二选一</span></td><td>智能体 ID</td></tr>
+              <tr><td><span class="fld">space_id</span></td><td><span class="req o">建议</span></td><td>空间 ID</td></tr>
+              <tr><td><span class="fld">title</span></td><td><span class="req n">否</span></td><td>会话标题（≤128 字符）</td></tr>
+              <tr><td><span class="fld">user_id</span></td><td><span class="req n">否</span></td><td>终端用户标识</td></tr>
+            </tbody>
+          </table></div>
+          <h3>响应（实测）</h3>
+          <div class="code" data-copy>
+            <div class="bar"><span class="lbl">json · 200</span><span class="sp"></span><button class="copy">复制</button></div>
+<pre>{<span class="k">"code"</span>:0,<span class="k">"msg"</span>:<span class="s">"success"</span>,<span class="k">"data"</span>:{<span class="k">"session"</span>:{
+  <span class="k">"conversation_id"</span>:<span class="s">"7659722333023633408"</span>,   <span class="c">// ← 取这个</span>
+  <span class="k">"session_id"</span>:<span class="s">"7659722333023633408"</span>,
+  <span class="k">"section_id"</span>:<span class="s">"7659722333023649792"</span>,
+  <span class="k">"agent_id"</span>:<span class="s">"7642226103964139520"</span>,
+  <span class="k">"connector_id"</span>:<span class="s">"10000010"</span>, <span class="k">"scene"</span>:4,
+  <span class="k">"title"</span>:<span class="s">"ext-api-test"</span>, <span class="k">"renamable"</span>:true,
+  <span class="k">"created_at"</span>:1783418081008, <span class="k">"updated_at"</span>:1783418081008
+}}}</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="runs-create">
+      <h2>发消息 · 同步</h2>
+      <div class="ep">
+        <div class="head"><span class="method post">POST</span><span class="route">/api/super-agent/runs/create</span>
+          <p class="desc">一次请求阻塞直到回答完毕，返回体直接带完整消息列表。适合服务端后台集成，最省事。</p></div>
+        <div class="body">
+          <h3 style="margin-top:14px;">请求体</h3>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>字段</th><th>必填</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><span class="fld">agent_id</span> / <span class="fld">bot_id</span></td><td><span class="req y">二选一</span></td><td>智能体 ID</td></tr>
+              <tr><td><span class="fld">conversation_id</span></td><td><span class="req o">建议</span></td><td>会话 ID；不传则单轮、无上下文</td></tr>
+              <tr><td><span class="fld">space_id</span></td><td><span class="req o">建议</span></td><td>空间 ID</td></tr>
+              <tr><td><span class="fld">user_id</span></td><td><span class="req o">建议</span></td><td>终端用户标识</td></tr>
+              <tr><td><span class="fld">additional_messages</span></td><td><span class="req y">是</span></td><td>本轮用户消息数组，元素 <code>{"role":"user","content":"…","content_type":"text"}</code></td></tr>
+              <tr><td><span class="fld">custom_variables</span></td><td><span class="req n">否</span></td><td>提示词变量（JSON）</td></tr>
+              <tr><td><span class="fld">meta_data</span></td><td><span class="req n">否</span></td><td>透传业务元数据</td></tr>
+            </tbody>
+          </table></div>
+          <h3>响应（实测 · 截断）</h3>
+          <div class="code" data-copy>
+            <div class="bar"><span class="lbl">json · 200</span><span class="sp"></span><button class="copy">复制</button></div>
+<pre>{
+  <span class="k">"code"</span>:0, <span class="k">"msg"</span>:<span class="s">"success"</span>,
+  <span class="k">"conversation_id"</span>:<span class="s">"7659722823681703936"</span>,
+  <span class="k">"bot_id"</span>:<span class="s">"7540939700521926656"</span>,
+  <span class="k">"status"</span>:<span class="s">"completed"</span>,
+  <span class="k">"messages"</span>:[
+    {<span class="k">"role"</span>:<span class="s">"assistant"</span>,<span class="k">"type"</span>:<span class="s">"function_call"</span>, <span class="k">"content"</span>:<span class="s">"{…run_bash…}"</span>},
+    {<span class="k">"role"</span>:<span class="s">"assistant"</span>,<span class="k">"type"</span>:<span class="s">"tool_response"</span>,<span class="k">"content"</span>:<span class="s">"exit_code: 0\nstdout:\n…"</span>},
+    {<span class="k">"role"</span>:<span class="s">"assistant"</span>,<span class="k">"type"</span>:<span class="s">"answer"</span>,       <span class="k">"content"</span>:<span class="s">"最终回答文本"</span>},  <span class="c">// ← 取这条</span>
+    {<span class="k">"role"</span>:<span class="s">"assistant"</span>,<span class="k">"type"</span>:<span class="s">"verbose"</span>,      <span class="k">"content"</span>:<span class="s">"{…generate_answer_finish…}"</span>}
+  ]
+}</pre>
+          </div>
+          <div class="note info"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            <p><strong>取最终回答</strong>：遍历 <code>messages</code>，取 <code>type == "answer"</code> 的 <code>content</code>。中间的 <code>function_call</code> / <code>tool_response</code> 是工具调用轨迹（如沙箱命令执行），审计或展示时可用。</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="runs-stream">
+      <h2>发消息 · 流式（SSE）</h2>
+      <div class="ep">
+        <div class="head"><span class="method post">POST</span><span class="route">/api/super-agent/runs/stream</span>
+          <p class="desc">请求体同「同步」。响应为 text/event-stream，按事件实时推送。适合前端打字机效果、实时展示工具执行。</p></div>
+        <div class="body">
+          <h3 style="margin-top:14px;">事件序列（实测）</h3>
+          <div class="code" data-copy>
+            <div class="bar"><span class="lbl">event-stream</span><span class="sp"></span><button class="copy">复制</button></div>
+<pre>event:conversation.chat.created        <span class="c"># 本轮 run 创建</span>
+event:conversation.chat.in_progress    <span class="c"># 开始处理</span>
+event:conversation.ack                 <span class="c"># 已收到用户消息（回显）</span>
+event:conversation.message.delta       <span class="c"># 回答增量（多条，逐字/逐段）</span>
+event:conversation.message.completed   <span class="c"># 一条完整消息（answer / function_call / tool_response / verbose）</span>
+event:conversation.chat.completed      <span class="c"># 本轮结束</span>
+event:conversation.stream.done         <span class="c"># 流结束，收到即可关闭连接</span></pre>
+          </div>
+          <p>每个 <code>data:</code> 是一段 JSON。用 <code>message.completed</code> 的 <code>type</code> 区分内容类型，见 <a href="#events">SSE 事件与消息类型</a>。</p>
+          <div class="code" data-copy>
+            <div class="bar"><span class="lbl">shell · curl -N</span><span class="sp"></span><button class="copy">复制</button></div>
+<pre>curl -sN -X POST <span class="s">"$BASE/api/super-agent/runs/stream"</span> \
+  -H <span class="s">"Authorization: Bearer $PAT"</span> -H <span class="s">'Content-Type: application/json'</span> \
+  -d <span class="s">'{"agent_id":"'</span>$AGENT<span class="s">'","space_id":"'</span>$SPACE<span class="s">'","conversation_id":"'</span>$CONV<span class="s">'",
+       "user_id":"ext-user-1",
+       "additional_messages":[{"role":"user","content":"帮我算 1+1","content_type":"text"}]}'</span></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="multi">
+      <h2>多轮对话 与 历史</h2>
+      <p>用<strong>同一个 <code>conversation_id</code></strong> 反复调「同步」或「流式」接口即可，平台自动维护上下文与记忆。（另有 <code>POST /api/super-agent/runs/reply</code> 语义等价，<code>conversation_id</code> 必填。）</p>
+      <div class="ep">
+        <div class="head"><span class="method post">POST</span><span class="route">/api/super-agent/messages/list</span>
+          <p class="desc">拉取会话历史消息。</p></div>
+        <div class="body">
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>字段</th><th>必填</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><span class="fld">conversation_id</span></td><td><span class="req y">是</span></td><td>会话 ID</td></tr>
+              <tr><td><span class="fld">limit</span></td><td><span class="req n">否</span></td><td>每页条数（≤100）</td></tr>
+              <tr><td><span class="fld">order_by</span></td><td><span class="req n">否</span></td><td><code>ASC</code> / <code>DESC</code></td></tr>
+              <tr><td><span class="fld">before_id</span> / <span class="fld">after_id</span></td><td><span class="req n">否</span></td><td>游标翻页</td></tr>
+            </tbody>
+          </table></div>
+          <p style="font-size:14px;color:var(--muted);">返回 <code>data.messages</code>（或 <code>message_list</code>）为消息数组，含 <code>role / type / content</code>。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="cancel">
+      <h2>取消运行</h2>
+      <div class="ep">
+        <div class="head"><span class="method post">POST</span><span class="route">/api/super-agent/runs/cancel</span>
+          <p class="desc">中断一次进行中的流式运行。请求体带 run_id（或 conversation_id）。</p></div>
+      </div>
+    </section>
+
+    <section id="sandbox">
+      <h2>沙箱能力</h2>
+      <p>finmallclaw 这类超级体可以在<strong>隔离沙箱容器</strong>里执行命令、读写文件（工具 <code>run_bash</code>、<code>write_file</code> 等）。是否给某次运行挂载沙箱工具，满足下面任一条件即挂载：</p>
+      <ol>
+        <li>后端环境变量 <code>SANDBOX_TOOLS_ENABLED=true</code>（全局强制开启）；<strong>或</strong></li>
+        <li>该智能体<strong>绑定了至少一个技能（Skill）</strong>。</li>
+      </ol>
+      <h3>平台侧前置条件（226 已就绪）</h3>
+      <ul>
+        <li>后端 <code>SANDBOX_ENABLED=true</code>（沙箱总开关，2026-07-07 已在 226 重新开启）；</li>
+        <li>后端容器挂载了 <code>/var/run/docker.sock</code>，本机存在沙箱基础镜像 <code>ynet-sandbox:rich</code>。</li>
+      </ul>
+      <p>运行时每个智能体会话拉起一个独立沙箱容器，命名形如 <code>ynet-sb-a&lt;agentId&gt;-&lt;hash&gt;</code>，空闲后自动回收。</p>
+      <div class="note warn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+        <p>若调用后智能体回复「无法在沙箱中执行命令」，说明该智能体<strong>没绑技能</strong>且未开全局 <code>SANDBOX_TOOLS_ENABLED</code>，此时它只做纯对话——给它绑定一个技能即可获得沙箱执行能力。</p></div>
+    </section>
+
+    <section id="events">
+      <h2>SSE 事件与消息类型</h2>
+      <h3>全部事件类型</h3>
+      <div class="pillrow">
+        <span class="evt">conversation.ack</span>
+        <span class="evt">conversation.chat.created</span>
+        <span class="evt">conversation.chat.in_progress</span>
+        <span class="evt">conversation.message.delta</span>
+        <span class="evt">conversation.message.completed</span>
+        <span class="evt">conversation.chat.completed</span>
+        <span class="evt err">conversation.chat.failed</span>
+        <span class="evt">conversation.chat.cancelled</span>
+        <span class="evt end">conversation.stream.done</span>
+        <span class="evt err">conversation.error</span>
+      </div>
+      <p style="font-size:14px;color:var(--muted);">结束事件 <code>conversation.stream.done</code>；错误事件 <code>conversation.error</code> 或 <code>conversation.chat.failed</code>。</p>
+      <h3>message.completed 的 type</h3>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>type</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td><span class="fld">ack</span></td><td>用户输入回显</td></tr>
+          <tr><td><span class="fld">function_call</span></td><td>智能体决定调用某工具（如 <code>run_bash</code>），content 内含工具名与参数</td></tr>
+          <tr><td><span class="fld">tool_response</span></td><td>工具返回（如沙箱 <code>exit_code / stdout / stderr</code>），<code>meta_data.time_cost</code> 为耗时秒数</td></tr>
+          <tr><td><span class="fld">answer</span></td><td>面向用户的最终回答文本</td></tr>
+          <tr><td><span class="fld">verbose</span></td><td>内部状态标记（如 <code>generate_answer_finish</code>），可忽略</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="errors">
+      <h2>错误处理</h2>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>情况</th><th>表现 / 处理</th></tr></thead>
+        <tbody>
+          <tr><td>成功</td><td>HTTP 200 且 <code>code == 0</code></td></tr>
+          <tr><td>业务错误</td><td><code>code != 0</code>，<code>msg</code> 为原因</td></tr>
+          <tr><td>鉴权失败</td><td>401 / <code>ErrUserAuthenticationFailed</code>：Authorization 头缺失或 PAT 无效/过期</td></tr>
+          <tr><td>越权</td><td>调了非本 PAT 用户拥有的智能体 → 权限错误</td></tr>
+          <tr><td>流式出错</td><td>收到 <code>conversation.error</code> 或 <code>conversation.chat.failed</code> 事件</td></tr>
+          <tr><td><code>model not found</code></td><td>目标空间未绑定模型，需在平台为该空间配置可用模型</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="tested">
+      <h2><span class="num">A</span>226 环境端到端实测记录</h2>
+      <p style="color:var(--muted);font-size:14px;">2026-07-07 在 <code>http://10.10.10.226:8896</code> 用真实 PAT 跑通，证据链：</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>步骤</th><th>结果</th></tr></thead>
+        <tbody>
+          <tr><td>鉴权</td><td>登录测试账号 → 创建 PAT <code>pat_7028…</code>（成功 <code>code:0</code>）</td></tr>
+          <tr><td>建会话</td><td><code>sessions/create</code> → <code>conversation_id=7659722333023633408</code>，connector_id=10000010（API 渠道）</td></tr>
+          <tr><td>同步发消息</td><td><code>runs/create</code> 直接返回 <code>status:"completed"</code> + 完整 messages，answer = <code>1+1等于2</code></td></tr>
+          <tr><td>流式发消息</td><td>事件序列完整：created → in_progress → ack → delta×N → completed → <span style="color:var(--ok)">stream.done</span></td></tr>
+          <tr><td><strong>沙箱真实执行</strong></td><td>function_call <code>run_bash</code> → tool_response <code>exit_code:0 / stdout: SANDBOX_OK_1783418201</code>（3.3s）；沙箱容器 <code>ynet-sb-a7540939700521926656-…  Up</code>（基于 ynet-sandbox:rich）</td></tr>
+          <tr><td>多轮 / 历史</td><td><code>messages/list</code> 正确返回同会话历史消息</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note info"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4m0-4h.01"/></svg>
+        <p>实测所用 <code>agent_id=7540939700521926656</code> 是测试账号下一个绑定了技能的智能体，用于验证「外部 API + 沙箱执行」全链路。对接你自己的 finmallclaw 时，把 <code>agent_id / space_id / PAT</code> 换成 finmallclaw 对应的值即可，流程与返回结构完全一致。</p></div>
+    </section>
+
+    <section id="endpoints">
+      <h2><span class="num">B</span>全 super-agent 接口清单</h2>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>路由</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>POST /sessions/{create,get,list,rename,delete}</code></td><td>会话管理</td></tr>
+          <tr><td><code>POST /runs/{create,stream,reply,get,list,cancel}</code></td><td>运行（发消息）</td></tr>
+          <tr><td><code>POST /messages/list</code></td><td>历史消息</td></tr>
+          <tr><td><code>POST /runtime-config/{get,update,delete}</code></td><td>会话级运行时配置（换模型 / 绑 MCP / 技能）</td></tr>
+          <tr><td><code>POST /workspace/{list,read,upload,download,delete}</code></td><td>沙箱工作区文件</td></tr>
+          <tr><td><code>POST /artifacts/{list,download,move,delete}</code></td><td>产物文件</td></tr>
+          <tr><td><code>POST /approvals/{list,resolve}</code></td><td>高危操作审批</td></tr>
+          <tr><td><code>POST /traces/get</code></td><td>运行轨迹</td></tr>
+          <tr><td><code>GET /manifest</code> · <code>GET /openapi.json</code></td><td>自描述（完整字段以 openapi.json 为准）</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:13px;color:var(--faint);">路由均省略前缀 <code>/api/super-agent</code>。</p>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <span class="mono">finmallclaw external API reference</span> · 基于 226 环境 2026-07-07 实测 · 生产部署请替换 BASE URL 与凭证
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement, btn = document.getElementById('themeBtn');
+    function sysDark(){ return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }
+    function cur(){ return root.getAttribute('data-theme') || (sysDark() ? 'dark' : 'light'); }
+    function apply(t){ root.setAttribute('data-theme', t); btn.textContent = t === 'dark' ? '☾' : '☀'; }
+    apply(cur());
+    btn.addEventListener('click', function(){ apply(cur() === 'dark' ? 'light' : 'dark'); });
+
+    // copy buttons
+    document.querySelectorAll('.code[data-copy]').forEach(function(box){
+      var b = box.querySelector('.copy'), pre = box.querySelector('pre');
+      b.addEventListener('click', function(){
+        navigator.clipboard.writeText(pre.innerText).then(function(){
+          var o = b.textContent; b.textContent = '已复制 ✓'; b.classList.add('done');
+          setTimeout(function(){ b.textContent = o; b.classList.remove('done'); }, 1600);
+        });
+      });
+    });
+
+    // scrollspy
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+    var map = {};
+    links.forEach(function(a){ var id = a.getAttribute('href').slice(1); map[id] = a; });
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting){
+          links.forEach(function(l){ l.classList.remove('active'); });
+          if (map[e.target.id]) map[e.target.id].classList.add('active');
+        }
+      });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    document.querySelectorAll('main section[id]').forEach(function(s){ obs.observe(s); });
+  })();
+</script>
+</body>
+</html>

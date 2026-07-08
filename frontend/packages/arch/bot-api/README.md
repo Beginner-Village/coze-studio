@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-This package provides a comprehensive API client library for the Coze Bot Studio platform. It offers TypeScript-first RPC wrappers for all bot studio services, including developer APIs, playground functionality, knowledge management, workflow orchestration, and more. The package centralizes API interactions and provides type-safe interfaces for seamless integration across the platform.
+This package provides a comprehensive API client library for the YNET Bot Studio platform. It offers TypeScript-first RPC wrappers for all bot studio services, including developer APIs, playground functionality, knowledge management, workflow orchestration, and more. The package centralizes API interactions and provides type-safe interfaces for seamless integration across the platform.
 
 ## Features
 

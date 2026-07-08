@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { type ReactNode } from 'react';
+import { type ReactNode, useState, useEffect } from 'react';
 
 import classNames from 'classnames';
 import { I18n } from '@coze-arch/i18n';
@@ -26,6 +26,10 @@ import {
   Modal,
   type ModalProps,
 } from '@coze-arch/coze-design';
+import {
+  fetchSuperAgentEnabled,
+  getSuperAgentEnabledCache,
+} from '@coze-arch/bot-api';
 
 import { useHiddenSession } from '../../hooks/use-hidden-session';
 import ProjectImg from '../../assets/project-img.png';
@@ -34,6 +38,9 @@ import AgentImg from '../../assets/agent-img.png';
 import AgentImgOversea from '../../assets/agent-img-oversea.png';
 
 import styles from './index.module.less';
+
+// TODO: 应用功能尚未完成，暂时隐藏入口
+const SHOW_PROJECT_ENTRY = false;
 
 export type CreateType = 'project' | 'agent' | 'superAgent';
 
@@ -129,6 +136,40 @@ export const GuideButton: React.FC<GuideButtonProps> = ({
 const ProjectAsset = IS_OVERSEA ? ProjectImgOversea : ProjectImg;
 const AgentAsset = IS_OVERSEA ? AgentImgOversea : AgentImg;
 
+/**
+ * 超级体(FinMallClaw)创建入口。是否展示改为运行时驱动：
+ * 向后端 `/api/super-agent/ui-config` 拉取（联动 SANDBOX_ENABLED），运维改后端 env 即可，
+ * 前端无需重新构建。构建期常量 IS_DISABLE_SUPER_AGENT 保留为硬兜底（置 true 永远隐藏）。
+ * 降级：拿到结果前默认隐藏，避免误露一个后端并未启用的入口。
+ */
+const SuperAgentGuideButton: React.FC<{
+  onChange: (type: CreateType) => void;
+}> = ({ onChange }) => {
+  const [enabled, setEnabled] = useState<boolean>(
+    getSuperAgentEnabledCache() ?? false,
+  );
+  useEffect(() => {
+    fetchSuperAgentEnabled().then(setEnabled);
+  }, []);
+
+  if (IS_DISABLE_SUPER_AGENT || !enabled) {
+    return null;
+  }
+  return (
+    <GuideButton
+      onClick={() => onChange('superAgent')}
+      assetSrc={AgentAsset}
+      title={
+        <span className="flex gap-x-4px items-center">
+          FinMallClaw
+          <Badge count="Beta" type="alt" />
+        </span>
+      }
+      description="自主规划任务·绑定技能与 MCP 工具·独立沙箱空间"
+    />
+  );
+};
+
 export const GuideModal: React.FC<GuideModalProps> = ({
   onChange,
   extraButtonConfigs = [],
@@ -150,33 +191,24 @@ export const GuideModal: React.FC<GuideModalProps> = ({
         description={I18n.t('creat_project_agent_describe')}
         tip={!IS_OPEN_SOURCE ? I18n.t('agent_creat_tips') : null}
       />
-      <GuideButton
-        onClick={() => onChange('superAgent')}
-        assetSrc={AgentAsset}
-        title={
-          <span className="flex gap-x-4px items-center">
-            FinMallClaw
-            <Badge count="Beta" type="alt" />
-          </span>
-        }
-        description="自主规划任务·绑定技能与 MCP 工具·独立沙箱空间"
-      />
-      {/* TODO: 应用功能尚未完成，暂时隐藏入口 */}
-      {false && <GuideButton
-        onClick={() => onChange('project')}
-        assetSrc={ProjectAsset}
-        title={
-          <span className="flex gap-x-4px items-center">
-            {I18n.t('creat_project_creat_project')}
-            <Badge count="Beta" type="alt" />
-          </span>
-        }
-        description={
-          IS_OPEN_SOURCE
-            ? I18n.t('creat_project_describe_open')
-            : I18n.t('creat_project_describe')
-        }
-      />}
+      <SuperAgentGuideButton onChange={onChange} />
+      {SHOW_PROJECT_ENTRY && (
+        <GuideButton
+          onClick={() => onChange('project')}
+          assetSrc={ProjectAsset}
+          title={
+            <span className="flex gap-x-4px items-center">
+              {I18n.t('creat_project_creat_project')}
+              <Badge count="Beta" type="alt" />
+            </span>
+          }
+          description={
+            IS_OPEN_SOURCE
+              ? I18n.t('creat_project_describe_open')
+              : I18n.t('creat_project_describe')
+          }
+        />
+      )}
       {extraButtonConfigs.map(({ onClick, ...config }, index) => (
         <GuideButton
           key={index}

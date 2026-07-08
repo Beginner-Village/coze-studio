@@ -8,7 +8,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "http://10.10.10.220:9888"
+      "value": "http://10.10.10.226:8896"
     },
     {
       "key": "api_key",
@@ -71,7 +71,7 @@
                 }
               }
             },
-            "description": "与已发布智能体对话(OpenAI/Coze v3,SSE)。bot_id在body,conversation_id在query。"
+            "description": "与已发布智能体对话(OpenAI/YNET v3,SSE)。bot_id在body,conversation_id在query。"
           }
         },
         {

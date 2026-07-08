@@ -132,7 +132,11 @@ func CanvasBlockInputToTypeInfo(b *vo.BlockInput) (tInfo *vo.TypeInfo, err error
 		tInfo.Type = vo.DataTypeObject
 		tInfo.Properties = make(map[string]*vo.TypeInfo)
 		if b.Schema != nil {
-			for _, subVAny := range b.Schema.([]any) {
+			subVList, ok := b.Schema.([]any)
+			if !ok {
+				return nil, fmt.Errorf("object schema expected a list of fields, got %T", b.Schema)
+			}
+			for _, subVAny := range subVList {
 				if b.Value.Type == vo.BlockInputValueTypeRef {
 					subV, err := vo.ParseVariable(subVAny)
 					if err != nil {

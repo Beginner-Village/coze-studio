@@ -109,7 +109,7 @@ Authorization: Bearer pat_your_api_key_here
 ```bash
 #!/bin/bash
 
-API_KEY="pat_your_api_key_here"
+API_KEY="${OPENYNET_PAT}"
 FILE_PATH="./bot_icon.png"
 
 # 方法1: 使用base64命令 (推荐)
@@ -187,7 +187,7 @@ def upload_file(file_path, api_key, biz_type=1):
 
 # 使用示例
 if __name__ == '__main__':
-    api_key = 'pat_a6721931ccf78645b8726bd103e7db6f831c7c057e74164976e316b41a878a33'
+    api_key = os.environ['OPENYNET_PAT']
     result = upload_file('./bot_icon.png', api_key)
 
     print(f"上传成功!")
@@ -247,7 +247,7 @@ async function uploadFile(filePath, apiKey, bizType = 1) {
 
 // 使用示例
 (async () => {
-  const apiKey = 'pat_a6721931ccf78645b8726bd103e7db6f831c7c057e74164976e316b41a878a33';
+  const apiKey = process.env.OPENYNET_PAT;
 
   try {
     const result = await uploadFile('./bot_icon.png', apiKey);
@@ -346,7 +346,7 @@ func uploadFile(filePath, apiKey string, bizType int) (*UploadData, error) {
 }
 
 func main() {
-    apiKey := "pat_a6721931ccf78645b8726bd103e7db6f831c7c057e74164976e316b41a878a33"
+    apiKey := os.Getenv("OPENYNET_PAT")
 
     result, err := uploadFile("./bot_icon.png", apiKey, 1)
     if err != nil {
@@ -482,7 +482,7 @@ async function uploadWithTempCredentials(filePath, apiKey) {
 
 // 使用示例
 (async () => {
-  const apiKey = 'pat_your_api_key_here';
+  const apiKey = process.env.OPENYNET_PAT;
   await uploadWithTempCredentials('./bot_icon.png', apiKey);
 })();
 ```
@@ -594,7 +594,7 @@ def upload_image_with_imagex(file_path, api_key):
     return upload_response.json()
 
 # 使用示例
-api_key = 'pat_your_api_key_here'
+api_key = os.environ['OPENYNET_PAT']
 result = upload_image_with_imagex('./photo.jpg', api_key)
 print('上传结果:', result)
 ```
@@ -677,7 +677,7 @@ class CozeUploader:
 # 使用示例
 if __name__ == '__main__':
     # 初始化上传器
-    uploader = CozeUploader('pat_a6721931ccf78645b8726bd103e7db6f831c7c057e74164976e316b41a878a33')
+    uploader = CozeUploader(os.environ['OPENYNET_PAT'])
 
     # 批量上传
     results = uploader.batch_upload('./icons', '*.png')
@@ -781,7 +781,7 @@ def upload_file_with_retry(file_path, api_key):
 
 ```bash
 # .env 文件
-COZE_API_KEY=pat_a6721931ccf78645b8726bd103e7db6f831c7c057e74164976e316b41a878a33
+COZE_API_KEY=${OPENYNET_PAT}
 COZE_BASE_URL=http://localhost:8888
 ```
 
@@ -1082,7 +1082,7 @@ def upload_with_cache(file_path, api_key):
 
 set -e
 
-API_KEY="pat_your_api_key_here"
+API_KEY="${OPENYNET_PAT}"
 BASE_URL="http://localhost:8888"
 TEST_FILE="test_icon.png"
 

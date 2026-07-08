@@ -41,6 +41,8 @@ var noNeedSessionCheckPath = map[string]bool{
 	// App Server discovery contract; callers need this before choosing Bearer auth.
 	"/api/super-agent/manifest":     true,
 	"/api/super-agent/openapi.json": true,
+	// 前端启动时读取超级体入口显隐配置，需在登录前即可访问（与 SANDBOX_ENABLED 联动）。
+	"/api/super-agent/ui-config": true,
 }
 
 func SessionAuthMW() app.HandlerFunc {

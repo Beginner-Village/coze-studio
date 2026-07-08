@@ -67,7 +67,7 @@ func TestApiAuthImpl_Get(t *testing.T) {
 			&model.APIKey{
 				ID:        10000000001,
 				Name:      "test",
-				APIKey:    "a5f58bea9028d49143bff3ee436b2fb663291c0c6ab242f3c9dc6bf6df9f7b74",
+				APIKey:    "test-api-key",
 				Status:    0,
 				UserID:    666666,
 				ExpiredAt: time.Now().Add(time.Hour).UnixMilli(),

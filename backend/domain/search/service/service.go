@@ -40,6 +40,12 @@ type Search interface {
 	// Resync deps must have been wired in via SetResyncDeps; otherwise
 	// returns an error.
 	ResyncSpace(ctx context.Context, spaceID int64) (*space.ResyncESCounts, error)
+	// ResyncAllSpaces ensures the three list indices exist, purges every doc
+	// in them (orphan cleanup after a DB-level data sync), then rebuilds each
+	// given space via ResyncSpace. Per-space failures are collected in the
+	// returned failedSpaceIDs and are non-fatal; only a purge/index-ensure
+	// failure aborts the whole call. Resync deps must have been wired first.
+	ResyncAllSpaces(ctx context.Context, spaceIDs []int64) (agg *space.ResyncESCounts, failedSpaceIDs []int64, err error)
 	// SetResyncDeps wires in the per-space resync dependencies. Called by
 	// the application layer once during init after the relevant domain
 	// repos exist. Must be invoked before ResyncSpace can run.

@@ -19,6 +19,7 @@ package space
 import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 	handler "github.com/ynet-dev/ynet-studio/backend/api/handler/space"
+	"github.com/ynet-dev/ynet-studio/backend/api/middleware"
 )
 
 // RegisterResync wires the per-space ES resync endpoint.
@@ -26,4 +27,8 @@ import (
 func RegisterResync(r *server.Hertz) {
 	spaceGroup := r.Group("/api/space")
 	spaceGroup.POST("/resync_es", handler.ResyncES)
+	// Bulk rebuild used after a DB-level data sync — body: {space_ids:[...]}.
+	// Purges + rebuilds ALL spaces' ES, so it's gated behind super-admin
+	// (a destructive, instance-wide maintenance op), not plain login.
+	spaceGroup.POST("/resync_all_es", middleware.SuperAdminAuthMiddleware(), handler.ResyncAllES)
 }

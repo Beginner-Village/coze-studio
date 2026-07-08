@@ -597,39 +597,55 @@ func arrayDrillDown(nKey vo.NodeKey, fm *compose.FieldMapping, types map[string]
 	}
 
 	extractor := func(a any) (any, error) {
-		for j := range fromPath {
-			p := fromPath[j]
-			m, ok := a.(map[string]any)
-			if !ok {
-				return nil, fmt.Errorf("[arrayDrillDown] trying to drill down from a non-map type:%T of path %s, "+
-					"from node key: %v", a, fromPath[:j+1], nKey)
-			}
-			a, ok = m[p]
-			if !ok {
-				return nil, fmt.Errorf("[arrayDrillDown] field %s not found along from path: %s, "+
-					"from node key: %v", p, fromPath[:j+1], nKey)
-			}
-			if slices.Contains(arraySegIndexes, j) { // this is an array needs drilling down
-				arr, ok := a.([]any)
-				if !ok {
-					return nil, fmt.Errorf("[arrayDrillDown] trying to drill down from a non-array type:%T of path %s, "+
-						"from node key: %v", a, fromPath[:j+1], nKey)
-				}
-
-				if len(arr) == 0 {
-					return nil, fmt.Errorf("[arrayDrillDown] trying to drill down from an array of length 0: %s, "+
-						"from node key: %v", fromPath[:j+1], nKey)
-				}
-
-				a = arr[0]
-			}
-		}
-
-		return a, nil
+		return drillDownExtract(nKey, fromPath, arraySegIndexes, a)
 	}
 
 	newFM := compose.ToFieldPath(fm.ToPath(), compose.WithCustomExtractor(extractor))
 	return newFM, nil
+}
+
+// drillDownExtract walks fromPath through the runtime value `a`, drilling into
+// the first element of every array segment listed in arraySegIndexes.
+//
+// When an array segment is null or empty (e.g. a knowledge-retrieval node that
+// found no result outputs a null/empty outputList), there is no element to drill
+// into. Rather than failing the whole workflow, the drilled-down value resolves
+// to null so downstream nodes can handle "no result" themselves.
+func drillDownExtract(nKey vo.NodeKey, fromPath compose.FieldPath, arraySegIndexes []int, a any) (any, error) {
+	for j := range fromPath {
+		p := fromPath[j]
+		if a == nil { // a preceding segment resolved to null: yield null
+			return nil, nil
+		}
+		m, ok := a.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("[arrayDrillDown] trying to drill down from a non-map type:%T of path %s, "+
+				"from node key: %v", a, fromPath[:j+1], nKey)
+		}
+		a, ok = m[p]
+		if !ok {
+			return nil, fmt.Errorf("[arrayDrillDown] field %s not found along from path: %s, "+
+				"from node key: %v", p, fromPath[:j+1], nKey)
+		}
+		if slices.Contains(arraySegIndexes, j) { // this is an array needs drilling down
+			if a == nil { // null array field: nothing to drill into
+				return nil, nil
+			}
+			arr, ok := a.([]any)
+			if !ok {
+				return nil, fmt.Errorf("[arrayDrillDown] trying to drill down from a non-array type:%T of path %s, "+
+					"from node key: %v", a, fromPath[:j+1], nKey)
+			}
+
+			if len(arr) == 0 { // empty array: no element to drill into
+				return nil, nil
+			}
+
+			a = arr[0]
+		}
+	}
+
+	return a, nil
 }
 
 type staticValue struct {

@@ -39,10 +39,15 @@ func TakeMapValue(m map[string]any, path compose.FieldPath) (any, bool) {
 
 	container := m
 	for _, p := range path[:len(path)-1] {
-		if _, ok := container[p]; !ok {
+		next, ok := container[p]
+		if !ok {
 			return nil, false
 		}
-		container = container[p].(map[string]any)
+		nextMap, ok := next.(map[string]any)
+		if !ok { // intermediate segment is null or not an object: treat as not found
+			return nil, false
+		}
+		container = nextMap
 	}
 
 	if v, ok := container[path[len(path)-1]]; ok {

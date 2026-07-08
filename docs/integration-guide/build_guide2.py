@@ -85,7 +85,7 @@ for i,(tag,title,lead,items) in enumerate(D['STEPS'],1):
 # ---------- API ----------
 API = '''<section class="page" id="api-base"><div class="breadcrumb">API 接口 <span class="sep">›</span> 通用</div>
   <h1 class="page-title">BASE_URL & 认证</h1>
-  <p class="lead">所有对外接口用 PAT 以 Bearer 调用。BASE_URL 由部署方提供（如 http://10.10.10.220:9888）。</p>
+  <p class="lead">所有对外接口用 PAT 以 Bearer 调用。BASE_URL 由部署方提供（如 http://10.10.10.226:8896）。</p>
   <table><thead><tr><th>项</th><th>说明</th></tr></thead><tbody>
   <tr><td>认证</td><td><code>Authorization: Bearer &lt;PAT&gt;</code>（个人访问令牌，在 Web「个人设置→API 授权」创建）</td></tr>
   <tr><td>ID 字段</td><td>bot_id/conversation_id 等 i64 在 JSON 里都是<strong>字符串</strong></td></tr>

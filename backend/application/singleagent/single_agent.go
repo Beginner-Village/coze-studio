@@ -759,7 +759,17 @@ func (s *SingleAgentApplicationService) ValidateAgentDraftAccess(ctx context.Con
 	}
 
 	if do.CreatorID != *uid {
-		return do, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("detail", "you are not the agent owner"))
+		// Not the creator — allow if the caller is a member of the agent's
+		// space (space-scoped collaboration: members can access each other's
+		// drafts, matching pre-IDOR-fix behavior). Non-members are still
+		// rejected, preserving IDOR protection against unrelated users.
+		isMember, _, _, _, mErr := s.appContext.UserDomainSVC.CheckMemberPermission(ctx, do.SpaceID, *uid)
+		if mErr != nil {
+			return nil, mErr
+		}
+		if !isMember {
+			return do, errorx.New(errno.ErrAgentPermissionCode, errorx.KV("msg", "you are not a member of the agent's space"))
+		}
 	}
 
 	return do, nil

@@ -80,7 +80,7 @@ var needAuthPath = map[string]bool{
 var needAuthFunc = map[string]bool{
 	"^/v1/conversations/[0-9]+/clear$": true, // v1/conversations/:conversation_id/clear
 	"^/api/common/upload/.*":           true, // api/common/upload/* 支持 API Key 通用上传
-	"^/api/super-agent/(runs|sessions|messages|harness|sandbox|traces|artifacts|workspace|skills|marketplace)/.*$": true,
+	"^/api/super-agent/(runs|sessions|messages|harness|sandbox|traces|artifacts|workspace|skills|marketplace|runtime-config|approvals|products|config)/.*$": true,
 }
 
 func parseBearerAuthToken(authHeader string) string {
